@@ -1,0 +1,1176 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BLANWHI Preview</title>
+    <style>
+      :root { --paper: #fff; --ink: #070707; --muted: #707070; --line: #e5e5e5; --frame: #d5d5d5; }
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body { margin: 0; background: #fff; color: var(--ink); font-family: Inter, Arial, sans-serif; }
+      .serif { font-family: Georgia, "Times New Roman", serif; font-weight: 400; letter-spacing: 0; }
+      a { color: inherit; text-decoration: none; }
+      .page { max-width: 1064px; margin: 70px auto; background: #fff; min-height: 100vh; overflow: hidden; }
+      header { position: relative; z-index: 5; height: 178px; background: transparent; }
+      .nav { position: relative; height: 178px; display: grid; grid-template-columns: 1fr 226px 1fr; align-items: start; padding: 0 48px; }
+      .nav::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 178px; background: linear-gradient(#fff, #fbfbfb); box-shadow: 0 22px 34px rgba(0,0,0,.11); clip-path: polygon(0 0, 42.5% 0, 42.5% 58%, 50% 100%, 57.5% 58%, 100% 58%, 100% 100%, 0 100%); }
+      .nav-left, .nav-right { position: relative; z-index: 1; height: 122px; display: flex; align-items: center; gap: 30px; font-size: 11px; font-weight: 800; text-transform: uppercase; white-space: nowrap; }
+      .nav-left a:first-child { border-bottom: 2px solid #111; padding-bottom: 8px; }
+      .nav-right { justify-content: flex-end; gap: 22px; }
+      .icons { display: flex; gap: 16px; align-items: center; color: #111; }
+      .icon { font-size: 22px; line-height: 1; }
+      .brand { position: relative; z-index: 2; height: 178px; display: grid; place-items: center; align-content: center; gap: 8px; border-radius: 0 0 34px 34px; color: #111; text-transform: uppercase; font-size: 12px; background: #fff; box-shadow: 0 20px 36px rgba(0,0,0,.13); }
+      .brand img { width: 82px; height: 82px; object-fit: contain; mix-blend-mode: multiply; }
+      .brand strong { font-size: 34px; font-weight: 500; letter-spacing: 10px; }
+      .brand span { font-size: 12px; font-weight: 800; letter-spacing: 4px; }
+      .cart { border: 0; background: transparent; font-size: 18px; line-height: 1; }
+      .orders-link { border: 0; background: transparent; font-size: 12px; text-transform: uppercase; color: #555; }
+      .integration-link { border: 0; background: transparent; font-size: 12px; text-transform: uppercase; color: #555; }
+      .hero { position: relative; margin-top: -178px; padding: 306px 64px 150px; min-height: 790px; background: radial-gradient(circle at 72% 46%, #f5f5f5 0, #fff 45%, #fbfbfb 100%); overflow: hidden; }
+      .hero-top { display: grid; grid-template-columns: .78fr 1.22fr; gap: 42px; align-items: center; }
+      .hero-logo { position: absolute; right: -28px; top: -28px; width: 112px; height: 112px; object-fit: contain; mix-blend-mode: multiply; opacity: .18; }
+      .eyebrow { color: var(--muted); font-size: 12px; text-transform: uppercase; }
+      .wordmark { display: flex; align-items: center; gap: 24px; }
+      .wordmark-badge { width: 112px; height: 112px; display: grid; place-items: center; background: #050505; flex: 0 0 auto; }
+      .wordmark-badge img { width: 80px; height: 80px; object-fit: contain; filter: invert(1); }
+      h1 { font-family: Inter, Arial, sans-serif; font-size: clamp(52px, 10vw, 134px); font-weight: 600; line-height: .88; margin: 0; letter-spacing: 0; text-transform: uppercase; }
+      .shirt-pair { display: flex; justify-content: flex-end; align-items: flex-end; gap: 22px; min-height: 285px; }
+      .shirt { position: relative; width: 190px; height: 260px; }
+      .shirt .body { position: absolute; left: 50%; top: 38px; width: 128px; height: 198px; transform: translateX(-50%); border-radius: 28px 28px 8px 8px; background: var(--shirt); border: var(--shirt-border); box-shadow: 0 24px 42px rgba(0,0,0,.1); }
+      .shirt .left, .shirt .right { position: absolute; top: 62px; width: 58px; height: 128px; background: var(--shirt); border: var(--shirt-border); }
+      .shirt .left { left: 10px; transform: rotate(13deg); }
+      .shirt .right { right: 10px; transform: rotate(-13deg); }
+      .shirt .neck { position: absolute; left: 50%; top: 38px; width: 46px; height: 34px; transform: translateX(-50%); border-radius: 0 0 999px 999px; border-bottom: var(--neck-border); background: var(--shirt); }
+      .hero-copy { max-width: 360px; padding-top: 90px; }
+      .hero-copy .overline { font-size: 11px; font-weight: 800; text-transform: uppercase; }
+      .hero-copy .rule { width: 34px; height: 1px; background: #111; margin: 14px 0; }
+      .hero-copy h1 { font-size: 36px; font-weight: 800; line-height: 1.08; margin: 0; text-transform: uppercase; }
+      .hero-copy p { margin: 18px 0 0; color: #555; font-size: 13px; line-height: 1.75; }
+      .hero-actions { display: flex; gap: 14px; margin-top: 28px; }
+      .hero-actions a { display: inline-flex; align-items: center; justify-content: center; min-width: 116px; height: 34px; border: 1px solid #111; font-size: 11px; font-weight: 800; text-transform: uppercase; }
+      .hero-actions a:first-child { background: #000; color: #fff; }
+      .stack-scene { position: relative; min-height: 470px; }
+      .back-panel { position: absolute; right: 4%; top: 0; width: 245px; height: 390px; background: #fff; box-shadow: 18px 18px 34px rgba(0,0,0,.12); }
+      .pedestal { position: absolute; right: 0; bottom: 28px; width: 470px; height: 112px; background: #fff; box-shadow: -10px -8px 30px rgba(0,0,0,.06); }
+      .shirt-stack { position: absolute; right: 9%; bottom: 74px; width: 430px; height: 260px; }
+      .folded-shirt { position: absolute; right: 0; width: 348px; height: 60px; border-radius: 14px 36px 24px 14px; background: var(--fold); box-shadow: 0 16px 28px rgba(0,0,0,.16); }
+      .folded-shirt::after { content: ""; position: absolute; right: 0; top: 0; width: 82px; height: 58px; border-radius: 0 34px 24px 0; background: linear-gradient(90deg, rgba(255,255,255,.08), rgba(0,0,0,.2)); }
+      .folded-shirt:nth-child(1) { top: 0; --fold:#fff; border: 1px solid #ededed; }
+      .folded-shirt:nth-child(2) { top: 42px; --fold:#d8d8d8; }
+      .folded-shirt:nth-child(3) { top: 84px; --fold:#9b9b9b; }
+      .folded-shirt:nth-child(4) { top: 126px; --fold:#555; }
+      .folded-shirt:nth-child(5) { top: 168px; --fold:#080808; }
+      .benefits { position: absolute; left: 60px; right: 60px; bottom: 32px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; border-radius: 28px; background: rgba(255,255,255,.98); box-shadow: 0 18px 38px rgba(0,0,0,.13); overflow: hidden; }
+      .benefit { min-height: 118px; display: grid; grid-template-columns: 52px 1fr; gap: 14px; align-items: center; padding: 22px; border-right: 1px solid #e8e8e8; }
+      .benefit:last-child { border-right: 0; }
+      .benefit-icon { font-size: 34px; }
+      .benefit h3 { margin: 0; font-size: 13px; text-transform: uppercase; }
+      .benefit p { margin: 6px 0 0; font-size: 12px; color: #555; line-height: 1.5; }
+      .category-nav { margin-top: 58px; display: flex; justify-content: center; gap: 46px; color: #666; font-size: 14px; }
+      .cta { margin-top: 30px; display: flex; gap: 12px; flex-wrap: wrap; }
+      .cta a { border: 1px solid #000; padding: 13px 26px; font-size: 12px; text-transform: uppercase; }
+      .cta a:first-child { background: #000; color: #fff; }
+      .wrap { padding: 0 58px; }
+      .feature { padding: 52px 0 44px; display: grid; grid-template-columns: .78fr 1.22fr; gap: 50px; align-items: center; }
+      .feature h2 { font-size: 30px; line-height: .98; margin: 0; }
+      .feature p { margin-top: 18px; max-width: 310px; color: var(--muted); line-height: 1.65; font-size: 13px; }
+      .feature a { display: inline-flex; margin-top: 20px; border-radius: 999px; background: #f2f2f2; padding: 9px 22px; font-size: 12px; }
+      .feature-board { width: 100%; aspect-ratio: 16 / 10; background: #f5f5f5; display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; padding: 28px; align-items: center; }
+      .intro { padding: 54px 0 28px; display: grid; grid-template-columns: 1fr 380px; gap: 34px; align-items: end; }
+      .intro h2 { font-size: clamp(44px, 5.4vw, 78px); line-height: .98; margin: 10px 0 0; }
+      .intro p { color: var(--muted); line-height: 1.75; font-size: 14px; }
+      .filters { border-block: 1px solid var(--line); padding: 16px 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+      select { height: 44px; border: 1px solid var(--line); background: #fff; padding: 0 12px; color: #111; }
+      .grid { padding: 30px 0 64px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 44px 20px; }
+      .product-visual { position: relative; width: 100%; border: 0; padding: 0; cursor: pointer; aspect-ratio: 4 / 5; overflow: hidden; background: linear-gradient(135deg, #fafafa, #ededed); display: grid; place-items: center; transition: transform .55s ease, opacity .55s ease; }
+      .card:hover .product-visual { transform: scale(1.018); opacity: .94; }
+      .color-arrow { position: absolute; top: 50%; z-index: 2; width: 30px; height: 30px; border: 1px solid rgba(0,0,0,.18); border-radius: 999px; background: rgba(255,255,255,.78); transform: translateY(-50%); display: grid; place-items: center; font-size: 18px; }
+      .color-arrow.prev { left: 10px; }
+      .color-arrow.next { right: 10px; }
+      .color-name { position: absolute; left: 10px; bottom: 10px; z-index: 2; background: rgba(255,255,255,.82); padding: 5px 8px; font-size: 11px; text-transform: uppercase; }
+      .mock { position: relative; width: 72%; height: 76%; }
+      .mock .body, .mock .left, .mock .right, .mock .leg-a, .mock .leg-b, .mock .hood, .mock .zip { position: absolute; background: var(--garment); border: var(--garment-border); }
+      .mock.tee .body { left: 50%; top: 20%; width: 48%; height: 62%; transform: translateX(-50%); border-radius: 22px 22px 8px 8px; box-shadow: 0 22px 38px rgba(0,0,0,.1); }
+      .mock.tee .left, .mock.tee .right { top: 28%; width: 26%; height: 40%; }
+      .mock.tee .left { left: 7%; transform: rotate(14deg); }
+      .mock.tee .right { right: 7%; transform: rotate(-14deg); }
+      .mock.tee::after { content: ""; position: absolute; left: 50%; top: 20%; width: 18%; height: 11%; transform: translateX(-50%); border-radius: 0 0 999px 999px; border-bottom: var(--neck-border); background: var(--garment); }
+      .mock.hoodie .body { left: 50%; top: 24%; width: 54%; height: 58%; transform: translateX(-50%); border-radius: 18px 18px 10px 10px; box-shadow: 0 22px 38px rgba(0,0,0,.12); }
+      .mock.hoodie .hood { left: 50%; top: 11%; width: 34%; height: 24%; transform: translateX(-50%); border-radius: 999px 999px 18px 18px; }
+      .mock.hoodie .left, .mock.hoodie .right { top: 30%; width: 24%; height: 46%; }
+      .mock.hoodie .left { left: 7%; transform: rotate(11deg); }
+      .mock.hoodie .right { right: 7%; transform: rotate(-11deg); }
+      .mock.hoodie .zip { left: 50%; top: 30%; width: 1px; height: 48%; background: rgba(255,255,255,.35); border: 0; }
+      .mock.pants .body { left: 31%; top: 15%; width: 38%; height: 14%; border-radius: 10px 10px 3px 3px; }
+      .mock.pants .leg-a, .mock.pants .leg-b { top: 26%; width: 24%; height: 58%; border-radius: 7px 7px 12px 12px; box-shadow: 0 22px 38px rgba(0,0,0,.08); }
+      .mock.pants .leg-a { left: 28%; }
+      .mock.pants .leg-b { right: 28%; }
+      .mock.jacket .body { left: 50%; top: 22%; width: 56%; height: 60%; transform: translateX(-50%); border-radius: 18px 18px 9px 9px; box-shadow: 0 22px 38px rgba(0,0,0,.12); }
+      .mock.jacket .left, .mock.jacket .right { top: 31%; width: 23%; height: 43%; }
+      .mock.jacket .left { left: 7%; transform: rotate(10deg); }
+      .mock.jacket .right { right: 7%; transform: rotate(-10deg); }
+      .mock.jacket .zip { left: 50%; top: 25%; width: 1px; height: 55%; background: rgba(255,255,255,.45); border: 0; }
+      .meta { display: flex; justify-content: space-between; gap: 14px; padding-top: 12px; font-size: 13px; }
+      .muted { color: var(--muted); font-size: 12px; margin-top: 4px; }
+      .swatches { display: flex; gap: 5px; margin-top: 10px; }
+      .swatches span { width: 14px; height: 14px; border: 1px solid #bbb; display: block; }
+      .swatches span.active { outline: 2px solid #111; outline-offset: 2px; }
+      .sizes { display: flex; gap: 4px; margin-top: 10px; }
+      .sizes button { border: 1px solid var(--line); background: #fff; min-width: 27px; height: 27px; display: grid; place-items: center; font-size: 11px; }
+      .sizes button.active { border-color: #000; background: #000; color: #fff; }
+      .advisor-row { display: grid; gap: 2px; color: #555; }
+      .advisor-row b { color: #111; }
+      .mini-link { border: 0; background: transparent; padding: 0; text-align: left; font-size: 12px; text-decoration: underline; }
+      .quick { width: 100%; margin-top: 12px; height: 38px; border: 1px solid #000; background: transparent; text-transform: uppercase; font-size: 12px; }
+      .quick:hover { background: #000; color: #fff; }
+      .card-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+      .card-actions .quick { margin-top: 0; }
+      .card-actions .quick:last-child { background: #000; color: #fff; }
+      .cart-overlay { position: fixed; inset: 0; z-index: 20; background: rgba(0,0,0,.24); opacity: 0; pointer-events: none; transition: opacity .25s ease; }
+      .cart-overlay.open { opacity: 1; pointer-events: auto; }
+      .cart-drawer { position: fixed; right: 0; top: 0; z-index: 21; width: min(440px, 100vw); height: 100vh; background: #fff; transform: translateX(100%); transition: transform .3s ease; display: flex; flex-direction: column; box-shadow: -24px 0 70px rgba(0,0,0,.12); }
+      .cart-drawer.open { transform: translateX(0); }
+      .orders-drawer { position: fixed; right: 0; top: 0; z-index: 22; width: min(520px, 100vw); height: 100vh; background: #fff; transform: translateX(100%); transition: transform .3s ease; display: flex; flex-direction: column; box-shadow: -24px 0 70px rgba(0,0,0,.12); }
+      .orders-drawer.open { transform: translateX(0); }
+      .cart-head { height: 68px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); padding: 0 22px; }
+      .cart-head h2 { margin: 0; font-size: 16px; text-transform: uppercase; }
+      .icon-button { border: 1px solid var(--line); background: #fff; width: 38px; height: 38px; }
+      .cart-items { flex: 1; overflow: auto; padding: 20px 22px; display: grid; gap: 18px; align-content: start; }
+      .cart-row { display: grid; grid-template-columns: 72px 1fr auto; gap: 12px; align-items: center; }
+      .cart-row .product-visual { width: 72px; aspect-ratio: 4 / 5; }
+      .cart-row h3 { margin: 0; font-size: 13px; }
+      .cart-row p { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
+      .qty { display: flex; align-items: center; border: 1px solid var(--line); }
+      .qty button { width: 28px; height: 30px; border: 0; background: #fff; }
+      .qty span { width: 24px; text-align: center; font-size: 12px; }
+      .cart-foot { border-top: 1px solid var(--line); padding: 18px 22px 22px; display: grid; gap: 10px; }
+      .line { display: flex; justify-content: space-between; gap: 16px; font-size: 14px; }
+      .voucher-note { background: #f6f6f6; padding: 12px; font-size: 12px; color: #555; }
+      .primary { height: 46px; border: 1px solid #000; background: #000; color: #fff; text-transform: uppercase; font-size: 12px; }
+      .secondary { height: 42px; border: 1px solid #000; background: #fff; color: #000; text-transform: uppercase; font-size: 12px; }
+      .checkout-modal { position: fixed; inset: 0; z-index: 30; background: rgba(0,0,0,.28); display: none; place-items: center; padding: 18px; }
+      .checkout-modal.open { display: grid; }
+      .detail-modal { position: fixed; inset: 0; z-index: 29; background: rgba(0,0,0,.28); display: none; place-items: center; padding: 18px; }
+      .detail-modal.open { display: grid; }
+      .variant-modal { position: fixed; inset: 0; z-index: 28; background: rgba(0,0,0,.28); display: none; place-items: center; padding: 18px; }
+      .variant-modal.open { display: grid; }
+      .integration-modal { position: fixed; inset: 0; z-index: 31; background: rgba(0,0,0,.28); display: none; place-items: center; padding: 18px; }
+      .integration-modal.open { display: grid; }
+      .checkout-card { width: min(900px, 100%); max-height: 92vh; overflow: auto; background: #fff; padding: 24px; }
+      .detail-card { width: min(980px, 100%); max-height: 92vh; overflow: auto; background: #fff; padding: 24px; }
+      .variant-card { width: min(560px, 100%); max-height: 92vh; overflow: auto; background: #fff; padding: 24px; }
+      .quantity-picker { display: inline-flex; align-items: center; border: 1px solid var(--line); }
+      .quantity-picker button { width: 42px; height: 42px; border: 0; background: #fff; font-size: 18px; }
+      .quantity-picker span { width: 44px; text-align: center; }
+      .variant-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+      .detail-grid { display: grid; grid-template-columns: .9fr 1.1fr; gap: 24px; }
+      .detail-card .product-visual { cursor: default; }
+      .detail-info { display: grid; gap: 12px; align-content: start; }
+      .detail-info h2 { margin: 0; font-size: 32px; line-height: 1; }
+      .detail-section { border: 1px solid var(--line); }
+      .detail-section > button { width: 100%; min-height: 44px; border: 0; background: #fff; display: flex; justify-content: space-between; align-items: center; padding: 0 12px; font-weight: 600; text-align: left; }
+      .detail-panel { display: none; border-top: 1px solid var(--line); padding: 12px; color: #555; font-size: 13px; line-height: 1.6; }
+      .detail-panel.open { display: grid; gap: 10px; }
+      .suggestion-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+      .suggestion-chip { border: 1px solid #111; background: #fff; padding: 8px 10px; font-size: 12px; }
+      .suggestion-chip:hover { background: #111; color: #fff; }
+      .suggestion-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+      .suggestion-card { border: 1px solid var(--line); padding: 10px; display: grid; gap: 8px; }
+      .suggestion-card .product-visual { cursor: default; }
+      .suggestion-card h4 { margin: 0; font-size: 12px; }
+      .suggestion-card p { margin: 0; font-size: 11px; color: #666; }
+      .mini-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+      .mini-actions button { min-height: 32px; border: 1px solid #111; background: #fff; font-size: 11px; text-transform: uppercase; }
+      .mini-actions button:last-child { background: #111; color: #fff; }
+      .size-advisor-form { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+      .size-advisor-form input { border: 1px solid var(--line); min-height: 40px; padding: 9px; }
+      .size-result { background: #f6f6f6; padding: 12px; color: #111; }
+      .video-box { display: none; aspect-ratio: 16 / 9; background: linear-gradient(135deg, #111, #555); color: #fff; place-items: center; text-align: center; padding: 18px; }
+      .video-box.open { display: grid; }
+      .checkout-top { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--line); padding-bottom: 16px; margin-bottom: 18px; }
+      .checkout-grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: 24px; }
+      .checkout-card.quick-checkout { width: min(620px, 100%); }
+      .checkout-card.quick-checkout .checkout-grid { grid-template-columns: 1fr; }
+      .checkout-card.quick-checkout .order-box { display: none; }
+      .checkout-form { display: grid; gap: 12px; }
+      .checkout-form input, .checkout-form textarea, .checkout-form select { width: 100%; border: 1px solid var(--line); min-height: 42px; padding: 10px; background: #fff; }
+      .integration-form { display: grid; gap: 14px; }
+      .integration-form fieldset { border: 1px solid var(--line); padding: 14px; display: grid; gap: 10px; }
+      .integration-form legend { padding: 0 8px; font-weight: 600; }
+      .integration-form input { width: 100%; border: 1px solid var(--line); min-height: 42px; padding: 10px; background: #fff; }
+      .pay-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+      .pay-grid label { border: 1px solid var(--line); padding: 12px; font-size: 13px; }
+      .order-box { background: #f7f7f7; padding: 16px; display: grid; gap: 10px; align-content: start; }
+      .empty { color: var(--muted); text-align: center; padding: 40px 0; }
+      .order-list { flex: 1; overflow: auto; padding: 20px 22px; display: grid; gap: 16px; align-content: start; }
+      .order-card { border: 1px solid var(--line); padding: 16px; display: grid; gap: 12px; }
+      .order-card h3 { margin: 0; font-size: 15px; }
+      .status-track { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+      .status-step { border-top: 2px solid #ddd; padding-top: 7px; font-size: 11px; color: #888; }
+      .status-step.active { border-color: #000; color: #000; font-weight: 600; }
+      .ticker { border-block: 1px solid var(--line); padding: 16px; text-align: center; text-transform: uppercase; font-size: 13px; color: #555; }
+      .split { padding: 72px 0; display: grid; grid-template-columns: 1.1fr .9fr; gap: 52px; align-items: center; border-bottom: 1px solid var(--line); }
+      .split img { width: 100%; aspect-ratio: 5/4; object-fit: cover; filter: grayscale(1); }
+      .split h2 { font-size: clamp(58px, 7vw, 96px); line-height: .9; margin: 0; }
+      .split p { color: var(--muted); line-height: 1.8; max-width: 390px; font-size: 14px; }
+      .footer-grid { border-top: 2px solid #111; margin-top: 36px; padding: 42px 0 70px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; font-size: 12px; }
+      .footer-grid h3 { margin: 0 0 12px; font-size: 16px; color: #111; }
+      .footer-grid p { margin: 4px 0; color: var(--muted); }
+      footer { border-top: 1px solid var(--line); padding: 42px 18px; text-align: center; color: var(--muted); font-size: 12px; text-transform: uppercase; }
+      footer img { width: 52px; height: 52px; object-fit: contain; mix-blend-mode: multiply; display: block; margin: 0 auto 12px; }
+      @media (max-width: 900px) {
+        .page { margin: 0; }
+        .nav, .hero, .wrap { padding-left: 22px; padding-right: 22px; }
+        header { height: 126px; }
+        .nav { grid-template-columns: 1fr; height: 126px; padding-top: 0; }
+        .nav::before { left: 0; right: 0; height: 84px; clip-path: none; border-radius: 0 0 22px 22px; }
+        .nav-left { display: none; }
+        .nav-right { height: 84px; justify-content: flex-end; gap: 12px; }
+        .brand { position: absolute; left: 22px; top: 0; width: 130px; height: 126px; }
+        .brand img { width: 48px; height: 48px; }
+        .brand strong { font-size: 18px; letter-spacing: 4px; }
+        .brand span { font-size: 9px; letter-spacing: 2px; }
+        .hero { margin-top: -126px; padding-top: 170px; padding-bottom: 330px; min-height: 900px; }
+        .hero-top, .feature { grid-template-columns: 1fr; }
+        .hero-copy { padding-top: 0; }
+        .stack-scene { min-height: 320px; }
+        .back-panel { width: 150px; height: 250px; }
+        .pedestal { width: 280px; }
+        .shirt-stack { right: 2%; width: 300px; transform: scale(.78); transform-origin: bottom right; }
+        .benefits { left: 22px; right: 22px; grid-template-columns: 1fr; bottom: 24px; }
+        .benefit { min-height: auto; border-right: 0; border-bottom: 1px solid #eee; }
+        .benefit:last-child { border-bottom: 0; }
+        .wordmark { gap: 14px; }
+        .wordmark-badge { width: 64px; height: 64px; }
+        .wordmark-badge img { width: 48px; height: 48px; }
+        .shirt-pair { justify-content: center; min-height: 230px; }
+        .shirt { width: 142px; height: 214px; }
+        .shirt .body { width: 96px; height: 156px; }
+        .shirt .left, .shirt .right { width: 44px; height: 104px; }
+        .category-nav { gap: 18px; flex-wrap: wrap; }
+        .brand span { display: none; }
+        .intro, .split, .footer-grid { grid-template-columns: 1fr; }
+        .vertical { display: none; }
+        .filters, .grid { grid-template-columns: repeat(2, 1fr); }
+      }
+      @media (max-width: 540px) {
+        .grid, .filters { grid-template-columns: 1fr; }
+        .hero { min-height: 66vh; }
+        .checkout-grid { grid-template-columns: 1fr; }
+        .detail-grid, .size-advisor-form { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header>
+        <div class="nav">
+          <nav class="nav-left">
+            <a href="#">Trang chủ</a>
+            <a href="#shop">Sản phẩm</a>
+            <a href="#detail">Bộ sưu tập</a>
+            <a href="#custom">Về chúng tôi</a>
+            <a href="#footer">Liên hệ</a>
+          </nav>
+          <a class="brand" href="#">
+            <img src="/public/umbrella-logo.png" alt="BLANWHI umbrella logo" />
+            <strong>BLANWHI</strong>
+            <span>· T-Shirt ·</span>
+          </a>
+          <div class="nav-right">
+            <span class="icon">⌕</span>
+            <span class="icon">♙</span>
+            <button class="integration-link" id="integrationLink">POS</button>
+            <button class="orders-link" id="ordersLink">Đơn hàng</button>
+            <button class="cart">♧</button>
+          </div>
+        </div>
+      </header>
+
+      <section class="hero">
+        <div class="hero-top">
+          <div class="hero-copy">
+            <div class="overline">Simple is forever</div>
+            <div class="rule"></div>
+            <h1>Đơn giản.<br />Chất riêng.</h1>
+            <p>BLANWHI là shop áo thun basic & minimal, chất liệu chọn lọc, form chuẩn, dành cho mọi phong cách.</p>
+            <div class="hero-actions">
+              <a href="#shop">Mua ngay</a>
+              <a href="#detail">Khám phá bộ sưu tập</a>
+            </div>
+          </div>
+          <div class="stack-scene" aria-label="Chồng áo thun BLANWHI">
+            <div class="back-panel"></div>
+            <div class="pedestal"></div>
+            <div class="shirt-stack">
+              <span class="folded-shirt"></span>
+              <span class="folded-shirt"></span>
+              <span class="folded-shirt"></span>
+              <span class="folded-shirt"></span>
+              <span class="folded-shirt"></span>
+            </div>
+          </div>
+        </div>
+        <div class="benefits">
+          <div class="benefit"><div class="benefit-icon">♧</div><div><h3>Chất liệu cao cấp</h3><p>Cotton 100% mềm mại, thoáng mát.</p></div></div>
+          <div class="benefit"><div class="benefit-icon">♕</div><div><h3>Form chuẩn</h3><p>Dáng unisex, dễ mặc, tôn dáng.</p></div></div>
+          <div class="benefit"><div class="benefit-icon">◌</div><div><h3>Màu sắc đa dạng</h3><p>Bảng màu basic, dễ phối đồ.</p></div></div>
+          <div class="benefit"><div class="benefit-icon">□</div><div><h3>Đổi trả dễ dàng</h3><p>Hỗ trợ đổi trả trong 7 ngày.</p></div></div>
+        </div>
+      </section>
+
+      <main class="wrap">
+      <section class="grid" id="shop"><div id="productGrid" style="display:contents"></div></section>
+      <section class="feature">
+        <div><h2>Package<br />with a degree in simplicity</h2><p>BLANWHI chọn ít sản phẩm, nhiều khoảng trắng và thao tác mua cực nhanh. Minimal không phải là thiếu, mà là bỏ bớt thứ không cần.</p><a href="#shop">Discover</a></div>
+        <div class="feature-board">
+          <div class="product-visual"><div class="mock tee" style="--garment:#fff;--garment-border:1px solid #d8d8d8;--neck-border:1px solid #d8d8d8"><span class="left"></span><span class="right"></span><span class="body"></span></div></div>
+          <div class="product-visual"><div class="mock hoodie" style="--garment:#050505;--garment-border:0;--neck-border:1px solid rgba(255,255,255,.18)"><span class="hood"></span><span class="left"></span><span class="right"></span><span class="body"></span><span class="zip"></span></div></div>
+          <div class="product-visual"><div class="mock pants" style="--garment:#777;--garment-border:0;--neck-border:0"><span class="body"></span><span class="leg-a"></span><span class="leg-b"></span></div></div>
+        </div>
+      </section>
+      <div class="ticker">BLANWHI / WHITE SPACE / BLACK TYPE / 20 PRODUCTS / FAST CHECKOUT / QUIET LAYERS</div>
+      <section class="split" id="detail">
+        <img src="https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&w=1200&q=85" alt="Hoodie product focus" />
+        <div><h2 class="serif">Hoodies</h2><p>Sau khi thấy tổng hợp 20 sản phẩm, khách có thể đi sâu vào từng nhóm: hoodie, tee, pants, jacket và combo phối sẵn.</p></div>
+      </section>
+      <section class="split">
+        <div><h2 class="serif">Custom</h2><p>Custom đồng phục giữ nền trắng, chữ đen, mockup rõ ràng và báo giá realtime để không làm khách bị rối.</p></div>
+        <img src="https://images.unsplash.com/photo-1511556820780-d912e42b4980?auto=format&fit=crop&w=1200&q=85" alt="Custom product focus" />
+      </section>
+        <section class="footer-grid">
+          <div><h3>Company</h3><p>About Us</p><p>Join Us</p><p>Store Locator</p></div>
+          <div><h3>Customer Care</h3><p>FAQ</p><p>Return Policy</p><p>Promotion Terms</p></div>
+          <div><h3>Let’s stay<br />in touch.</h3><p>E-mail address</p><p>By clicking subscribe, you agree to BLANWHI terms.</p></div>
+        </section>
+      </main>
+
+      <footer><img src="/public/umbrella-logo.png" alt="BLANWHI umbrella logo" />BLANWHI · Minimal commerce prototype</footer>
+    </div>
+    <div class="cart-overlay" id="cartOverlay"></div>
+    <aside class="cart-drawer" id="cartDrawer" aria-label="Giỏ hàng">
+      <div class="cart-head"><h2>Giỏ hàng</h2><button class="icon-button" id="closeCart">×</button></div>
+      <div class="cart-items" id="cartItems"></div>
+      <div class="cart-foot">
+        <div class="voucher-note" id="voucherNote">Voucher sẽ tự gợi ý theo tổng đơn và số lượng sản phẩm.</div>
+        <div class="line"><span>Tạm tính</span><strong id="subtotalText">0đ</strong></div>
+        <div class="line"><span>Giảm giá</span><strong id="discountText">-0đ</strong></div>
+        <div class="line"><span>Ship</span><strong id="shippingText">0đ</strong></div>
+        <div class="line" style="font-size:18px"><span>Tổng</span><strong id="totalText">0đ</strong></div>
+        <button class="primary" id="checkoutBtn">Thanh toán</button>
+        <button class="secondary" id="continueBtn">Tiếp tục mua</button>
+      </div>
+    </aside>
+    <aside class="orders-drawer" id="ordersDrawer" aria-label="Đơn hàng của tôi">
+      <div class="cart-head"><h2>Đơn hàng của tôi</h2><button class="icon-button" id="closeOrders">×</button></div>
+      <div class="order-list" id="orderList"></div>
+    </aside>
+    <div class="checkout-modal" id="checkoutModal" aria-label="Thanh toán">
+      <div class="checkout-card">
+        <div class="checkout-top"><h2 style="margin:0">Thanh toán một trang</h2><button class="icon-button" id="closeCheckout">×</button></div>
+        <div class="checkout-grid">
+          <form class="checkout-form" id="checkoutForm">
+            <input required placeholder="Họ tên" />
+            <input required placeholder="Số điện thoại" />
+            <input required placeholder="Địa chỉ giao hàng" />
+            <textarea placeholder="Ghi chú giao hàng"></textarea>
+            <div class="pay-grid">
+              <label><input type="radio" name="pay" checked /> COD</label>
+              <label><input type="radio" name="pay" /> Thẻ</label>
+              <label><input type="radio" name="pay" /> Chuyển khoản</label>
+              <label><input type="radio" name="pay" /> Ví điện tử</label>
+            </div>
+            <button class="primary" type="submit">Đặt hàng</button>
+          </form>
+          <div class="order-box" id="checkoutSummary"></div>
+        </div>
+      </div>
+    </div>
+    <div class="detail-modal" id="detailModal" aria-label="Chi tiết sản phẩm">
+      <div class="detail-card">
+        <div class="checkout-top"><h2 style="margin:0">Chi tiết sản phẩm</h2><button class="icon-button" id="closeDetail">×</button></div>
+        <div id="detailContent"></div>
+      </div>
+    </div>
+    <div class="variant-modal" id="variantModal" aria-label="Chọn sản phẩm">
+      <div class="variant-card">
+        <div class="checkout-top"><h2 style="margin:0">Chọn sản phẩm</h2><button class="icon-button" id="closeVariant">×</button></div>
+        <div id="variantContent"></div>
+      </div>
+    </div>
+    <div class="integration-modal" id="integrationModal" aria-label="Tích hợp POS Pancake và MISA eShop">
+      <div class="checkout-card" style="width:min(720px,100%)">
+        <div class="checkout-top"><h2 style="margin:0">Tích hợp POS Pancake / MISA eShop</h2><button class="icon-button" id="closeIntegration">×</button></div>
+        <form class="integration-form" id="integrationForm">
+          <p class="muted" style="margin:0">Điền endpoint/proxy nhận đơn. Khi khách đặt hàng xong, website sẽ tự gửi đơn sang hệ thống được bật.</p>
+          <fieldset>
+            <legend>Pancake POS</legend>
+            <label><input type="checkbox" id="pancakeEnabled" /> Bật gửi đơn sang Pancake</label>
+            <input id="pancakeEndpoint" placeholder="Endpoint/proxy Pancake, ví dụ: https://your-server.com/api/pancake/orders" />
+            <input id="pancakeToken" placeholder="API token / Bearer token" />
+          </fieldset>
+          <fieldset>
+            <legend>MISA eShop</legend>
+            <label><input type="checkbox" id="misaEnabled" /> Bật gửi đơn sang MISA eShop</label>
+            <input id="misaEndpoint" placeholder="Endpoint/proxy MISA, ví dụ: https://your-server.com/api/misa/orders" />
+            <input id="misaToken" placeholder="API token / Bearer token" />
+          </fieldset>
+          <button class="primary" type="submit">Lưu cấu hình</button>
+        </form>
+      </div>
+    </div>
+    <script>
+      const products = [
+        ["Essential Heavy Tee","420.000đ","Boxy sạch, dễ mặc","tee",["#111","#f4f4f2","#8c8c88"]],
+        ["Boxy Street Tee","460.000đ","Boxy sạch, dễ mặc","tee",["#303030","#c9c5bd","#59614c"]],
+        ["Soft Rib Tank","340.000đ","Boxy sạch, dễ mặc","tee",["#f4f4f2","#8c8c88","#111"]],
+        ["Minimal Logo Tee","390.000đ","Boxy sạch, dễ mặc","tee",["#dedbd4","#111","#1f2937"]],
+        ["Drop Shoulder Hoodie","890.000đ","Rộng nhẹ, vai rũ vừa","hoodie",["#8c8c88","#111","#c9c5bd"]],
+        ["Thermal Zip Hoodie","960.000đ","Rộng nhẹ, vai rũ vừa","hoodie",["#303030","#59614c","#dedbd4"]],
+        ["Wide Leg Trouser","740.000đ","Ống thoải mái, cạp vừa","pants",["#111","#8c8c88","#c9c5bd"]],
+        ["Relaxed Cargo Pants","790.000đ","Ống thoải mái, cạp vừa","pants",["#59614c","#303030","#111"]],
+        ["Clean Tapered Pants","690.000đ","Ống thoải mái, cạp vừa","pants",["#1f2937","#111","#8c8c88"]],
+        ["Utility Shorts","520.000đ","Boxy sạch, dễ mặc","pants",["#111","#c9c5bd","#59614c"]],
+        ["Overshirt Slate","780.000đ","Boxy sạch, dễ mặc","jacket",["#8c8c88","#303030","#f4f4f2"]],
+        ["Crisp Oxford Shirt","650.000đ","Boxy sạch, dễ mặc","tee",["#f4f4f2","#1f2937","#dedbd4"]],
+        ["Minimal Coach Jacket","1.150.000đ","Boxy sạch, dễ mặc","jacket",["#111","#303030","#c9c5bd"]],
+        ["Cropped Work Jacket","1.280.000đ","Boxy sạch, dễ mặc","jacket",["#59614c","#111","#8c8c88"]],
+        ["Long Sleeve Layer Tee","490.000đ","Boxy sạch, dễ mặc","tee",["#f4f4f2","#8c8c88","#303030"]],
+        ["Everyday Sweatpants","720.000đ","Ống thoải mái, cạp vừa","pants",["#8c8c88","#111","#dedbd4"]],
+        ["Half Zip Sweat","880.000đ","Rộng nhẹ, vai rũ vừa","hoodie",["#c9c5bd","#303030","#1f2937"]],
+        ["Open Collar Shirt","620.000đ","Boxy sạch, dễ mặc","tee",["#111","#f4f4f2","#59614c"]],
+        ["Studio Nylon Shorts","480.000đ","Boxy sạch, dễ mặc","pants",["#303030","#c9c5bd","#1f2937"]],
+        ["Monochrome Layer Jacket","1.390.000đ","Boxy sạch, dễ mặc","jacket",["#111","#dedbd4","#8c8c88"]]
+      ];
+
+      const mockMarkup = (kind, color) => {
+        const border = color === "#f4f4f2" || color === "#dedbd4" ? "1px solid #d8d8d8" : "0";
+        const neck = color === "#111" || color === "#303030" || color === "#050505" ? "1px solid rgba(255,255,255,.22)" : "1px solid #d8d8d8";
+        if (kind === "pants") return `<div class="mock pants" style="--garment:${color};--garment-border:${border};--neck-border:${neck}"><span class="body"></span><span class="leg-a"></span><span class="leg-b"></span></div>`;
+        if (kind === "hoodie") return `<div class="mock hoodie" style="--garment:${color};--garment-border:${border};--neck-border:${neck}"><span class="hood"></span><span class="left"></span><span class="right"></span><span class="body"></span><span class="zip"></span></div>`;
+        if (kind === "jacket") return `<div class="mock jacket" style="--garment:${color};--garment-border:${border};--neck-border:${neck}"><span class="left"></span><span class="right"></span><span class="body"></span><span class="zip"></span></div>`;
+        return `<div class="mock tee" style="--garment:${color};--garment-border:${border};--neck-border:${neck}"><span class="left"></span><span class="right"></span><span class="body"></span></div>`;
+      };
+
+      const parseMoney = (value) => Number(String(value).replace(/\D/g, ""));
+      const formatMoney = (value) => new Intl.NumberFormat("vi-VN").format(value) + "đ";
+      const productData = products.map(([name, price, fit, kind, swatches], index) => ({
+        id: `p${index + 1}`,
+        name,
+        price,
+        amount: parseMoney(price),
+        fit,
+        kind,
+        swatches,
+        color: swatches[0],
+        colorIndex: 0,
+        size: "M"
+      }));
+      const cart = [];
+      const comboText = (kind) => {
+        if (kind === "tee") return "Mua kèm quần hoặc 2 áo cùng tone: từ 2 sản phẩm giảm 5%, từ 3 sản phẩm giảm 10%.";
+        if (kind === "hoodie") return "Combo Hoodie + Tee: đủ 2 sản phẩm giảm 5%, đủ 3 sản phẩm giảm 10%.";
+        if (kind === "pants") return "Combo Áo thun + Quần: đủ 2 sản phẩm giảm 5%, đủ 5 sản phẩm mở combo đồng giá.";
+        return "Combo Jacket + Tee: từ 1 triệu giảm 10%, từ 2 triệu freeship + giảm 15%.";
+      };
+      const styleText = (color, kind) => {
+        const dark = ["#111", "#303030", "#050505", "#1f2937"].includes(color);
+        if (kind === "pants") return dark ? "Phối với áo trắng/ash để outfit sạch và sáng hơn." : "Phối với áo đen hoặc charcoal để tổng thể gọn và cao hơn.";
+        if (kind === "hoodie") return dark ? "Đi cùng quần xám tro hoặc stone, giày trắng là set an toàn." : "Đi cùng quần đen, túi đen, giữ tổng thể lạnh và tối giản.";
+        return dark ? "Áo tối màu hợp quần stone/xám, làm da sáng và outfit có chiều sâu." : "Áo sáng màu hợp quần đen/charcoal, nhìn clean và cao cấp.";
+      };
+      const colorLabel = (color) => ({
+        "#111": "Đen",
+        "#050505": "Đen",
+        "#303030": "Than",
+        "#f4f4f2": "Trắng",
+        "#dedbd4": "Ash",
+        "#8c8c88": "Xám",
+        "#c9c5bd": "Stone",
+        "#59614c": "Olive",
+        "#1f2937": "Navy"
+      }[color] || "Tone");
+
+      const visualMarkup = (product) => `
+        <button class="product-visual" data-detail="${product.id}" data-swipe="${product.id}" aria-label="Xem chi tiết sản phẩm ${product.name}">
+          <span class="color-arrow prev" data-color-prev="${product.id}">‹</span>
+          <span class="color-arrow next" data-color-next="${product.id}">›</span>
+          <span class="color-name">${colorLabel(product.color)}</span>
+          ${mockMarkup(product.kind, product.color)}
+        </button>
+      `;
+
+      document.getElementById("productGrid").innerHTML = productData.map((product) => `
+        <article class="card">
+          ${visualMarkup(product)}
+          <div class="meta"><div><b>${product.name}</b><div class="muted">${product.fit}</div></div><span>${product.price}</span></div>
+          <div class="swatches" data-swatches="${product.id}">${product.swatches.map((color, index) => `<span class="${index === product.colorIndex ? "active" : ""}" style="background:${color}"></span>`).join("")}</div>
+          <div class="sizes" data-size-group="${product.id}">
+            ${["S", "M", "L", "XL"].map(size => `<button class="${size === "M" ? "active" : ""}" data-size="${product.id}:${size}">${size}</button>`).join("")}
+          </div>
+          <div class="card-actions">
+            <button class="quick" data-buy="${product.id}">Mua ngay</button>
+            <button class="quick" data-add="${product.id}">Thêm giỏ</button>
+          </div>
+        </article>
+      `).join("");
+
+      const cartButton = document.querySelector(".cart");
+      const cartOverlay = document.getElementById("cartOverlay");
+      const cartDrawer = document.getElementById("cartDrawer");
+      const cartItems = document.getElementById("cartItems");
+      const checkoutModal = document.getElementById("checkoutModal");
+      const detailModal = document.getElementById("detailModal");
+      const detailContent = document.getElementById("detailContent");
+      const variantModal = document.getElementById("variantModal");
+      const variantContent = document.getElementById("variantContent");
+      const integrationModal = document.getElementById("integrationModal");
+      const ordersDrawer = document.getElementById("ordersDrawer");
+      const orderList = document.getElementById("orderList");
+      const voucherNote = document.getElementById("voucherNote");
+      const subtotalText = document.getElementById("subtotalText");
+      const discountText = document.getElementById("discountText");
+      const shippingText = document.getElementById("shippingText");
+      const totalText = document.getElementById("totalText");
+      const checkoutSummary = document.getElementById("checkoutSummary");
+
+      const cartCount = () => cart.reduce((sum, item) => sum + item.qty, 0);
+      const subtotal = () => cart.reduce((sum, item) => sum + item.amount * item.qty, 0);
+      let variantState = { productId: null, mode: "cart", colorIndex: 0, size: "M", qty: 1 };
+      const loadOrders = () => JSON.parse(localStorage.getItem("blanwhiOrders") || "[]");
+      const saveOrders = (orders) => localStorage.setItem("blanwhiOrders", JSON.stringify(orders));
+      const defaultIntegrationConfig = {
+        pancakeEnabled: false,
+        pancakeEndpoint: "",
+        pancakeToken: "",
+        misaEnabled: false,
+        misaEndpoint: "",
+        misaToken: ""
+      };
+      const loadIntegrationConfig = () => ({ ...defaultIntegrationConfig, ...JSON.parse(localStorage.getItem("blanwhiIntegrationConfig") || "{}") });
+      const saveIntegrationConfig = (config) => localStorage.setItem("blanwhiIntegrationConfig", JSON.stringify(config));
+      const bestVoucher = () => {
+        const sub = subtotal();
+        if (sub >= 2000000) return { title: "Freeship + giảm 15%", rate: .15, freeship: true };
+        if (sub >= 1000000) return { title: "Giảm 10%", rate: .1, freeship: false };
+        if (sub >= 500000) return { title: "Giảm 5%", rate: .05, freeship: false };
+        return { title: "Chưa đạt mốc voucher", rate: 0, freeship: false };
+      };
+      const totals = () => {
+        const sub = subtotal();
+        const voucher = bestVoucher();
+        const discount = Math.round(sub * voucher.rate);
+        const shipping = sub === 0 || voucher.freeship ? 0 : 30000;
+        return { sub, voucher, discount, shipping, total: Math.max(sub - discount + shipping, 0) };
+      };
+
+      function openCart() {
+        cartOverlay.classList.add("open");
+        cartDrawer.classList.add("open");
+      }
+
+      function closeCart() {
+        cartOverlay.classList.remove("open");
+        cartDrawer.classList.remove("open");
+      }
+
+      function openOrders() {
+        cartOverlay.classList.add("open");
+        ordersDrawer.classList.add("open");
+        renderOrders();
+      }
+
+      function closeOrders() {
+        cartOverlay.classList.remove("open");
+        ordersDrawer.classList.remove("open");
+      }
+
+      function openIntegration() {
+        const config = loadIntegrationConfig();
+        document.getElementById("pancakeEnabled").checked = config.pancakeEnabled;
+        document.getElementById("pancakeEndpoint").value = config.pancakeEndpoint;
+        document.getElementById("pancakeToken").value = config.pancakeToken;
+        document.getElementById("misaEnabled").checked = config.misaEnabled;
+        document.getElementById("misaEndpoint").value = config.misaEndpoint;
+        document.getElementById("misaToken").value = config.misaToken;
+        integrationModal.classList.add("open");
+      }
+
+      function closeIntegration() {
+        integrationModal.classList.remove("open");
+      }
+
+      function productDescription(product) {
+        if (product.kind === "hoodie") return `${product.name} dùng form rộng nhẹ, vai rũ vừa, hợp mặc layer cùng tee trơn. Chất vải dày vừa, giữ phom sạch nhưng vẫn thoải mái khi đi phố.`;
+        if (product.kind === "pants") return `${product.name} có phom ống thoải mái, dễ phối với áo trắng, đen hoặc hoodie. Cạp vừa, phù hợp outfit tối giản hằng ngày.`;
+        if (product.kind === "jacket") return `${product.name} là lớp ngoài tối giản, bề mặt sạch, hợp phối cùng tee trơn và quần tone lạnh. Dáng gọn, không rườm rà.`;
+        return `${product.name} là áo thun trơn tối giản, form boxy sạch, dễ mặc riêng hoặc layer. Phù hợp khách muốn một item basic cao cấp, ít chi tiết.`;
+      }
+
+      function toneAdvice(product) {
+        const dark = ["#111", "#303030", "#050505", "#1f2937"].includes(product.color);
+        return dark
+          ? "Tone đen/than làm tổng thể gọn và sắc. Nếu muốn sáng da hơn, phối thêm quần stone, xám tro hoặc phụ kiện trắng để kéo sáng phần mặt."
+          : "Tone trắng/ash/stone giúp da nhìn sáng và sạch hơn. Nếu da hơi ngăm, đi cùng quần đen hoặc charcoal để tạo tương phản đẹp.";
+      }
+
+      function comboProducts(product, comboType) {
+        const tee = productData.find((item) => item.kind === "tee" && item.id !== product.id);
+        const pants = productData.find((item) => item.kind === "pants" && item.id !== product.id);
+        const hoodie = productData.find((item) => item.kind === "hoodie" && item.id !== product.id);
+        const jacket = productData.find((item) => item.kind === "jacket" && item.id !== product.id);
+        if (comboType === "daily") return [product, product.kind === "pants" ? tee : pants].filter(Boolean);
+        if (comboType === "layer") return [product.kind === "hoodie" ? product : hoodie, tee].filter(Boolean);
+        if (comboType === "outer") return [product.kind === "jacket" ? product : jacket, tee].filter(Boolean);
+        return [product, ...productData.filter((item) => item.kind === product.kind && item.id !== product.id).slice(0, 1)];
+      }
+
+      function toneProducts(tone) {
+        const palette = {
+          "bright": ["#f4f4f2", "#dedbd4", "#c9c5bd"],
+          "contrast": ["#111", "#303030", "#1f2937"],
+          "soft": ["#8c8c88", "#c9c5bd", "#59614c"]
+        }[tone] || [];
+        return productData.filter((item) => item.swatches.some((color) => palette.includes(color))).slice(0, 4).map((item) => {
+          const color = item.swatches.find((swatch) => palette.includes(swatch)) || item.color;
+          return { ...item, color };
+        });
+      }
+
+      function suggestionCards(items) {
+        return `<div class="suggestion-grid">${items.map((item) => `
+          <article class="suggestion-card">
+            <div class="product-visual">${mockMarkup(item.kind, item.color)}</div>
+            <h4>${item.name}</h4>
+            <p>${item.price} · ${colorLabel(item.color)}</p>
+            <div class="mini-actions">
+              <button data-suggest-add="${item.id}:${item.color}">Thêm giỏ</button>
+              <button data-suggest-buy="${item.id}:${item.color}">Mua</button>
+            </div>
+          </article>
+        `).join("")}</div>`;
+      }
+
+      function openDetail(id) {
+        const product = productData.find((item) => item.id === id);
+        if (!product) return;
+        detailContent.innerHTML = `
+          <div class="detail-grid" data-detail-product="${product.id}">
+            <div>
+              <div class="product-visual">${mockMarkup(product.kind, product.color)}</div>
+              <div class="sizes" data-size-group="${product.id}" style="margin-top:14px">
+                ${["S", "M", "L", "XL"].map(size => `<button class="${size === product.size ? "active" : ""}" data-size="${product.id}:${size}">${size}</button>`).join("")}
+              </div>
+              <button class="quick" data-buy="${product.id}">Mua ngay</button>
+            </div>
+            <div class="detail-info">
+              <h2>${product.name}</h2>
+              <strong>${product.price}</strong>
+              <p class="muted">${productDescription(product)}</p>
+              <div class="detail-section">
+                <button data-detail-toggle="voucher">Hiển thị voucher và gợi ý combo <span>+</span></button>
+                <div class="detail-panel" id="detail-voucher">
+                  <p><b>Voucher tự động theo tiền đơn:</b> từ 500k giảm 5%, từ 1 triệu giảm 10%, từ 2 triệu freeship + giảm 15%.</p>
+                  <p><b>Gợi ý combo:</b> ${comboText(product.kind)}</p>
+                  <div class="suggestion-actions">
+                    <button class="suggestion-chip" data-combo-suggest="${product.id}:daily">Áo + quần</button>
+                    <button class="suggestion-chip" data-combo-suggest="${product.id}:layer">Hoodie + tee</button>
+                    <button class="suggestion-chip" data-combo-suggest="${product.id}:outer">Jacket + tee</button>
+                    <button class="suggestion-chip" data-combo-suggest="${product.id}:same">2 sản phẩm cùng tone</button>
+                  </div>
+                  <div id="comboSuggestionResult"></div>
+                </div>
+              </div>
+              <div class="detail-section">
+                <button data-detail-toggle="tone">Gợi ý tone màu sáng da <span>+</span></button>
+                <div class="detail-panel" id="detail-tone">
+                  <p>${toneAdvice(product)}</p>
+                  <div class="suggestion-actions">
+                    <button class="suggestion-chip" data-tone-suggest="bright">Tone trắng / ash / stone</button>
+                    <button class="suggestion-chip" data-tone-suggest="contrast">Tone đen / than / navy</button>
+                    <button class="suggestion-chip" data-tone-suggest="soft">Tone xám / stone / olive</button>
+                  </div>
+                  <div id="toneSuggestionResult"></div>
+                </div>
+              </div>
+              <div class="detail-section">
+                <button data-detail-toggle="mix">Gợi ý phối màu quần áo <span>+</span></button>
+                <div class="detail-panel" id="detail-mix"><p>${styleText(product.color, product.kind)}</p><p>Set an toàn: áo trắng + quần đen, áo đen + quần xám/stone, hoodie tối + tee trắng bên trong.</p></div>
+              </div>
+              <div class="detail-section">
+                <button data-detail-toggle="size">Tư vấn chọn size trực tuyến <span>+</span></button>
+                <div class="detail-panel" id="detail-size">
+                  <div class="size-advisor-form">
+                    <input id="advisorHeight" type="number" placeholder="Chiều cao (cm)" />
+                    <input id="advisorWeight" type="number" placeholder="Cân nặng (kg)" />
+                  </div>
+                  <button class="secondary" id="runSizeAdvisor">Tư vấn size</button>
+                  <div class="size-result" id="sizeAdvisorResult">Nhập chiều cao và cân nặng để shop tư vấn size tự nhiên hơn.</div>
+                  <button class="secondary" id="showAdviceVideo">Tư vấn bằng video</button>
+                  <div class="video-box" id="adviceVideo">
+                    <div>
+                      <strong>Video tư vấn size BLANWHI</strong>
+                      <p>Demo video: so vai, chiều dài áo và độ rộng form theo size S/M/L/XL.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+        detailModal.classList.add("open");
+      }
+
+      function renderVariantModal() {
+        const product = productData.find((item) => item.id === variantState.productId);
+        if (!product) return;
+        const color = product.swatches[variantState.colorIndex];
+        variantContent.innerHTML = `
+          <div class="detail-grid" style="grid-template-columns:.8fr 1.2fr">
+            <div class="product-visual">${mockMarkup(product.kind, color)}</div>
+            <div class="detail-info">
+              <h2>${product.name}</h2>
+              <strong>${product.price}</strong>
+              <div>
+                <p class="muted">Màu sắc</p>
+                <div class="swatches" data-variant-colors>
+                  ${product.swatches.map((swatch, index) => `<span class="${index === variantState.colorIndex ? "active" : ""}" data-variant-color="${index}" style="background:${swatch}"></span>`).join("")}
+                </div>
+              </div>
+              <div>
+                <p class="muted">Size</p>
+                <div class="sizes" data-variant-sizes>
+                  ${["S", "M", "L", "XL"].map(size => `<button class="${size === variantState.size ? "active" : ""}" data-variant-size="${size}">${size}</button>`).join("")}
+                </div>
+              </div>
+              <div>
+                <p class="muted">Số lượng</p>
+                <div class="quantity-picker"><button data-variant-qty="-1">−</button><span>${variantState.qty}</span><button data-variant-qty="1">+</button></div>
+              </div>
+              <div class="variant-actions">
+                <button class="secondary" id="variantCancel">Huỷ</button>
+                <button class="primary" id="variantConfirm">${variantState.mode === "buy" ? "Tiếp tục thanh toán" : "Thêm vào giỏ hàng"}</button>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      function openVariant(id, mode) {
+        const product = productData.find((item) => item.id === id);
+        if (!product) return;
+        variantState = { productId: id, mode, colorIndex: product.colorIndex, size: product.size, qty: 1 };
+        renderVariantModal();
+        variantModal.classList.add("open");
+      }
+
+      function closeVariant() {
+        variantModal.classList.remove("open");
+      }
+
+      function confirmVariant() {
+        const product = productData.find((item) => item.id === variantState.productId);
+        if (!product) return;
+        const options = { color: product.swatches[variantState.colorIndex], size: variantState.size, qty: variantState.qty };
+        product.colorIndex = variantState.colorIndex;
+        product.color = options.color;
+        product.size = options.size;
+        closeVariant();
+        if (variantState.mode === "buy") buyNow(product.id, options);
+        else {
+          addToCart(product.id, options);
+          openCart();
+        }
+      }
+
+      function closeDetail() {
+        detailModal.classList.remove("open");
+      }
+
+      function adviseSize(height, weight) {
+        let base = "M";
+        if (height >= 180 || weight >= 78) base = "XL";
+        else if (height >= 170 || weight >= 64) base = "L";
+        else if (height < 162 && weight < 55) base = "S";
+        const relaxed = base === "S" ? "M" : base === "M" ? "L" : "XL";
+        return `Với chiều cao ${height}cm và cân nặng ${weight}kg, size ${base} sẽ lên form gọn và sạch. Nếu cậu thích mặc rộng nhẹ thì ${relaxed} sẽ đẹp hơn nha. Mặc ${base} thì clean, mặc ${relaxed} thì thoải mái và street hơn.`;
+      }
+
+      function renderCart() {
+        cartButton.textContent = `♧ ${cartCount()}`;
+        if (!cart.length) {
+          cartItems.innerHTML = `<div class="empty">Giỏ hàng đang trống.</div>`;
+        } else {
+          cartItems.innerHTML = cart.map((item) => `
+            <div class="cart-row">
+              <div class="product-visual">${mockMarkup(item.kind, item.color)}</div>
+              <div><h3>${item.name}</h3><p>${item.price} · ${item.size}</p></div>
+              <div class="qty"><button data-dec="${item.cartId}">−</button><span>${item.qty}</span><button data-inc="${item.cartId}">+</button></div>
+            </div>
+          `).join("");
+        }
+        const next = totals();
+        voucherNote.textContent = next.voucher.rate ? `Đã áp dụng: ${next.voucher.title}.` : "Từ 500k hoặc 2 sản phẩm sẽ tự mở voucher giảm giá.";
+        subtotalText.textContent = formatMoney(next.sub);
+        discountText.textContent = "-" + formatMoney(next.discount);
+        shippingText.textContent = formatMoney(next.shipping);
+        totalText.textContent = formatMoney(next.total);
+        renderCheckoutSummary();
+      }
+
+      function renderCheckoutSummary() {
+        const next = totals();
+        checkoutSummary.innerHTML = `
+          <h3 style="margin:0 0 8px">Đơn hàng</h3>
+          ${cart.length ? cart.map((item) => `<div class="line"><span>${item.qty}× ${item.name}</span><strong>${formatMoney(item.amount * item.qty)}</strong></div>`).join("") : `<p class="muted">Chưa có sản phẩm.</p>`}
+          <div class="line"><span>Tạm tính</span><strong>${formatMoney(next.sub)}</strong></div>
+          <div class="line"><span>${next.voucher.title}</span><strong>-${formatMoney(next.discount)}</strong></div>
+          <div class="line"><span>Ship</span><strong>${formatMoney(next.shipping)}</strong></div>
+          <div class="line" style="font-size:18px"><span>Tổng</span><strong>${formatMoney(next.total)}</strong></div>
+        `;
+      }
+
+      function renderOrders() {
+        const orders = loadOrders();
+        if (!orders.length) {
+          orderList.innerHTML = `<div class="empty">Chưa có đơn hàng nào. Khi đặt hàng xong, đơn sẽ hiện ở đây để khách theo dõi.</div>`;
+          return;
+        }
+        orderList.innerHTML = orders.map((order) => `
+          <article class="order-card">
+            <div class="line"><h3>${order.code}</h3><strong>${order.status}</strong></div>
+            <div>
+              <p class="muted">${order.customer.name} · ${order.customer.phone}</p>
+              <p class="muted">${order.customer.address}</p>
+            </div>
+            <div>${order.items.map((item) => `<p class="muted">${item.qty}× ${item.name}</p>`).join("")}</div>
+            <div class="line"><span>Tổng tiền</span><strong>${formatMoney(order.total)}</strong></div>
+            <p class="muted">Đồng bộ: Pancake ${order.sync?.pancake || "chưa bật"} · MISA ${order.sync?.misa || "chưa bật"}</p>
+            <div class="status-track">
+              ${["Đã đặt", "Xác nhận", "Đang giao", "Hoàn tất"].map((step, index) => `<div class="status-step ${index <= order.step ? "active" : ""}">${step}</div>`).join("")}
+            </div>
+            <p class="muted">Cập nhật gần nhất: ${order.updatedAt}</p>
+          </article>
+        `).join("");
+      }
+
+      function addToCart(id, options = {}) {
+        const product = productData.find((item) => item.id === id);
+        if (!product) return;
+        const color = options.color || product.color;
+        const size = options.size || product.size;
+        const qty = options.qty || 1;
+        const cartId = `${id}-${color}-${size}`;
+        const existing = cart.find((item) => item.cartId === cartId);
+        if (existing) existing.qty += qty;
+        else cart.push({ ...product, cartId, color, size, qty });
+        renderCart();
+      }
+
+      function updateProductColor(id, direction) {
+        const product = productData.find((item) => item.id === id);
+        if (!product) return;
+        product.colorIndex = (product.colorIndex + direction + product.swatches.length) % product.swatches.length;
+        product.color = product.swatches[product.colorIndex];
+        const visual = document.querySelector(`[data-swipe="${id}"]`);
+        const card = visual?.closest(".card");
+        if (!visual || !card) return;
+        visual.innerHTML = `
+          <span class="color-arrow prev" data-color-prev="${product.id}">‹</span>
+          <span class="color-arrow next" data-color-next="${product.id}">›</span>
+          <span class="color-name">${colorLabel(product.color)}</span>
+          ${mockMarkup(product.kind, product.color)}
+        `;
+        card.querySelectorAll(`[data-swatches="${id}"] span`).forEach((swatch, index) => swatch.classList.toggle("active", index === product.colorIndex));
+      }
+
+      const buildExternalPayload = (order, provider) => ({
+        provider,
+        source: "BLANWHI website",
+        order_code: order.code,
+        status: order.status,
+        customer: order.customer,
+        items: order.items.map((item) => ({
+          sku: item.name.toLowerCase().replaceAll(" ", "-"),
+          name: item.name,
+          quantity: item.qty,
+          unit_price: item.price
+        })),
+        total_amount: order.total,
+        note: "Đơn tạo từ website BLANWHI preview",
+        created_at: order.updatedAt
+      });
+
+      async function postToIntegration(endpoint, token, payload) {
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { "Authorization": `Bearer ${token}` } : {})
+          },
+          body: JSON.stringify(payload)
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.text();
+      }
+
+      async function syncOrder(order) {
+        const config = loadIntegrationConfig();
+        const result = { pancake: "chưa bật", misa: "chưa bật" };
+        if (config.pancakeEnabled && config.pancakeEndpoint) {
+          try {
+            await postToIntegration(config.pancakeEndpoint, config.pancakeToken, buildExternalPayload(order, "pancake_pos"));
+            result.pancake = "đã gửi";
+          } catch (error) {
+            result.pancake = "lỗi gửi";
+          }
+        }
+        if (config.misaEnabled && config.misaEndpoint) {
+          try {
+            await postToIntegration(config.misaEndpoint, config.misaToken, buildExternalPayload(order, "misa_eshop"));
+            result.misa = "đã gửi";
+          } catch (error) {
+            result.misa = "lỗi gửi";
+          }
+        }
+        return result;
+      }
+
+      function openCheckout() {
+        closeCart();
+        document.querySelector(".checkout-card").classList.add("quick-checkout");
+        checkoutModal.classList.add("open");
+        renderCheckoutSummary();
+      }
+
+      function buyNow(id, options = {}) {
+        addToCart(id, options);
+        openCheckout();
+      }
+
+      document.getElementById("productGrid").addEventListener("click", (event) => {
+        const prevColor = event.target.closest("[data-color-prev]");
+        if (prevColor) {
+          event.preventDefault();
+          event.stopPropagation();
+          updateProductColor(prevColor.dataset.colorPrev, -1);
+          return;
+        }
+        const nextColor = event.target.closest("[data-color-next]");
+        if (nextColor) {
+          event.preventDefault();
+          event.stopPropagation();
+          updateProductColor(nextColor.dataset.colorNext, 1);
+          return;
+        }
+        const sizeButton = event.target.closest("[data-size]");
+        if (sizeButton) {
+          const [id, size] = sizeButton.dataset.size.split(":");
+          const product = productData.find((item) => item.id === id);
+          if (product) product.size = size;
+          document.querySelectorAll(`[data-size-group="${id}"] button`).forEach((button) => button.classList.remove("active"));
+          sizeButton.classList.add("active");
+          return;
+        }
+        const button = event.target.closest("[data-add]");
+        if (button) openVariant(button.dataset.add, "cart");
+        const detailButton = event.target.closest("[data-detail]");
+        if (detailButton) openDetail(detailButton.dataset.detail);
+        const buyButton = event.target.closest("[data-buy]");
+        if (buyButton) openDetail(buyButton.dataset.buy);
+      });
+
+      const swipeStart = {};
+      document.getElementById("productGrid").addEventListener("touchstart", (event) => {
+        const visual = event.target.closest("[data-swipe]");
+        if (!visual) return;
+        swipeStart[visual.dataset.swipe] = event.touches[0].clientX;
+      }, { passive: true });
+      document.getElementById("productGrid").addEventListener("touchend", (event) => {
+        const visual = event.target.closest("[data-swipe]");
+        if (!visual) return;
+        const startX = swipeStart[visual.dataset.swipe];
+        if (startX === undefined) return;
+        const delta = event.changedTouches[0].clientX - startX;
+        if (Math.abs(delta) > 36) {
+          updateProductColor(visual.dataset.swipe, delta < 0 ? 1 : -1);
+        }
+        delete swipeStart[visual.dataset.swipe];
+      }, { passive: true });
+
+      detailContent.addEventListener("click", (event) => {
+        const sizeButton = event.target.closest("[data-size]");
+        if (sizeButton) {
+          const [id, size] = sizeButton.dataset.size.split(":");
+          const product = productData.find((item) => item.id === id);
+          if (product) product.size = size;
+          detailContent.querySelectorAll(`[data-size-group="${id}"] button`).forEach((button) => button.classList.remove("active"));
+          sizeButton.classList.add("active");
+          return;
+        }
+        const toggle = event.target.closest("[data-detail-toggle]");
+        if (toggle) {
+          const panel = document.getElementById(`detail-${toggle.dataset.detailToggle}`);
+          if (panel) panel.classList.toggle("open");
+          return;
+        }
+        if (event.target.closest("#runSizeAdvisor")) {
+          const height = Number(document.getElementById("advisorHeight").value);
+          const weight = Number(document.getElementById("advisorWeight").value);
+          document.getElementById("sizeAdvisorResult").textContent = height && weight ? adviseSize(height, weight) : "Cậu nhập giúp shop chiều cao và cân nặng trước nha.";
+          return;
+        }
+        if (event.target.closest("#showAdviceVideo")) {
+          document.getElementById("adviceVideo").classList.toggle("open");
+          return;
+        }
+        const combo = event.target.closest("[data-combo-suggest]");
+        if (combo) {
+          const [id, type] = combo.dataset.comboSuggest.split(":");
+          const product = productData.find((item) => item.id === id);
+          const result = document.getElementById("comboSuggestionResult");
+          if (product && result) result.innerHTML = suggestionCards(comboProducts(product, type));
+          return;
+        }
+        const tone = event.target.closest("[data-tone-suggest]");
+        if (tone) {
+          const result = document.getElementById("toneSuggestionResult");
+          if (result) result.innerHTML = suggestionCards(toneProducts(tone.dataset.toneSuggest));
+          return;
+        }
+        const suggestAdd = event.target.closest("[data-suggest-add]");
+        if (suggestAdd) {
+          const [id, color] = suggestAdd.dataset.suggestAdd.split(":");
+          addToCart(id, { color, size: "M", qty: 1 });
+          openCart();
+          return;
+        }
+        const suggestBuy = event.target.closest("[data-suggest-buy]");
+        if (suggestBuy) {
+          const [id, color] = suggestBuy.dataset.suggestBuy.split(":");
+          closeDetail();
+          buyNow(id, { color, size: "M", qty: 1 });
+          return;
+        }
+        const buyButton = event.target.closest("[data-buy]");
+        if (buyButton) {
+          closeDetail();
+          openVariant(buyButton.dataset.buy, "buy");
+        }
+      });
+
+      variantContent.addEventListener("click", (event) => {
+        const color = event.target.closest("[data-variant-color]");
+        if (color) {
+          variantState.colorIndex = Number(color.dataset.variantColor);
+          renderVariantModal();
+          return;
+        }
+        const size = event.target.closest("[data-variant-size]");
+        if (size) {
+          variantState.size = size.dataset.variantSize;
+          renderVariantModal();
+          return;
+        }
+        const qty = event.target.closest("[data-variant-qty]");
+        if (qty) {
+          variantState.qty = Math.max(1, variantState.qty + Number(qty.dataset.variantQty));
+          renderVariantModal();
+          return;
+        }
+        if (event.target.closest("#variantCancel")) closeVariant();
+        if (event.target.closest("#variantConfirm")) confirmVariant();
+      });
+
+      cartItems.addEventListener("click", (event) => {
+        const inc = event.target.closest("[data-inc]");
+        const dec = event.target.closest("[data-dec]");
+        if (inc) {
+          const item = cart.find((entry) => entry.cartId === inc.dataset.inc);
+          if (item) item.qty += 1;
+        }
+        if (dec) {
+          const index = cart.findIndex((entry) => entry.cartId === dec.dataset.dec);
+          if (index >= 0) {
+            cart[index].qty -= 1;
+            if (cart[index].qty <= 0) cart.splice(index, 1);
+          }
+        }
+        renderCart();
+      });
+
+      cartButton.addEventListener("click", openCart);
+      document.getElementById("ordersLink").addEventListener("click", openOrders);
+      document.getElementById("integrationLink").addEventListener("click", openIntegration);
+      cartOverlay.addEventListener("click", () => {
+        closeCart();
+        closeOrders();
+      });
+      document.getElementById("closeCart").addEventListener("click", closeCart);
+      document.getElementById("closeOrders").addEventListener("click", closeOrders);
+      document.getElementById("continueBtn").addEventListener("click", closeCart);
+      document.getElementById("checkoutBtn").addEventListener("click", () => {
+        if (!cart.length) return;
+        document.querySelector(".checkout-card").classList.remove("quick-checkout");
+        openCheckout();
+      });
+      document.getElementById("closeCheckout").addEventListener("click", () => checkoutModal.classList.remove("open"));
+      document.getElementById("closeDetail").addEventListener("click", closeDetail);
+      document.getElementById("closeVariant").addEventListener("click", closeVariant);
+      detailModal.addEventListener("click", (event) => {
+        if (event.target === detailModal) closeDetail();
+      });
+      variantModal.addEventListener("click", (event) => {
+        if (event.target === variantModal) closeVariant();
+      });
+      document.getElementById("closeIntegration").addEventListener("click", closeIntegration);
+      checkoutModal.addEventListener("click", (event) => {
+        if (event.target === checkoutModal) checkoutModal.classList.remove("open");
+      });
+      integrationModal.addEventListener("click", (event) => {
+        if (event.target === integrationModal) closeIntegration();
+      });
+      document.getElementById("integrationForm").addEventListener("submit", (event) => {
+        event.preventDefault();
+        saveIntegrationConfig({
+          pancakeEnabled: document.getElementById("pancakeEnabled").checked,
+          pancakeEndpoint: document.getElementById("pancakeEndpoint").value.trim(),
+          pancakeToken: document.getElementById("pancakeToken").value.trim(),
+          misaEnabled: document.getElementById("misaEnabled").checked,
+          misaEndpoint: document.getElementById("misaEndpoint").value.trim(),
+          misaToken: document.getElementById("misaToken").value.trim()
+        });
+        closeIntegration();
+        alert("Đã lưu cấu hình tích hợp POS.");
+      });
+      document.getElementById("checkoutForm").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const fields = [...event.currentTarget.querySelectorAll("input, textarea")];
+        const next = totals();
+        const order = {
+          code: `BLW-${Date.now().toString().slice(-6)}`,
+          status: "Đã đặt",
+          step: 0,
+          customer: {
+            name: fields[0].value,
+            phone: fields[1].value,
+            address: fields[2].value
+          },
+          items: cart.map((item) => ({ name: item.name, qty: item.qty, price: item.amount })),
+          total: next.total,
+          updatedAt: new Date().toLocaleString("vi-VN")
+        };
+        order.sync = await syncOrder(order);
+        saveOrders([order, ...loadOrders()]);
+        cart.length = 0;
+        renderCart();
+        checkoutModal.classList.remove("open");
+        event.currentTarget.reset();
+        openOrders();
+      });
+      renderCart();
+      renderOrders();
+    </script>
+  </body>
+</html>
