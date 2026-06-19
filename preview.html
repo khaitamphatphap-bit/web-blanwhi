@@ -5,28 +5,78 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>BLANWHI Preview</title>
     <style>
-      :root { --paper: #fff; --ink: #070707; --muted: #707070; --line: #e5e5e5; --frame: #d5d5d5; }
+      @import url("https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Noto+Serif:wght@500;600;700&display=swap&subset=vietnamese");
+      :root { --paper: #fff; --ink: #070707; --muted: #707070; --line: #e5e5e5; --frame: #d5d5d5; --font-sans: "Be Vietnam Pro", "Segoe UI", Arial, sans-serif; --font-serif: "Noto Serif", Georgia, "Times New Roman", serif; }
       * { box-sizing: border-box; }
       html { scroll-behavior: smooth; }
-      body { margin: 0; background: #fff; color: var(--ink); font-family: Inter, Arial, sans-serif; }
-      .serif { font-family: Georgia, "Times New Roman", serif; font-weight: 400; letter-spacing: 0; }
+      body { margin: 0; background: #fff; color: var(--ink); font-family: var(--font-sans); font-size: 14px; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; font-feature-settings: "kern"; }
+      body.menu-open { overflow: hidden; }
+      button, input, select, textarea { font: inherit; }
+      .serif { font-family: var(--font-serif); font-weight: 600; letter-spacing: 0; }
       a { color: inherit; text-decoration: none; }
       .page { max-width: 1064px; margin: 70px auto; background: #fff; min-height: 100vh; overflow: hidden; }
       header { position: relative; z-index: 5; height: 178px; background: transparent; }
       .nav { position: relative; height: 178px; display: grid; grid-template-columns: 1fr 226px 1fr; align-items: start; padding: 0 48px; }
       .nav::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 178px; background: linear-gradient(#fff, #fbfbfb); box-shadow: 0 22px 34px rgba(0,0,0,.11); clip-path: polygon(0 0, 42.5% 0, 42.5% 58%, 50% 100%, 57.5% 58%, 100% 58%, 100% 100%, 0 100%); }
-      .nav-left, .nav-right { position: relative; z-index: 1; height: 122px; display: flex; align-items: center; gap: 30px; font-size: 11px; font-weight: 800; text-transform: uppercase; white-space: nowrap; }
+      .nav-left, .nav-right { position: relative; z-index: 1; height: 122px; display: flex; align-items: center; gap: 30px; font-size: 11px; font-weight: 700; text-transform: uppercase; white-space: nowrap; }
+      .menu-toggle { position: absolute; z-index: 3; left: 16px; top: 43px; width: 38px; height: 38px; display: grid; place-items: center; border: 0; background: transparent; color: #111; cursor: pointer; }
+      .menu-toggle svg { width: 23px; height: 23px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; }
+      .menu-toggle:hover { background: #111; color: #fff; }
       .nav-left a:first-child { border-bottom: 2px solid #111; padding-bottom: 8px; }
       .nav-right { justify-content: flex-end; gap: 22px; }
       .icons { display: flex; gap: 16px; align-items: center; color: #111; }
       .icon { font-size: 22px; line-height: 1; }
       .brand { position: relative; z-index: 2; height: 178px; display: grid; place-items: center; align-content: center; gap: 8px; border-radius: 0 0 34px 34px; color: #111; text-transform: uppercase; font-size: 12px; background: #fff; box-shadow: 0 20px 36px rgba(0,0,0,.13); }
       .brand img { width: 82px; height: 82px; object-fit: contain; mix-blend-mode: multiply; }
-      .brand strong { font-size: 34px; font-weight: 500; letter-spacing: 10px; }
-      .brand span { font-size: 12px; font-weight: 800; letter-spacing: 4px; }
-      .cart { border: 0; background: transparent; font-size: 18px; line-height: 1; }
-      .orders-link { border: 0; background: transparent; font-size: 12px; text-transform: uppercase; color: #555; }
-      .integration-link { border: 0; background: transparent; font-size: 12px; text-transform: uppercase; color: #555; }
+      .brand strong { font-size: 33px; font-weight: 600; letter-spacing: 6px; }
+      .brand span { font-size: 12px; font-weight: 700; letter-spacing: 2.5px; }
+      .cart { border: 0; background: transparent; }
+      .search-toggle { border: 0; background: transparent; width: 34px; height: 34px; display: grid; place-items: center; padding: 0; color: #111; cursor: pointer; }
+      .search-toggle svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+      .nav-icon-button { width: 34px; height: 34px; display: grid; place-items: center; padding: 0; color: #111; cursor: pointer; }
+      .nav-icon-button svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.85; stroke-linecap: round; stroke-linejoin: round; }
+      .nav-icon-button:hover, .search-toggle:hover { background: #111; color: #fff; }
+      .cart { position: relative; }
+      .cart-count { position: absolute; right: -4px; top: -4px; min-width: 16px; height: 16px; display: grid; place-items: center; border-radius: 999px; background: #111; color: #fff; font-size: 10px; font-weight: 700; line-height: 1; }
+      .cart:hover .cart-count { background: #fff; color: #111; }
+      .search-panel { position: sticky; top: 0; z-index: 6; display: none; grid-template-columns: 1fr auto; gap: 14px; align-items: center; padding: 18px 58px; border-block: 1px solid var(--line); background: rgba(255,255,255,.96); backdrop-filter: blur(14px); }
+      .search-panel.open { display: grid; }
+      .search-box { min-height: 46px; display: grid; grid-template-columns: 24px 1fr auto; gap: 10px; align-items: center; border: 1px solid #111; background: #fff; padding: 0 14px; }
+      .search-box svg { width: 18px; height: 18px; stroke: #111; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+      .search-box input { width: 100%; border: 0; outline: 0; min-height: 44px; color: #111; background: transparent; font-size: 13px; }
+      .search-box button, .search-chip, .search-close { border: 1px solid var(--line); background: #fff; color: #111; min-height: 32px; padding: 0 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; cursor: pointer; }
+      .search-box button:hover, .search-chip:hover, .search-close:hover { border-color: #111; background: #111; color: #fff; }
+      .search-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: flex-end; }
+      .search-count { color: var(--muted); font-size: 12px; white-space: nowrap; }
+      .empty-search { grid-column: 1 / -1; min-height: 180px; display: grid; place-items: center; border: 1px solid var(--line); color: #555; text-align: center; padding: 32px; }
+      .empty-search strong { display: block; color: #111; margin-bottom: 8px; text-transform: uppercase; }
+      .mobile-menu-overlay { position: fixed; inset: 0; z-index: 70; background: rgba(0,0,0,.4); opacity: 0; pointer-events: none; transition: opacity .3s ease; }
+      .mobile-menu-overlay.open { opacity: 1; pointer-events: auto; }
+      .mobile-menu { position: fixed; left: 0; top: 0; z-index: 71; width: 80vw; height: 100vh; background: #fff; color: #111; transform: translateX(-100%); transition: transform .3s ease; box-shadow: 18px 0 55px rgba(0,0,0,.14); display: flex; flex-direction: column; }
+      .mobile-menu.open { transform: translateX(0); }
+      .mobile-menu-head { min-height: 76px; display: grid; grid-template-columns: 1fr auto; align-items: center; border-bottom: 1px solid var(--line); padding: 0 18px 0 22px; }
+      .mobile-menu-tabs { display: flex; gap: 28px; align-items: stretch; height: 76px; }
+      .mobile-menu-tab { position: relative; display: inline-flex; align-items: center; border: 0; background: transparent; padding: 0; color: #555; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .02em; }
+      .mobile-menu-tab.active { color: #111; }
+      .mobile-menu-tab.active::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: #111; }
+      .mobile-menu-close { width: 38px; height: 38px; border: 0; background: transparent; display: grid; place-items: center; color: #111; cursor: pointer; }
+      .mobile-menu-close svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; }
+      .mobile-menu-close:hover { background: #111; color: #fff; }
+      .mobile-menu-panel { display: none; }
+      .mobile-menu-panel.active { display: block; }
+      .mobile-menu-list { list-style: none; margin: 0; padding: 18px 0 0; }
+      .mobile-menu-list a { min-height: 76px; display: flex; align-items: center; justify-content: space-between; padding: 0 26px; border-bottom: 1px solid var(--line); color: #111; font-size: 15px; font-weight: 700; text-transform: uppercase; letter-spacing: .01em; transition: color .2s ease, background .2s ease; }
+      .mobile-menu-list a:hover { color: #666; background: #fafafa; }
+      .mobile-menu-mark { font-size: 18px; font-weight: 500; color: #111; }
+      .support-panel { padding-top: 18px; }
+      .support-row { min-height: 76px; display: grid; align-content: center; gap: 7px; padding: 0 26px; border-bottom: 1px solid var(--line); }
+      .support-row span { color: var(--muted); font-size: 11px; font-weight: 800; text-transform: uppercase; }
+      .support-row a, .support-row strong { color: #111; font-size: 15px; font-weight: 700; }
+      .support-row a:hover { color: #666; }
+      .support-note { margin: 22px 26px 0; color: var(--muted); font-size: 12px; line-height: 1.65; }
+      @media (min-width: 901px) {
+        .mobile-menu { width: 380px; }
+      }
       .hero { position: relative; margin-top: -178px; padding: 306px 64px 150px; min-height: 790px; background: radial-gradient(circle at 72% 46%, #f5f5f5 0, #fff 45%, #fbfbfb 100%); overflow: hidden; }
       .hero-top { display: grid; grid-template-columns: .78fr 1.22fr; gap: 42px; align-items: center; }
       .hero-logo { position: absolute; right: -28px; top: -28px; width: 112px; height: 112px; object-fit: contain; mix-blend-mode: multiply; opacity: .18; }
@@ -34,7 +84,7 @@
       .wordmark { display: flex; align-items: center; gap: 24px; }
       .wordmark-badge { width: 112px; height: 112px; display: grid; place-items: center; background: #050505; flex: 0 0 auto; }
       .wordmark-badge img { width: 80px; height: 80px; object-fit: contain; filter: invert(1); }
-      h1 { font-family: Inter, Arial, sans-serif; font-size: clamp(52px, 10vw, 134px); font-weight: 600; line-height: .88; margin: 0; letter-spacing: 0; text-transform: uppercase; }
+      h1 { font-family: var(--font-sans); font-size: clamp(50px, 9.4vw, 124px); font-weight: 700; line-height: 1; margin: 0; letter-spacing: 0; text-transform: uppercase; }
       .shirt-pair { display: flex; justify-content: flex-end; align-items: flex-end; gap: 22px; min-height: 285px; }
       .shirt { position: relative; width: 190px; height: 260px; }
       .shirt .body { position: absolute; left: 50%; top: 38px; width: 128px; height: 198px; transform: translateX(-50%); border-radius: 28px 28px 8px 8px; background: var(--shirt); border: var(--shirt-border); box-shadow: 0 24px 42px rgba(0,0,0,.1); }
@@ -43,42 +93,43 @@
       .shirt .right { right: 10px; transform: rotate(-13deg); }
       .shirt .neck { position: absolute; left: 50%; top: 38px; width: 46px; height: 34px; transform: translateX(-50%); border-radius: 0 0 999px 999px; border-bottom: var(--neck-border); background: var(--shirt); }
       .hero-copy { max-width: 360px; padding-top: 90px; }
-      .hero-copy .overline { font-size: 11px; font-weight: 800; text-transform: uppercase; }
+      .hero-copy .overline { font-size: 11px; font-weight: 700; text-transform: uppercase; }
       .hero-copy .rule { width: 34px; height: 1px; background: #111; margin: 14px 0; }
-      .hero-copy h1 { font-size: 36px; font-weight: 800; line-height: 1.08; margin: 0; text-transform: uppercase; }
-      .hero-copy p { margin: 18px 0 0; color: #555; font-size: 13px; line-height: 1.75; }
+      .hero-copy h1 { font-size: 34px; font-weight: 800; line-height: 1.14; margin: 0; text-transform: uppercase; }
+      .hero-copy p { margin: 18px 0 0; color: #555; font-size: 12.5px; line-height: 1.68; }
       .hero-actions { display: flex; gap: 14px; margin-top: 28px; }
       .hero-actions a { display: inline-flex; align-items: center; justify-content: center; min-width: 116px; height: 34px; border: 1px solid #111; font-size: 11px; font-weight: 800; text-transform: uppercase; }
       .hero-actions a:first-child { background: #000; color: #fff; }
       .stack-scene { position: relative; min-height: 470px; }
       .back-panel { position: absolute; right: 4%; top: 0; width: 245px; height: 390px; background: #fff; box-shadow: 18px 18px 34px rgba(0,0,0,.12); }
       .pedestal { position: absolute; right: 0; bottom: 28px; width: 470px; height: 112px; background: #fff; box-shadow: -10px -8px 30px rgba(0,0,0,.06); }
-      .shirt-stack { position: absolute; right: 9%; bottom: 74px; width: 430px; height: 260px; }
-      .folded-shirt { position: absolute; right: 0; width: 348px; height: 60px; border-radius: 14px 36px 24px 14px; background: var(--fold); box-shadow: 0 16px 28px rgba(0,0,0,.16); }
-      .folded-shirt::after { content: ""; position: absolute; right: 0; top: 0; width: 82px; height: 58px; border-radius: 0 34px 24px 0; background: linear-gradient(90deg, rgba(255,255,255,.08), rgba(0,0,0,.2)); }
+      .shirt-stack { position: absolute; right: -2%; bottom: 66px; width: 560px; height: 330px; transform: scale(1.12); transform-origin: bottom right; }
+      .folded-shirt { position: absolute; right: 0; width: 430px; height: 72px; border-radius: 16px 42px 28px 16px; background: var(--fold); box-shadow: 0 18px 30px rgba(0,0,0,.14); }
+      .folded-shirt::after { content: ""; position: absolute; right: 0; top: 0; width: 102px; height: 70px; border-radius: 0 40px 28px 0; background: linear-gradient(90deg, rgba(255,255,255,.08), rgba(0,0,0,.2)); }
       .folded-shirt:nth-child(1) { top: 0; --fold:#fff; border: 1px solid #ededed; }
-      .folded-shirt:nth-child(2) { top: 42px; --fold:#d8d8d8; }
-      .folded-shirt:nth-child(3) { top: 84px; --fold:#9b9b9b; }
-      .folded-shirt:nth-child(4) { top: 126px; --fold:#555; }
-      .folded-shirt:nth-child(5) { top: 168px; --fold:#080808; }
+      .folded-shirt:nth-child(2) { top: 50px; --fold:#d8d8d8; }
+      .folded-shirt:nth-child(3) { top: 100px; --fold:#9b9b9b; }
+      .folded-shirt:nth-child(4) { top: 150px; --fold:#555; }
+      .folded-shirt:nth-child(5) { top: 200px; --fold:#080808; }
       .benefits { position: absolute; left: 60px; right: 60px; bottom: 32px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; border-radius: 28px; background: rgba(255,255,255,.98); box-shadow: 0 18px 38px rgba(0,0,0,.13); overflow: hidden; }
       .benefit { min-height: 118px; display: grid; grid-template-columns: 52px 1fr; gap: 14px; align-items: center; padding: 22px; border-right: 1px solid #e8e8e8; }
       .benefit:last-child { border-right: 0; }
-      .benefit-icon { font-size: 34px; }
-      .benefit h3 { margin: 0; font-size: 13px; text-transform: uppercase; }
-      .benefit p { margin: 6px 0 0; font-size: 12px; color: #555; line-height: 1.5; }
+      .benefit-icon { width: 42px; height: 42px; display: grid; place-items: center; border: 1px solid #111; border-radius: 999px; color: #111; background: #fff; }
+      .benefit-icon svg { width: 22px; height: 22px; display: block; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+      .benefit h3 { margin: 0; font-size: 12px; font-weight: 800; text-transform: uppercase; }
+      .benefit p { margin: 6px 0 0; font-size: 11.5px; color: #555; line-height: 1.45; }
       .category-nav { margin-top: 58px; display: flex; justify-content: center; gap: 46px; color: #666; font-size: 14px; }
       .cta { margin-top: 30px; display: flex; gap: 12px; flex-wrap: wrap; }
       .cta a { border: 1px solid #000; padding: 13px 26px; font-size: 12px; text-transform: uppercase; }
       .cta a:first-child { background: #000; color: #fff; }
       .wrap { padding: 0 58px; }
       .feature { padding: 52px 0 44px; display: grid; grid-template-columns: .78fr 1.22fr; gap: 50px; align-items: center; }
-      .feature h2 { font-size: 30px; line-height: .98; margin: 0; }
+      .feature h2 { font-size: 30px; line-height: 1.12; margin: 0; }
       .feature p { margin-top: 18px; max-width: 310px; color: var(--muted); line-height: 1.65; font-size: 13px; }
       .feature a { display: inline-flex; margin-top: 20px; border-radius: 999px; background: #f2f2f2; padding: 9px 22px; font-size: 12px; }
       .feature-board { width: 100%; aspect-ratio: 16 / 10; background: #f5f5f5; display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; padding: 28px; align-items: center; }
       .intro { padding: 54px 0 28px; display: grid; grid-template-columns: 1fr 380px; gap: 34px; align-items: end; }
-      .intro h2 { font-size: clamp(44px, 5.4vw, 78px); line-height: .98; margin: 10px 0 0; }
+      .intro h2 { font-size: clamp(44px, 5.4vw, 78px); line-height: 1.06; margin: 10px 0 0; }
       .intro p { color: var(--muted); line-height: 1.75; font-size: 14px; }
       .filters { border-block: 1px solid var(--line); padding: 16px 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
       select { height: 44px; border: 1px solid var(--line); background: #fff; padding: 0 12px; color: #111; }
@@ -113,6 +164,9 @@
       .mock.jacket .zip { left: 50%; top: 25%; width: 1px; height: 55%; background: rgba(255,255,255,.45); border: 0; }
       .meta { display: flex; justify-content: space-between; gap: 14px; padding-top: 12px; font-size: 13px; }
       .muted { color: var(--muted); font-size: 12px; margin-top: 4px; }
+      .product-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+      .product-tag { border: 1px solid #111; padding: 4px 7px; font-size: 10px; font-weight: 800; line-height: 1; text-transform: uppercase; color: #111; background: #fff; }
+      .product-tag.sale { background: #111; color: #fff; }
       .swatches { display: flex; gap: 5px; margin-top: 10px; }
       .swatches span { width: 14px; height: 14px; border: 1px solid #bbb; display: block; }
       .swatches span.active { outline: 2px solid #111; outline-offset: 2px; }
@@ -167,7 +221,7 @@
       .detail-grid { display: grid; grid-template-columns: .9fr 1.1fr; gap: 24px; }
       .detail-card .product-visual { cursor: default; }
       .detail-info { display: grid; gap: 12px; align-content: start; }
-      .detail-info h2 { margin: 0; font-size: 32px; line-height: 1; }
+      .detail-info h2 { margin: 0; font-size: 32px; line-height: 1.16; }
       .detail-section { border: 1px solid var(--line); }
       .detail-section > button { width: 100%; min-height: 44px; border: 0; background: #fff; display: flex; justify-content: space-between; align-items: center; padding: 0 12px; font-weight: 600; text-align: left; }
       .detail-panel { display: none; border-top: 1px solid var(--line); padding: 12px; color: #555; font-size: 13px; line-height: 1.6; }
@@ -212,7 +266,7 @@
       .ticker { border-block: 1px solid var(--line); padding: 16px; text-align: center; text-transform: uppercase; font-size: 13px; color: #555; }
       .split { padding: 72px 0; display: grid; grid-template-columns: 1.1fr .9fr; gap: 52px; align-items: center; border-bottom: 1px solid var(--line); }
       .split img { width: 100%; aspect-ratio: 5/4; object-fit: cover; filter: grayscale(1); }
-      .split h2 { font-size: clamp(58px, 7vw, 96px); line-height: .9; margin: 0; }
+      .split h2 { font-size: clamp(58px, 7vw, 96px); line-height: 1.02; margin: 0; }
       .split p { color: var(--muted); line-height: 1.8; max-width: 390px; font-size: 14px; }
       .footer-grid { border-top: 2px solid #111; margin-top: 36px; padding: 42px 0 70px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; font-size: 12px; }
       .footer-grid h3 { margin: 0 0 12px; font-size: 16px; color: #111; }
@@ -225,9 +279,12 @@
         header { height: 126px; }
         .nav { grid-template-columns: 1fr; height: 126px; padding-top: 0; }
         .nav::before { left: 0; right: 0; height: 84px; clip-path: none; border-radius: 0 0 22px 22px; }
+        .menu-toggle { left: 14px; top: 23px; }
         .nav-left { display: none; }
         .nav-right { height: 84px; justify-content: flex-end; gap: 12px; }
-        .brand { position: absolute; left: 22px; top: 0; width: 130px; height: 126px; }
+        .search-panel { grid-template-columns: 1fr; padding: 14px 22px; }
+        .search-tools { justify-content: flex-start; }
+        .brand { position: absolute; left: 62px; top: 0; width: 130px; height: 126px; }
         .brand img { width: 48px; height: 48px; }
         .brand strong { font-size: 18px; letter-spacing: 4px; }
         .brand span { font-size: 9px; letter-spacing: 2px; }
@@ -266,11 +323,14 @@
     <div class="page">
       <header>
         <div class="nav">
+          <button class="menu-toggle" id="menuToggle" aria-label="Mở menu" aria-controls="mobileMenu" aria-expanded="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/></svg>
+          </button>
           <nav class="nav-left">
             <a href="#">Trang chủ</a>
             <a href="#shop">Sản phẩm</a>
-            <a href="#detail">Bộ sưu tập</a>
-            <a href="#custom">Về chúng tôi</a>
+            <a href="#shop">Bộ sưu tập</a>
+            <a href="#footer">Về chúng tôi</a>
             <a href="#footer">Liên hệ</a>
           </nav>
           <a class="brand" href="#">
@@ -279,14 +339,62 @@
             <span>· T-Shirt ·</span>
           </a>
           <div class="nav-right">
-            <span class="icon">⌕</span>
-            <span class="icon">♙</span>
-            <button class="integration-link" id="integrationLink">POS</button>
-            <button class="orders-link" id="ordersLink">Đơn hàng</button>
-            <button class="cart">♧</button>
+            <button class="search-toggle" id="searchToggle" aria-label="Tìm kiếm sản phẩm" aria-expanded="false">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+            </button>
+            <button class="integration-link nav-icon-button" id="integrationLink" aria-label="Tích hợp POS">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="12" rx="1.8"/><path d="M8 20h8"/><path d="M12 16.5V20"/><path d="M7 8.5h10"/><path d="M7 12h6"/></svg>
+            </button>
+            <button class="orders-link nav-icon-button" id="ordersLink" aria-label="Đơn hàng của tôi">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/><path d="M3 4h2l2.2 11.2a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 1.9-1.4L21 8H6.1"/><path d="m9.5 12.4 1.7 1.7 3.4-3.7"/></svg>
+            </button>
+            <button class="cart nav-icon-button" aria-label="Giỏ hàng">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/><path d="M3 4h2l2.2 11.2a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 1.9-1.4L21 8H6.1"/></svg>
+              <span class="cart-count" id="cartCount">0</span>
+            </button>
           </div>
         </div>
       </header>
+      <div class="mobile-menu-overlay" id="mobileMenuOverlay"></div>
+      <aside class="mobile-menu" id="mobileMenu" aria-label="Menu mobile" aria-hidden="true">
+        <div class="mobile-menu-head">
+          <div class="mobile-menu-tabs" role="tablist" aria-label="Menu categories">
+            <button class="mobile-menu-tab active" type="button" role="tab" aria-selected="true" data-menu-tab="menu">Menu</button>
+            <button class="mobile-menu-tab" type="button" role="tab" aria-selected="false" data-menu-tab="support">Liên hệ hỗ trợ</button>
+          </div>
+          <button class="mobile-menu-close" id="mobileMenuClose" aria-label="Đóng menu">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12"/><path d="M18 6 6 18"/></svg>
+          </button>
+        </div>
+        <div class="mobile-menu-panel active" data-menu-panel="menu">
+          <ul class="mobile-menu-list">
+            <li><a href="#shop" data-menu-filter="new">New Items <span class="mobile-menu-mark">&gt;</span></a></li>
+            <li><a href="#shop" data-menu-filter="best">Best Sellers</a></li>
+            <li><a href="#shop" data-menu-filter="sale">Sale</a></li>
+          </ul>
+        </div>
+        <div class="mobile-menu-panel support-panel" data-menu-panel="support">
+          <div class="support-row"><span>Số điện thoại</span><a href="tel:0900000000">0900 000 000</a></div>
+          <div class="support-row"><span>TikTok</span><a href="https://www.tiktok.com/@blanwhi.official" target="_blank" rel="noreferrer">@blanwhi.official</a></div>
+          <div class="support-row"><span>Zalo</span><a href="https://zalo.me/0900000000" target="_blank" rel="noreferrer">zalo.me/0900000000</a></div>
+          <div class="support-row"><span>Giờ làm việc</span><strong>9h30 - 20h00, Thứ 2 - Thứ 7</strong></div>
+          <p class="support-note">BLANWHI hỗ trợ tư vấn size, đổi size, kiểm tra đơn hàng và phối set trong giờ làm việc.</p>
+        </div>
+      </aside>
+      <section class="search-panel" id="searchPanel" aria-label="Tìm kiếm sản phẩm">
+        <div class="search-box">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+          <input id="productSearch" type="search" autocomplete="off" placeholder="Tìm theo tên, loại, màu, form..." />
+          <button type="button" id="clearSearch">Xóa</button>
+        </div>
+        <div class="search-tools">
+          <span class="search-count" id="searchCount">20 sản phẩm</span>
+          <button class="search-chip" type="button" data-search-chip="tee">Tee</button>
+          <button class="search-chip" type="button" data-search-chip="hoodie">Hoodie</button>
+          <button class="search-chip" type="button" data-search-chip="pants">Pants</button>
+          <button class="search-close" type="button" id="closeSearch">Đóng</button>
+        </div>
+      </section>
 
       <section class="hero">
         <div class="hero-top">
@@ -295,10 +403,6 @@
             <div class="rule"></div>
             <h1>Đơn giản.<br />Chất riêng.</h1>
             <p>BLANWHI là shop áo thun basic & minimal, chất liệu chọn lọc, form chuẩn, dành cho mọi phong cách.</p>
-            <div class="hero-actions">
-              <a href="#shop">Mua ngay</a>
-              <a href="#detail">Khám phá bộ sưu tập</a>
-            </div>
           </div>
           <div class="stack-scene" aria-label="Chồng áo thun BLANWHI">
             <div class="back-panel"></div>
@@ -313,10 +417,30 @@
           </div>
         </div>
         <div class="benefits">
-          <div class="benefit"><div class="benefit-icon">♧</div><div><h3>Chất liệu cao cấp</h3><p>Cotton 100% mềm mại, thoáng mát.</p></div></div>
-          <div class="benefit"><div class="benefit-icon">♕</div><div><h3>Form chuẩn</h3><p>Dáng unisex, dễ mặc, tôn dáng.</p></div></div>
-          <div class="benefit"><div class="benefit-icon">◌</div><div><h3>Màu sắc đa dạng</h3><p>Bảng màu basic, dễ phối đồ.</p></div></div>
-          <div class="benefit"><div class="benefit-icon">□</div><div><h3>Đổi trả dễ dàng</h3><p>Hỗ trợ đổi trả trong 7 ngày.</p></div></div>
+          <div class="benefit">
+            <div class="benefit-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M20.2 4.3c-4.2.3-8 1.9-10.9 4.8-2.8 2.8-4.2 6-4.5 9.7 3.7-.3 6.9-1.7 9.7-4.5 2.9-2.9 4.5-6.7 4.8-10Z"/><path d="M4.8 18.8 14 9.6"/><path d="M8.5 15.1h5.2"/><path d="M10.9 12.7h5.2"/></svg>
+            </div>
+            <div><h3>Chất liệu cao cấp</h3><p>95% cotton, 5% spandex mềm mại, co giãn.</p></div>
+          </div>
+          <div class="benefit">
+            <div class="benefit-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M8 4 5 6.2 2.8 9.8l3.5 2.1L8 9.5V20h8V9.5l1.7 2.4 3.5-2.1L19 6.2 16 4"/><path d="M8 4c.8 1.4 2.1 2.2 4 2.2S15.2 5.4 16 4"/></svg>
+            </div>
+            <div><h3>Form chuẩn</h3><p>Dáng unisex, dễ mặc, tôn dáng.</p></div>
+          </div>
+          <div class="benefit">
+            <div class="benefit-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M12 3.5a8.5 8.5 0 0 0 0 17h1.2a1.8 1.8 0 0 0 1.4-2.9 1.8 1.8 0 0 1 1.4-2.9h1.2A3.8 3.8 0 0 0 21 10.9c0-4.1-4-7.4-9-7.4Z"/><circle cx="7.7" cy="10" r="1"/><circle cx="10.7" cy="7.6" r="1"/><circle cx="14.5" cy="7.9" r="1"/><circle cx="16.8" cy="10.8" r="1"/></svg>
+            </div>
+            <div><h3>Màu sắc đa dạng</h3><p>Bảng màu basic, dễ phối đồ.</p></div>
+          </div>
+          <div class="benefit">
+            <div class="benefit-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M12 3 19 6v5c0 4.6-2.8 8.1-7 10-4.2-1.9-7-5.4-7-10V6l7-3Z"/><path d="m8.8 12.1 2.1 2.1 4.5-4.7"/></svg>
+            </div>
+            <div><h3>Đổi trả dễ dàng</h3><p>Hỗ trợ đổi trả trong 7 ngày.</p></div>
+          </div>
         </div>
       </section>
 
@@ -331,15 +455,7 @@
         </div>
       </section>
       <div class="ticker">BLANWHI / WHITE SPACE / BLACK TYPE / 20 PRODUCTS / FAST CHECKOUT / QUIET LAYERS</div>
-      <section class="split" id="detail">
-        <img src="https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&w=1200&q=85" alt="Hoodie product focus" />
-        <div><h2 class="serif">Hoodies</h2><p>Sau khi thấy tổng hợp 20 sản phẩm, khách có thể đi sâu vào từng nhóm: hoodie, tee, pants, jacket và combo phối sẵn.</p></div>
-      </section>
-      <section class="split">
-        <div><h2 class="serif">Custom</h2><p>Custom đồng phục giữ nền trắng, chữ đen, mockup rõ ràng và báo giá realtime để không làm khách bị rối.</p></div>
-        <img src="https://images.unsplash.com/photo-1511556820780-d912e42b4980?auto=format&fit=crop&w=1200&q=85" alt="Custom product focus" />
-      </section>
-        <section class="footer-grid">
+        <section class="footer-grid" id="footer">
           <div><h3>Company</h3><p>About Us</p><p>Join Us</p><p>Store Locator</p></div>
           <div><h3>Customer Care</h3><p>FAQ</p><p>Return Policy</p><p>Promotion Terms</p></div>
           <div><h3>Let’s stay<br />in touch.</h3><p>E-mail address</p><p>By clicking subscribe, you agree to BLANWHI terms.</p></div>
@@ -455,6 +571,9 @@
 
       const parseMoney = (value) => Number(String(value).replace(/\D/g, ""));
       const formatMoney = (value) => new Intl.NumberFormat("vi-VN").format(value) + "đ";
+      const salesCounts = [680, 740, 180, 520, 860, 330, 790, 610, 420, 260, 310, 240, 700, 360, 450, 580, 820, 390, 300, 650];
+      const newProductIds = new Set(["p15", "p16", "p17", "p18", "p19", "p20"]);
+      const saleProductIds = new Set(["p3", "p9", "p10", "p11", "p16", "p19"]);
       const productData = products.map(([name, price, fit, kind, swatches], index) => ({
         id: `p${index + 1}`,
         name,
@@ -465,8 +584,23 @@
         swatches,
         color: swatches[0],
         colorIndex: 0,
-        size: "M"
+        size: "M",
+        sold: salesCounts[index] || 0,
+        isNew: newProductIds.has(`p${index + 1}`),
+        isSale: saleProductIds.has(`p${index + 1}`),
+        salePercent: saleProductIds.has(`p${index + 1}`) ? (index % 2 ? 15 : 10) : 0
       }));
+      const productGrid = document.getElementById("productGrid");
+      const searchPanel = document.getElementById("searchPanel");
+      const searchToggle = document.getElementById("searchToggle");
+      const productSearch = document.getElementById("productSearch");
+      const clearSearch = document.getElementById("clearSearch");
+      const closeSearch = document.getElementById("closeSearch");
+      const searchCount = document.getElementById("searchCount");
+      const menuToggle = document.getElementById("menuToggle");
+      const mobileMenu = document.getElementById("mobileMenu");
+      const mobileMenuOverlay = document.getElementById("mobileMenuOverlay");
+      const mobileMenuClose = document.getElementById("mobileMenuClose");
       const cart = [];
       const comboText = (kind) => {
         if (kind === "tee") return "Mua kèm quần hoặc 2 áo cùng tone: từ 2 sản phẩm giảm 5%, từ 3 sản phẩm giảm 10%.";
@@ -501,10 +635,36 @@
         </button>
       `;
 
-      document.getElementById("productGrid").innerHTML = productData.map((product) => `
+      const normalizeSearch = (value) => String(value || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/đ/g, "d");
+      const kindKeywords = {
+        tee: "tee t-shirt tshirt ao thun ao phong",
+        hoodie: "hoodie ao hoodie ao khoac ni sweat",
+        pants: "pants quan quan dai shorts short sweatpants cargo trouser",
+        jacket: "jacket ao khoac overshirt coach work layer"
+      };
+      const searchText = (product) => normalizeSearch([
+        product.name,
+        product.fit,
+        product.kind,
+        product.price,
+        product.swatches.map(colorLabel).join(" "),
+        kindKeywords[product.kind] || "",
+        "cotton spandex form mau sac"
+      ].join(" "));
+      const productTags = (product) => [
+        product.isNew ? `<span class="product-tag">New</span>` : "",
+        product.sold >= 650 ? `<span class="product-tag">Best seller</span>` : "",
+        product.isSale ? `<span class="product-tag sale">Sale -${product.salePercent}%</span>` : ""
+      ].filter(Boolean).join("");
+      const productCardMarkup = (product) => `
         <article class="card">
           ${visualMarkup(product)}
           <div class="meta"><div><b>${product.name}</b><div class="muted">${product.fit}</div></div><span>${product.price}</span></div>
+          <div class="product-tags">${productTags(product)}</div>
           <div class="swatches" data-swatches="${product.id}">${product.swatches.map((color, index) => `<span class="${index === product.colorIndex ? "active" : ""}" style="background:${color}"></span>`).join("")}</div>
           <div class="sizes" data-size-group="${product.id}">
             ${["S", "M", "L", "XL"].map(size => `<button class="${size === "M" ? "active" : ""}" data-size="${product.id}:${size}">${size}</button>`).join("")}
@@ -514,7 +674,69 @@
             <button class="quick" data-add="${product.id}">Thêm giỏ</button>
           </div>
         </article>
-      `).join("");
+      `;
+      function renderProducts(list = productData) {
+        productGrid.innerHTML = list.length ? list.map(productCardMarkup).join("") : `
+          <div class="empty-search">
+            <div><strong>Không tìm thấy sản phẩm</strong><span>Thử tìm theo Tee, Hoodie, Pants, màu đen, trắng, xám hoặc form boxy.</span></div>
+          </div>
+        `;
+        searchCount.textContent = list.length === productData.length ? `${productData.length} sản phẩm` : `${list.length}/${productData.length} sản phẩm`;
+      }
+      function filterProducts() {
+        const query = normalizeSearch(productSearch.value.trim());
+        if (!query) {
+          renderProducts(productData);
+          return;
+        }
+        renderProducts(productData.filter((product) => searchText(product).includes(query)));
+      }
+      function collectionProducts(type) {
+        if (type === "new") return productData.filter((product) => product.isNew);
+        if (type === "best") return productData.filter((product) => product.sold >= 650).sort((a, b) => b.sold - a.sold);
+        if (type === "sale") return productData.filter((product) => product.isSale);
+        return productData;
+      }
+      function applyMenuFilter(type) {
+        productSearch.value = "";
+        closeSearchPanel();
+        renderProducts(collectionProducts(type));
+        document.getElementById("shop").scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+      function openSearch() {
+        searchPanel.classList.add("open");
+        searchToggle.setAttribute("aria-expanded", "true");
+        productSearch.focus();
+      }
+      function closeSearchPanel() {
+        searchPanel.classList.remove("open");
+        searchToggle.setAttribute("aria-expanded", "false");
+      }
+      function openMobileMenu() {
+        mobileMenu.classList.add("open");
+        mobileMenuOverlay.classList.add("open");
+        document.body.classList.add("menu-open");
+        menuToggle.setAttribute("aria-expanded", "true");
+        mobileMenu.setAttribute("aria-hidden", "false");
+      }
+      function closeMobileMenu() {
+        mobileMenu.classList.remove("open");
+        mobileMenuOverlay.classList.remove("open");
+        document.body.classList.remove("menu-open");
+        menuToggle.setAttribute("aria-expanded", "false");
+        mobileMenu.setAttribute("aria-hidden", "true");
+      }
+      function setMobileMenuPanel(panelName) {
+        mobileMenu.querySelectorAll("[data-menu-tab]").forEach((tab) => {
+          const active = tab.dataset.menuTab === panelName;
+          tab.classList.toggle("active", active);
+          tab.setAttribute("aria-selected", active ? "true" : "false");
+        });
+        mobileMenu.querySelectorAll("[data-menu-panel]").forEach((panel) => {
+          panel.classList.toggle("active", panel.dataset.menuPanel === panelName);
+        });
+      }
+      renderProducts();
 
       const cartButton = document.querySelector(".cart");
       const cartOverlay = document.getElementById("cartOverlay");
@@ -798,7 +1020,7 @@
       }
 
       function renderCart() {
-        cartButton.textContent = `♧ ${cartCount()}`;
+        document.getElementById("cartCount").textContent = cartCount();
         if (!cart.length) {
           cartItems.innerHTML = `<div class="empty">Giỏ hàng đang trống.</div>`;
         } else {
@@ -1100,6 +1322,80 @@
         renderCart();
       });
 
+      searchToggle.addEventListener("click", () => {
+        if (searchPanel.classList.contains("open")) closeSearchPanel();
+        else openSearch();
+      });
+      productSearch.addEventListener("input", filterProducts);
+      clearSearch.addEventListener("click", () => {
+        productSearch.value = "";
+        filterProducts();
+        productSearch.focus();
+      });
+      clearSearch.addEventListener("pointerdown", (event) => {
+        event.preventDefault();
+        productSearch.value = "";
+        filterProducts();
+        productSearch.focus();
+      });
+      closeSearch.addEventListener("click", closeSearchPanel);
+      document.querySelectorAll("[data-search-chip]").forEach((chip) => {
+        chip.addEventListener("click", () => {
+          productSearch.value = chip.dataset.searchChip;
+          openSearch();
+          filterProducts();
+          document.getElementById("shop").scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+      });
+      productSearch.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") document.getElementById("shop").scrollIntoView({ behavior: "smooth", block: "start" });
+        if (event.key === "Escape") closeSearchPanel();
+      });
+      menuToggle.addEventListener("click", openMobileMenu);
+      mobileMenuClose.addEventListener("click", closeMobileMenu);
+      mobileMenuOverlay.addEventListener("click", closeMobileMenu);
+      mobileMenu.querySelectorAll("[data-menu-tab]").forEach((tab) => {
+        tab.addEventListener("click", () => setMobileMenuPanel(tab.dataset.menuTab));
+      });
+      mobileMenu.querySelectorAll("a").forEach((link) => link.addEventListener("click", (event) => {
+        const filterType = link.dataset.menuFilter;
+        if (filterType) {
+          event.preventDefault();
+          closeMobileMenu();
+          applyMenuFilter(filterType);
+        }
+      }));
+      let menuTouchStartX = null;
+      let menuTouchStartY = null;
+      let menuPointerStartX = null;
+      let menuPointerStartY = null;
+      mobileMenu.addEventListener("touchstart", (event) => {
+        menuTouchStartX = event.touches[0].clientX;
+        menuTouchStartY = event.touches[0].clientY;
+      }, { passive: true });
+      mobileMenu.addEventListener("touchend", (event) => {
+        if (menuTouchStartX === null || menuTouchStartY === null) return;
+        const deltaX = event.changedTouches[0].clientX - menuTouchStartX;
+        const deltaY = event.changedTouches[0].clientY - menuTouchStartY;
+        if (deltaX < -55 && Math.abs(deltaY) < 70) closeMobileMenu();
+        menuTouchStartX = null;
+        menuTouchStartY = null;
+      }, { passive: true });
+      mobileMenu.addEventListener("pointerdown", (event) => {
+        menuPointerStartX = event.clientX;
+        menuPointerStartY = event.clientY;
+      });
+      mobileMenu.addEventListener("pointerup", (event) => {
+        if (menuPointerStartX === null || menuPointerStartY === null) return;
+        const deltaX = event.clientX - menuPointerStartX;
+        const deltaY = event.clientY - menuPointerStartY;
+        if (deltaX < -55 && Math.abs(deltaY) < 70) closeMobileMenu();
+        menuPointerStartX = null;
+        menuPointerStartY = null;
+      });
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && mobileMenu.classList.contains("open")) closeMobileMenu();
+      });
       cartButton.addEventListener("click", openCart);
       document.getElementById("ordersLink").addEventListener("click", openOrders);
       document.getElementById("integrationLink").addEventListener("click", openIntegration);

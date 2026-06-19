@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Noto+Serif:wght@500;600;700&display=swap&subset=vietnamese");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -9,6 +11,8 @@
   --line: #e5e5e5;
   --paper: #ffffff;
   --frame: #d7d7d7;
+  --font-sans: "Be Vietnam Pro", "Segoe UI", Arial, sans-serif;
+  --font-serif: "Noto Serif", Georgia, "Times New Roman", serif;
 }
 
 * {
@@ -23,7 +27,11 @@ body {
   margin: 0;
   background: var(--frame);
   color: var(--ink);
-  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "kern";
 }
 
 button,
@@ -42,8 +50,8 @@ textarea {
 }
 
 .editorial-title {
-  font-family: Georgia, "Times New Roman", serif;
-  font-weight: 400;
+  font-family: var(--font-serif);
+  font-weight: 600;
   letter-spacing: 0;
 }
 

@@ -60,6 +60,6 @@ export const combos: Combo[] = [
 export const faq = [
   ["Phí ship thế nào?", "Đơn từ 2 triệu được freeship. Đơn nội thành thường giao trong 1-2 ngày."],
   ["Đổi size được không?", "Được đổi trong 7 ngày nếu sản phẩm còn tag và chưa qua giặt."],
-  ["Chất liệu có dày không?", "Áo tee chính dùng cotton 230-260gsm, hoodie fleece 420gsm, đứng form nhưng vẫn mềm."],
+  ["Chất liệu có dày không?", "Áo tee chính dùng 95% cotton, 5% spandex khoảng 230-260gsm; hoodie fleece 420gsm, đứng form nhưng vẫn mềm."],
   ["Thanh toán ra sao?", "Có COD, thẻ, chuyển khoản và ví điện tử ở checkout một trang."]
 ];

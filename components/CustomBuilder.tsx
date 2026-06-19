@@ -11,7 +11,7 @@ export function CustomBuilder() {
   const [printType, setPrintType] = useState("DTF");
   const [logo, setLogo] = useState("");
   const [text, setText] = useState("BL STUDIO");
-  const [font, setFont] = useState("Inter");
+  const [font, setFont] = useState("Be Vietnam Pro");
   const [textColor, setTextColor] = useState("#111111");
   const [pos, setPos] = useState({ x: 45, y: 42 });
 
@@ -55,7 +55,7 @@ export function CustomBuilder() {
             <UploadLogo onFile={setLogo} />
             <input value={text} onChange={(e) => setText(e.target.value)} className="h-11 border border-neutral-200 px-3" placeholder="Text in thêm" />
             <div className="grid grid-cols-2 gap-3">
-              <select value={font} onChange={(e) => setFont(e.target.value)} className="h-11 border border-neutral-200 px-3"><option>Inter</option><option>Arial</option><option>Georgia</option></select>
+              <select value={font} onChange={(e) => setFont(e.target.value)} className="h-11 border border-neutral-200 px-3"><option>Be Vietnam Pro</option><option>Arial</option><option>Noto Serif</option></select>
               <input type="color" value={textColor} onChange={(e) => setTextColor(e.target.value)} className="h-11 w-full border border-neutral-200 bg-white p-1" />
             </div>
             <div className="grid grid-cols-3 gap-2">

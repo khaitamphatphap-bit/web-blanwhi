@@ -91,7 +91,7 @@ export default function Home() {
                 <span className="grid h-16 w-16 shrink-0 place-items-center bg-black sm:h-24 sm:w-24 md:h-28 md:w-28">
                   <img src="/umbrella-logo.png" alt="BLANWHI umbrella logo" className="h-12 w-12 object-contain invert sm:h-[72px] sm:w-[72px] md:h-20 md:w-20" />
                 </span>
-                <h1 className="text-[52px] font-semibold uppercase leading-[0.88] text-black sm:text-[96px] md:text-[132px]">BLANWHI</h1>
+                <h1 className="text-[52px] font-semibold uppercase leading-[0.98] text-black sm:text-[96px] md:text-[132px]">BLANWHI</h1>
               </div>
             </div>
             <div className="flex items-end justify-center gap-5 md:justify-end">
@@ -145,7 +145,7 @@ export default function Home() {
 
         <section className="grid gap-8 py-10 md:grid-cols-[.82fr_1.18fr] md:items-center">
           <div>
-            <h2 className="text-3xl font-semibold leading-none">Package<br />with a degree in simplicity</h2>
+            <h2 className="text-3xl font-semibold leading-tight">Package<br />with a degree in simplicity</h2>
             <p className="mt-4 max-w-xs text-sm leading-6 text-neutral-500">BLANWHI chọn ít sản phẩm, nhiều khoảng trắng và thao tác mua cực nhanh. Minimal không phải là thiếu, mà là bỏ bớt thứ không cần.</p>
             <a href="#shop" className="mt-6 inline-flex rounded-full bg-neutral-100 px-6 py-2 text-sm">Discover</a>
           </div>
@@ -159,7 +159,7 @@ export default function Home() {
         <section id="lookbook" className="grid gap-8 py-16 md:grid-cols-[1.1fr_.9fr] md:items-center">
           <img src="https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&w=1200&q=85" alt="Hoodie lookbook" className="aspect-[5/4] w-full object-cover grayscale" />
           <div className="md:px-10">
-            <h2 className="editorial-title text-5xl leading-none md:text-7xl">Hoodies</h2>
+            <h2 className="editorial-title text-5xl leading-[1.08] md:text-7xl">Hoodies</h2>
             <p className="mt-5 max-w-sm text-sm leading-7 text-neutral-500">Layer cho thành phố: hoodie, sweatpants, tee và jacket trong một bảng màu lạnh, dễ phối, dễ mua.</p>
             <a href="#shop" className="mt-7 inline-flex border-b border-black pb-2 text-xs uppercase">Shop all hoodies</a>
           </div>
@@ -167,7 +167,7 @@ export default function Home() {
 
         <section className="grid gap-8 py-16 md:grid-cols-[.85fr_1.15fr] md:items-center">
           <div className="md:px-10">
-            <h2 className="editorial-title text-5xl leading-none md:text-7xl">Uniforms</h2>
+            <h2 className="editorial-title text-5xl leading-[1.08] md:text-7xl">Uniforms</h2>
             <p className="mt-5 max-w-sm text-sm leading-7 text-neutral-500">Custom builder giữ giao diện tối giản nhưng đủ mạnh: upload logo, kéo mockup, chọn vị trí in và xem giá ngay.</p>
             <a href="#custom" className="mt-7 inline-flex border-b border-black pb-2 text-xs uppercase">Build custom set</a>
           </div>
