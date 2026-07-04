@@ -391,11 +391,28 @@
       .support-group { border-bottom: 1px solid var(--line); }
       .support-group summary { min-height: 76px; display: flex; align-items: center; justify-content: space-between; padding: 0 26px; color: #111; font-size: 15px; font-weight: 800; text-transform: uppercase; cursor: pointer; list-style: none; }
       .support-group summary::-webkit-details-marker { display: none; }
-      .discount-badge { position: absolute; right: 10px; top: 10px; z-index: 4; min-width: 48px; min-height: 30px; display: grid; place-items: center; padding: 0 8px; background: #ff4d00; color: #fff; font-size: 12px; font-weight: 900; box-shadow: 0 6px 16px rgba(0,0,0,.16); }
+      .discount-badge { position: absolute; right: 10px; top: 10px; z-index: 4; min-width: 48px; min-height: 30px; display: grid; place-items: center; padding: 0 8px; background: #111; color: #fff; font-size: 12px; font-weight: 900; box-shadow: 0 6px 16px rgba(0,0,0,.16); }
       .size-chart { width: 100%; border: 1px solid #111; border-collapse: collapse; background: #fff; color: #111; }
       .size-chart th, .size-chart td { border: 1px solid #111; padding: 8px; text-align: center; font-size: 12px; }
       .payment-extra { display: none; gap: 8px; padding: 12px; border: 1px solid var(--line); background: #fafafa; }
       .payment-extra.open { display: grid; }
+      .bank-account-link { min-height: 44px; border: 1px solid #111; background: #111; color: #fff; font-size: 13px; font-weight: 800; cursor: pointer; text-align: left; padding: 0 12px; }
+      .bank-account-link:hover { background: #fff; color: #111; }
+      .bank-transfer-modal { position: fixed; inset: 0; z-index: 41; display: none; background: #f5f5f3; overflow: auto; }
+      .bank-transfer-modal.open { display: block; }
+      .bank-transfer-page { width: min(820px, 100%); min-height: 100vh; margin: 0 auto; padding: 28px 22px 60px; background: #fff; }
+      .bank-info-grid { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid #111; margin: 18px 0; }
+      .bank-info-card { min-height: 112px; padding: 16px; display: grid; align-content: center; gap: 6px; border-right: 1px solid #111; }
+      .bank-info-card:last-child { border-right: 0; }
+      .bank-info-card span { color: var(--muted); font-size: 10px; font-weight: 800; text-transform: uppercase; }
+      .bank-info-card strong { font-size: 18px; overflow-wrap: anywhere; }
+      .bank-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; }
+      .bank-option { min-height: 42px; border: 1px solid var(--line); background: #fff; color: #111; font-size: 11px; font-weight: 800; text-transform: uppercase; cursor: pointer; }
+      .bank-option:hover, .bank-option.active { border-color: #111; background: #111; color: #fff; }
+      .bank-customer-form { display: grid; grid-template-columns: 1fr auto; gap: 10px; margin-top: 16px; }
+      .bank-customer-form input { width: 100%; border: 1px solid var(--line); min-height: 42px; padding: 10px; }
+      .bank-customer-form button { min-height: 42px; border: 1px solid #111; background: #111; color: #fff; padding: 0 16px; font-size: 11px; font-weight: 800; text-transform: uppercase; }
+      .bank-note { margin: 14px 0 0; color: #666; font-size: 12px; line-height: 1.6; }
       .custom-section { padding: 90px 0; border-bottom: 1px solid var(--line); scroll-margin-top: 24px; }
       .custom-section .eyebrow { margin-bottom: 14px; font-weight: 700; }
       .custom-section h2 { margin: 0; font-size: clamp(56px, 8vw, 104px); line-height: .95; text-transform: uppercase; }
@@ -864,7 +881,7 @@
             <div class="pay-grid">
               <label><input type="radio" name="pay" checked /> COD</label>
               <label><input type="radio" name="pay" value="card" /> Thẻ</label>
-              <label><input type="radio" name="pay" /> Chuyển khoản</label>
+              <label><input type="radio" name="pay" value="transfer" /> Chuyển khoản</label>
               <label><input type="radio" name="pay" value="wallet" /> Ví điện tử</label>
             </div>
             <div class="payment-extra" id="cardPaymentFields">
@@ -878,6 +895,10 @@
               <button class="secondary" type="button">Liên kết Momo</button>
               <button class="secondary" type="button">Liên kết ví</button>
             </div>
+            <div class="payment-extra" id="transferPaymentFields">
+              <span class="muted">Tài khoản nhận tiền</span>
+              <button class="bank-account-link" id="openBankTransfer" type="button">BLANWHI - 0123 456 789</button>
+            </div>
             <button class="primary" type="submit">Đặt hàng</button>
           </form>
           <div class="order-box" id="checkoutSummary"></div>
@@ -890,6 +911,29 @@
         <div id="detailContent"></div>
       </div>
     </div>
+    <section class="bank-transfer-modal" id="bankTransferModal" aria-label="Thông tin chuyển khoản">
+      <div class="bank-transfer-page">
+        <div class="voucher-page-head">
+          <div><p class="muted" style="margin:0 0 5px">Chuyển khoản ngân hàng</p><h2>Thông tin thanh toán</h2></div>
+          <button class="icon-button" id="closeBankTransfer" type="button" aria-label="Đóng trang chuyển khoản">×</button>
+        </div>
+        <div class="bank-info-grid">
+          <div class="bank-info-card"><span>Tên người nhận</span><strong id="bankReceiverName">BLANWHI STORE</strong></div>
+          <div class="bank-info-card"><span>Số tiền</span><strong id="bankTransferAmount">0đ</strong></div>
+          <div class="bank-info-card"><span>Nội dung</span><strong id="bankTransferContent">BLW-000000</strong></div>
+        </div>
+        <div class="bank-info-card" style="border:1px solid #111">
+          <span>Số tài khoản nhận tiền</span>
+          <strong>0123 456 789 - Vietcombank</strong>
+        </div>
+        <p class="bank-note">Chọn ngân hàng khách đang dùng, nhập số tài khoản của khách rồi bấm mở app ngân hàng. Nếu thiết bị có cài app ngân hàng tương ứng, trình duyệt sẽ chuyển sang app.</p>
+        <div class="bank-list" id="bankList"></div>
+        <div class="bank-customer-form">
+          <input id="customerBankAccount" placeholder="Nhập số tài khoản của khách" inputmode="numeric" />
+          <button type="button" id="openCustomerBankApp">Mở app ngân hàng</button>
+        </div>
+      </div>
+    </section>
     <div class="variant-modal" id="variantModal" aria-label="Chọn sản phẩm">
       <div class="variant-card">
         <div class="checkout-top"><h2 style="margin:0">Chọn sản phẩm</h2><button class="icon-button" id="closeVariant">×</button></div>
@@ -1084,7 +1128,6 @@
         <article class="card">
           ${visualMarkup(product)}
           <div class="meta"><div><b>${product.name}</b><div class="muted">${product.fit}</div></div>${priceMarkup(product)}</div>
-          <div class="product-tags">${productTags(product)}</div>
           <div class="swatches" data-swatches="${product.id}">${product.swatches.map((color, index) => `<button type="button" class="${index === product.colorIndex ? "active" : ""}" data-card-color="${product.id}:${index}" style="background:${color}" aria-label="Chọn màu ${colorLabel(color)} cho ${product.name}" title="${colorLabel(color)}"></button>`).join("")}</div>
           ${product.kind.startsWith("gift-") ? `<div class="muted">Gói quà tiêu chuẩn BLANWHI</div>` : `
             <div class="sizes" data-size-group="${product.id}">
@@ -1217,10 +1260,14 @@
       const shippingLogo = document.getElementById("shippingLogo");
       const zoomModal = document.getElementById("zoomModal");
       const zoomContent = document.getElementById("zoomContent");
+      const bankTransferModal = document.getElementById("bankTransferModal");
+      const bankList = document.getElementById("bankList");
+      const customerBankAccount = document.getElementById("customerBankAccount");
       let orderNote = "";
       let orderVoucherCode = "";
       let selectedVoucherCode = "";
       let selectedShippingMethod = "fast";
+      let selectedBank = "vcb";
 
       const cartCount = () => cart.reduce((sum, item) => sum + item.qty, 0);
       const subtotal = () => cart.reduce((sum, item) => sum + item.amount * item.qty, 0);
@@ -1258,6 +1305,21 @@
           : sub === 0 || sub >= 2000000 || voucher.freeship ? 0 : 30000;
         return { sub, voucher, discount, shipping, shippingPending: selectedShippingMethod === "express", total: Math.max(sub - discount + shipping, 0) };
       };
+      const bankOptions = [
+        ["vcb", "Vietcombank"],
+        ["tcb", "Techcombank"],
+        ["mb", "MB Bank"],
+        ["bidv", "BIDV"],
+        ["acb", "ACB"],
+        ["vpb", "VPBank"],
+        ["tpb", "TPBank"],
+        ["ocb", "OCB"],
+        ["msb", "MSB"],
+        ["sacombank", "Sacombank"],
+        ["vietinbank", "VietinBank"],
+        ["agribank", "Agribank"]
+      ];
+      const currentTransferCode = () => `BLW-${Date.now().toString().slice(-6)}`;
 
       function openCart() {
         cartOverlay.classList.add("open");
@@ -1305,6 +1367,35 @@
 
       function closeZoom() {
         zoomModal.classList.remove("open");
+      }
+
+      function renderBankList() {
+        bankList.innerHTML = bankOptions.map(([code, name]) => `
+          <button class="bank-option ${code === selectedBank ? "active" : ""}" type="button" data-bank="${code}">${name}</button>
+        `).join("");
+      }
+
+      function openBankTransferPage() {
+        const next = totals();
+        const code = currentTransferCode();
+        document.getElementById("bankTransferAmount").textContent = formatMoney(next.total);
+        document.getElementById("bankTransferContent").textContent = code;
+        renderBankList();
+        bankTransferModal.classList.add("open");
+      }
+
+      function closeBankTransferPage() {
+        bankTransferModal.classList.remove("open");
+      }
+
+      function openSelectedBankApp() {
+        const bankName = bankOptions.find(([code]) => code === selectedBank)?.[1] || "bank";
+        const account = customerBankAccount.value.trim();
+        const amount = totals().total;
+        const content = document.getElementById("bankTransferContent").textContent || currentTransferCode();
+        const url = `banking://${selectedBank}/transfer?to=0123456789&receiver=BLANWHI%20STORE&amount=${amount}&content=${encodeURIComponent(content)}&from=${encodeURIComponent(account)}`;
+        window.location.href = url;
+        if (!account) customerBankAccount.placeholder = `Nhập số tài khoản ${bankName} của khách`;
       }
 
       function renderShippingMethod() {
@@ -2452,6 +2543,8 @@
         openCheckout();
       });
       document.getElementById("closeCheckout").addEventListener("click", () => checkoutModal.classList.remove("open"));
+      document.getElementById("openBankTransfer").addEventListener("click", openBankTransferPage);
+      document.getElementById("closeBankTransfer").addEventListener("click", closeBankTransferPage);
       document.getElementById("closeDetail").addEventListener("click", closeDetail);
       document.getElementById("closeVariant").addEventListener("click", closeVariant);
       document.getElementById("closeZoom").addEventListener("click", closeZoom);
@@ -2472,6 +2565,16 @@
       checkoutModal.addEventListener("click", (event) => {
         if (event.target === checkoutModal) checkoutModal.classList.remove("open");
       });
+      bankTransferModal.addEventListener("click", (event) => {
+        if (event.target === bankTransferModal) closeBankTransferPage();
+      });
+      bankList.addEventListener("click", (event) => {
+        const bankButton = event.target.closest("[data-bank]");
+        if (!bankButton) return;
+        selectedBank = bankButton.dataset.bank;
+        renderBankList();
+      });
+      document.getElementById("openCustomerBankApp").addEventListener("click", openSelectedBankApp);
       integrationModal.addEventListener("click", (event) => {
         if (event.target === integrationModal) closeIntegration();
       });
@@ -2536,6 +2639,7 @@
           const selectedPay = document.querySelector("input[name='pay']:checked")?.value || "";
           document.getElementById("cardPaymentFields").classList.toggle("open", selectedPay === "card");
           document.getElementById("walletPaymentFields").classList.toggle("open", selectedPay === "wallet");
+          document.getElementById("transferPaymentFields").classList.toggle("open", selectedPay === "transfer");
         });
       });
       renderCart();
