@@ -1,0 +1,18 @@
+{
+  "pancake": {
+    "enabled": false,
+    "endpoint": "",
+    "token": ""
+  },
+  "misa": {
+    "enabled": false,
+    "endpoint": "",
+    "token": ""
+  },
+  "shipping": {
+    "enabled": false,
+    "providerName": "GHN",
+    "statusEndpoint": "",
+    "token": ""
+  }
+}

@@ -45,3 +45,64 @@ export type Voucher = {
   unlocked: boolean;
   progress: string;
 };
+
+export type PaymentMethod = "cod" | "bank_transfer" | "vnpay" | "onepay" | "alepay" | "momo";
+
+export type OrderStatus = "pending" | "paid" | "failed" | "cancelled";
+export type ShippingStatus =
+  | "not_created"
+  | "ready_to_ship"
+  | "shipping"
+  | "delivered"
+  | "delivery_failed"
+  | "returning"
+  | "returned"
+  | "cancelled"
+  | "unknown";
+
+export type OrderCustomer = {
+  name: string;
+  phone: string;
+  address: string;
+  note?: string;
+};
+
+export type OrderItem = {
+  productId: string;
+  name: string;
+  color: string;
+  size: string;
+  quantity: number;
+  unitPrice: number;
+};
+
+export type ShopOrder = {
+  id: string;
+  code: string;
+  status: OrderStatus;
+  paymentMethod: PaymentMethod;
+  paymentProvider: string;
+  customer: OrderCustomer;
+  items: OrderItem[];
+  subtotal: number;
+  discount: number;
+  shipping: number;
+  shippingMethod?: string;
+  shippingFeeLabel?: string;
+  shippingCarrier?: string;
+  trackingCode?: string;
+  shippingStatus?: ShippingStatus;
+  shippingMessage?: string;
+  total: number;
+  transactionId?: string;
+  providerOrderId?: string;
+  providerMessage?: string;
+  externalSync?: {
+    misa?: string;
+    pancake?: string;
+    shipping?: string;
+    lastSyncedAt?: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+};

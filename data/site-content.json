@@ -1,0 +1,160 @@
+{
+  "brand": {
+    "name": "BLANWHI",
+    "logoUrl": "/umbrella-logo.png",
+    "footerText": "BLANWHI · Minimal commerce prototype"
+  },
+  "hero": {
+    "overline": "Simple is forever",
+    "titleHtml": "Đơn giản.<br />Chất riêng.",
+    "description": "BLANWHI là shop áo thun basic & minimal, chất liệu chọn lọc, form chuẩn, dành cho mọi phong cách.",
+    "themeImageUrl": ""
+  },
+  "footerColumns": [
+    {
+      "title": "Company",
+      "lines": [
+        "About Us",
+        "Join Us",
+        "Store Locator"
+      ]
+    },
+    {
+      "title": "Customer Care",
+      "lines": [
+        "FAQ",
+        "Return Policy",
+        "Promotion Terms"
+      ]
+    },
+    {
+      "title": "Let’s stay<br />in touch.",
+      "lines": [
+        "E-mail address",
+        "By clicking subscribe, you agree to BLANWHI terms."
+      ]
+    }
+  ],
+  "products": [
+    {
+      "id": "p16",
+      "name": "Everyday Sweatpants",
+      "price": "720.000đ",
+      "fit": "Ống thoải mái, cạp vừa",
+      "kind": "pants",
+      "swatches": [
+        "#8c8c88",
+        "#111",
+        "#dedbd4"
+      ],
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "image": "",
+      "sold": 580,
+      "isNew": true,
+      "isSale": true,
+      "salePercent": 15,
+      "active": true
+    },
+    {
+      "id": "p17",
+      "name": "Half Zip Sweat",
+      "price": "880.000đ",
+      "fit": "Rộng nhẹ, vai rũ vừa",
+      "kind": "hoodie",
+      "swatches": [
+        "#c9c5bd",
+        "#303030",
+        "#1f2937"
+      ],
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "image": "",
+      "sold": 820,
+      "isNew": true,
+      "isSale": false,
+      "salePercent": 0,
+      "active": true
+    },
+    {
+      "id": "p18",
+      "name": "Open Collar Shirt",
+      "price": "620.000đ",
+      "fit": "Boxy sạch, dễ mặc",
+      "kind": "tee",
+      "swatches": [
+        "#111",
+        "#f4f4f2",
+        "#59614c"
+      ],
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "image": "",
+      "sold": 390,
+      "isNew": true,
+      "isSale": false,
+      "salePercent": 0,
+      "active": true
+    },
+    {
+      "id": "p19",
+      "name": "Studio Nylon Shorts",
+      "price": "480.000đ",
+      "fit": "Boxy sạch, dễ mặc",
+      "kind": "pants",
+      "swatches": [
+        "#303030",
+        "#c9c5bd",
+        "#1f2937"
+      ],
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "image": "",
+      "sold": 300,
+      "isNew": true,
+      "isSale": true,
+      "salePercent": 10,
+      "active": true
+    },
+    {
+      "id": "p20",
+      "name": "Monochrome Layer Jacket",
+      "price": "1.390.000đ",
+      "fit": "Boxy sạch, dễ mặc",
+      "kind": "jacket",
+      "swatches": [
+        "#111",
+        "#dedbd4",
+        "#8c8c88"
+      ],
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "image": "",
+      "sold": 650,
+      "isNew": true,
+      "isSale": false,
+      "salePercent": 0,
+      "active": true
+    }
+  ]
+}
