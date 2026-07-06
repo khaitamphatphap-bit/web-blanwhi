@@ -210,7 +210,7 @@ export function OrdersAdmin({
     <main className="mx-auto min-h-screen max-w-7xl bg-white px-6 py-10 md:my-12 md:px-10">
       <header className="flex flex-wrap items-end justify-between gap-4 border-b border-neutral-200 pb-6">
         <div>
-          <Link href="/preview.html" className="text-xs uppercase text-neutral-500">BLANWHI</Link>
+          <Link href="/" className="text-xs uppercase text-neutral-500">BLANWHI</Link>
           <h1 className="mt-3 text-4xl font-medium">Quản trị đơn hàng</h1>
         </div>
         <div className="flex flex-wrap gap-2">

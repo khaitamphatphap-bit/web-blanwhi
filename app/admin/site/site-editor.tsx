@@ -174,7 +174,7 @@ export function SiteEditor() {
     <main className="mx-auto min-h-screen max-w-7xl bg-white px-6 py-8 md:my-10 md:px-10">
       <header className="flex flex-wrap items-center justify-between gap-4 border-b border-neutral-200 pb-5">
         <div>
-          <Link href="/preview.html" className="text-xs uppercase text-neutral-500">Xem website khách</Link>
+          <Link href="/" className="text-xs uppercase text-neutral-500">Xem website khách</Link>
           <h1 className="mt-2 text-4xl font-medium">Admin chỉnh website</h1>
         </div>
         <div className="flex flex-wrap gap-2">
