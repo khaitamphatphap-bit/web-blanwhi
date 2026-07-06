@@ -144,6 +144,28 @@ export function SiteEditor() {
     }
   }
 
+  function updateFooterColumn(index: number, nextColumn: SiteContent["footerColumns"][number]) {
+    if (!content) return;
+    updateContent({
+      ...content,
+      footerColumns: content.footerColumns.map((column, columnIndex) => columnIndex === index ? nextColumn : column)
+    });
+  }
+
+  function addFooterColumn() {
+    if (!content) return;
+    updateContent({
+      ...content,
+      footerColumns: [...content.footerColumns, { title: "Cột mới", lines: ["Nội dung mới"] }]
+    });
+  }
+
+  function deleteFooterColumn(index: number) {
+    if (!content) return;
+    const footerColumns = content.footerColumns.filter((_, columnIndex) => columnIndex !== index);
+    updateContent({ ...content, footerColumns: footerColumns.length ? footerColumns : [{ title: "Footer", lines: ["Nội dung"] }] });
+  }
+
   if (!content) {
     return <main className="mx-auto min-h-screen max-w-6xl bg-white p-8">Đang tải admin...</main>;
   }
@@ -225,6 +247,62 @@ export function SiteEditor() {
             <Text label="Nhãn Zalo đơn sỉ" value={content.support.wholesaleZaloLabel} onChange={(value) => updateContent({ ...content, support: { ...content.support, wholesaleZaloLabel: value } })} />
             <Text label="Zalo đơn sỉ hiển thị" value={content.support.wholesaleZaloText} onChange={(value) => updateContent({ ...content, support: { ...content.support, wholesaleZaloText: value } })} />
             <Text label="Link Zalo đơn sỉ" value={content.support.wholesaleZaloHref} onChange={(value) => updateContent({ ...content, support: { ...content.support, wholesaleZaloHref: value } })} />
+          </div>
+
+          <div className="border border-neutral-200 p-4">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-sm font-semibold uppercase">Footer website</h2>
+              <button type="button" onClick={addFooterColumn} className="h-8 border border-black px-3 text-[10px] uppercase">Thêm cột</button>
+            </div>
+            <div className="mt-4 grid gap-4">
+              {content.footerColumns.map((column, columnIndex) => (
+                <div key={columnIndex} className="border border-neutral-200 p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <strong className="text-sm">Cột {columnIndex + 1}</strong>
+                    <button type="button" onClick={() => deleteFooterColumn(columnIndex)} className="border border-red-500 px-2 py-1 text-[10px] uppercase text-red-600">Xóa cột</button>
+                  </div>
+                  <Text
+                    label="Tiêu đề cột"
+                    value={column.title}
+                    onChange={(value) => updateFooterColumn(columnIndex, { ...column, title: value })}
+                  />
+                  <div className="mt-3 grid gap-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs uppercase text-neutral-500">Các dòng nội dung</span>
+                      <button
+                        type="button"
+                        onClick={() => updateFooterColumn(columnIndex, { ...column, lines: [...column.lines, "Dòng mới"] })}
+                        className="border border-black px-2 py-1 text-[10px] uppercase"
+                      >
+                        Thêm dòng
+                      </button>
+                    </div>
+                    {column.lines.map((line, lineIndex) => (
+                      <div key={lineIndex} className="flex gap-2">
+                        <input
+                          value={line}
+                          onChange={(event) => updateFooterColumn(columnIndex, {
+                            ...column,
+                            lines: column.lines.map((item, itemIndex) => itemIndex === lineIndex ? event.target.value : item)
+                          })}
+                          className="h-10 min-w-0 flex-1 border px-3 text-sm"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => updateFooterColumn(columnIndex, {
+                            ...column,
+                            lines: column.lines.filter((_, itemIndex) => itemIndex !== lineIndex)
+                          })}
+                          className="h-10 border border-red-500 px-2 text-[10px] uppercase text-red-600"
+                        >
+                          Xóa
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </aside>
 
