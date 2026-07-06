@@ -1002,6 +1002,9 @@
         color: swatches[0],
         colorIndex: 0,
         image: "",
+        galleryImages: [],
+        galleryIndex: 0,
+        useColorImage: false,
         sizes: ["S", "M", "L", "XL"],
         size: "M",
         orderQty: 1,
@@ -1063,7 +1066,9 @@
 
       const productImageUrl = (product, color = product.color) => {
         const colorImage = product.colorImages?.[color];
-        return colorImage || product.image || "";
+        if (product.useColorImage && colorImage) return colorImage;
+        const gallery = Array.isArray(product.galleryImages) ? product.galleryImages.filter(Boolean) : [];
+        return gallery[product.galleryIndex || 0] || product.image || colorImage || "";
       };
       const swatchMarkup = (product, color, index, attribute) => {
         const image = product.colorImages?.[color] || "";
@@ -1079,8 +1084,8 @@
       };
       const productVisualInnerMarkup = (product) => `
         ${product.isSale ? `<span class="discount-badge">-${product.salePercent}%</span>` : ""}
-        <span class="color-arrow prev" data-color-prev="${product.id}">‹</span>
-        <span class="color-arrow next" data-color-next="${product.id}">›</span>
+        <span class="color-arrow prev" data-gallery-prev="${product.id}">‹</span>
+        <span class="color-arrow next" data-gallery-next="${product.id}">›</span>
         <span class="color-name">${colorLabel(product.color, product)}</span>
         ${productVisualMedia(product)}
       `;
@@ -1245,6 +1250,9 @@
           color: swatches[0],
           colorIndex: 0,
           image: product.image || "",
+          galleryImages: Array.isArray(product.galleryImages) ? product.galleryImages : [],
+          galleryIndex: 0,
+          useColorImage: false,
           colorNames: product.colorNames && typeof product.colorNames === "object" ? product.colorNames : {},
           colorImages: product.colorImages && typeof product.colorImages === "object" ? product.colorImages : {},
           sizes: Array.isArray(product.sizes) && product.sizes.length ? product.sizes : ["S", "M", "L", "XL"],
@@ -1975,11 +1983,13 @@
         renderCart();
       }
 
-      function updateProductColor(id, direction) {
+      function updateProductGallery(id, direction) {
         const product = productData.find((item) => item.id === id);
         if (!product) return;
-        product.colorIndex = (product.colorIndex + direction + product.swatches.length) % product.swatches.length;
-        product.color = product.swatches[product.colorIndex];
+        const gallery = Array.isArray(product.galleryImages) && product.galleryImages.length ? product.galleryImages : (product.image ? [product.image] : []);
+        if (!gallery.length) return;
+        product.galleryIndex = ((product.galleryIndex || 0) + direction + gallery.length) % gallery.length;
+        product.useColorImage = false;
         const visual = document.querySelector(`[data-swipe="${id}"]`);
         const card = visual?.closest(".card");
         if (!visual || !card) return;
@@ -2009,22 +2019,23 @@
           if (product) {
             product.colorIndex = Number(index);
             product.color = product.swatches[product.colorIndex];
+            product.useColorImage = true;
             renderProducts(currentProductList, false);
           }
           return;
         }
-        const prevColor = event.target.closest("[data-color-prev]");
-        if (prevColor) {
+        const prevGallery = event.target.closest("[data-gallery-prev]");
+        if (prevGallery) {
           event.preventDefault();
           event.stopPropagation();
-          updateProductColor(prevColor.dataset.colorPrev, -1);
+          updateProductGallery(prevGallery.dataset.galleryPrev, -1);
           return;
         }
-        const nextColor = event.target.closest("[data-color-next]");
-        if (nextColor) {
+        const nextGallery = event.target.closest("[data-gallery-next]");
+        if (nextGallery) {
           event.preventDefault();
           event.stopPropagation();
-          updateProductColor(nextColor.dataset.colorNext, 1);
+          updateProductGallery(nextGallery.dataset.galleryNext, 1);
           return;
         }
         const sizeButton = event.target.closest("[data-size]");
@@ -2115,6 +2126,7 @@
           if (product) {
             product.colorIndex = Number(index);
             product.color = product.swatches[product.colorIndex];
+            product.useColorImage = true;
             openDetail(id);
           }
           return;
@@ -2197,6 +2209,8 @@
         const color = event.target.closest("[data-variant-color]");
         if (color) {
           variantState.colorIndex = Number(color.dataset.variantColor);
+          const product = productData.find((item) => item.id === variantState.productId);
+          if (product) product.useColorImage = true;
           renderVariantModal();
           return;
         }

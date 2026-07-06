@@ -13,6 +13,7 @@ const emptyProduct: CmsProduct = {
   swatches: ["#111", "#f4f4f2"],
   sizes: ["S", "M", "L", "XL"],
   image: "",
+  galleryImages: [],
   colorNames: {},
   colorImages: {},
   sold: 0,
@@ -300,12 +301,28 @@ function ProductForm({
   const set = <K extends keyof CmsProduct>(key: K, value: CmsProduct[K]) => onChange({ ...product, [key]: value });
   const colorNames = product.colorNames || {};
   const colorImages = product.colorImages || {};
+  const galleryImages = product.galleryImages || [];
   const genders = product.genders || ["men", "women"];
   const [newColor, setNewColor] = useState("#111111");
   const [newColorName, setNewColorName] = useState("");
   const [newSize, setNewSize] = useState("");
   const setColorImage = (color: string, url: string) => {
     onChange({ ...product, colorImages: { ...colorImages, [color]: url } });
+  };
+  const addGalleryImage = (url: string) => {
+    onChange({
+      ...product,
+      image: product.image || url,
+      galleryImages: [...galleryImages, url]
+    });
+  };
+  const updateGalleryImage = (index: number, url: string) => {
+    const nextImages = galleryImages.map((item, itemIndex) => itemIndex === index ? url : item);
+    onChange({ ...product, image: index === 0 ? url : product.image, galleryImages: nextImages });
+  };
+  const removeGalleryImage = (index: number) => {
+    const nextImages = galleryImages.filter((_, itemIndex) => itemIndex !== index);
+    onChange({ ...product, image: nextImages[0] || "", galleryImages: nextImages });
   };
   const setColorName = (color: string, name: string) => {
     onChange({ ...product, colorNames: { ...colorNames, [color]: name } });
@@ -376,13 +393,35 @@ function ProductForm({
             <option value="gift-bag">Gift bag</option>
           </select>
         </label>
-        <Text label="Ảnh sản phẩm URL" value={product.image} onChange={(value) => set("image", value)} />
-        <label className="text-sm">
-          Upload ảnh sản phẩm
-          <input type="file" accept="image/*" onChange={(event) => onUpload(event, (url) => set("image", url))} className="mt-2 block text-xs" />
-        </label>
         <NumberField label="Đã bán" value={product.sold} onChange={(value) => set("sold", value)} />
         <NumberField label="% sale" value={product.salePercent} onChange={(value) => set("salePercent", value)} />
+      </div>
+
+      <div className="mt-5 border-t pt-4">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h4 className="text-sm font-semibold uppercase">Ảnh chi tiết sản phẩm</h4>
+            <p className="mt-1 text-xs text-neutral-500">Thêm nhiều ảnh tổng thể/chi tiết. Khách bấm mũi tên trên ảnh sản phẩm để xem lần lượt. Ảnh màu ở phần dưới chỉ hiện khi khách bấm màu.</p>
+          </div>
+          <label className="text-xs uppercase text-neutral-500">
+            Upload thêm ảnh
+            <input type="file" accept="image/*" onChange={(event) => onUpload(event, addGalleryImage)} className="mt-2 block text-xs normal-case" />
+          </label>
+        </div>
+        <label className="mt-3 block text-xs uppercase text-neutral-500">URL ảnh chính cũ</label>
+        <input value={product.image} onChange={(event) => set("image", event.target.value)} placeholder="Dùng khi chưa có gallery hoặc ảnh đầu tiên" className="mt-1 h-10 w-full border px-3 text-sm" />
+        <div className="mt-3 grid gap-3 md:grid-cols-2">
+          {galleryImages.map((url, index) => (
+            <div key={`${url}-${index}`} className="border border-neutral-200 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <strong className="text-sm">Ảnh {index + 1}</strong>
+                <button type="button" onClick={() => removeGalleryImage(index)} className="border border-red-500 px-2 py-1 text-[10px] uppercase text-red-600">Xóa ảnh</button>
+              </div>
+              <input value={url} onChange={(event) => updateGalleryImage(index, event.target.value)} className="mt-2 h-10 w-full border px-3 text-sm" />
+              {url && <img src={url} alt={`${product.name} ảnh ${index + 1}`} className="mt-3 aspect-[4/3] max-h-56 w-full object-cover" />}
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="mt-4 flex flex-wrap gap-4 border-t pt-4 text-sm">
