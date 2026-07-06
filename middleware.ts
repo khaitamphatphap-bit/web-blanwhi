@@ -10,6 +10,17 @@ function unauthorized() {
 }
 
 export function middleware(request: NextRequest) {
+  const host = request.headers.get("host")?.split(":")[0];
+  if (host === "blanwhi.com") {
+    const url = request.nextUrl.clone();
+    url.hostname = "www.blanwhi.com";
+    url.protocol = "https";
+    return NextResponse.redirect(url, 308);
+  }
+
+  const protectedPath = request.nextUrl.pathname.startsWith("/admin") || request.nextUrl.pathname.startsWith("/api/admin");
+  if (!protectedPath) return NextResponse.next();
+
   const username = process.env.ADMIN_USERNAME;
   const password = process.env.ADMIN_PASSWORD;
 
@@ -31,5 +42,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/api/admin/:path*"]
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"]
 };
