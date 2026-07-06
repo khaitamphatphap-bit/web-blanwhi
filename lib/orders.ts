@@ -1,21 +1,13 @@
-import { mkdir, readFile, writeFile } from "fs/promises";
-import path from "path";
+import { readFile, writeFile } from "fs/promises";
+import { ensureJsonFile } from "@/lib/data-store";
 import { OrderStatus, ShopOrder } from "@/lib/types";
 
-const dataDir = path.join(process.cwd(), "data");
-const ordersFile = path.join(dataDir, "orders.json");
-
-async function ensureStore() {
-  await mkdir(dataDir, { recursive: true });
-  try {
-    await readFile(ordersFile, "utf8");
-  } catch {
-    await writeFile(ordersFile, "[]", "utf8");
-  }
+function ensureStore() {
+  return ensureJsonFile<ShopOrder[]>("orders.json", []);
 }
 
 export async function readOrders(): Promise<ShopOrder[]> {
-  await ensureStore();
+  const ordersFile = await ensureStore();
   const raw = await readFile(ordersFile, "utf8");
   try {
     return JSON.parse(raw) as ShopOrder[];
@@ -25,7 +17,7 @@ export async function readOrders(): Promise<ShopOrder[]> {
 }
 
 export async function writeOrders(orders: ShopOrder[]) {
-  await ensureStore();
+  const ordersFile = await ensureStore();
   await writeFile(ordersFile, JSON.stringify(orders, null, 2), "utf8");
 }
 

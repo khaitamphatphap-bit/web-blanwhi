@@ -16,10 +16,16 @@ export async function POST(request: Request) {
   }
 
   const ext = file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") || "png";
+  const bytes = Buffer.from(await file.arrayBuffer());
+
+  if (process.env.VERCEL || process.env.NODE_ENV === "production") {
+    return NextResponse.json({ url: `data:${file.type};base64,${bytes.toString("base64")}` });
+  }
+
   const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
   const uploadDir = path.join(process.cwd(), "public", "uploads");
   await mkdir(uploadDir, { recursive: true });
-  await writeFile(path.join(uploadDir, filename), Buffer.from(await file.arrayBuffer()));
+  await writeFile(path.join(uploadDir, filename), bytes);
 
   return NextResponse.json({ url: `/uploads/${filename}` });
 }

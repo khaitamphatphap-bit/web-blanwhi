@@ -1298,7 +1298,7 @@
 
       async function loadSiteContent() {
         try {
-          const response = await fetch(`${paymentApiBase}/api/admin/site?t=${Date.now()}`, { cache: "no-store" });
+          const response = await fetch(`${paymentApiBase}/api/site?t=${Date.now()}`, { cache: "no-store" });
           if (!response.ok) return;
           const content = await response.json();
           const signature = JSON.stringify(content);

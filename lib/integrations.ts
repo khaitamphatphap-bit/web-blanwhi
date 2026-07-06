@@ -1,5 +1,5 @@
-import { mkdir, readFile, writeFile } from "fs/promises";
-import path from "path";
+import { readFile, writeFile } from "fs/promises";
+import { ensureJsonFile } from "@/lib/data-store";
 
 export type ShippingProvider = "ghn" | "viettelpost" | "ghtk" | "shopee_express" | "vnpost" | "custom";
 
@@ -25,9 +25,6 @@ export type IntegrationConfig = {
   };
 };
 
-const dataDir = path.join(process.cwd(), "data");
-const integrationsFile = path.join(dataDir, "integrations.json");
-
 export const defaultIntegrationConfig: IntegrationConfig = {
   pancake: { enabled: false, endpoint: "", token: "" },
   misa: { enabled: false, endpoint: "", token: "" },
@@ -42,17 +39,12 @@ export const defaultIntegrationConfig: IntegrationConfig = {
   }
 };
 
-async function ensureStore() {
-  await mkdir(dataDir, { recursive: true });
-  try {
-    await readFile(integrationsFile, "utf8");
-  } catch {
-    await writeFile(integrationsFile, JSON.stringify(defaultIntegrationConfig, null, 2), "utf8");
-  }
+function ensureStore() {
+  return ensureJsonFile<IntegrationConfig>("integrations.json", defaultIntegrationConfig);
 }
 
 export async function readIntegrationConfig(): Promise<IntegrationConfig> {
-  await ensureStore();
+  const integrationsFile = await ensureStore();
   try {
     const saved = JSON.parse(await readFile(integrationsFile, "utf8")) as Partial<IntegrationConfig>;
     return {
@@ -66,7 +58,7 @@ export async function readIntegrationConfig(): Promise<IntegrationConfig> {
 }
 
 export async function writeIntegrationConfig(config: IntegrationConfig) {
-  await ensureStore();
+  const integrationsFile = await ensureStore();
   const normalized: IntegrationConfig = {
     pancake: { ...defaultIntegrationConfig.pancake, ...config.pancake },
     misa: { ...defaultIntegrationConfig.misa, ...config.misa },

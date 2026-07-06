@@ -1,5 +1,5 @@
-import { mkdir, readFile, writeFile } from "fs/promises";
-import path from "path";
+import { readFile, writeFile } from "fs/promises";
+import { ensureJsonFile } from "@/lib/data-store";
 
 export type CmsProduct = {
   id: string;
@@ -49,9 +49,6 @@ export type SiteContent = {
   }>;
   products: CmsProduct[];
 };
-
-const dataDir = path.join(process.cwd(), "data");
-const siteContentFile = path.join(dataDir, "site-content.json");
 
 export const defaultSiteContent: SiteContent = {
   brand: {
@@ -121,17 +118,12 @@ export const defaultSiteContent: SiteContent = {
   }))
 };
 
-async function ensureStore() {
-  await mkdir(dataDir, { recursive: true });
-  try {
-    await readFile(siteContentFile, "utf8");
-  } catch {
-    await writeFile(siteContentFile, JSON.stringify(defaultSiteContent, null, 2), "utf8");
-  }
+function ensureStore() {
+  return ensureJsonFile<SiteContent>("site-content.json", defaultSiteContent);
 }
 
 export async function readSiteContent(): Promise<SiteContent> {
-  await ensureStore();
+  const siteContentFile = await ensureStore();
   const raw = await readFile(siteContentFile, "utf8");
   const saved = JSON.parse(raw) as Partial<SiteContent>;
   const defaultProductsById = new Map(defaultSiteContent.products.map((product) => [product.id, product]));
@@ -156,7 +148,7 @@ export async function readSiteContent(): Promise<SiteContent> {
 }
 
 export async function writeSiteContent(content: SiteContent) {
-  await ensureStore();
+  const siteContentFile = await ensureStore();
   await writeFile(siteContentFile, JSON.stringify(content, null, 2), "utf8");
   return content;
 }

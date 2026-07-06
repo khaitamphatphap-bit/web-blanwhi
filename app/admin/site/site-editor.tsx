@@ -32,7 +32,7 @@ export function SiteEditor() {
   const editorRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    fetch("/api/admin/site")
+    fetch("/api/site")
       .then((response) => response.json())
       .then((data) => {
         setContent(data);
@@ -90,15 +90,21 @@ export function SiteEditor() {
   async function uploadImage(event: ChangeEvent<HTMLInputElement>, onUrl: (url: string) => void) {
     const file = event.target.files?.[0];
     if (!file) return;
-    const form = new FormData();
-    form.append("file", file);
-    const response = await fetch("/api/admin/upload", { method: "POST", body: form });
-    const result = await response.json();
-    if (!response.ok) {
-      setMessage(result.error || "Upload ảnh thất bại.");
-      return;
+    setMessage("Đang upload ảnh...");
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const response = await fetch("/api/admin/upload", { method: "POST", body: form });
+      const result = await response.json();
+      if (!response.ok) {
+        setMessage(result.error || "Upload ảnh thất bại.");
+        return;
+      }
+      onUrl(result.url);
+      setMessage("Đã upload ảnh. Nhấn Lưu thay đổi để cập nhật website khách.");
+    } catch {
+      setMessage("Upload ảnh thất bại. Vui lòng thử lại.");
     }
-    onUrl(result.url);
   }
 
   async function save(next = content) {
@@ -106,12 +112,15 @@ export function SiteEditor() {
     setSaving(true);
     setMessage("");
     try {
-      const response = await fetch("/api/admin/site", {
+      const response = await fetch("/api/site", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(next)
       });
-      if (!response.ok) throw new Error("Không thể lưu nội dung.");
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "Không thể lưu nội dung.");
+      }
       const saved = await response.json();
       updateContent(saved);
       setMessage("Đã lưu. Trang khách sẽ tự cập nhật sau vài giây.");
@@ -290,6 +299,7 @@ function ProductForm({
   const set = <K extends keyof CmsProduct>(key: K, value: CmsProduct[K]) => onChange({ ...product, [key]: value });
   const colorImages = product.colorImages || {};
   const genders = product.genders || ["men", "women"];
+  const [newColor, setNewColor] = useState("#111111");
   const setColorImage = (color: string, url: string) => {
     onChange({ ...product, colorImages: { ...colorImages, [color]: url } });
   };
@@ -299,11 +309,22 @@ function ProductForm({
   };
   const updateSwatches = (value: string) => {
     const swatches = value.split(",").map((item) => item.trim()).filter(Boolean);
+    updateProductColors(swatches);
+  };
+  const updateProductColors = (swatches: string[]) => {
     const nextColorImages = swatches.reduce<Record<string, string>>((images, color) => {
       if (colorImages[color]) images[color] = colorImages[color];
       return images;
     }, {});
     onChange({ ...product, swatches, colorImages: nextColorImages });
+  };
+  const addColor = () => {
+    const color = newColor.trim();
+    if (!color || product.swatches.includes(color)) return;
+    updateProductColors([...product.swatches, color]);
+  };
+  const removeColor = (color: string) => {
+    updateProductColors(product.swatches.filter((item) => item !== color));
   };
 
   return (
@@ -353,14 +374,29 @@ function ProductForm({
       </div>
 
       <div className="mt-5 border-t pt-4">
-        <h4 className="text-sm font-semibold uppercase">Ảnh theo từng màu</h4>
-        <p className="mt-1 text-xs text-neutral-500">Mỗi màu có thể có ảnh riêng. Nếu để trống, website sẽ dùng ảnh chung ở trên.</p>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h4 className="text-sm font-semibold uppercase">Màu và ảnh theo từng màu</h4>
+            <p className="mt-1 text-xs text-neutral-500">Chọn màu, bấm thêm màu, rồi upload ảnh riêng cho từng màu. Nếu để trống ảnh màu, website sẽ dùng ảnh chung.</p>
+          </div>
+          <div className="flex items-end gap-2">
+            <label className="text-xs uppercase text-neutral-500">
+              Thêm màu
+              <span className="mt-1 flex h-10 items-center gap-2 border px-2">
+                <input type="color" value={newColor} onChange={(event) => setNewColor(event.target.value)} className="h-7 w-8 border-0 p-0" />
+                <input value={newColor} onChange={(event) => setNewColor(event.target.value)} className="h-8 w-24 border px-2 text-sm normal-case" />
+              </span>
+            </label>
+            <button type="button" onClick={addColor} className="h-10 border border-black px-4 text-xs uppercase">Thêm màu</button>
+          </div>
+        </div>
         <div className="mt-3 grid gap-3">
           {product.swatches.map((color) => (
             <div key={color} className="grid gap-3 border border-neutral-200 p-3 md:grid-cols-[120px_1fr]">
-              <div className="flex items-center gap-2 text-sm">
-                <span className="h-7 w-7 border border-neutral-300" style={{ backgroundColor: color }} />
-                <strong>{color}</strong>
+              <div className="flex flex-wrap items-center gap-2 text-sm md:block">
+                <span className="inline-block h-7 w-7 border border-neutral-300 align-middle" style={{ backgroundColor: color }} />
+                <strong className="ml-2 align-middle md:ml-0 md:mt-2 md:block">{color}</strong>
+                <button type="button" onClick={() => removeColor(color)} className="border border-red-500 px-2 py-1 text-[10px] uppercase text-red-600 md:mt-3">Xóa màu</button>
               </div>
               <div>
                 <input value={colorImages[color] || ""} onChange={(event) => setColorImage(color, event.target.value)} placeholder="URL ảnh cho màu này" className="h-10 w-full border px-3 text-sm" />

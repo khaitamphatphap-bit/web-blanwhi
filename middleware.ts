@@ -18,7 +18,10 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(url, 308);
   }
 
-  const protectedPath = request.nextUrl.pathname.startsWith("/admin") || request.nextUrl.pathname.startsWith("/api/admin");
+  const protectedPath =
+    request.nextUrl.pathname.startsWith("/admin") ||
+    request.nextUrl.pathname.startsWith("/api/admin") ||
+    (request.nextUrl.pathname === "/api/site" && request.method !== "GET");
   if (!protectedPath) return NextResponse.next();
 
   const username = process.env.ADMIN_USERNAME;
