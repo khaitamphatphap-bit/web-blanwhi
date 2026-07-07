@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
+import { readIntegrationConfig } from "@/lib/integrations";
 import { findOrderByCode, updateOrderStatus } from "@/lib/orders";
 import { verifyMomoBody } from "@/lib/payment";
 
 export async function POST(request: Request) {
   const body = (await request.json()) as Record<string, unknown>;
-  const verified = verifyMomoBody(body);
+  const integrations = await readIntegrationConfig();
+  const verified = verifyMomoBody(body, integrations.payment);
   if (!verified.ok) {
     return NextResponse.json({ resultCode: 97, message: verified.reason });
   }

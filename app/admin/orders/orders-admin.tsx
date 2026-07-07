@@ -309,10 +309,45 @@ export function OrdersAdmin({
           <input value={integrations.shipping.shopId} onChange={(event) => setIntegrations({ ...integrations, shipping: { ...integrations.shipping, shopId: event.target.value } })} placeholder="Shop ID nếu hãng yêu cầu" className="mt-2 h-10 w-full border px-3 text-sm" />
           <input value={integrations.shipping.clientId} onChange={(event) => setIntegrations({ ...integrations, shipping: { ...integrations.shipping, clientId: event.target.value } })} placeholder="Client ID / mã khách hàng nếu có" className="mt-2 h-10 w-full border px-3 text-sm" />
         </fieldset>
+        <PaymentMerchantBox
+          title="VNPAY merchant"
+          enabled={integrations.payment.vnpay.enabled}
+          fields={[
+            { label: "TMN Code", value: integrations.payment.vnpay.tmnCode, keyName: "tmnCode", placeholder: "Mã website/terminal VNPAY" },
+            { label: "Hash secret", value: integrations.payment.vnpay.hashSecret, keyName: "hashSecret", placeholder: "Chuỗi bí mật VNPAY" },
+            { label: "Payment URL", value: integrations.payment.vnpay.paymentUrl, keyName: "paymentUrl", placeholder: "https://pay.vnpay.vn/vpcpay.html" }
+          ]}
+          onEnabled={(enabled) => setIntegrations({ ...integrations, payment: { ...integrations.payment, vnpay: { ...integrations.payment.vnpay, enabled } } })}
+          onField={(key, value) => setIntegrations({ ...integrations, payment: { ...integrations.payment, vnpay: { ...integrations.payment.vnpay, [key]: value } } })}
+        />
+        <PaymentMerchantBox
+          title="MoMo merchant"
+          enabled={integrations.payment.momo.enabled}
+          fields={[
+            { label: "Partner code", value: integrations.payment.momo.partnerCode, keyName: "partnerCode", placeholder: "Mã đối tác MoMo" },
+            { label: "Access key", value: integrations.payment.momo.accessKey, keyName: "accessKey", placeholder: "Access key" },
+            { label: "Secret key", value: integrations.payment.momo.secretKey, keyName: "secretKey", placeholder: "Secret key" },
+            { label: "Endpoint", value: integrations.payment.momo.endpoint, keyName: "endpoint", placeholder: "https://payment.momo.vn/v2/gateway/api/create" }
+          ]}
+          onEnabled={(enabled) => setIntegrations({ ...integrations, payment: { ...integrations.payment, momo: { ...integrations.payment.momo, enabled } } })}
+          onField={(key, value) => setIntegrations({ ...integrations, payment: { ...integrations.payment, momo: { ...integrations.payment.momo, [key]: value } } })}
+        />
+        <PaymentMerchantBox
+          title="ZaloPay merchant"
+          enabled={integrations.payment.zalopay.enabled}
+          fields={[
+            { label: "App ID", value: integrations.payment.zalopay.appId, keyName: "appId", placeholder: "App ID ZaloPay" },
+            { label: "Key 1", value: integrations.payment.zalopay.key1, keyName: "key1", placeholder: "Key tạo thanh toán" },
+            { label: "Key 2", value: integrations.payment.zalopay.key2, keyName: "key2", placeholder: "Key kiểm callback/IPN" },
+            { label: "Endpoint", value: integrations.payment.zalopay.endpoint, keyName: "endpoint", placeholder: "https://openapi.zalopay.vn/v2/create" }
+          ]}
+          onEnabled={(enabled) => setIntegrations({ ...integrations, payment: { ...integrations.payment, zalopay: { ...integrations.payment.zalopay, enabled } } })}
+          onField={(key, value) => setIntegrations({ ...integrations, payment: { ...integrations.payment, zalopay: { ...integrations.payment.zalopay, [key]: value } } })}
+        />
         <div className="lg:col-span-3">
           <button className="h-10 bg-black px-5 text-xs uppercase text-white">Lưu cấu hình tích hợp</button>
           <p className="mt-3 text-xs leading-5 text-neutral-500">
-            Webhook nhận trạng thái: /api/webhooks/shipping · /api/webhooks/misa · /api/webhooks/pancake
+            Webhook nhận trạng thái: /api/webhooks/shipping · /api/webhooks/misa · /api/webhooks/pancake · /api/payments/vnpay-ipn · /api/payments/momo-ipn · /api/payments/zalopay-ipn
           </p>
         </div>
       </form>
@@ -477,6 +512,43 @@ function IntegrationBox({
       <label className="mt-2 block text-sm"><input type="checkbox" checked={enabled} onChange={(event) => onChange({ enabled: event.target.checked })} className="mr-2" />Bật kết nối</label>
       <input value={endpoint} onChange={(event) => onChange({ endpoint: event.target.value })} placeholder={endpointPlaceholder} className="mt-3 h-10 w-full border px-3 text-sm" />
       <input value={token} onChange={(event) => onChange({ token: event.target.value })} placeholder="API token / Bearer token" className="mt-2 h-10 w-full border px-3 text-sm" />
+    </fieldset>
+  );
+}
+
+function PaymentMerchantBox({
+  title,
+  enabled,
+  fields,
+  onEnabled,
+  onField
+}: {
+  title: string;
+  enabled: boolean;
+  fields: Array<{ label: string; value: string; keyName: string; placeholder: string }>;
+  onEnabled: (enabled: boolean) => void;
+  onField: (key: string, value: string) => void;
+}) {
+  return (
+    <fieldset className="border border-neutral-200 p-4">
+      <legend className="px-2 text-sm font-semibold uppercase">{title}</legend>
+      <label className="mt-2 block text-sm">
+        <input type="checkbox" checked={enabled} onChange={(event) => onEnabled(event.target.checked)} className="mr-2" />
+        Bật cổng thanh toán
+      </label>
+      <div className="mt-3 grid gap-2">
+        {fields.map((field) => (
+          <label key={field.keyName} className="text-xs uppercase text-neutral-500">
+            {field.label}
+            <input
+              value={field.value}
+              onChange={(event) => onField(field.keyName, event.target.value)}
+              placeholder={field.placeholder}
+              className="mt-1 h-10 w-full border px-3 text-sm normal-case text-black"
+            />
+          </label>
+        ))}
+      </div>
     </fieldset>
   );
 }

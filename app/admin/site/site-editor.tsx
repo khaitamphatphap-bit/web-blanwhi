@@ -304,6 +304,15 @@ export function SiteEditor() {
               ))}
             </div>
           </div>
+
+          <div className="border border-neutral-200 p-4">
+            <h2 className="text-sm font-semibold uppercase">Tài khoản nhận chuyển khoản</h2>
+            <p className="mt-2 text-xs leading-5 text-neutral-500">Thông tin này hiện cho khách ở trang thanh toán chuyển khoản.</p>
+            <Text label="Tên người nhận" value={content.payment.bank.receiverName} onChange={(value) => updateContent({ ...content, payment: { ...content.payment, bank: { ...content.payment.bank, receiverName: value } } })} />
+            <Text label="Số tài khoản" value={content.payment.bank.accountNumber} onChange={(value) => updateContent({ ...content, payment: { ...content.payment, bank: { ...content.payment.bank, accountNumber: value } } })} />
+            <Text label="Tên ngân hàng" value={content.payment.bank.bankName} onChange={(value) => updateContent({ ...content, payment: { ...content.payment, bank: { ...content.payment.bank, bankName: value } } })} />
+            <Text label="Mã ngân hàng mở app" value={content.payment.bank.bankCode} onChange={(value) => updateContent({ ...content, payment: { ...content.payment, bank: { ...content.payment.bank, bankCode: value } } })} />
+          </div>
         </aside>
 
         <section className="grid gap-5">

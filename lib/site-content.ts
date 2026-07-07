@@ -69,6 +69,14 @@ export type SiteContent = {
     title: string;
     lines: string[];
   }>;
+  payment: {
+    bank: {
+      receiverName: string;
+      accountNumber: string;
+      bankName: string;
+      bankCode: string;
+    };
+  };
   products: CmsProduct[];
 };
 
@@ -120,6 +128,14 @@ export const defaultSiteContent: SiteContent = {
     { title: "Customer Care", lines: ["FAQ", "Return Policy", "Promotion Terms"] },
     { title: "Let’s stay<br />in touch.", lines: ["E-mail address", "By clicking subscribe, you agree to BLANWHI terms."] }
   ],
+  payment: {
+    bank: {
+      receiverName: "BLANWHI STORE",
+      accountNumber: "0123 456 789",
+      bankName: "Vietcombank",
+      bankCode: "vcb"
+    }
+  },
   products: [
     ["Essential Heavy Tee", "420.000đ", "Boxy sạch, dễ mặc", "tee", ["#111", "#f4f4f2", "#8c8c88"]],
     ["Boxy Street Tee", "460.000đ", "Boxy sạch, dễ mặc", "tee", ["#303030", "#c9c5bd", "#59614c"]],
@@ -191,6 +207,12 @@ export async function readSiteContent(): Promise<SiteContent> {
     menu: { ...defaultSiteContent.menu, ...saved.menu },
     support: { ...defaultSiteContent.support, ...saved.support },
     footerColumns: saved.footerColumns || defaultSiteContent.footerColumns,
+    payment: {
+      bank: {
+        ...defaultSiteContent.payment.bank,
+        ...saved.payment?.bank
+      }
+    },
     products
   };
 }

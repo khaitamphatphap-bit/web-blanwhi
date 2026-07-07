@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
+import { readIntegrationConfig } from "@/lib/integrations";
 import { createOrder, newOrderCode } from "@/lib/orders";
 import { checkoutTotals } from "@/lib/pricing";
-import { createMomoPayment, createVnpayUrl, fallbackPaymentUrl } from "@/lib/payment";
+import { createMomoPayment, createVnpayUrl, createZaloPayPayment, fallbackPaymentUrl } from "@/lib/payment";
 import { CartItem, PaymentMethod, ShopOrder } from "@/lib/types";
 
 type CheckoutPayload = {
@@ -38,7 +39,7 @@ type PreviewCheckoutItem = {
   customText?: string;
 };
 
-const onlineMethods = new Set<PaymentMethod>(["vnpay", "onepay", "alepay", "momo"]);
+const onlineMethods = new Set<PaymentMethod>(["vnpay", "onepay", "alepay", "momo", "zalopay"]);
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -59,13 +60,19 @@ function demoPaymentsAllowed() {
   return process.env.NODE_ENV !== "production" || process.env.ENABLE_DEMO_PAYMENTS === "true";
 }
 
-function paymentConfigError(method: PaymentMethod) {
+function paymentConfigError(method: PaymentMethod, paymentConfig: Awaited<ReturnType<typeof readIntegrationConfig>>["payment"]) {
   if (demoPaymentsAllowed()) return "";
-  if (method === "vnpay" && (!process.env.VNPAY_TMN_CODE || !process.env.VNPAY_HASH_SECRET)) {
+  const hasVnpay = (paymentConfig.vnpay.enabled && paymentConfig.vnpay.tmnCode && paymentConfig.vnpay.hashSecret) || (process.env.VNPAY_TMN_CODE && process.env.VNPAY_HASH_SECRET);
+  const hasMomo = (paymentConfig.momo.enabled && paymentConfig.momo.partnerCode && paymentConfig.momo.accessKey && paymentConfig.momo.secretKey) || (process.env.MOMO_PARTNER_CODE && process.env.MOMO_ACCESS_KEY && process.env.MOMO_SECRET_KEY);
+  const hasZaloPay = (paymentConfig.zalopay.enabled && paymentConfig.zalopay.appId && paymentConfig.zalopay.key1 && paymentConfig.zalopay.key2) || (process.env.ZALOPAY_APP_ID && process.env.ZALOPAY_KEY1 && process.env.ZALOPAY_KEY2);
+  if (method === "vnpay" && !hasVnpay) {
     return "Website chưa cấu hình merchant VNPAY thật.";
   }
-  if (method === "momo" && (!process.env.MOMO_PARTNER_CODE || !process.env.MOMO_ACCESS_KEY || !process.env.MOMO_SECRET_KEY)) {
+  if (method === "momo" && !hasMomo) {
     return "Website chưa cấu hình merchant MoMo thật.";
+  }
+  if (method === "zalopay" && !hasZaloPay) {
+    return "Website chưa cấu hình merchant ZaloPay thật.";
   }
   if (method === "onepay" || method === "alepay") {
     return "OnePay/AlePay cần endpoint merchant thật trước khi nhận thanh toán production.";
@@ -110,6 +117,7 @@ export async function POST(request: Request) {
   const items = payload.items ?? [];
   const paymentMethod = payload.paymentMethod ?? "cod";
   const customer = payload.customer ?? {};
+  const integrations = await readIntegrationConfig();
 
   if (!customer.name || !customer.phone || !customer.address) {
     return json({ error: "Vui lòng nhập đủ họ tên, số điện thoại và địa chỉ." }, { status: 400 });
@@ -118,7 +126,7 @@ export async function POST(request: Request) {
     return json({ error: "Giỏ hàng đang trống." }, { status: 400 });
   }
   if (onlineMethods.has(paymentMethod)) {
-    const configError = paymentConfigError(paymentMethod);
+    const configError = paymentConfigError(paymentMethod, integrations.payment);
     if (configError) return json({ error: configError }, { status: 400 });
   }
 
@@ -172,17 +180,28 @@ export async function POST(request: Request) {
   await createOrder(order);
 
   if (paymentMethod === "vnpay") {
-    return json({ order, redirectUrl: createVnpayUrl(order, request) });
+    return json({ order, redirectUrl: createVnpayUrl(order, request, integrations.payment) });
   }
 
   if (paymentMethod === "momo") {
-    const momo = await createMomoPayment(order, request);
+    const momo = await createMomoPayment(order, request, integrations.payment);
     return json({
       order,
       redirectUrl: momo.payUrl || fallbackPaymentUrl(order, paymentMethod, request),
       qrCodeUrl: momo.qrCodeUrl,
       deeplink: momo.deeplink,
       demo: "demo" in momo ? momo.demo : false
+    });
+  }
+
+  if (paymentMethod === "zalopay") {
+    const zalopay = await createZaloPayPayment(order, request, integrations.payment);
+    return json({
+      order,
+      redirectUrl: zalopay.order_url || fallbackPaymentUrl(order, paymentMethod, request),
+      token: zalopay.zp_trans_token || zalopay.order_token,
+      demo: "demo" in zalopay ? zalopay.demo : false,
+      message: zalopay.return_message
     });
   }
 

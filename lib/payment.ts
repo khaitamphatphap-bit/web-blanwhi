@@ -1,7 +1,9 @@
 import crypto from "crypto";
+import type { IntegrationConfig } from "@/lib/integrations";
 import { PaymentMethod, ShopOrder } from "@/lib/types";
 
 const vnpayVersion = "2.1.0";
+type PaymentConfig = IntegrationConfig["payment"];
 
 function env(name: string, fallback = "") {
   return process.env[name] || fallback;
@@ -40,6 +42,10 @@ export function hmacSha256Base64(data: string, secret: string) {
   return crypto.createHmac("sha256", secret).update(data).digest("base64");
 }
 
+export function hmacSha256Hex(data: string, secret: string) {
+  return crypto.createHmac("sha256", secret).update(data).digest("hex");
+}
+
 export function getBaseUrl(request: Request) {
   const configured = env("NEXT_PUBLIC_SITE_URL");
   if (configured) return configured.replace(/\/$/, "");
@@ -47,10 +53,10 @@ export function getBaseUrl(request: Request) {
   return `${url.protocol}//${url.host}`;
 }
 
-export function createVnpayUrl(order: ShopOrder, request: Request) {
-  const tmnCode = env("VNPAY_TMN_CODE", "DEMO");
-  const hashSecret = env("VNPAY_HASH_SECRET");
-  const paymentUrl = env("VNPAY_PAYMENT_URL", "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html");
+export function createVnpayUrl(order: ShopOrder, request: Request, paymentConfig?: PaymentConfig) {
+  const tmnCode = paymentConfig?.vnpay.tmnCode || env("VNPAY_TMN_CODE", "DEMO");
+  const hashSecret = paymentConfig?.vnpay.hashSecret || env("VNPAY_HASH_SECRET");
+  const paymentUrl = paymentConfig?.vnpay.paymentUrl || env("VNPAY_PAYMENT_URL", "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html");
   const baseUrl = getBaseUrl(request);
   const now = new Date();
   const expire = new Date(now.getTime() + 15 * 60 * 1000);
@@ -78,8 +84,8 @@ export function createVnpayUrl(order: ShopOrder, request: Request) {
   return `${paymentUrl}?${query}${secureHash ? `&vnp_SecureHash=${secureHash}` : ""}`;
 }
 
-export function verifyVnpayParams(searchParams: URLSearchParams) {
-  const secret = env("VNPAY_HASH_SECRET");
+export function verifyVnpayParams(searchParams: URLSearchParams, paymentConfig?: PaymentConfig) {
+  const secret = paymentConfig?.vnpay.hashSecret || env("VNPAY_HASH_SECRET");
   if (!secret) return { ok: false, reason: "Missing VNPAY_HASH_SECRET" };
   const receivedHash = searchParams.get("vnp_SecureHash");
   const params: Record<string, string> = {};
@@ -91,11 +97,11 @@ export function verifyVnpayParams(searchParams: URLSearchParams) {
   return { ok: expected === receivedHash, reason: expected === receivedHash ? "OK" : "Invalid signature" };
 }
 
-export async function createMomoPayment(order: ShopOrder, request: Request) {
-  const endpoint = env("MOMO_ENDPOINT", "https://test-payment.momo.vn/v2/gateway/api/create");
-  const partnerCode = env("MOMO_PARTNER_CODE", "MOMOBKUN20180529");
-  const accessKey = env("MOMO_ACCESS_KEY");
-  const secretKey = env("MOMO_SECRET_KEY");
+export async function createMomoPayment(order: ShopOrder, request: Request, paymentConfig?: PaymentConfig) {
+  const endpoint = paymentConfig?.momo.endpoint || env("MOMO_ENDPOINT", "https://test-payment.momo.vn/v2/gateway/api/create");
+  const partnerCode = paymentConfig?.momo.partnerCode || env("MOMO_PARTNER_CODE", "MOMOBKUN20180529");
+  const accessKey = paymentConfig?.momo.accessKey || env("MOMO_ACCESS_KEY");
+  const secretKey = paymentConfig?.momo.secretKey || env("MOMO_SECRET_KEY");
   const baseUrl = getBaseUrl(request);
   const requestId = `${order.code}-${Date.now()}`;
   const orderInfo = `Thanh toan don hang ${order.code}`;
@@ -151,9 +157,9 @@ export async function createMomoPayment(order: ShopOrder, request: Request) {
   return response.json() as Promise<{ payUrl?: string; qrCodeUrl?: string; deeplink?: string; requestId: string; message?: string }>;
 }
 
-export function verifyMomoBody(body: Record<string, unknown>) {
-  const secretKey = env("MOMO_SECRET_KEY");
-  const accessKey = env("MOMO_ACCESS_KEY");
+export function verifyMomoBody(body: Record<string, unknown>, paymentConfig?: PaymentConfig) {
+  const secretKey = paymentConfig?.momo.secretKey || env("MOMO_SECRET_KEY");
+  const accessKey = paymentConfig?.momo.accessKey || env("MOMO_ACCESS_KEY");
   if (!secretKey || !accessKey) return { ok: false, reason: "Missing MOMO_SECRET_KEY or MOMO_ACCESS_KEY" };
   const received = String(body.signature ?? "");
   const rawSignature = [
@@ -172,6 +178,66 @@ export function verifyMomoBody(body: Record<string, unknown>) {
     `transId=${body.transId ?? ""}`
   ].join("&");
   const expected = crypto.createHmac("sha256", secretKey).update(rawSignature).digest("hex");
+  return { ok: expected === received, reason: expected === received ? "OK" : "Invalid signature" };
+}
+
+export async function createZaloPayPayment(order: ShopOrder, request: Request, paymentConfig?: PaymentConfig) {
+  const endpoint = paymentConfig?.zalopay.endpoint || env("ZALOPAY_ENDPOINT", "https://sb-openapi.zalopay.vn/v2/create");
+  const appId = paymentConfig?.zalopay.appId || env("ZALOPAY_APP_ID");
+  const key1 = paymentConfig?.zalopay.key1 || env("ZALOPAY_KEY1");
+  const baseUrl = getBaseUrl(request);
+  const now = Date.now();
+  const date = new Date();
+  const yymmdd = `${String(date.getFullYear()).slice(-2)}${String(date.getMonth() + 1).padStart(2, "0")}${String(date.getDate()).padStart(2, "0")}`;
+  const appTransId = `${yymmdd}_${order.code}`;
+  const appUser = order.customer.phone || order.customer.name || "blanwhi";
+  const item = JSON.stringify(order.items.map((line) => ({
+    itemid: line.productId,
+    itemname: line.name,
+    itemprice: line.unitPrice,
+    itemquantity: line.quantity
+  })));
+  const embedData = JSON.stringify({
+    redirecturl: `${baseUrl}/payment-result?provider=zalopay&orderCode=${order.code}`
+  });
+
+  if (!appId || !key1) {
+    return {
+      order_url: `${baseUrl}/payment-result?provider=zalopay&orderCode=${order.code}&demo=1`,
+      app_trans_id: appTransId,
+      demo: true
+    };
+  }
+
+  const data = `${appId}|${appTransId}|${appUser}|${order.total}|${now}|${embedData}|${item}`;
+  const body = new URLSearchParams({
+    app_id: appId,
+    app_user: appUser,
+    app_time: String(now),
+    amount: String(order.total),
+    app_trans_id: appTransId,
+    embed_data: embedData,
+    item,
+    description: `BLANWHI - thanh toan don hang ${order.code}`,
+    bank_code: "",
+    callback_url: `${baseUrl}/api/payments/zalopay-ipn`,
+    mac: hmacSha256Hex(data, key1)
+  });
+
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body
+  });
+  return response.json() as Promise<{ order_url?: string; zp_trans_token?: string; order_token?: string; app_trans_id?: string; return_code?: number; return_message?: string; demo?: boolean }>;
+}
+
+export function verifyZaloPayBody(body: Record<string, unknown>, paymentConfig?: PaymentConfig) {
+  const key2 = paymentConfig?.zalopay.key2 || env("ZALOPAY_KEY2");
+  if (!key2) return { ok: false, reason: "Missing ZALOPAY_KEY2" };
+  const data = String(body.data ?? "");
+  const received = String(body.mac ?? "");
+  const expected = hmacSha256Hex(data, key2);
   return { ok: expected === received, reason: expected === received ? "OK" : "Invalid signature" };
 }
 

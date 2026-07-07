@@ -880,9 +880,10 @@
             <div class="custom-confirm-area" id="customConfirmArea"></div>
             <div class="pay-grid">
               <label><input type="radio" name="pay" checked /> COD</label>
-              <label><input type="radio" name="pay" value="card" /> Thẻ</label>
+              <label><input type="radio" name="pay" value="card" /> Thẻ VNPAY</label>
               <label><input type="radio" name="pay" value="transfer" /> Chuyển khoản</label>
-              <label><input type="radio" name="pay" value="wallet" /> Ví điện tử</label>
+              <label><input type="radio" name="pay" value="wallet" /> MoMo</label>
+              <label><input type="radio" name="pay" value="zalopay" /> ZaloPay</label>
             </div>
             <div class="payment-extra" id="cardPaymentFields">
               <span class="muted">Website sẽ chuyển khách sang cổng thanh toán VNPAY/OnePay/AlePay. BLANWHI không lưu số thẻ, CVV hoặc OTP của khách.</span>
@@ -919,7 +920,7 @@
         </div>
         <div class="bank-info-card" style="border:1px solid #111">
           <span>Số tài khoản nhận tiền</span>
-          <strong>0123 456 789 - Vietcombank</strong>
+          <strong id="bankAccountDisplay">0123 456 789 - Vietcombank</strong>
         </div>
         <p class="bank-note">Chọn ngân hàng khách đang dùng, nhập số tài khoản của khách rồi bấm mở app ngân hàng. Nếu thiết bị có cài app ngân hàng tương ứng, trình duyệt sẽ chuyển sang app.</p>
         <div class="bank-list" id="bankList"></div>
@@ -1329,6 +1330,17 @@
             <div><h3>${column.title || ""}</h3>${(column.lines || []).map((line) => `<p>${escapeMarkup(line)}</p>`).join("")}</div>
           `).join("");
         }
+        if (content.payment?.bank) {
+          shopBankReceiverName = content.payment.bank.receiverName || shopBankReceiverName;
+          shopBankAccountNumber = content.payment.bank.accountNumber || shopBankAccountNumber;
+          shopBankName = content.payment.bank.bankName || shopBankName;
+          shopBankCode = content.payment.bank.bankCode || shopBankCode;
+          selectedBank = shopBankCode || selectedBank;
+          const receiverNode = document.getElementById("bankReceiverName");
+          const accountNode = document.getElementById("bankAccountDisplay");
+          if (receiverNode) receiverNode.textContent = shopBankReceiverName;
+          if (accountNode) accountNode.textContent = `${shopBankAccountNumber} - ${shopBankName}`.trim();
+        }
         if (Array.isArray(content.products)) {
           productData = content.products
             .filter((product) => product.active !== false)
@@ -1393,6 +1405,10 @@
       let selectedVoucherCode = "";
       let selectedShippingMethod = "fast";
       let selectedBank = "vcb";
+      let shopBankReceiverName = "BLANWHI STORE";
+      let shopBankAccountNumber = "0123 456 789";
+      let shopBankName = "Vietcombank";
+      let shopBankCode = "vcb";
 
       const cartCount = () => cart.reduce((sum, item) => sum + item.qty, 0);
       const subtotal = () => cart.reduce((sum, item) => sum + item.amount * item.qty, 0);
@@ -1400,7 +1416,7 @@
       let wholesaleState = { productId: null, qty: 10 };
       const loadOrders = () => JSON.parse(localStorage.getItem("blanwhiOrders") || "[]");
       const saveOrders = (orders) => localStorage.setItem("blanwhiOrders", JSON.stringify(orders));
-      const paymentMethodMap = { card: "vnpay", wallet: "momo", transfer: "bank_transfer" };
+      const paymentMethodMap = { card: "vnpay", wallet: "momo", zalopay: "zalopay", transfer: "bank_transfer" };
       const customerShippingLabels = {
         not_created: "Đơn mới đặt",
         ready_to_ship: "Đã giao cho đơn vị vận chuyển",
@@ -1520,7 +1536,9 @@
         const account = customerBankAccount.value.trim();
         const amount = totals().total;
         const content = document.getElementById("bankTransferContent").textContent || currentTransferCode();
-        const url = `banking://${selectedBank}/transfer?to=0123456789&receiver=BLANWHI%20STORE&amount=${amount}&content=${encodeURIComponent(content)}&from=${encodeURIComponent(account)}`;
+        const receiver = encodeURIComponent(shopBankReceiverName);
+        const toAccount = encodeURIComponent(shopBankAccountNumber.replace(/\s+/g, ""));
+        const url = `banking://${selectedBank}/transfer?to=${toAccount}&receiver=${receiver}&amount=${amount}&content=${encodeURIComponent(content)}&from=${encodeURIComponent(account)}`;
         window.location.href = url;
         if (!account) customerBankAccount.placeholder = `Nhập số tài khoản ${bankName} của khách`;
       }

@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
+import { readIntegrationConfig } from "@/lib/integrations";
 import { findOrderByCode, updateOrderStatus } from "@/lib/orders";
 import { verifyVnpayParams } from "@/lib/payment";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
-  const verified = verifyVnpayParams(url.searchParams);
+  const integrations = await readIntegrationConfig();
+  const verified = verifyVnpayParams(url.searchParams, integrations.payment);
   if (!verified.ok) {
     return NextResponse.json({ RspCode: "97", Message: verified.reason });
   }

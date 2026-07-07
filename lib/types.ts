@@ -46,7 +46,7 @@ export type Voucher = {
   progress: string;
 };
 
-export type PaymentMethod = "cod" | "bank_transfer" | "vnpay" | "onepay" | "alepay" | "momo";
+export type PaymentMethod = "cod" | "bank_transfer" | "vnpay" | "onepay" | "alepay" | "momo" | "zalopay";
 
 export type OrderStatus = "pending" | "paid" | "failed" | "cancelled";
 export type ShippingStatus =
