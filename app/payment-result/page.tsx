@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { findOrderByCode } from "@/lib/orders";
 import { money } from "@/lib/pricing";
+import { BankTransferConfirm } from "./BankTransferConfirm";
 import { DemoPaymentActions } from "./DemoPaymentActions";
 
 type PageProps = {
@@ -16,9 +17,11 @@ export default async function PaymentResultPage({ searchParams }: PageProps) {
   const orderCode = valueOf(params.orderCode) || valueOf(params.vnp_TxnRef) || valueOf(params.orderId) || "";
   const provider = valueOf(params.provider) || "payment";
   const demo = valueOf(params.demo) === "1";
+  const bankConfirmed = valueOf(params.bankConfirmed) === "1";
   const order = orderCode ? await findOrderByCode(orderCode) : null;
   const success = order?.status === "paid";
   const failed = order?.status === "failed" || order?.status === "cancelled";
+  const bankTransferPending = order?.paymentMethod === "bank_transfer" && order.status === "pending";
 
   return (
     <main className="mx-auto min-h-screen max-w-3xl bg-white px-6 py-12 md:my-16 md:px-12">
@@ -26,7 +29,7 @@ export default async function PaymentResultPage({ searchParams }: PageProps) {
       <section className="mt-10 border-y border-neutral-200 py-10">
         <p className="text-xs uppercase text-neutral-500">Payment result · {provider}</p>
         <h1 className="mt-3 text-4xl font-medium">
-          {success ? "Thanh toán thành công" : failed ? "Thanh toán thất bại" : "Đơn hàng đang chờ thanh toán"}
+          {success && order?.paymentMethod === "bank_transfer" ? "Đã nhận chuyển khoản thành công" : success ? "Thanh toán thành công" : failed ? "Thanh toán thất bại" : "Đơn hàng đang chờ thanh toán"}
         </h1>
         <p className="mt-4 text-sm leading-6 text-neutral-500">
           Mã đơn: <strong className="text-black">{orderCode || "Không tìm thấy"}</strong>
@@ -39,7 +42,7 @@ export default async function PaymentResultPage({ searchParams }: PageProps) {
             <div className="flex justify-between text-lg"><span>Tổng tiền</span><span>{money(order.total)}</span></div>
           </div>
         )}
-        {demo && order && (
+        {demo && order && order.paymentMethod !== "bank_transfer" && (
           <div className="mt-6 border border-dashed border-neutral-300 p-4">
             <p className="text-sm text-neutral-600">
               Chế độ demo: chưa cấu hình key merchant nên bạn có thể giả lập kết quả IPN để kiểm thử quản trị đơn.
@@ -47,9 +50,16 @@ export default async function PaymentResultPage({ searchParams }: PageProps) {
             <DemoPaymentActions orderCode={order.code} />
           </div>
         )}
+        {bankTransferPending && <BankTransferConfirm orderCode={order.code} />}
+        {bankConfirmed && success && (
+          <div className="mt-6 border border-emerald-600 bg-emerald-50 p-4 text-sm text-emerald-800">
+            Đơn hàng đã được cập nhật sang trạng thái đã thanh toán.
+          </div>
+        )}
       </section>
       <div className="mt-8 flex flex-wrap gap-3">
         <Link href="/" className="inline-flex h-11 items-center border border-black px-5 text-sm uppercase">Về trang chủ</Link>
+        {orderCode && <Link href={`/?orderCode=${orderCode}#orders`} className="inline-flex h-11 items-center border border-black px-5 text-sm uppercase">Xem trạng thái đơn</Link>}
         <Link href="/admin/orders" className="inline-flex h-11 items-center bg-black px-5 text-sm uppercase text-white">Xem quản trị đơn</Link>
       </div>
     </main>

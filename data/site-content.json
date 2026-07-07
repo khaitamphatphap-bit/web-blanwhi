@@ -66,6 +66,14 @@
       ]
     }
   ],
+  "payment": {
+    "bank": {
+      "receiverName": "BLANWHI STORE",
+      "accountNumber": "0123 456 789",
+      "bankName": "Vietcombank",
+      "bankCode": "vcb"
+    }
+  },
   "products": [
     {
       "id": "p1783343228536",

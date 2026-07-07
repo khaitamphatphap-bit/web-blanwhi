@@ -2819,6 +2819,12 @@
       renderCart();
       renderShippingMethod();
       syncCustomerOrderStatuses().then(renderOrders);
+      const initialParams = new URLSearchParams(window.location.search);
+      if (window.location.hash === "#orders" || initialParams.has("orderCode")) {
+        window.setTimeout(() => {
+          openOrders();
+        }, 350);
+      }
       setInterval(() => {
         if (!ordersDrawer.classList.contains("open")) return;
         syncCustomerOrderStatuses().then(renderOrders);
