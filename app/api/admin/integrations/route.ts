@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { jsonError } from "@/lib/api-errors";
 import { readIntegrationConfig, writeIntegrationConfig } from "@/lib/integrations";
 
 export async function GET() {
@@ -8,8 +9,12 @@ export async function GET() {
 }
 
 export async function PUT(request: Request) {
-  const config = await request.json();
-  return NextResponse.json(await writeIntegrationConfig(config), {
-    headers: { "Cache-Control": "no-store, max-age=0" }
-  });
+  try {
+    const config = await request.json();
+    return NextResponse.json(await writeIntegrationConfig(config), {
+      headers: { "Cache-Control": "no-store, max-age=0" }
+    });
+  } catch (error) {
+    return jsonError(error);
+  }
 }

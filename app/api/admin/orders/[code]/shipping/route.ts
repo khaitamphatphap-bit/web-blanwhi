@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { jsonError } from "@/lib/api-errors";
 import { readIntegrationConfig } from "@/lib/integrations";
 import { findOrderByCode, updateOrder } from "@/lib/orders";
 import { fetchShippingStatus } from "@/lib/shipping-providers";
@@ -34,6 +35,7 @@ export async function POST(_request: Request, { params }: Params) {
 
     return NextResponse.json({ order: updated, payload: result.payload });
   } catch (error) {
+    if (error instanceof Error && error.message.includes("Dung lượng")) return jsonError(error);
     return NextResponse.json({
       error: error instanceof Error ? error.message : "Không cập nhật được vận chuyển."
     }, { status: 502 });

@@ -36,15 +36,68 @@ async function ensureDatabaseSchema() {
   const pool = await getPool();
   if (!pool) return;
   if (!schemaReadyPromise) {
-    schemaReadyPromise = pool.query(`
-      create table if not exists blanwhi_store (
-        store_key text primary key,
-        store_value jsonb not null,
-        updated_at timestamptz not null default now()
-      )
-    `).then(() => undefined);
+    schemaReadyPromise = (async () => {
+      await pool.query(`
+        create table if not exists blanwhi_store (
+          store_key text primary key,
+          store_value jsonb not null,
+          updated_at timestamptz not null default now()
+        )
+      `);
+      await pool.query(`
+        create table if not exists blanwhi_store_history (
+          id bigserial primary key,
+          store_key text not null,
+          store_value jsonb not null,
+          reason text not null default 'before-write',
+          created_at timestamptz not null default now()
+        )
+      `);
+      await pool.query(`
+        create index if not exists blanwhi_store_history_key_created_idx
+        on blanwhi_store_history (store_key, created_at desc)
+      `);
+    })();
   }
   await schemaReadyPromise;
+}
+
+function toStoreKey(filename: string) {
+  return filename.replace(/\.json$/, "");
+}
+
+function isStorageLimitError(error: unknown) {
+  const candidate = error as { code?: string; message?: string; detail?: string };
+  const text = `${candidate.code || ""} ${candidate.message || ""} ${candidate.detail || ""}`.toLowerCase();
+  return (
+    candidate.code === "53100" ||
+    candidate.code === "53200" ||
+    text.includes("enospc") ||
+    text.includes("no space") ||
+    text.includes("disk full") ||
+    text.includes("quota") ||
+    text.includes("storage limit") ||
+    text.includes("storage exceeded")
+  );
+}
+
+function throwStoreWriteError(error: unknown): never {
+  if (isStorageLimitError(error)) {
+    throw new Error("Dung lượng lưu trữ đã đầy. Hệ thống chưa xoá dữ liệu cũ và chưa ghi đè bản mới. Vui lòng xoá bớt dữ liệu/ảnh không dùng hoặc nâng cấp dung lượng rồi lưu lại.");
+  }
+  throw error;
+}
+
+async function backupJsonFile<T>(file: string, key: string) {
+  try {
+    const previous = await readFile(file, "utf8");
+    const backupDir = path.join(path.dirname(file), "backups", key);
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    await mkdir(backupDir, { recursive: true });
+    await writeFile(path.join(backupDir, `${timestamp}.json`), previous, "utf8");
+  } catch {
+    // If the first write has no previous file, there is nothing to back up.
+  }
 }
 
 export async function ensureJsonFile<T>(filename: string, fallback: T) {
@@ -70,7 +123,7 @@ export async function readJsonStore<T>(filename: string, fallback: T): Promise<T
     await ensureDatabaseSchema();
     const pool = await getPool();
     if (pool) {
-      const key = filename.replace(/\.json$/, "");
+      const key = toStoreKey(filename);
       const result = await pool.query("select store_value from blanwhi_store where store_key = $1", [key]);
       if (result.rows[0]?.store_value !== undefined) return result.rows[0].store_value as T;
 
@@ -99,19 +152,44 @@ export async function writeJsonStore<T>(filename: string, value: T) {
     await ensureDatabaseSchema();
     const pool = await getPool();
     if (pool) {
-      const key = filename.replace(/\.json$/, "");
-      await pool.query(
-        `insert into blanwhi_store (store_key, store_value, updated_at)
-         values ($1, $2::jsonb, now())
-         on conflict (store_key)
-         do update set store_value = excluded.store_value, updated_at = now()`,
-        [key, JSON.stringify(value)]
-      );
+      const key = toStoreKey(filename);
+      try {
+        await pool.query(
+          `with incoming as (
+             select $1::text as store_key, $2::jsonb as store_value
+           ),
+           previous as (
+             select current.store_key, current.store_value
+             from blanwhi_store current
+             join incoming on incoming.store_key = current.store_key
+             where current.store_value is distinct from incoming.store_value
+           ),
+           backup as (
+             insert into blanwhi_store_history (store_key, store_value, reason)
+             select store_key, store_value, 'before-write'
+             from previous
+             returning id
+           )
+           insert into blanwhi_store (store_key, store_value, updated_at)
+           select store_key, store_value, now()
+           from incoming
+           on conflict (store_key)
+           do update set store_value = excluded.store_value, updated_at = now()`,
+          [key, JSON.stringify(value)]
+        );
+      } catch (error) {
+        throwStoreWriteError(error);
+      }
       return value;
     }
   }
 
   const file = await ensureJsonFile<T>(filename, value);
-  await writeFile(file, JSON.stringify(value, null, 2), "utf8");
+  await backupJsonFile(file, toStoreKey(filename));
+  try {
+    await writeFile(file, JSON.stringify(value, null, 2), "utf8");
+  } catch (error) {
+    throwStoreWriteError(error);
+  }
   return value;
 }
