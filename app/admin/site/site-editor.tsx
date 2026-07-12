@@ -115,25 +115,37 @@ export function SiteEditor() {
     setSelectedId(products[0]?.id || "");
   }
 
-  async function uploadImage(event: ChangeEvent<HTMLInputElement>, onUrl: (url: string) => void) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    setMessage("Đang upload ảnh...");
+  async function uploadImages(event: ChangeEvent<HTMLInputElement>, onUrls: (urls: string[]) => void) {
+    const files = Array.from(event.target.files || []);
+    if (!files.length) return;
+    setMessage(files.length > 1 ? `Đang upload ${files.length} ảnh...` : "Đang upload ảnh...");
     try {
-      const uploadFile = await prepareImageForUpload(file);
-      const form = new FormData();
-      form.append("file", uploadFile);
-      const response = await fetch("/api/admin/upload", { method: "POST", body: form });
-      const result = await response.json();
-      if (!response.ok) {
-        setMessage(result.error || "Upload ảnh thất bại.");
-        return;
+      const urls: string[] = [];
+      for (const file of files) {
+        const uploadFile = await prepareImageForUpload(file);
+        const form = new FormData();
+        form.append("file", uploadFile);
+        const response = await fetch("/api/admin/upload", { method: "POST", body: form });
+        const result = await response.json();
+        if (!response.ok) {
+          setMessage(result.error || "Upload ảnh thất bại.");
+          return;
+        }
+        urls.push(result.url);
       }
-      onUrl(result.url);
-      setMessage("Đã upload ảnh. Nhấn Lưu thay đổi để cập nhật website khách.");
+      onUrls(urls);
+      setMessage(`Đã upload ${urls.length} ảnh. Nhấn Lưu thay đổi để cập nhật website khách.`);
     } catch {
       setMessage("Upload ảnh thất bại. Vui lòng thử lại.");
+    } finally {
+      event.target.value = "";
     }
+  }
+
+  async function uploadImage(event: ChangeEvent<HTMLInputElement>, onUrl: (url: string) => void) {
+    return uploadImages(event, (urls) => {
+      if (urls[0]) onUrl(urls[0]);
+    });
   }
 
   async function save(next = content) {
@@ -404,6 +416,7 @@ export function SiteEditor() {
                   onChange={updateProduct}
                   onDelete={() => deleteProduct(selectedProduct.id)}
                   onUpload={(event, onUrl) => uploadImage(event, onUrl)}
+                  onUploadMany={(event, onUrls) => uploadImages(event, onUrls)}
                 />
               </div>
             )}
@@ -427,12 +440,14 @@ function ProductForm({
   product,
   onChange,
   onDelete,
-  onUpload
+  onUpload,
+  onUploadMany
 }: {
   product: CmsProduct;
   onChange: (product: CmsProduct) => void;
   onDelete: () => void;
   onUpload: (event: ChangeEvent<HTMLInputElement>, onUrl: (url: string) => void) => void;
+  onUploadMany: (event: ChangeEvent<HTMLInputElement>, onUrls: (urls: string[]) => void) => void;
 }) {
   const set = <K extends keyof CmsProduct>(key: K, value: CmsProduct[K]) => onChange({ ...product, [key]: value });
   const colorNames = product.colorNames || {};
@@ -445,11 +460,12 @@ function ProductForm({
   const setColorImage = (color: string, url: string) => {
     onChange({ ...product, colorImages: { ...colorImages, [color]: url } });
   };
-  const addGalleryImage = (url: string) => {
+  const addGalleryImages = (urls: string[]) => {
+    if (!urls.length) return;
     onChange({
       ...product,
-      image: product.image || url,
-      galleryImages: [...galleryImages, url]
+      image: product.image || urls[0],
+      galleryImages: [...galleryImages, ...urls]
     });
   };
   const updateGalleryImage = (index: number, url: string) => {
@@ -541,7 +557,7 @@ function ProductForm({
           </div>
           <label className="text-xs uppercase text-neutral-500">
             Upload thêm ảnh
-            <input type="file" accept="image/*" onChange={(event) => onUpload(event, addGalleryImage)} className="mt-2 block text-xs normal-case" />
+            <input type="file" accept="image/*" multiple onChange={(event) => onUploadMany(event, addGalleryImages)} className="mt-2 block text-xs normal-case" />
           </label>
         </div>
         <label className="mt-3 block text-xs uppercase text-neutral-500">URL ảnh chính cũ</label>
