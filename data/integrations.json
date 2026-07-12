@@ -11,8 +11,33 @@
   },
   "shipping": {
     "enabled": false,
+    "provider": "ghn",
     "providerName": "GHN",
     "statusEndpoint": "",
-    "token": ""
+    "token": "",
+    "shopId": "",
+    "clientId": ""
+  },
+  "payment": {
+    "vnpay": {
+      "enabled": false,
+      "tmnCode": "",
+      "hashSecret": "",
+      "paymentUrl": "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html"
+    },
+    "momo": {
+      "enabled": false,
+      "partnerCode": "",
+      "accessKey": "",
+      "secretKey": "",
+      "endpoint": "https://test-payment.momo.vn/v2/gateway/api/create"
+    },
+    "zalopay": {
+      "enabled": false,
+      "appId": "",
+      "key1": "",
+      "key2": "",
+      "endpoint": "https://sb-openapi.zalopay.vn/v2/create"
+    }
   }
 }
