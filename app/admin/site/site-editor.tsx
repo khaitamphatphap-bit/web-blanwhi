@@ -751,6 +751,34 @@ function ProductForm({
         </div>
       </div>
 
+      <div className="mt-5 border-2 border-black bg-neutral-50 p-4">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h4 className="text-base font-bold uppercase">Số lượng hàng hóa / tồn kho</h4>
+            <p className="mt-1 text-xs text-neutral-600">Nhập số lượng riêng cho từng phân loại, màu và size. Mã SKU dùng để kết nối đúng hàng với POS hoặc MISA.</p>
+          </div>
+          <div className="bg-black px-4 py-3 text-white"><span className="text-xs uppercase">Tổng tồn</span><strong className="ml-3 text-xl">{totalInventory}</strong></div>
+        </div>
+        <div className="mt-3 overflow-x-auto border border-neutral-300 bg-white">
+          <table className="min-w-[820px] w-full border-collapse text-sm">
+            <thead className="bg-neutral-100 text-left text-xs uppercase text-neutral-600">
+              <tr><th className="p-3">Phân loại</th><th className="p-3">Màu</th><th className="p-3">Size</th><th className="p-3">Mã SKU</th><th className="p-3">Số lượng</th></tr>
+            </thead>
+            <tbody>
+              {inventoryRows.map((item) => (
+                <tr key={item.key} className="border-t border-neutral-200">
+                  <td className="p-3 font-medium">{inventoryClassificationName(item)}</td>
+                  <td className="p-3">{inventoryColorName(item)}</td>
+                  <td className="p-3"><strong>{item.size}</strong></td>
+                  <td className="p-3"><input value={item.sku} onChange={(event) => updateInventoryItem(item.key, { sku: event.target.value.trim().toUpperCase() })} className="h-10 w-full min-w-52 border px-3 font-mono text-xs" /></td>
+                  <td className="p-3"><input aria-label={`Số lượng ${inventoryClassificationName(item)} ${inventoryColorName(item)} size ${item.size}`} type="number" min="0" step="1" value={item.quantity} onChange={(event) => updateInventoryItem(item.key, { quantity: Math.max(0, Math.floor(Number(event.target.value) || 0)) })} className="h-10 w-28 border border-black px-3 text-right text-base font-bold" /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       <div className="mt-5 border-t pt-4">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
@@ -839,34 +867,6 @@ function ProductForm({
           ))}
         </div>
       </div>}
-
-      <div className="mt-5 border-t pt-4">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h4 className="text-sm font-semibold uppercase">Số lượng hàng hóa / tồn kho</h4>
-            <p className="mt-1 text-xs text-neutral-500">Mỗi dòng là một tổ hợp phân loại + màu + size. SKU dùng để liên kết đúng hàng với POS và MISA.</p>
-          </div>
-          <div className="border border-black bg-black px-4 py-3 text-white"><span className="text-xs uppercase">Tổng tồn</span><strong className="ml-3 text-xl">{totalInventory}</strong></div>
-        </div>
-        <div className="mt-3 overflow-x-auto border border-neutral-200">
-          <table className="min-w-[820px] w-full border-collapse text-sm">
-            <thead className="bg-neutral-50 text-left text-xs uppercase text-neutral-500">
-              <tr><th className="p-3">Phân loại</th><th className="p-3">Màu</th><th className="p-3">Size</th><th className="p-3">Mã SKU</th><th className="p-3">Số lượng</th></tr>
-            </thead>
-            <tbody>
-              {inventoryRows.map((item) => (
-                <tr key={item.key} className="border-t border-neutral-200">
-                  <td className="p-3 font-medium">{inventoryClassificationName(item)}</td>
-                  <td className="p-3">{inventoryColorName(item)}</td>
-                  <td className="p-3"><strong>{item.size}</strong></td>
-                  <td className="p-3"><input value={item.sku} onChange={(event) => updateInventoryItem(item.key, { sku: event.target.value.trim().toUpperCase() })} className="h-10 w-full min-w-52 border px-3 font-mono text-xs" /></td>
-                  <td className="p-3"><input type="number" min="0" step="1" value={item.quantity} onChange={(event) => updateInventoryItem(item.key, { quantity: Math.max(0, Math.floor(Number(event.target.value) || 0)) })} className="h-10 w-28 border px-3 text-right font-semibold" /></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
 
       {product.image && <img src={product.image} alt={product.name} className="mt-4 aspect-[4/3] max-h-72 w-full object-cover" />}
     </div>
