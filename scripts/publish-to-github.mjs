@@ -31,14 +31,14 @@ if (branch !== "main") {
   throw new Error(`Current branch is '${branch}'. Switch to main before publishing.`);
 }
 
-runVisible("git", ["fetch", mainRepo, "main"]);
+runVisible("git", ["fetch", "origin", "main"]);
 runVisible("git", ["add", "-A"]);
 runVisible("git", ["commit", "-m", message]);
-runVisible("git", ["pull", "--rebase", mainRepo, "main"]);
-runVisible("git", ["push", mainRepo, "HEAD:main"]);
+runVisible("git", ["pull", "--rebase", "origin", "main"]);
+runVisible("git", ["push", "origin", "HEAD:main"]);
 
 if (shouldPushBackup) {
-  runVisible("git", ["push", backupRepo, "HEAD:main"]);
+  runVisible("git", ["push", "backup", "HEAD:main"]);
 }
 
 console.log("");
