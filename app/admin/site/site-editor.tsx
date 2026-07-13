@@ -458,23 +458,44 @@ function ProductForm({
   const [newSize, setNewSize] = useState("");
   const setColorImage = (color: string, url: string) => {
     const nextColorImages = { ...colorImages, [color]: url };
-    if (!url) {
-      onChange({ ...product, colorImages: nextColorImages });
-      return;
-    }
+    const nextSwatches = url
+      ? [...product.swatches.filter((item) => item !== color), color]
+      : product.swatches;
+    const knownVariantImages = new Set(Object.values(colorImages).filter(Boolean));
+    const nextVariantImages = nextSwatches.map((item) => nextColorImages[item]).filter(Boolean);
+    const nextVariantImageSet = new Set(nextVariantImages);
+    const nonVariantImages = galleryImages.filter((item) => item && !knownVariantImages.has(item));
+    const firstNonVariantImage = [product.image, ...nonVariantImages]
+      .find((item) => item && !knownVariantImages.has(item) && !nextVariantImageSet.has(item));
+    const primaryImage = firstNonVariantImage
+      || (product.image && nextVariantImageSet.has(product.image) ? product.image : "")
+      || nextVariantImages[0]
+      || "";
+    const nextGalleryImages = [
+      primaryImage,
+      ...nonVariantImages,
+      ...nextVariantImages
+    ].filter((item, index, items) => item && items.indexOf(item) === index);
     onChange({
       ...product,
-      image: url,
-      galleryImages: [url, ...galleryImages.filter((item) => item !== url)],
+      image: primaryImage,
+      galleryImages: nextGalleryImages,
+      swatches: nextSwatches,
       colorImages: nextColorImages
     });
   };
   const addGalleryImages = (urls: string[]) => {
     if (!urls.length) return;
+    const variantImages = new Set(Object.values(colorImages).filter(Boolean));
+    const firstNonVariantImage = [product.image, ...galleryImages, ...urls]
+      .find((item) => item && !variantImages.has(item));
+    const primaryImage = firstNonVariantImage || product.image || urls[0];
+    const nextGalleryImages = [primaryImage, ...galleryImages, ...urls]
+      .filter((item, index, items) => item && items.indexOf(item) === index);
     onChange({
       ...product,
-      image: product.image || urls[0],
-      galleryImages: [...galleryImages, ...urls]
+      image: primaryImage,
+      galleryImages: nextGalleryImages
     });
   };
   const updateGalleryImage = (index: number, url: string) => {

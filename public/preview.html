@@ -1242,6 +1242,14 @@
       }
       function normalizeCmsProduct(product, index) {
         const swatches = Array.isArray(product.swatches) && product.swatches.length ? product.swatches : ["#111", "#f4f4f2"];
+        const colorImages = product.colorImages && typeof product.colorImages === "object" ? product.colorImages : {};
+        const variantImages = new Set(Object.values(colorImages).filter(Boolean));
+        const sourceGallery = Array.isArray(product.galleryImages) ? product.galleryImages.filter(Boolean) : [];
+        const firstNonVariantImage = [product.image, ...sourceGallery].find((url) => url && !variantImages.has(url));
+        const primaryImage = firstNonVariantImage || product.image || sourceGallery[0] || "";
+        const orderedVariantImages = swatches.map((color) => colorImages[color]).filter(Boolean);
+        const galleryImages = [primaryImage, ...sourceGallery.filter((url) => !variantImages.has(url)), ...orderedVariantImages]
+          .filter((url, imageIndex, images) => url && images.indexOf(url) === imageIndex);
         const id = product.id || `cms-${index + 1}`;
         const salePercent = Number(product.salePercent || 0);
         return {
@@ -1254,12 +1262,12 @@
           swatches,
           color: swatches[0],
           colorIndex: 0,
-          image: product.image || "",
-          galleryImages: Array.isArray(product.galleryImages) ? product.galleryImages : [],
+          image: primaryImage,
+          galleryImages,
           galleryIndex: 0,
           useColorImage: false,
           colorNames: product.colorNames && typeof product.colorNames === "object" ? product.colorNames : {},
-          colorImages: product.colorImages && typeof product.colorImages === "object" ? product.colorImages : {},
+          colorImages,
           sizes: Array.isArray(product.sizes) && product.sizes.length ? product.sizes : ["S", "M", "L", "XL"],
           size: (Array.isArray(product.sizes) && product.sizes[0]) || "M",
           orderQty: 1,
