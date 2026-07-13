@@ -454,11 +454,20 @@ function ProductForm({
   const colorImages = product.colorImages || {};
   const galleryImages = product.galleryImages || [];
   const genders = product.genders || ["men", "women"];
-  const [newColor, setNewColor] = useState("#111111");
   const [newColorName, setNewColorName] = useState("");
   const [newSize, setNewSize] = useState("");
   const setColorImage = (color: string, url: string) => {
-    onChange({ ...product, colorImages: { ...colorImages, [color]: url } });
+    const nextColorImages = { ...colorImages, [color]: url };
+    if (!url) {
+      onChange({ ...product, colorImages: nextColorImages });
+      return;
+    }
+    onChange({
+      ...product,
+      image: url,
+      galleryImages: [url, ...galleryImages.filter((item) => item !== url)],
+      colorImages: nextColorImages
+    });
   };
   const addGalleryImages = (urls: string[]) => {
     if (!urls.length) return;
@@ -495,12 +504,11 @@ function ProductForm({
     onChange({ ...product, swatches, colorNames: nextColorNames, colorImages: nextColorImages });
   };
   const addColor = () => {
-    const color = newColor.trim();
-    if (!color || product.swatches.includes(color)) return;
+    const color = `variant-${Date.now()}`;
     onChange({
       ...product,
       swatches: [...product.swatches, color],
-      colorNames: { ...colorNames, [color]: newColorName.trim() || colorNames[color] || "Màu mới" },
+      colorNames: { ...colorNames, [color]: newColorName.trim() || "Màu mới" },
       colorImages
     });
     setNewColorName("");
@@ -624,7 +632,7 @@ function ProductForm({
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h4 className="text-sm font-semibold uppercase">Màu và ảnh theo từng màu</h4>
-            <p className="mt-1 text-xs text-neutral-500">Chọn mã màu để hiển thị, sửa tên màu theo ý shop, rồi upload ảnh riêng cho từng màu.</p>
+            <p className="mt-1 text-xs text-neutral-500">Nhập tên phân loại rồi upload ảnh. Ảnh vừa upload sẽ tự động trở thành ảnh chính của sản phẩm.</p>
           </div>
           <div className="flex flex-wrap items-end gap-2">
             <label className="text-xs uppercase text-neutral-500">
@@ -642,23 +650,6 @@ function ProductForm({
                 className="mt-1 h-10 w-36 border px-3 text-sm normal-case"
               />
             </label>
-            <label className="text-xs uppercase text-neutral-500">
-              Mã màu hiển thị
-              <span className="mt-1 flex h-10 items-center gap-2 border px-2">
-                <input type="color" value={newColor} onChange={(event) => setNewColor(event.target.value)} className="h-7 w-8 border-0 p-0" />
-                <input
-                  value={newColor}
-                  onChange={(event) => setNewColor(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      event.preventDefault();
-                      addColor();
-                    }
-                  }}
-                  className="h-8 w-24 border px-2 text-sm normal-case"
-                />
-              </span>
-            </label>
             <button type="button" onClick={addColor} className="h-10 border border-black px-4 text-xs uppercase">Thêm màu</button>
           </div>
         </div>
@@ -666,16 +657,15 @@ function ProductForm({
           {product.swatches.map((color) => (
             <div key={color} className="grid gap-3 border border-neutral-200 p-3 md:grid-cols-[120px_1fr]">
               <div className="flex flex-wrap items-center gap-2 text-sm md:block">
-                <span className="inline-block h-7 w-7 border border-neutral-300 align-middle" style={{ backgroundColor: color }} />
-                <strong className="ml-2 align-middle md:ml-0 md:mt-2 md:block">{colorNames[color] || color}</strong>
-                <span className="block text-xs text-neutral-500">{color}</span>
+                {colorImages[color] && <img src={colorImages[color]} alt={colorNames[color] || product.name} className="h-20 w-20 border border-neutral-200 object-cover" />}
+                <strong className="align-middle md:mt-2 md:block">{colorNames[color] || "Phân loại ảnh"}</strong>
                 <button type="button" onClick={() => removeColor(color)} className="border border-red-500 px-2 py-1 text-[10px] uppercase text-red-600 md:mt-3">Xóa màu</button>
               </div>
               <div>
                 <label className="mb-2 block text-xs uppercase text-neutral-500">Tên màu hiển thị cho khách</label>
                 <input value={colorNames[color] || ""} onChange={(event) => setColorName(color, event.target.value)} placeholder="Ví dụ: Đen, Kem, Nâu cafe..." className="mb-3 h-10 w-full border px-3 text-sm" />
-                <label className="mb-2 block text-xs uppercase text-neutral-500">Ảnh cho màu này</label>
-                <input value={colorImages[color] || ""} onChange={(event) => setColorImage(color, event.target.value)} placeholder="URL ảnh cho màu này" className="h-10 w-full border px-3 text-sm" />
+                <label className="mb-2 block text-xs uppercase text-neutral-500">Ảnh chính cho phân loại này</label>
+                <input value={colorImages[color] || ""} onChange={(event) => setColorImage(color, event.target.value)} placeholder="URL ảnh" className="h-10 w-full border px-3 text-sm" />
                 <input type="file" accept="image/*" onChange={(event) => onUpload(event, (url) => setColorImage(color, url))} className="mt-2 block text-xs" />
                 {colorImages[color] && <img src={colorImages[color]} alt={`${product.name} ${color}`} className="mt-3 aspect-[4/3] max-h-56 w-full object-cover" />}
               </div>

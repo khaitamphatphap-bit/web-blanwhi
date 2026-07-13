@@ -1078,8 +1078,8 @@
       const swatchMarkup = (product, color, index, attribute) => {
         const image = product.colorImages?.[color] || "";
         const label = colorLabel(color, product);
-        const content = image ? `<img src="${escapeMarkup(image)}" alt="${escapeMarkup(label)}" />` : "";
-        return `<button type="button" class="${index === product.colorIndex ? "active" : ""}" ${attribute} style="background:${color}" aria-label="Chọn màu ${escapeMarkup(label)} cho ${escapeMarkup(product.name)}" title="${escapeMarkup(label)}">${content}</button>`;
+        const content = image ? `<img src="${escapeMarkup(image)}" alt="${escapeMarkup(label)}" />` : escapeMarkup(label.slice(0, 1));
+        return `<button type="button" class="${index === product.colorIndex ? "active" : ""}" ${attribute} aria-label="Chọn màu ${escapeMarkup(label)} cho ${escapeMarkup(product.name)}" title="${escapeMarkup(label)}">${content}</button>`;
       };
       const productVisualMedia = (product, color = product.color) => {
         const image = productImageUrl(product, color);
