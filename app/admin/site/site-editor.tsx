@@ -264,7 +264,7 @@ export function SiteEditor() {
   }
 
   return (
-    <main className="mx-auto min-h-screen max-w-7xl bg-white px-6 py-8 md:my-10 md:px-10">
+    <main className="mx-auto min-h-screen w-full max-w-7xl overflow-x-hidden bg-white px-4 py-8 sm:px-6 md:my-10 md:px-8 lg:px-10">
       <header className="flex flex-wrap items-center justify-between gap-4 border-b border-neutral-200 pb-5">
         <div>
           <Link href="/" className="text-xs uppercase text-neutral-500">Xem website khách</Link>
@@ -295,8 +295,8 @@ export function SiteEditor() {
         </div>
       </section>
 
-      <section className="mt-6 grid gap-6 lg:grid-cols-[360px_1fr]">
-        <aside className="space-y-5">
+      <section className="mt-6 grid min-w-0 gap-6 lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]">
+        <aside className="min-w-0 space-y-5">
           <div className="border border-neutral-200 p-4">
             <h2 className="text-sm font-semibold uppercase">Thương hiệu</h2>
             <label className="mt-3 block text-xs uppercase text-neutral-500">Tên brand</label>
@@ -426,7 +426,7 @@ export function SiteEditor() {
           </div>
         </aside>
 
-        <section className="grid gap-5">
+        <section className="grid min-w-0 gap-5">
           <div className="flex flex-wrap items-center justify-between gap-3 border border-neutral-200 p-4">
             <div>
               <h2 className="text-xl font-medium">Sản phẩm</h2>
@@ -468,8 +468,8 @@ export function SiteEditor() {
             </div>
           </details>
 
-          <div className="grid gap-5 xl:grid-cols-[280px_1fr]">
-            <div className="max-h-[520px] overflow-auto border border-neutral-200">
+          <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(220px,280px)_minmax(0,1fr)]">
+            <div className="min-w-0 max-h-[520px] overflow-auto border border-neutral-200">
               {content.products.map((product) => (
                 <button key={product.id} onClick={() => selectProduct(product.id)} className={`block w-full border-b p-3 text-left text-sm transition ${selectedId === product.id ? "bg-black text-white" : "bg-white hover:bg-neutral-50"}`}>
                   <span className="flex items-center justify-between gap-3">
@@ -482,7 +482,7 @@ export function SiteEditor() {
             </div>
 
             {selectedProduct && (
-              <div ref={editorRef} id="product-editor">
+              <div ref={editorRef} id="product-editor" className="min-w-0">
                 <ProductForm
                   product={selectedProduct}
                   onChange={updateProduct}
@@ -538,7 +538,7 @@ function ProductForm({
     onChange({ ...product, inventory: nextInventory, inventoryManaged: true });
   };
   const inventoryClassificationName = (item: CmsProductInventoryItem) =>
-    product.classifications?.find((classification) => classification.id === item.classificationId)?.name || "Sản phẩm chung";
+    product.classifications?.find((classification) => classification.id === item.classificationId)?.name || product.name;
   const inventoryColorName = (item: CmsProductInventoryItem) => {
     if (!item.color) return "Mặc định";
     const classification = product.classifications?.find((entry) => entry.id === item.classificationId);
@@ -681,7 +681,7 @@ function ProductForm({
   };
 
   return (
-    <div className="border border-neutral-200 p-4">
+    <div className="min-w-0 overflow-hidden border border-neutral-200 p-4">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-xs uppercase text-neutral-500">Đang sửa sản phẩm</p>
@@ -690,7 +690,7 @@ function ProductForm({
         <button onClick={onDelete} className="h-9 border border-red-500 px-3 text-xs uppercase text-red-600">Xóa</button>
       </div>
 
-      <div className="mt-4 grid gap-4 md:grid-cols-2">
+      <div className="mt-4 grid min-w-0 gap-4 md:grid-cols-2">
         <Text label="Tên sản phẩm" value={product.name} onChange={(value) => set("name", value)} />
         <Text label="Giá gốc" value={originalPrice} onChange={setOriginalPrice} />
         <Text label="Giá sau giảm" value={salePrice} onChange={setSalePrice} />
@@ -790,7 +790,7 @@ function ProductForm({
           </div>
           <div className="bg-black px-4 py-3 text-white"><span className="text-xs uppercase">Tổng tồn</span><strong className="ml-3 text-xl">{totalInventory}</strong></div>
         </div>
-        <div className="mt-3 overflow-x-auto border border-neutral-300 bg-white">
+        <div className="mt-3 max-w-full overflow-x-auto border border-neutral-300 bg-white">
           <table className="min-w-[820px] w-full border-collapse text-sm">
             <thead className="bg-neutral-100 text-left text-xs uppercase text-neutral-600">
               <tr><th className="p-3">Phân loại</th><th className="p-3">Màu</th><th className="p-3">Size</th><th className="p-3">Mã SKU</th><th className="p-3">Số lượng</th></tr>
