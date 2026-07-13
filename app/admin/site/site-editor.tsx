@@ -121,6 +121,18 @@ export function SiteEditor() {
     setSelectedId(products[0]?.id || "");
   }
 
+  function moveProduct(id: string, direction: "up" | "down") {
+    if (!content) return;
+    const currentIndex = content.products.findIndex((product) => product.id === id);
+    const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+    if (currentIndex < 0 || targetIndex < 0 || targetIndex >= content.products.length) return;
+    const products = [...content.products];
+    const [product] = products.splice(currentIndex, 1);
+    products.splice(targetIndex, 0, product);
+    updateContent({ ...content, products });
+    setSelectedId(id);
+  }
+
   async function uploadImages(event: ChangeEvent<HTMLInputElement>, onUrls: (urls: string[]) => void) {
     const files = Array.from(event.target.files || []);
     if (!files.length) return;
@@ -430,7 +442,7 @@ export function SiteEditor() {
           <div className="flex flex-wrap items-center justify-between gap-3 border border-neutral-200 p-4">
             <div>
               <h2 className="text-xl font-medium">Sản phẩm</h2>
-              <p className="text-sm text-neutral-500">Thêm/sửa tên, giá, ảnh, màu, size, sale, trạng thái hiển thị.</p>
+              <p className="text-sm text-neutral-500">Thêm/sửa tên, giá, ảnh, màu, size, sale, trạng thái hiển thị và thứ tự ngoài trang khách.</p>
             </div>
             <button onClick={addProduct} className="h-10 border border-black px-4 text-xs uppercase">Thêm sản phẩm</button>
           </div>
@@ -442,6 +454,7 @@ export function SiteEditor() {
                 <thead>
                   <tr className="border-b text-left text-xs uppercase text-neutral-500">
                     <th className="py-2 pr-3">Sản phẩm</th>
+                    <th className="px-3">Thứ tự</th>
                     <th className="px-3">Nam</th>
                     <th className="px-3">Nữ</th>
                     <th className="px-3">Best seller</th>
@@ -450,11 +463,17 @@ export function SiteEditor() {
                   </tr>
                 </thead>
                 <tbody>
-                  {content.products.map((product) => {
+                  {content.products.map((product, index) => {
                     const genders = product.genders || ["men", "women"];
                     return (
                       <tr key={product.id} className="border-b border-neutral-100">
                         <td className="py-2 pr-3 font-medium">{product.name}</td>
+                        <td className="px-3">
+                          <div className="flex gap-1">
+                            <button type="button" onClick={() => moveProduct(product.id, "up")} disabled={index === 0} className="h-8 border border-neutral-300 px-2 text-[10px] uppercase disabled:opacity-30">Lên</button>
+                            <button type="button" onClick={() => moveProduct(product.id, "down")} disabled={index === content.products.length - 1} className="h-8 border border-neutral-300 px-2 text-[10px] uppercase disabled:opacity-30">Xuống</button>
+                          </div>
+                        </td>
                         <td className="px-3"><input type="checkbox" checked={genders.includes("men")} onChange={(event) => toggleProductGender(product, "men", event.target.checked)} /></td>
                         <td className="px-3"><input type="checkbox" checked={genders.includes("women")} onChange={(event) => toggleProductGender(product, "women", event.target.checked)} /></td>
                         <td className="px-3"><input type="checkbox" checked={Boolean(product.isBestSeller)} onChange={(event) => updateProduct({ ...product, isBestSeller: event.target.checked })} /></td>
@@ -468,17 +487,32 @@ export function SiteEditor() {
             </div>
           </details>
 
-          <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(220px,280px)_minmax(0,1fr)]">
-            <div className="min-w-0 max-h-[520px] overflow-auto border border-neutral-200">
-              {content.products.map((product) => (
-                <button key={product.id} onClick={() => selectProduct(product.id)} className={`block w-full border-b p-3 text-left text-sm transition ${selectedId === product.id ? "bg-black text-white" : "bg-white hover:bg-neutral-50"}`}>
-                  <span className="flex items-center justify-between gap-3">
-                    <strong>{product.name}</strong>
-                    <span className={`shrink-0 border px-2 py-1 text-[10px] uppercase ${selectedId === product.id ? "border-white" : "border-black"}`}>Sửa</span>
-                  </span>
-                  <span className="mt-1 block text-xs opacity-70">{product.salePrice || product.originalPrice || product.price} · tồn {buildProductInventory(product).reduce((sum, item) => sum + item.quantity, 0)} · {product.active ? "đang bán" : "ẩn"}</span>
-                </button>
-              ))}
+          <div className="grid min-w-0 gap-5">
+            <div className="min-w-0 border border-neutral-200 p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-sm font-semibold uppercase">Thứ tự sản phẩm trên trang khách</h3>
+                <span className="text-xs text-neutral-500">Sản phẩm ở trên sẽ hiện trước.</span>
+              </div>
+              <div className="mt-3 grid max-h-[420px] gap-2 overflow-auto lg:grid-cols-2">
+                {content.products.map((product, index) => (
+                  <div key={product.id} className={`grid gap-3 border p-3 text-sm transition sm:grid-cols-[1fr_auto] ${selectedId === product.id ? "border-black bg-neutral-50" : "border-neutral-200 bg-white"}`}>
+                    <button type="button" onClick={() => selectProduct(product.id)} className="min-w-0 text-left">
+                      <span className="flex items-start gap-2">
+                        <span className="mt-0.5 inline-grid h-6 w-7 shrink-0 place-items-center bg-black text-[10px] font-bold text-white">{index + 1}</span>
+                        <span className="min-w-0">
+                          <strong className="block truncate">{product.name}</strong>
+                          <span className="mt-1 block text-xs text-neutral-500">{product.salePrice || product.originalPrice || product.price} · tồn {buildProductInventory(product).reduce((sum, item) => sum + item.quantity, 0)} · {product.active ? "đang bán" : "ẩn"}</span>
+                        </span>
+                      </span>
+                    </button>
+                    <div className="flex items-center gap-1 sm:justify-end">
+                      <button type="button" onClick={() => moveProduct(product.id, "up")} disabled={index === 0} className="h-8 border border-neutral-300 px-2 text-[10px] uppercase disabled:opacity-30">Lên</button>
+                      <button type="button" onClick={() => moveProduct(product.id, "down")} disabled={index === content.products.length - 1} className="h-8 border border-neutral-300 px-2 text-[10px] uppercase disabled:opacity-30">Xuống</button>
+                      <button type="button" onClick={() => selectProduct(product.id)} className="h-8 border border-black px-2 text-[10px] uppercase">Sửa</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {selectedProduct && (
@@ -790,23 +824,38 @@ function ProductForm({
           </div>
           <div className="bg-black px-4 py-3 text-white"><span className="text-xs uppercase">Tổng tồn</span><strong className="ml-3 text-xl">{totalInventory}</strong></div>
         </div>
-        <div className="mt-3 max-w-full overflow-x-auto border border-neutral-300 bg-white">
-          <table className="min-w-[820px] w-full border-collapse text-sm">
-            <thead className="bg-neutral-100 text-left text-xs uppercase text-neutral-600">
-              <tr><th className="p-3">Phân loại</th><th className="p-3">Màu</th><th className="p-3">Size</th><th className="p-3">Mã SKU</th><th className="p-3">Số lượng</th></tr>
-            </thead>
-            <tbody>
-              {inventoryRows.map((item) => (
-                <tr key={item.key} className="border-t border-neutral-200">
-                  <td className="p-3 font-medium">{inventoryClassificationName(item)}</td>
-                  <td className="p-3">{inventoryColorName(item)}</td>
-                  <td className="p-3"><strong>{item.size}</strong></td>
-                  <td className="p-3"><input value={item.sku} onChange={(event) => updateInventoryItem(item.key, { sku: event.target.value.trim().toUpperCase() })} className="h-10 w-full min-w-52 border px-3 font-mono text-xs" /></td>
-                  <td className="p-3"><input aria-label={`Số lượng ${inventoryClassificationName(item)} ${inventoryColorName(item)} size ${item.size}`} type="number" min="0" step="1" value={item.quantity} onChange={(event) => updateInventoryItem(item.key, { quantity: Math.max(0, Math.floor(Number(event.target.value) || 0)) })} className="h-10 w-28 border border-black px-3 text-right text-base font-bold" /></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="mt-4 grid gap-3">
+          <div className="hidden rounded-none border border-neutral-300 bg-white px-4 py-3 text-xs font-semibold uppercase text-neutral-500 xl:grid xl:grid-cols-[minmax(180px,1.4fr)_minmax(140px,1fr)_80px_minmax(180px,1.1fr)_150px] xl:gap-3">
+            <span>Phân loại</span>
+            <span>Màu</span>
+            <span>Size</span>
+            <span>Mã SKU</span>
+            <span>Số lượng</span>
+          </div>
+          {inventoryRows.map((item) => (
+            <div key={item.key} className="grid gap-3 border border-neutral-300 bg-white p-4 text-sm xl:grid-cols-[minmax(180px,1.4fr)_minmax(140px,1fr)_80px_minmax(180px,1.1fr)_150px] xl:items-center">
+              <div>
+                <span className="mb-1 block text-[10px] uppercase text-neutral-500 xl:hidden">Phân loại</span>
+                <strong>{inventoryClassificationName(item)}</strong>
+              </div>
+              <div>
+                <span className="mb-1 block text-[10px] uppercase text-neutral-500 xl:hidden">Màu</span>
+                {inventoryColorName(item)}
+              </div>
+              <div>
+                <span className="mb-1 block text-[10px] uppercase text-neutral-500 xl:hidden">Size</span>
+                <strong className="text-base">{item.size}</strong>
+              </div>
+              <label>
+                <span className="mb-1 block text-[10px] uppercase text-neutral-500 xl:hidden">Mã SKU</span>
+                <input value={item.sku} onChange={(event) => updateInventoryItem(item.key, { sku: event.target.value.trim().toUpperCase() })} className="h-11 w-full border px-3 font-mono text-xs" />
+              </label>
+              <label>
+                <span className="mb-1 block text-[10px] uppercase text-neutral-500 xl:hidden">Số lượng</span>
+                <input aria-label={`Số lượng ${inventoryClassificationName(item)} ${inventoryColorName(item)} size ${item.size}`} type="number" min="0" step="1" value={item.quantity} onChange={(event) => updateInventoryItem(item.key, { quantity: Math.max(0, Math.floor(Number(event.target.value) || 0)) })} className="h-11 w-full border-2 border-black px-3 text-right text-lg font-bold" />
+              </label>
+            </div>
+          ))}
         </div>
       </div>
 
