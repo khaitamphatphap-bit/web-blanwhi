@@ -18,6 +18,49 @@ export function hasDatabase() {
   return Boolean(process.env.DATABASE_URL);
 }
 
+function hasBlobStore() {
+  return Boolean(process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID);
+}
+
+function shouldUseBlobStore(filename: string) {
+  return filename === "site-content.json" && hasBlobStore();
+}
+
+const siteContentBlobPath = "blanwhi/content/site-content.json";
+
+async function readBlobJsonStore<T>() {
+  const { get } = await import("@vercel/blob");
+  const result = await get(siteContentBlobPath, { access: "public", useCache: false });
+  if (!result || result.statusCode !== 200) return null;
+
+  const text = await new Response(result.stream).text();
+  return JSON.parse(text) as T;
+}
+
+async function writeBlobJsonStore<T>(value: T) {
+  const { get, put } = await import("@vercel/blob");
+
+  const previous = await get(siteContentBlobPath, { access: "public", useCache: false });
+  if (previous?.statusCode === 200) {
+    const previousText = await new Response(previous.stream).text();
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    await put(`blanwhi/content-history/site-content-${timestamp}.json`, previousText, {
+      access: "public",
+      addRandomSuffix: true,
+      contentType: "application/json"
+    });
+  }
+
+  await put(siteContentBlobPath, JSON.stringify(value), {
+    access: "public",
+    addRandomSuffix: false,
+    allowOverwrite: true,
+    cacheControlMaxAge: 60,
+    contentType: "application/json"
+  });
+  return value;
+}
+
 async function getPool() {
   if (!process.env.DATABASE_URL) return null;
   if (!poolPromise) {
@@ -139,6 +182,11 @@ export async function readJsonStore<T>(filename: string, fallback: T): Promise<T
     }
   }
 
+  if (shouldUseBlobStore(filename)) {
+    const saved = await readBlobJsonStore<T>();
+    if (saved !== null) return saved;
+  }
+
   const file = await ensureJsonFile<T>(filename, fallback);
   try {
     return JSON.parse(await readFile(file, "utf8")) as T;
@@ -182,6 +230,10 @@ export async function writeJsonStore<T>(filename: string, value: T) {
       }
       return value;
     }
+  }
+
+  if (shouldUseBlobStore(filename)) {
+    return writeBlobJsonStore(value);
   }
 
   const file = await ensureJsonFile<T>(filename, value);
