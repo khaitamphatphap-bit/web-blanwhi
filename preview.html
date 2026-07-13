@@ -543,21 +543,9 @@
       }
       @media (max-width: 900px) {
         .page { overflow-x: clip; }
-        .orders-link { display: none; }
         .nav-right { gap: 8px; }
         .hero { min-height: auto; padding-bottom: 238px; }
-        .stack-scene { min-height: 238px; margin-top: 22px; overflow: hidden; border: 1px solid #ededed; border-radius: 24px; background: linear-gradient(145deg, #fff 0%, #f3f3f3 100%); }
-        .stack-scene.has-theme { min-height: 300px; }
-        .stack-scene.has-theme .theme-image { height: 100%; border-radius: inherit; box-shadow: none; }
-        .back-panel, .pedestal { display: none; }
-        .shirt-stack { left: 50%; right: auto; bottom: 16px; width: min(310px, 100%); height: 214px; transform: translateX(-50%); }
-        .folded-shirt { right: 7%; width: 86%; height: 52px; border-radius: 14px 28px 22px 14px; box-shadow: 0 10px 20px rgba(0,0,0,.12); }
-        .folded-shirt::after { width: 72px; height: 50px; border-radius: 0 26px 20px 0; }
-        .folded-shirt:nth-child(1) { top: 0; }
-        .folded-shirt:nth-child(2) { top: 38px; }
-        .folded-shirt:nth-child(3) { top: 76px; }
-        .folded-shirt:nth-child(4) { top: 114px; }
-        .folded-shirt:nth-child(5) { top: 152px; }
+        .stack-scene { overflow: hidden; }
         .benefits { grid-template-columns: repeat(2, minmax(0, 1fr)); border: 1px solid #e7e7e7; border-radius: 20px; box-shadow: 0 14px 30px rgba(0,0,0,.1); }
         .benefit { min-height: 94px; grid-template-columns: 36px minmax(0, 1fr); gap: 10px; padding: 14px; border-right: 1px solid #e8e8e8; border-bottom: 1px solid #e8e8e8; }
         .benefit:nth-child(2n) { border-right: 0; }
@@ -1191,8 +1179,7 @@
       ].join(" "));
       const productTags = (product) => [
         product.isNew ? `<span class="product-tag">New</span>` : "",
-        product.isBestSeller ? `<span class="product-tag">Best seller</span>` : "",
-        product.isSale ? `<span class="product-tag sale">Sale -${product.salePercent}%</span>` : ""
+        product.isBestSeller ? `<span class="product-tag">Best seller</span>` : ""
       ].filter(Boolean).join("");
       const priceMarkup = (product, detail = false) => `
         <span class="${detail ? "detail-price" : "price-stack"}">
