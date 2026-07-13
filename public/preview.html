@@ -218,6 +218,11 @@
       .sizes { display: flex; gap: 4px; margin-top: 10px; }
       .sizes button { border: 1px solid var(--line); background: #fff; min-width: 27px; height: 27px; display: grid; place-items: center; font-size: 11px; }
       .sizes button.active { border-color: #000; background: #000; color: #fff; }
+      .sizes button.out-of-stock, .swatches button.out-of-stock { color: #aaa; border-color: #ddd; background: #f4f4f4; opacity: .55; cursor: not-allowed; filter: grayscale(1); }
+      .sizes button.out-of-stock.active { border-color: #bbb; background: #eee; color: #888; }
+      .stock-note { margin-top: 10px; color: #777; font-size: 12px; font-weight: 700; text-transform: uppercase; }
+      .stock-note.sold-out { color: #b00020; }
+      .primary:disabled, .secondary:disabled, .quick:disabled { opacity: .45; cursor: not-allowed; }
       .advisor-row { display: grid; gap: 2px; color: #555; }
       .advisor-row b { color: #111; }
       .mini-link { border: 0; background: transparent; padding: 0; text-align: left; font-size: 12px; text-decoration: underline; }
@@ -1119,6 +1124,31 @@
       };
       const colorLabel = (color, product, classificationIndex = product.classificationIndex || 0) =>
         activeVariant(product, classificationIndex)?.colorNames?.[color] || product?.colorNames?.[color] || defaultColorLabel(color);
+      const stockKey = (classificationId = "", color = "", size = "") => [classificationId || "product", color || "default", size || "one-size"].join("|");
+      const inventoryIsManaged = (product) =>
+        Boolean(product.inventoryManaged) || (Array.isArray(product.inventory) && product.inventory.some((item) => Number(item.quantity) > 0));
+      const classificationIdAt = (product, classificationIndex = product.classificationIndex || 0) =>
+        activeClassification(product, classificationIndex)?.id || "";
+      const stockFor = (product, { classificationIndex = product.classificationIndex || 0, color = product.color, size = product.size } = {}) => {
+        if (!inventoryIsManaged(product)) return Infinity;
+        const key = stockKey(classificationIdAt(product, classificationIndex), color, size);
+        const item = Array.isArray(product.inventory) ? product.inventory.find((entry) => entry.key === key) : null;
+        return Math.max(0, Math.floor(Number(item?.quantity) || 0));
+      };
+      const hasStock = (product, options = {}) => stockFor(product, options) > 0;
+      const colorHasStock = (product, color, classificationIndex = product.classificationIndex || 0) =>
+        !inventoryIsManaged(product) || (product.sizes || ["S", "M", "L", "XL"]).some((size) => hasStock(product, { classificationIndex, color, size }));
+      const classificationHasStock = (product, classificationIndex = product.classificationIndex || 0) =>
+        !inventoryIsManaged(product) || variantSwatches(product, classificationIndex).some((color) => colorHasStock(product, color, classificationIndex));
+      const selectedStock = (product) => stockFor(product, { classificationIndex: product.classificationIndex || 0, color: product.color, size: product.size });
+      const stockNote = (product, { classificationIndex = product.classificationIndex || 0, color = product.color, size = product.size, qty = 1 } = {}) => {
+        if (!inventoryIsManaged(product)) return "";
+        const stock = stockFor(product, { classificationIndex, color, size });
+        if (stock <= 0) return "Hết hàng";
+        if (qty > stock) return `Chỉ còn ${stock} sản phẩm`;
+        return `Còn ${stock} sản phẩm`;
+      };
+      const showSoldOut = () => alert("Phân loại này đã hết hàng.");
 
       const productImageUrl = (product, color = product.color, classificationIndex = product.classificationIndex || 0) => {
         const classification = activeClassification(product, classificationIndex);
@@ -1131,7 +1161,8 @@
         const image = activeVariant(product, classificationIndex).colorImages?.[color] || product.colorImages?.[color] || "";
         const label = colorLabel(color, product, classificationIndex);
         const content = image ? `<img src="${escapeMarkup(image)}" alt="${escapeMarkup(label)}" />` : escapeMarkup(label.slice(0, 1));
-        return `<button type="button" class="${index === product.colorIndex ? "active" : ""}" ${attribute} aria-label="Chọn màu ${escapeMarkup(label)} cho ${escapeMarkup(product.name)}" title="${escapeMarkup(label)}">${content}</button>`;
+        const out = !colorHasStock(product, color, classificationIndex);
+        return `<button type="button" class="${index === product.colorIndex ? "active" : ""}${out ? " out-of-stock" : ""}" ${attribute} data-stock-state="${out ? "out" : "in"}" aria-label="Chọn màu ${escapeMarkup(label)} cho ${escapeMarkup(product.name)}${out ? " - hết hàng" : ""}" title="${escapeMarkup(label)}${out ? " - hết hàng" : ""}">${content}</button>`;
       };
       const productVisualMedia = (product, color = product.color, classificationIndex = product.classificationIndex || 0) => {
         const image = productImageUrl(product, color, classificationIndex);
@@ -1149,7 +1180,10 @@
       const classificationMarkup = (product, attributeName, selectedIndex = product.classificationIndex || 0) => {
         if (!Array.isArray(product.classifications) || !product.classifications.length) return "";
         return `<div class="sizes classifications" data-classifications="${product.id}">
-          ${product.classifications.map((classification, index) => `<button type="button" class="${index === selectedIndex ? "active" : ""}" ${attributeName}="${product.id}:${index}">${escapeMarkup(classification.name)}</button>`).join("")}
+          ${product.classifications.map((classification, index) => {
+            const out = !classificationHasStock(product, index);
+            return `<button type="button" class="${index === selectedIndex ? "active" : ""}${out ? " out-of-stock" : ""}" ${attributeName}="${product.id}:${index}" data-stock-state="${out ? "out" : "in"}">${escapeMarkup(classification.name)}${out ? " · Hết" : ""}</button>`;
+          }).join("")}
         </div>`;
       };
       const visualMarkup = (product) => `
@@ -1196,6 +1230,12 @@
           ${product.discountPercent > 0 ? `<span class="discount-percent">Giảm ${product.discountPercent}%</span>` : ""}
         </span>
       `;
+      const sizeButtonsMarkup = (product, selectedSize = product.size, attributeFactory = (size) => `data-size="${product.id}:${size}"`, classificationIndex = product.classificationIndex || 0, color = product.color) => `
+        ${(product.sizes || ["S", "M", "L", "XL"]).map(size => {
+          const out = !hasStock(product, { classificationIndex, color, size });
+          return `<button class="${size === selectedSize ? "active" : ""}${out ? " out-of-stock" : ""}" ${attributeFactory(size)} data-stock-state="${out ? "out" : "in"}">${size}${out ? " · Hết" : ""}</button>`;
+        }).join("")}
+      `;
       const productCardMarkup = (product) => {
         const swatches = variantSwatches(product);
         if (!swatches.includes(product.color)) {
@@ -1209,7 +1249,7 @@
           <div class="product-tags">${productTags(product)}</div>
           ${product.kind.startsWith("gift-") ? `<div class="muted">Gói quà tiêu chuẩn BLANWHI</div>` : `
             <div class="sizes" data-size-group="${product.id}">
-              ${(product.sizes || ["S", "M", "L", "XL"]).map(size => `<button class="${size === product.size ? "active" : ""}" data-size="${product.id}:${size}">${size}</button>`).join("")}
+              ${sizeButtonsMarkup(product)}
             </div>
           `}
           ${classificationMarkup(product, "data-card-classification")}
@@ -1360,6 +1400,15 @@
           classificationIndex: 0,
           sizes: Array.isArray(product.sizes) && product.sizes.length ? product.sizes : ["S", "M", "L", "XL"],
           size: (Array.isArray(product.sizes) && product.sizes[0]) || "M",
+          inventory: Array.isArray(product.inventory) ? product.inventory.map((item) => ({
+            key: item.key || stockKey(item.classificationId || "", item.color || "", item.size || ""),
+            sku: item.sku || "",
+            quantity: Math.max(0, Math.floor(Number(item.quantity) || 0)),
+            size: item.size || "",
+            color: item.color || "",
+            classificationId: item.classificationId || ""
+          })) : [],
+          inventoryManaged: Boolean(product.inventoryManaged),
           orderQty: 1,
           message: "",
           sold: Number(product.sold || 0),
@@ -1771,7 +1820,7 @@
                 <div class="product-visual">${productVisualMedia(product)}</div>
               </button>
               ${isGift ? "" : `<div class="sizes" data-size-group="${product.id}" style="margin-top:14px">
-                ${(product.sizes || ["S", "M", "L", "XL"]).map(size => `<button class="${size === product.size ? "active" : ""}" data-size="${product.id}:${size}">${size}</button>`).join("")}
+                ${sizeButtonsMarkup(product)}
               </div>`}
               ${classificationMarkup(product, "data-detail-classification")}
               <div class="swatches" data-detail-swatches="${product.id}" style="margin-top:14px">
@@ -1782,6 +1831,7 @@
             <div class="detail-info">
               <h2>${product.name}</h2>
               ${priceMarkup(product, true)}
+              ${inventoryIsManaged(product) ? `<p class="stock-note ${selectedStock(product) <= 0 ? "sold-out" : ""}">${stockNote(product)}</p>` : ""}
               ${isMessageCard ? "" : `<p class="muted">${productDescription(product)}</p>`}
               ${isGift ? "" : `<div class="detail-section">
                 <button data-detail-toggle="size">Bảng size <span>+</span></button>
@@ -1814,6 +1864,10 @@
         if (!product) return;
         const swatches = variantSwatches(product, variantState.classificationIndex);
         const color = swatches[variantState.colorIndex] || swatches[0];
+        const stock = stockFor(product, { classificationIndex: variantState.classificationIndex, color, size: variantState.size });
+        if (stock !== Infinity && stock > 0 && variantState.qty > stock) variantState.qty = stock;
+        const outOfStock = stock <= 0;
+        const note = stockNote(product, { classificationIndex: variantState.classificationIndex, color, size: variantState.size, qty: variantState.qty });
         variantContent.innerHTML = `
           <div class="detail-grid" style="grid-template-columns:.8fr 1.2fr">
             <button class="zoom-action" type="button" data-zoom-variant="${product.id}" aria-label="Phóng to ảnh ${product.name}">
@@ -1825,7 +1879,7 @@
               ${product.kind.startsWith("gift-") ? `<div><p class="muted">Loại</p><strong>Gift Packaging</strong></div>` : `<div>
                 <p class="muted">Size</p>
                 <div class="sizes" data-variant-sizes>
-                  ${(product.sizes || ["S", "M", "L", "XL"]).map(size => `<button class="${size === variantState.size ? "active" : ""}" data-variant-size="${size}">${size}</button>`).join("")}
+                  ${sizeButtonsMarkup(product, variantState.size, (size) => `data-variant-size="${size}"`, variantState.classificationIndex, color)}
                 </div>
               </div>
               ${product.classifications?.length ? `<div><p class="muted">Phân loại form / dáng</p>${classificationMarkup(product, "data-variant-classification", variantState.classificationIndex)}</div>` : ""}
@@ -1858,14 +1912,15 @@
               <div>
                 <p class="muted">Số lượng</p>
                 <div class="quantity-picker">
-                  <button type="button" data-variant-qty="-1" aria-label="Giảm số lượng ${product.name}">−</button>
-                  <input id="variantQtyInput" type="number" min="1" max="999" value="${variantState.qty}" inputmode="numeric" aria-label="Số lượng ${product.name}" />
-                  <button type="button" data-variant-qty="1" aria-label="Tăng số lượng ${product.name}">+</button>
+                  <button type="button" data-variant-qty="-1" aria-label="Giảm số lượng ${product.name}" ${outOfStock ? "disabled" : ""}>−</button>
+                  <input id="variantQtyInput" type="number" min="1" max="${stock === Infinity ? 999 : Math.max(1, stock)}" value="${outOfStock ? 1 : variantState.qty}" inputmode="numeric" aria-label="Số lượng ${product.name}" ${outOfStock ? "disabled" : ""} />
+                  <button type="button" data-variant-qty="1" aria-label="Tăng số lượng ${product.name}" ${outOfStock ? "disabled" : ""}>+</button>
                 </div>
+                ${inventoryIsManaged(product) ? `<p class="stock-note ${outOfStock ? "sold-out" : ""}">${note}</p>` : ""}
               </div>
               <div class="variant-actions">
                 <button class="secondary" id="variantCancel">Huỷ</button>
-                <button class="primary" id="variantConfirm">Thêm vào giỏ hàng</button>
+                <button class="primary" id="variantConfirm" ${outOfStock ? "disabled" : ""}>${outOfStock ? "Hết hàng" : "Thêm vào giỏ hàng"}</button>
               </div>
             </div>
           </div>
@@ -1945,14 +2000,31 @@
           classificationId: classification?.id || "",
           classificationName: classification?.name || ""
         };
+        if (!hasStock(product, { classificationIndex: variantState.classificationIndex, color: options.color, size: options.size })) {
+          showSoldOut();
+          renderVariantModal();
+          return;
+        }
         product.classificationIndex = variantState.classificationIndex;
         product.colorIndex = variantState.colorIndex;
         product.color = options.color;
         product.size = options.size;
-        closeVariant();
-        if (variantState.mode === "buy") buyNow(product.id, options);
+        if (variantState.mode === "buy") {
+          const added = addToCart(product.id, options);
+          if (!added) {
+            renderVariantModal();
+            return;
+          }
+          closeVariant();
+          openCart();
+        }
         else {
-          addToCart(product.id, options);
+          const added = addToCart(product.id, options);
+          if (!added) {
+            renderVariantModal();
+            return;
+          }
+          closeVariant();
           openCart();
         }
       }
@@ -2139,20 +2211,32 @@
 
       function addToCart(id, options = {}) {
         const product = productData.find((item) => item.id === id);
-        if (!product) return;
+        if (!product) return false;
         const color = options.color || product.color;
         const size = options.size || product.size;
         const qty = options.qty || 1;
         const classificationId = options.classificationId || "";
         const classificationName = options.classificationName || "";
+        const classificationIndex = product.classifications?.findIndex((item) => item.id === classificationId);
+        const stock = stockFor(product, { classificationIndex: classificationIndex >= 0 ? classificationIndex : (product.classificationIndex || 0), color, size });
+        if (stock <= 0) {
+          showSoldOut();
+          return false;
+        }
         const cartId = `${id}-${classificationId}-${color}-${size}`;
         const existing = cart.find((item) => item.cartId === cartId);
+        const nextQty = (existing?.qty || 0) + qty;
+        if (stock !== Infinity && nextQty > stock) {
+          alert(`Phân loại này chỉ còn ${stock} sản phẩm.`);
+          return false;
+        }
         if (existing) {
           existing.qty += qty;
           if (options.message !== undefined) existing.message = options.message;
         }
         else cart.push({ ...product, cartId, color, size, qty, classificationId, classificationName, message: options.message || product.message || "" });
         renderCart();
+        return true;
       }
 
       function updateProductGallery(id, direction) {
@@ -2177,8 +2261,17 @@
       }
 
       function buyNow(id, options = {}) {
-        addToCart(id, options);
-        openCart();
+        if (addToCart(id, options)) openCart();
+      }
+      function stockForCartItem(item) {
+        const product = productData.find((entry) => entry.id === item.id);
+        if (!product || item.wholesale) return Infinity;
+        const classificationIndex = product.classifications?.findIndex((classification) => classification.id === item.classificationId);
+        return stockFor(product, {
+          classificationIndex: classificationIndex >= 0 ? classificationIndex : (product.classificationIndex || 0),
+          color: item.color,
+          size: item.size
+        });
       }
 
       document.getElementById("productGrid").addEventListener("click", (event) => {
@@ -2186,6 +2279,10 @@
         if (cardClassification) {
           event.preventDefault();
           event.stopPropagation();
+          if (cardClassification.dataset.stockState === "out") {
+            showSoldOut();
+            return;
+          }
           const [id, index] = cardClassification.dataset.cardClassification.split(":");
           const product = productData.find((item) => item.id === id);
           if (product) {
@@ -2201,6 +2298,10 @@
         if (cardColor) {
           event.preventDefault();
           event.stopPropagation();
+          if (cardColor.dataset.stockState === "out") {
+            showSoldOut();
+            return;
+          }
           const [id, index] = cardColor.dataset.cardColor.split(":");
           const product = productData.find((item) => item.id === id);
           if (product) {
@@ -2227,6 +2328,10 @@
         }
         const sizeButton = event.target.closest("[data-size]");
         if (sizeButton) {
+          if (sizeButton.dataset.stockState === "out") {
+            showSoldOut();
+            return;
+          }
           const [id, size] = sizeButton.dataset.size.split(":");
           const product = productData.find((item) => item.id === id);
           if (product) product.size = size;
@@ -2268,6 +2373,15 @@
         if (event.target.closest("#wholesaleAdd")) {
           const product = productData.find((item) => item.id === wholesaleState.productId);
           if (!product) return;
+          const stock = stockFor(product, { color: product.color, size: product.size });
+          if (stock <= 0) {
+            showSoldOut();
+            return;
+          }
+          if (stock !== Infinity && wholesaleState.qty > stock) {
+            alert(`Phân loại này chỉ còn ${stock} sản phẩm.`);
+            return;
+          }
           const discount = wholesaleDiscount(wholesaleState.qty);
           const unitPrice = Math.round(product.amount * (1 - discount) / 1000) * 1000;
           const cartId = `${product.id}-${product.color}-${product.size}-wholesale-${unitPrice}`;
@@ -2308,6 +2422,10 @@
       detailContent.addEventListener("click", (event) => {
         const detailClassification = event.target.closest("[data-detail-classification]");
         if (detailClassification) {
+          if (detailClassification.dataset.stockState === "out") {
+            showSoldOut();
+            return;
+          }
           const [id, index] = detailClassification.dataset.detailClassification.split(":");
           const product = productData.find((item) => item.id === id);
           if (product) {
@@ -2321,6 +2439,10 @@
         }
         const detailColor = event.target.closest("[data-detail-color]");
         if (detailColor) {
+          if (detailColor.dataset.stockState === "out") {
+            showSoldOut();
+            return;
+          }
           const [id, index] = detailColor.dataset.detailColor.split(":");
           const product = productData.find((item) => item.id === id);
           if (product) {
@@ -2339,6 +2461,10 @@
         }
         const sizeButton = event.target.closest("[data-size]");
         if (sizeButton) {
+          if (sizeButton.dataset.stockState === "out") {
+            showSoldOut();
+            return;
+          }
           const [id, size] = sizeButton.dataset.size.split(":");
           const product = productData.find((item) => item.id === id);
           if (product) product.size = size;
@@ -2408,6 +2534,10 @@
         }
         const classification = event.target.closest("[data-variant-classification]");
         if (classification) {
+          if (classification.dataset.stockState === "out") {
+            showSoldOut();
+            return;
+          }
           const [, index] = classification.dataset.variantClassification.split(":");
           variantState.classificationIndex = Number(index);
           variantState.colorIndex = 0;
@@ -2416,6 +2546,10 @@
         }
         const color = event.target.closest("[data-variant-color]");
         if (color) {
+          if (color.dataset.stockState === "out") {
+            showSoldOut();
+            return;
+          }
           variantState.colorIndex = Number(color.dataset.variantColor);
           const product = productData.find((item) => item.id === variantState.productId);
           if (product) product.useColorImage = true;
@@ -2424,13 +2558,21 @@
         }
         const size = event.target.closest("[data-variant-size]");
         if (size) {
+          if (size.dataset.stockState === "out") {
+            showSoldOut();
+            return;
+          }
           variantState.size = size.dataset.variantSize;
           renderVariantModal();
           return;
         }
         const qty = event.target.closest("[data-variant-qty]");
         if (qty) {
-          variantState.qty = Math.min(999, Math.max(1, variantState.qty + Number(qty.dataset.variantQty)));
+          const product = productData.find((item) => item.id === variantState.productId);
+          const swatches = product ? variantSwatches(product, variantState.classificationIndex) : [];
+          const color = swatches[variantState.colorIndex] || swatches[0];
+          const stock = product ? stockFor(product, { classificationIndex: variantState.classificationIndex, color, size: variantState.size }) : Infinity;
+          variantState.qty = Math.min(stock === Infinity ? 999 : Math.max(1, stock), Math.max(1, variantState.qty + Number(qty.dataset.variantQty)));
           renderVariantModal();
           return;
         }
@@ -2446,11 +2588,21 @@
       variantContent.addEventListener("input", (event) => {
         if (event.target.id !== "variantQtyInput") return;
         const qty = Number(event.target.value);
-        if (qty >= 1 && qty <= 999) variantState.qty = qty;
+        const product = productData.find((item) => item.id === variantState.productId);
+        const swatches = product ? variantSwatches(product, variantState.classificationIndex) : [];
+        const color = swatches[variantState.colorIndex] || swatches[0];
+        const stock = product ? stockFor(product, { classificationIndex: variantState.classificationIndex, color, size: variantState.size }) : Infinity;
+        const maxQty = stock === Infinity ? 999 : Math.max(1, stock);
+        if (qty >= 1 && qty <= maxQty) variantState.qty = qty;
       });
       variantContent.addEventListener("change", (event) => {
         if (event.target.id !== "variantQtyInput") return;
-        variantState.qty = Math.min(999, Math.max(1, Number(event.target.value) || 1));
+        const product = productData.find((item) => item.id === variantState.productId);
+        const swatches = product ? variantSwatches(product, variantState.classificationIndex) : [];
+        const color = swatches[variantState.colorIndex] || swatches[0];
+        const stock = product ? stockFor(product, { classificationIndex: variantState.classificationIndex, color, size: variantState.size }) : Infinity;
+        const maxQty = stock === Infinity ? 999 : Math.max(1, stock);
+        variantState.qty = Math.min(maxQty, Math.max(1, Number(event.target.value) || 1));
         event.target.value = variantState.qty;
       });
 
@@ -2466,7 +2618,11 @@
         }
         if (inc) {
           const item = cart.find((entry) => entry.cartId === inc.dataset.inc);
-          if (item) item.qty += 1;
+          if (item) {
+            const stock = stockForCartItem(item);
+            if (stock !== Infinity && item.qty + 1 > stock) alert(`Phân loại này chỉ còn ${stock} sản phẩm.`);
+            else item.qty += 1;
+          }
         }
         if (dec) {
           const index = cart.findIndex((entry) => entry.cartId === dec.dataset.dec);
@@ -2483,7 +2639,8 @@
           const item = cart.find((entry) => entry.cartId === quantityField.dataset.cartQty);
           const qty = Number(quantityField.value);
           if (item && qty >= 1 && qty <= 999) {
-            item.qty = qty;
+            const stock = stockForCartItem(item);
+            item.qty = Math.min(qty, stock === Infinity ? 999 : Math.max(1, stock));
             document.getElementById("cartCount").textContent = cartCount();
             renderCartTotals();
           }
@@ -2499,7 +2656,8 @@
         if (!quantityField) return;
         const item = cart.find((entry) => entry.cartId === quantityField.dataset.cartQty);
         if (!item) return;
-        item.qty = Math.min(999, Math.max(1, Number(quantityField.value) || 1));
+        const stock = stockForCartItem(item);
+        item.qty = Math.min(stock === Infinity ? 999 : Math.max(1, stock), Math.max(1, Number(quantityField.value) || 1));
         renderCart();
       });
       cartNote.addEventListener("input", () => {

@@ -20,6 +20,7 @@ const emptyProduct: CmsProduct = {
   colorNames: {},
   colorImages: {},
   inventory: [],
+  inventoryManaged: false,
   sold: 0,
   genders: ["men", "women"],
   isBestSeller: false,
@@ -534,7 +535,7 @@ function ProductForm({
   const totalInventory = inventoryRows.reduce((sum, item) => sum + item.quantity, 0);
   const updateInventoryItem = (key: string, patch: Partial<CmsProductInventoryItem>) => {
     const nextInventory = inventoryRows.map((item) => item.key === key ? { ...item, ...patch } : item);
-    set("inventory", nextInventory);
+    onChange({ ...product, inventory: nextInventory, inventoryManaged: true });
   };
   const inventoryClassificationName = (item: CmsProductInventoryItem) =>
     product.classifications?.find((classification) => classification.id === item.classificationId)?.name || "Sản phẩm chung";
@@ -785,7 +786,7 @@ function ProductForm({
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h4 className="text-base font-bold uppercase">Số lượng hàng hóa / tồn kho</h4>
-            <p className="mt-1 text-xs text-neutral-600">Nhập số lượng riêng cho từng phân loại, màu và size. Mã SKU dùng để kết nối đúng hàng với POS hoặc MISA.</p>
+            <p className="mt-1 text-xs text-neutral-600">Nhập số lượng riêng cho từng phân loại, màu và size. Khi số lượng = 0, khách sẽ thấy hết hàng và không mua được phân loại đó.</p>
           </div>
           <div className="bg-black px-4 py-3 text-white"><span className="text-xs uppercase">Tổng tồn</span><strong className="ml-3 text-xl">{totalInventory}</strong></div>
         </div>

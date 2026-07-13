@@ -33,6 +33,7 @@ export type CmsProduct = {
   colorImages?: Record<string, string>;
   classifications?: CmsProductClassification[];
   inventory?: CmsProductInventoryItem[];
+  inventoryManaged?: boolean;
   sold: number;
   genders?: string[];
   isBestSeller?: boolean;
@@ -263,6 +264,7 @@ export async function readSiteContent(): Promise<SiteContent> {
       price: hasDiscount ? salePrice : originalPrice,
       isSale: hasDiscount,
       salePercent: hasDiscount ? Math.max(1, Math.round((originalAmount - saleAmount) / originalAmount * 100)) : 0,
+      inventoryManaged: Boolean(product.inventoryManaged) || Boolean(fallback.inventoryManaged) || (Array.isArray(product.inventory) && product.inventory.some((item) => Number(item.quantity) > 0)),
       galleryImages: Array.isArray(product.galleryImages) ? product.galleryImages : (fallback.galleryImages || []),
       colorNames: product.colorNames && typeof product.colorNames === "object" ? product.colorNames : (fallback.colorNames || {}),
       colorImages: product.colorImages && typeof product.colorImages === "object" ? product.colorImages : (fallback.colorImages || {}),
