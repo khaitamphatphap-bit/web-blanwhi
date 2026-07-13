@@ -2,11 +2,13 @@
   "pancake": {
     "enabled": false,
     "endpoint": "",
+    "inventoryEndpoint": "",
     "token": ""
   },
   "misa": {
     "enabled": false,
     "endpoint": "",
+    "inventoryEndpoint": "",
     "token": ""
   },
   "shipping": {

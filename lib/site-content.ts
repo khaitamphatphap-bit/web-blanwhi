@@ -8,6 +8,15 @@ export type CmsProductClassification = {
   colorImages?: Record<string, string>;
 };
 
+export type CmsProductInventoryItem = {
+  key: string;
+  sku: string;
+  quantity: number;
+  size: string;
+  color?: string;
+  classificationId?: string;
+};
+
 export type CmsProduct = {
   id: string;
   name: string;
@@ -21,6 +30,7 @@ export type CmsProduct = {
   colorNames?: Record<string, string>;
   colorImages?: Record<string, string>;
   classifications?: CmsProductClassification[];
+  inventory?: CmsProductInventoryItem[];
   sold: number;
   genders?: string[];
   isBestSeller?: boolean;
@@ -29,6 +39,45 @@ export type CmsProduct = {
   salePercent: number;
   active: boolean;
 };
+
+function inventoryKey(classificationId: string, color: string, size: string) {
+  return [classificationId || "product", color || "default", size || "one-size"].join("|");
+}
+
+function defaultInventorySku(productId: string, classificationId: string, color: string, size: string) {
+  return [productId, classificationId, color, size]
+    .filter(Boolean)
+    .join("-")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .toUpperCase();
+}
+
+export function buildProductInventory(product: CmsProduct): CmsProductInventoryItem[] {
+  const savedByKey = new Map((product.inventory || []).map((item) => [item.key, item]));
+  const sizes = product.sizes?.length ? product.sizes : ["ONE SIZE"];
+  const variants = product.classifications?.length
+    ? product.classifications.flatMap((classification) => {
+        const colors = classification.swatches?.length ? classification.swatches : [""];
+        return colors.map((color) => ({ classificationId: classification.id, color }));
+      })
+    : (product.swatches?.length ? product.swatches : [""]).map((color) => ({ classificationId: "", color }));
+
+  return variants.flatMap(({ classificationId, color }) => sizes.map((size) => {
+    const key = inventoryKey(classificationId, color, size);
+    const saved = savedByKey.get(key);
+    return {
+      key,
+      sku: saved?.sku || defaultInventorySku(product.id, classificationId, color, size),
+      quantity: Math.max(0, Math.floor(Number(saved?.quantity) || 0)),
+      size,
+      ...(color ? { color } : {}),
+      ...(classificationId ? { classificationId } : {})
+    };
+  }));
+}
 
 export type SiteContent = {
   brand: {
@@ -197,7 +246,7 @@ export async function readSiteContent(): Promise<SiteContent> {
   const defaultProductsById = new Map(defaultSiteContent.products.map((product) => [product.id, product]));
   const products = (saved.products || defaultSiteContent.products).map((product) => {
     const fallback = defaultProductsById.get(product.id) || {} as Partial<CmsProduct>;
-    return {
+    const normalizedProduct = {
       ...fallback,
       ...product,
       galleryImages: Array.isArray(product.galleryImages) ? product.galleryImages : (fallback.galleryImages || []),
@@ -212,6 +261,7 @@ export async function readSiteContent(): Promise<SiteContent> {
       genders: product.genders && product.genders.length ? product.genders : (fallback.genders || ["men", "women"]),
       isBestSeller: product.isBestSeller === undefined ? Boolean(fallback.isBestSeller || product.sold >= 650) : product.isBestSeller
     };
+    return { ...normalizedProduct, inventory: buildProductInventory(normalizedProduct as CmsProduct) };
   });
   return {
     ...defaultSiteContent,

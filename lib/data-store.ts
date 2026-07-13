@@ -26,7 +26,77 @@ function shouldUseBlobStore(filename: string) {
   return filename === "site-content.json" && hasBlobStore();
 }
 
+function shouldUseEncryptedBlobStore(filename: string) {
+  return ["orders.json", "integrations.json"].includes(filename) && Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+}
+
 const siteContentBlobPath = "blanwhi/content/site-content.json";
+
+function encryptedBlobPath(filename: string) {
+  return `blanwhi/private/${filename.replace(/\.json$/, "")}.enc.json`;
+}
+
+async function encryptionKey() {
+  const token = process.env.BLOB_READ_WRITE_TOKEN;
+  if (!token) throw new Error("Thiếu khóa lưu dữ liệu admin an toàn.");
+  const { createHash } = await import("crypto");
+  return createHash("sha256").update(`blanwhi-admin-v1:${token}`).digest();
+}
+
+async function encryptJson(value: unknown) {
+  const { createCipheriv, randomBytes } = await import("crypto");
+  const iv = randomBytes(12);
+  const cipher = createCipheriv("aes-256-gcm", await encryptionKey(), iv);
+  const ciphertext = Buffer.concat([cipher.update(JSON.stringify(value), "utf8"), cipher.final()]);
+  return JSON.stringify({
+    version: 1,
+    iv: iv.toString("base64"),
+    tag: cipher.getAuthTag().toString("base64"),
+    data: ciphertext.toString("base64")
+  });
+}
+
+async function decryptJson<T>(text: string) {
+  const { createDecipheriv } = await import("crypto");
+  const envelope = JSON.parse(text) as { version?: number; iv?: string; tag?: string; data?: string };
+  if (envelope.version !== 1 || !envelope.iv || !envelope.tag || !envelope.data) {
+    throw new Error("Bản lưu dữ liệu admin không hợp lệ.");
+  }
+  const decipher = createDecipheriv("aes-256-gcm", await encryptionKey(), Buffer.from(envelope.iv, "base64"));
+  decipher.setAuthTag(Buffer.from(envelope.tag, "base64"));
+  const plaintext = Buffer.concat([decipher.update(Buffer.from(envelope.data, "base64")), decipher.final()]);
+  return JSON.parse(plaintext.toString("utf8")) as T;
+}
+
+async function readEncryptedBlobJsonStore<T>(filename: string) {
+  const { get } = await import("@vercel/blob");
+  const result = await get(encryptedBlobPath(filename), { access: "public", useCache: false });
+  if (!result || result.statusCode !== 200) return null;
+  return decryptJson<T>(await new Response(result.stream).text());
+}
+
+async function writeEncryptedBlobJsonStore<T>(filename: string, value: T) {
+  const { get, put } = await import("@vercel/blob");
+  const pathname = encryptedBlobPath(filename);
+  const previous = await get(pathname, { access: "public", useCache: false });
+  if (previous?.statusCode === 200) {
+    const previousText = await new Response(previous.stream).text();
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    await put(`blanwhi/private-history/${toStoreKey(filename)}-${timestamp}.enc.json`, previousText, {
+      access: "public",
+      addRandomSuffix: true,
+      contentType: "application/json"
+    });
+  }
+  await put(pathname, await encryptJson(value), {
+    access: "public",
+    addRandomSuffix: false,
+    allowOverwrite: true,
+    cacheControlMaxAge: 60,
+    contentType: "application/json"
+  });
+  return value;
+}
 
 async function readBlobJsonStore<T>() {
   const { get } = await import("@vercel/blob");
@@ -187,6 +257,18 @@ export async function readJsonStore<T>(filename: string, fallback: T): Promise<T
     if (saved !== null) return saved;
   }
 
+  if (shouldUseEncryptedBlobStore(filename)) {
+    const saved = await readEncryptedBlobJsonStore<T>(filename);
+    if (saved !== null) return saved;
+    const file = await ensureJsonFile<T>(filename, fallback);
+    try {
+      const initialValue = JSON.parse(await readFile(file, "utf8")) as T;
+      return writeEncryptedBlobJsonStore(filename, initialValue);
+    } catch {
+      return writeEncryptedBlobJsonStore(filename, fallback);
+    }
+  }
+
   const file = await ensureJsonFile<T>(filename, fallback);
   try {
     return JSON.parse(await readFile(file, "utf8")) as T;
@@ -234,6 +316,10 @@ export async function writeJsonStore<T>(filename: string, value: T) {
 
   if (shouldUseBlobStore(filename)) {
     return writeBlobJsonStore(value);
+  }
+
+  if (shouldUseEncryptedBlobStore(filename)) {
+    return writeEncryptedBlobJsonStore(filename, value);
   }
 
   const file = await ensureJsonFile<T>(filename, value);

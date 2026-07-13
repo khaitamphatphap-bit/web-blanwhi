@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
-import type { CmsProduct, CmsProductClassification, SiteContent } from "@/lib/site-content";
+import { buildProductInventory } from "@/lib/site-content";
+import type { CmsProduct, CmsProductClassification, CmsProductInventoryItem, SiteContent } from "@/lib/site-content";
 
 const emptyProduct: CmsProduct = {
   id: "",
@@ -16,6 +17,7 @@ const emptyProduct: CmsProduct = {
   galleryImages: [],
   colorNames: {},
   colorImages: {},
+  inventory: [],
   sold: 0,
   genders: ["men", "women"],
   isBestSeller: false,
@@ -57,6 +59,7 @@ export function SiteEditor() {
   const [jsonDraft, setJsonDraft] = useState("");
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
+  const [inventoryBusy, setInventoryBusy] = useState("");
   const editorRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -183,6 +186,54 @@ export function SiteEditor() {
     }
   }
 
+  function downloadBackup() {
+    if (!content) return;
+    const blob = new Blob([JSON.stringify(content, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `blanwhi-admin-${new Date().toISOString().slice(0, 10)}.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+    setMessage("Đã tải bản sao dữ liệu admin.");
+  }
+
+  async function importBackup(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      const parsed = JSON.parse(await file.text()) as SiteContent;
+      updateContent(parsed);
+      setSelectedId(parsed.products?.[0]?.id || "");
+      setMessage("Đã nạp bản sao. Nhấn Lưu thay đổi để ghi cố định.");
+    } catch {
+      setMessage("File sao lưu JSON không hợp lệ.");
+    } finally {
+      event.target.value = "";
+    }
+  }
+
+  async function syncInventory(target: "pos" | "misa", direction: "pull" | "push") {
+    const busyKey = `${target}-${direction}`;
+    setInventoryBusy(busyKey);
+    setMessage("");
+    try {
+      const response = await fetch("/api/admin/inventory/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ target, direction })
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Không đồng bộ được tồn kho.");
+      if (result.content) updateContent(result.content);
+      setMessage(result.message || "Đã đồng bộ tồn kho.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Không đồng bộ được tồn kho.");
+    } finally {
+      setInventoryBusy("");
+    }
+  }
+
   function updateFooterColumn(index: number, nextColumn: SiteContent["footerColumns"][number]) {
     if (!content) return;
     updateContent({
@@ -217,6 +268,8 @@ export function SiteEditor() {
           <h1 className="mt-2 text-4xl font-medium">Admin chỉnh website</h1>
         </div>
         <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={downloadBackup} className="h-10 border border-neutral-300 px-4 text-xs uppercase">Tải bản sao</button>
+          <label className="h-10 cursor-pointer border border-neutral-300 px-4 pt-2 text-xs uppercase">Nạp bản sao<input type="file" accept="application/json" onChange={importBackup} className="hidden" /></label>
           <Link href="/admin/orders" className="h-10 border border-black px-4 pt-2 text-xs uppercase">Đơn hàng</Link>
           <button onClick={() => save()} disabled={saving} className="h-10 bg-black px-5 text-xs uppercase text-white disabled:opacity-50">
             {saving ? "Đang lưu..." : "Lưu thay đổi"}
@@ -225,6 +278,19 @@ export function SiteEditor() {
       </header>
 
       {message && <p className="mt-4 border border-neutral-200 bg-neutral-50 p-3 text-sm">{message}</p>}
+
+      <section className="mt-4 border border-neutral-200 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div><h2 className="text-sm font-semibold uppercase">Đồng bộ tồn kho POS / MISA</h2><p className="mt-1 text-xs text-neutral-500">Cấu hình endpoint và token ở trang Đơn hàng, sau đó lấy hoặc gửi tồn kho tại đây.</p></div>
+          <Link href="/admin/orders" className="border border-neutral-300 px-3 py-2 text-xs uppercase">Cấu hình kết nối</Link>
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {(["pos", "misa"] as const).flatMap((target) => (["pull", "push"] as const).map((direction) => {
+            const busyKey = `${target}-${direction}`;
+            return <button key={busyKey} type="button" onClick={() => syncInventory(target, direction)} disabled={Boolean(inventoryBusy)} className="h-10 border border-black px-4 text-xs uppercase disabled:opacity-40">{inventoryBusy === busyKey ? "Đang đồng bộ..." : `${direction === "pull" ? "Lấy tồn" : "Gửi tồn"} ${target.toUpperCase()}`}</button>;
+          }))}
+        </div>
+      </section>
 
       <section className="mt-6 grid gap-6 lg:grid-cols-[360px_1fr]">
         <aside className="space-y-5">
@@ -407,7 +473,7 @@ export function SiteEditor() {
                     <strong>{product.name}</strong>
                     <span className={`shrink-0 border px-2 py-1 text-[10px] uppercase ${selectedId === product.id ? "border-white" : "border-black"}`}>Sửa</span>
                   </span>
-                  <span className="mt-1 block text-xs opacity-70">{product.price} · {product.kind} · {product.active ? "đang bán" : "ẩn"}</span>
+                  <span className="mt-1 block text-xs opacity-70">{product.price} · tồn {buildProductInventory(product).reduce((sum, item) => sum + item.quantity, 0)} · {product.active ? "đang bán" : "ẩn"}</span>
                 </button>
               ))}
             </div>
@@ -460,6 +526,19 @@ function ProductForm({
   const [newColorName, setNewColorName] = useState("");
   const [newClassificationName, setNewClassificationName] = useState("");
   const [newSize, setNewSize] = useState("");
+  const inventoryRows = buildProductInventory(product);
+  const totalInventory = inventoryRows.reduce((sum, item) => sum + item.quantity, 0);
+  const updateInventoryItem = (key: string, patch: Partial<CmsProductInventoryItem>) => {
+    const nextInventory = inventoryRows.map((item) => item.key === key ? { ...item, ...patch } : item);
+    set("inventory", nextInventory);
+  };
+  const inventoryClassificationName = (item: CmsProductInventoryItem) =>
+    product.classifications?.find((classification) => classification.id === item.classificationId)?.name || "Sản phẩm chung";
+  const inventoryColorName = (item: CmsProductInventoryItem) => {
+    if (!item.color) return "Mặc định";
+    const classification = product.classifications?.find((entry) => entry.id === item.classificationId);
+    return classification?.colorNames?.[item.color] || colorNames[item.color] || item.color;
+  };
   const setColorImage = (color: string, url: string) => {
     const nextColorImages = { ...colorImages, [color]: url };
     const nextSwatches = url
@@ -760,6 +839,34 @@ function ProductForm({
           ))}
         </div>
       </div>}
+
+      <div className="mt-5 border-t pt-4">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h4 className="text-sm font-semibold uppercase">Số lượng hàng hóa / tồn kho</h4>
+            <p className="mt-1 text-xs text-neutral-500">Mỗi dòng là một tổ hợp phân loại + màu + size. SKU dùng để liên kết đúng hàng với POS và MISA.</p>
+          </div>
+          <div className="border border-black bg-black px-4 py-3 text-white"><span className="text-xs uppercase">Tổng tồn</span><strong className="ml-3 text-xl">{totalInventory}</strong></div>
+        </div>
+        <div className="mt-3 overflow-x-auto border border-neutral-200">
+          <table className="min-w-[820px] w-full border-collapse text-sm">
+            <thead className="bg-neutral-50 text-left text-xs uppercase text-neutral-500">
+              <tr><th className="p-3">Phân loại</th><th className="p-3">Màu</th><th className="p-3">Size</th><th className="p-3">Mã SKU</th><th className="p-3">Số lượng</th></tr>
+            </thead>
+            <tbody>
+              {inventoryRows.map((item) => (
+                <tr key={item.key} className="border-t border-neutral-200">
+                  <td className="p-3 font-medium">{inventoryClassificationName(item)}</td>
+                  <td className="p-3">{inventoryColorName(item)}</td>
+                  <td className="p-3"><strong>{item.size}</strong></td>
+                  <td className="p-3"><input value={item.sku} onChange={(event) => updateInventoryItem(item.key, { sku: event.target.value.trim().toUpperCase() })} className="h-10 w-full min-w-52 border px-3 font-mono text-xs" /></td>
+                  <td className="p-3"><input type="number" min="0" step="1" value={item.quantity} onChange={(event) => updateInventoryItem(item.key, { quantity: Math.max(0, Math.floor(Number(event.target.value) || 0)) })} className="h-10 w-28 border px-3 text-right font-semibold" /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
       {product.image && <img src={product.image} alt={product.name} className="mt-4 aspect-[4/3] max-h-72 w-full object-cover" />}
     </div>

@@ -265,6 +265,7 @@ export function OrdersAdmin({
           title="Pancake POS"
           enabled={integrations.pancake.enabled}
           endpoint={integrations.pancake.endpoint}
+          inventoryEndpoint={integrations.pancake.inventoryEndpoint}
           token={integrations.pancake.token}
           endpointPlaceholder="https://.../pancake/orders"
           onChange={(patch) => setIntegrations({ ...integrations, pancake: { ...integrations.pancake, ...patch } })}
@@ -273,6 +274,7 @@ export function OrdersAdmin({
           title="MISA eShop"
           enabled={integrations.misa.enabled}
           endpoint={integrations.misa.endpoint}
+          inventoryEndpoint={integrations.misa.inventoryEndpoint}
           token={integrations.misa.token}
           endpointPlaceholder="https://.../misa/orders"
           onChange={(patch) => setIntegrations({ ...integrations, misa: { ...integrations.misa, ...patch } })}
@@ -495,6 +497,7 @@ function IntegrationBox({
   title,
   enabled,
   endpoint,
+  inventoryEndpoint,
   token,
   endpointPlaceholder,
   onChange
@@ -502,15 +505,17 @@ function IntegrationBox({
   title: string;
   enabled: boolean;
   endpoint: string;
+  inventoryEndpoint: string;
   token: string;
   endpointPlaceholder: string;
-  onChange: (patch: { enabled?: boolean; endpoint?: string; token?: string }) => void;
+  onChange: (patch: { enabled?: boolean; endpoint?: string; inventoryEndpoint?: string; token?: string }) => void;
 }) {
   return (
     <fieldset className="border border-neutral-200 p-4">
       <legend className="px-2 text-sm font-semibold uppercase">{title}</legend>
       <label className="mt-2 block text-sm"><input type="checkbox" checked={enabled} onChange={(event) => onChange({ enabled: event.target.checked })} className="mr-2" />Bật kết nối</label>
       <input value={endpoint} onChange={(event) => onChange({ endpoint: event.target.value })} placeholder={endpointPlaceholder} className="mt-3 h-10 w-full border px-3 text-sm" />
+      <input value={inventoryEndpoint} onChange={(event) => onChange({ inventoryEndpoint: event.target.value })} placeholder="Endpoint tồn kho POS/MISA" className="mt-2 h-10 w-full border px-3 text-sm" />
       <input value={token} onChange={(event) => onChange({ token: event.target.value })} placeholder="API token / Bearer token" className="mt-2 h-10 w-full border px-3 text-sm" />
     </fieldset>
   );

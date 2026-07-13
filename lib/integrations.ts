@@ -6,11 +6,13 @@ export type IntegrationConfig = {
   pancake: {
     enabled: boolean;
     endpoint: string;
+    inventoryEndpoint: string;
     token: string;
   };
   misa: {
     enabled: boolean;
     endpoint: string;
+    inventoryEndpoint: string;
     token: string;
   };
   shipping: {
@@ -47,8 +49,8 @@ export type IntegrationConfig = {
 };
 
 export const defaultIntegrationConfig: IntegrationConfig = {
-  pancake: { enabled: false, endpoint: "", token: "" },
-  misa: { enabled: false, endpoint: "", token: "" },
+  pancake: { enabled: false, endpoint: "", inventoryEndpoint: "", token: "" },
+  misa: { enabled: false, endpoint: "", inventoryEndpoint: "", token: "" },
   shipping: {
     enabled: false,
     provider: "ghn",
