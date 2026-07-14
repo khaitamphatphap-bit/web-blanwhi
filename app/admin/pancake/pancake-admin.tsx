@@ -58,10 +58,11 @@ export function PancakeAdmin() {
   }
 
   async function load() {
-    const response = await fetch("/api/admin/pancake", { cache: "no-store" });
+    const response = await fetch(`/api/admin/pancake?refresh=${Date.now()}`, { cache: "no-store" });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || "Không tải được Pancake Integration.");
     setDashboard(result);
+    return result as Dashboard;
   }
 
   useEffect(() => {
@@ -110,9 +111,13 @@ export function PancakeAdmin() {
     try {
       const response = await request({ action: "link-product", productId, rowKey, variationId });
       setDashboard(response.dashboard);
+      await load();
       setEditingKey("");
       setSelectedVariationId("");
-      setMessage(variationId ? "Đã liên kết sản phẩm với Pancake POS." : "Đã hủy liên kết Pancake POS.");
+      const selectedVariation = variations.find((item) => item.id === variationId);
+      setMessage(variationId
+        ? `Đã xác minh liên kết thành công${selectedVariation ? `: ${selectedVariation.name || "Sản phẩm Pancake"} · SKU ${selectedVariation.sku || "—"}` : ""}.`
+        : "Đã xác minh hủy liên kết Pancake POS thành công.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Không lưu được liên kết.");
     } finally {

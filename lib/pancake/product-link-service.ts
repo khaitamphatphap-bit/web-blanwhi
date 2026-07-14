@@ -67,6 +67,21 @@ export class ProductLinkService {
       : item);
 
     await writeSiteContent({ ...content, products });
+
+    const confirmedContent = await readSiteContent();
+    const confirmedProduct = confirmedContent.products.find((item) => item.id === productId);
+    const confirmedRow = confirmedProduct
+      ? buildProductInventory(confirmedProduct).find((item) => item.key === rowKey)
+      : undefined;
+    const confirmedLinked = Boolean(confirmedRow?.pancakeVariationId || confirmedRow?.pancakeProductId || confirmedRow?.pancakeSku);
+
+    if (variationId && (!confirmedLinked || confirmedRow?.pancakeVariationId !== link.pancakeVariationId)) {
+      throw new PancakeIntegrationError("Đã gửi yêu cầu nhưng chưa xác minh được dữ liệu liên kết sau khi lưu.", "PRODUCT_LINK_NOT_PERSISTED", 500);
+    }
+    if (!variationId && confirmedLinked) {
+      throw new PancakeIntegrationError("Chưa xác minh được việc hủy liên kết sau khi lưu.", "PRODUCT_UNLINK_NOT_PERSISTED", 500);
+    }
+
     await PancakeLogger.write(
       "info",
       variationId ? "product.link" : "product.unlink",
@@ -75,6 +90,13 @@ export class ProductLinkService {
         : `Đã hủy liên kết ${product.name} · ${target.size}.`
     );
 
-    return { productId, rowKey, linked: Boolean(variationId) };
+    return {
+      productId,
+      rowKey,
+      linked: confirmedLinked,
+      pancakeProductId: confirmedRow?.pancakeProductId || "",
+      pancakeVariationId: confirmedRow?.pancakeVariationId || "",
+      pancakeSku: confirmedRow?.pancakeSku || ""
+    };
   }
 }
