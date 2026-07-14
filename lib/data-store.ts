@@ -272,6 +272,7 @@ export async function readJsonStore<T>(filename: string, fallback: T): Promise<T
 
 export async function readJsonStoreHistory<T>(filename: string, limit = 100): Promise<T[]> {
   const safeLimit = Math.max(1, Math.min(250, Math.floor(limit)));
+  const history: T[] = [];
 
   if (hasDatabase()) {
     await ensureDatabaseSchema();
@@ -285,9 +286,9 @@ export async function readJsonStoreHistory<T>(filename: string, limit = 100): Pr
          limit $2`,
         [toStoreKey(filename), safeLimit]
       );
-      return result.rows
+      history.push(...result.rows
         .map((row) => row.store_value as T)
-        .filter((value): value is T => value !== undefined && value !== null);
+        .filter((value): value is T => value !== undefined && value !== null));
     }
   }
 
@@ -306,8 +307,10 @@ export async function readJsonStoreHistory<T>(filename: string, limit = 100): Pr
         return null;
       }
     }));
-    return values.filter((value) => value !== null) as T[];
+    history.push(...values.filter((value) => value !== null) as T[]);
   }
+
+  if (history.length > 0) return history;
 
   const backupDir = path.join(writableDataDir(), "backups", toStoreKey(filename));
   try {

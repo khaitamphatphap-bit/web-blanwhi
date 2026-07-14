@@ -27,7 +27,7 @@ export class ProductLinkService {
   async recoverLinks() {
     const [content, history, variations] = await Promise.all([
       readSiteContent(),
-      readJsonStoreHistory<Partial<SiteContent>>("site-content.json", 100),
+      readJsonStoreHistory<Partial<SiteContent>>("site-content.json", 250),
       this.pancake.variations()
     ]);
     const currentProducts = new Map(content.products.map((product) => [product.id, product]));
