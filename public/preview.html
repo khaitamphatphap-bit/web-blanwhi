@@ -154,6 +154,7 @@
       .filters { border-block: 1px solid var(--line); padding: 16px 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
       select { height: 44px; border: 1px solid var(--line); background: #fff; padding: 0 12px; color: #111; }
       .grid { padding: 30px 0 64px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 44px 20px; }
+      .card { min-width: 0; height: 100%; display: flex; flex-direction: column; }
       .pagination { margin: -28px 0 64px; display: none; align-items: center; justify-content: center; gap: 8px; }
       .pagination.visible { display: flex; }
       .pagination button { min-width: 40px; height: 40px; padding: 0 13px; border: 1px solid var(--line); background: #fff; color: #111; font-size: 11px; font-weight: 700; text-transform: uppercase; cursor: pointer; }
@@ -227,7 +228,7 @@
       .mini-link { border: 0; background: transparent; padding: 0; text-align: left; font-size: 12px; text-decoration: underline; }
       .quick { width: 100%; margin-top: 12px; height: 38px; border: 1px solid #000; background: transparent; text-transform: uppercase; font-size: 12px; }
       .quick:hover { background: #000; color: #fff; }
-      .card-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+      .card-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: auto; padding-top: 12px; }
       .card-actions .quick { margin-top: 0; }
       .card-actions [data-add] { background: #000; color: #fff; }
       .quick:disabled, .primary:disabled { cursor: not-allowed; opacity: .42; }
@@ -581,7 +582,7 @@
         .price-wrap { align-items: flex-start; }
         .sizes button { min-width: 36px; height: 36px; }
         .swatches button { width: 30px; height: 30px; }
-        .card-actions { gap: 8px; margin-top: 14px; }
+        .card-actions { gap: 8px; margin-top: auto; padding-top: 14px; }
         .card-actions .quick { height: 48px; }
         .detail-modal, .variant-modal { place-items: stretch; padding: 0; }
         .detail-card, .variant-card { width: 100%; max-height: 100dvh; padding: 18px; }
@@ -1105,6 +1106,7 @@
       let currentProductPage = 1;
       let currentProductList = productData;
       let siteContentSignature = "";
+      let siteContentLoading = false;
       const comboText = (kind) => {
         if (kind === "tee") return "Mua kèm quần hoặc 2 áo cùng tone: từ 2 sản phẩm giảm 5%, từ 3 sản phẩm giảm 10%.";
         if (kind === "hoodie") return "Combo Hoodie + Tee: đủ 2 sản phẩm giảm 5%, đủ 3 sản phẩm giảm 10%.";
@@ -1496,7 +1498,7 @@
             product.inventoryConfigured = Boolean(result.configured);
             product.inventory = Array.isArray(result.items) ? result.items.filter((item) => item.productId === product.id) : product.inventory;
           });
-          renderProducts(currentProductList.length ? currentProductList : productData, false);
+          productData.forEach(renderProductCard);
         } catch (error) {
           console.warn("Không cập nhật được danh sách tồn kho Pancake", error);
         }
@@ -1580,11 +1582,12 @@
             .filter((product) => product.active !== false)
             .map(normalizeCmsProduct);
           renderProducts(productData);
-          void refreshAllAvailability();
         }
       }
 
       async function loadSiteContent() {
+        if (siteContentLoading) return;
+        siteContentLoading = true;
         try {
           const response = await fetch(`${paymentApiBase}/api/site?t=${Date.now()}`, { cache: "no-store" });
           if (!response.ok) throw new Error(`Không tải được nội dung (${response.status})`);
@@ -1601,6 +1604,8 @@
           console.warn("Không tải được nội dung admin", error);
           document.body.classList.remove("cms-loading");
           document.body.classList.add("cms-error");
+        } finally {
+          siteContentLoading = false;
         }
       }
 
@@ -1654,7 +1659,18 @@
         renderProducts();
       }
       loadSiteContent();
-      window.setInterval(loadSiteContent, 2500);
+      const refreshContentWhenIdle = () => {
+        if (document.visibilityState !== "visible") return;
+        if (document.querySelector(".cart-drawer.open, .orders-drawer.open, .detail-modal.open, .variant-modal.open, .checkout-modal.open, .wholesale-modal.open")) return;
+        void loadSiteContent();
+      };
+      window.setInterval(refreshContentWhenIdle, 60000);
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") refreshContentWhenIdle();
+      });
+      const refreshInventoryWhenIdle = () => void refreshAllAvailability();
+      if ("requestIdleCallback" in window) window.requestIdleCallback(refreshInventoryWhenIdle, { timeout: 5000 });
+      else window.setTimeout(refreshInventoryWhenIdle, 1500);
 
       const cartCount = () => cart.reduce((sum, item) => sum + item.qty, 0);
       const subtotal = () => cart.reduce((sum, item) => sum + item.amount * item.qty, 0);
