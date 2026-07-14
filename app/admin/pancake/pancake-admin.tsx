@@ -40,6 +40,7 @@ type ApiResult = { dashboard: Dashboard; result?: unknown; error?: string };
 export function PancakeAdmin() {
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [variations, setVariations] = useState<PancakeVariation[]>([]);
+  const [expandedProductId, setExpandedProductId] = useState("");
   const [editingKey, setEditingKey] = useState("");
   const [selectedVariationId, setSelectedVariationId] = useState("");
   const [variationSearch, setVariationSearch] = useState("");
@@ -116,7 +117,7 @@ export function PancakeAdmin() {
       setSelectedVariationId("");
       const selectedVariation = variations.find((item) => item.id === variationId);
       setMessage(variationId
-        ? `Đã xác minh liên kết thành công${selectedVariation ? `: ${selectedVariation.name || "Sản phẩm Pancake"} · SKU ${selectedVariation.sku || "—"}` : ""}.`
+        ? `Đã xác minh liên kết thành công${selectedVariation ? `: SKU ${selectedVariation.sku || selectedVariation.id}` : ""}.`
         : "Đã xác minh hủy liên kết Pancake POS thành công.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Không lưu được liên kết.");
@@ -134,6 +135,13 @@ export function PancakeAdmin() {
   if (!dashboard) return <main className="min-h-screen bg-white p-6 text-black">Đang tải Pancake Integration...</main>;
   const linkedCount = dashboard.products.reduce((sum, product) => sum + product.rows.filter((row) => row.linked).length, 0);
   const rowCount = dashboard.products.reduce((sum, product) => sum + product.rows.length, 0);
+
+  function toggleProduct(productId: string) {
+    setExpandedProductId((current) => current === productId ? "" : productId);
+    setEditingKey("");
+    setSelectedVariationId("");
+    setVariationSearch("");
+  }
 
   return (
     <main className="min-h-screen bg-white p-5 text-black md:p-8">
@@ -168,18 +176,24 @@ export function PancakeAdmin() {
           <button onClick={() => action("sync-inventory")} disabled={Boolean(busy)} className="h-11 bg-black px-5 text-xs uppercase text-white disabled:opacity-50">{busy === "sync-inventory" ? "Đang đồng bộ..." : "Đồng bộ tồn kho"}</button>
         </div>
 
-        <div className="mt-5 grid gap-4">
-          {dashboard.products.map((product) => <article key={product.id} className="border border-neutral-300">
-            <h3 className="border-b border-neutral-300 bg-neutral-100 px-4 py-3 font-semibold">{product.name}</h3>
-            <div className="divide-y divide-neutral-200">
+        <div className="mt-5 grid gap-3">
+          {dashboard.products.map((product) => {
+            const isExpanded = expandedProductId === product.id;
+            const productLinkedCount = product.rows.filter((row) => row.linked).length;
+            return <article key={product.id} className="border border-neutral-300">
+            <button type="button" onClick={() => toggleProduct(product.id)} aria-expanded={isExpanded} className="flex w-full items-center justify-between gap-4 bg-neutral-100 px-4 py-4 text-left">
+              <span><strong className="block uppercase">{product.name}</strong><small className="mt-1 block font-normal text-neutral-500">Đã liên kết {productLinkedCount}/{product.rows.length} SKU</small></span>
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center border border-black text-2xl font-light leading-none" aria-hidden="true">{isExpanded ? "−" : "+"}</span>
+            </button>
+            {isExpanded && <div className="divide-y divide-neutral-200 border-t border-neutral-300">
               {product.rows.map((row) => {
                 const rowEditorKey = `${product.id}::${row.key}`;
                 const isEditing = editingKey === rowEditorKey;
                 const isSaving = busy.endsWith(rowEditorKey);
                 return <div key={row.key} className="grid gap-3 p-4 lg:grid-cols-[1.1fr_1.3fr_.7fr_auto] lg:items-center">
                   <div>
-                    <p className="font-semibold">{[row.classificationName, row.color, `Size ${row.size}`].filter(Boolean).join(" · ")}</p>
-                    <p className="mt-1 font-mono text-xs text-neutral-500">SKU web: {row.sku}</p>
+                    <p className="font-semibold">SKU {row.sku}</p>
+                    <p className="mt-1 text-xs text-neutral-500">Size {row.size}</p>
                   </div>
                   <div className="text-sm">
                     {row.linked ? <><p className="font-medium text-green-700">Đã liên kết</p><p className="mt-1 break-all">{row.pancakeSku || "Không có SKU"} · ID {row.pancakeVariationId || row.pancakeProductId}</p></> : <p className="font-medium text-red-600">Chưa liên kết</p>}
@@ -197,7 +211,7 @@ export function PancakeAdmin() {
                     <label className="mt-3 block text-xs font-semibold uppercase">Chọn đúng biến thể Pancake
                       <select value={selectedVariationId} onChange={(event) => setSelectedVariationId(event.target.value)} className="mt-2 h-12 w-full border border-black bg-white px-3 text-sm font-normal normal-case">
                         <option value="">— Chọn sản phẩm/biến thể Pancake —</option>
-                        {filteredVariations.map((variation) => <option key={variation.id} value={variation.id}>{variation.name || "Sản phẩm Pancake"} · SKU {variation.sku || "—"} · Tồn {variation.quantity} · ID {variation.id}</option>)}
+                        {filteredVariations.map((variation) => <option key={variation.id} value={variation.id}>SKU {variation.sku || variation.id} · Tồn {variation.quantity}</option>)}
                       </select>
                     </label>
                     <div className="mt-3 flex flex-wrap gap-2">
@@ -208,8 +222,9 @@ export function PancakeAdmin() {
                   </div>}
                 </div>;
               })}
-            </div>
-          </article>)}
+            </div>}
+          </article>;
+          })}
         </div>
       </section>
 
