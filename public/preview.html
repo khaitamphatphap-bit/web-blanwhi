@@ -207,9 +207,9 @@
       .detail-price { display: flex; flex-wrap: wrap; align-items: baseline; gap: 9px; font-size: 18px; }
       .detail-price + .discount-percent { font-size: 12px; }
       .muted { color: var(--muted); font-size: 12px; margin-top: 4px; }
-      .product-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-      .product-tag { border: 1px solid #111; padding: 4px 7px; font-size: 10px; font-weight: 800; line-height: 1; text-transform: uppercase; color: #111; background: #fff; }
-      .product-tag.sale { background: #111; color: #fff; }
+      .image-tags { position: absolute; left: 10px; top: 10px; z-index: 4; display: grid; justify-items: start; gap: 5px; pointer-events: none; }
+      .image-tag { padding: 5px 7px; background: rgba(255,255,255,.92); color: #111; border: 1px solid rgba(17,17,17,.7); font-size: 9px; font-weight: 900; line-height: 1; letter-spacing: .03em; text-transform: uppercase; box-shadow: 0 4px 12px rgba(0,0,0,.08); }
+      .image-tag.sale { border-color: #111; background: #111; color: #fff; }
       .swatches { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
       .swatches button { width: 22px; height: 22px; padding: 0; border: 1px solid #aaa; display: grid; place-items: center; cursor: pointer; overflow: hidden; background-size: cover; background-position: center; color: #111; font-size: 9px; font-weight: 800; text-transform: uppercase; }
       .swatches button img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -227,7 +227,11 @@
       .mini-link { border: 0; background: transparent; padding: 0; text-align: left; font-size: 12px; text-decoration: underline; }
       .quick { width: 100%; margin-top: 12px; height: 38px; border: 1px solid #000; background: transparent; text-transform: uppercase; font-size: 12px; }
       .quick:hover { background: #000; color: #fff; }
-      .card-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+      .card-quantity { margin-top: 11px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+      .card-quantity > span:first-child { color: #555; font-size: 10px; font-weight: 800; text-transform: uppercase; }
+      .card-quantity .quantity-picker { width: 118px; grid-template-columns: 32px 1fr 32px; }
+      .card-quantity .quantity-picker button, .card-quantity .quantity-picker input { height: 34px; }
+      .card-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
       .card-actions .quick { margin-top: 0; }
       .card-actions [data-add] { background: #000; color: #fff; }
       .quick:disabled, .primary:disabled { cursor: not-allowed; opacity: .42; }
@@ -405,7 +409,11 @@
       .support-group { border-bottom: 1px solid var(--line); }
       .support-group summary { min-height: 76px; display: flex; align-items: center; justify-content: space-between; padding: 0 26px; color: #111; font-size: 15px; font-weight: 800; text-transform: uppercase; cursor: pointer; list-style: none; }
       .support-group summary::-webkit-details-marker { display: none; }
-      .discount-badge { position: absolute; right: 10px; top: 10px; z-index: 4; min-width: 48px; min-height: 30px; display: grid; place-items: center; padding: 0 8px; background: #111; color: #fff; font-size: 12px; font-weight: 900; box-shadow: 0 6px 16px rgba(0,0,0,.16); }
+      .discount-badge { position: absolute; right: 10px; top: 10px; z-index: 4; min-width: 42px; min-height: 26px; display: grid; place-items: center; padding: 0 7px; background: #111; color: #fff; font-size: 10px; font-weight: 900; box-shadow: 0 6px 16px rgba(0,0,0,.16); pointer-events: none; }
+      .sold-out-overlay { position: absolute; inset: 0; z-index: 3; display: grid; place-items: center; background: rgba(255,255,255,.42); pointer-events: none; }
+      .sold-out-overlay span { padding: 9px 13px; border: 1px solid #111; background: rgba(255,255,255,.94); color: #111; font-size: 12px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; box-shadow: 0 8px 22px rgba(0,0,0,.12); }
+      .product-visual.sold-out .product-photo, .product-visual.sold-out .mock { filter: grayscale(1); opacity: .38; }
+      .product-visual.sold-out .color-arrow, .product-visual.sold-out .color-name { display: none; }
       .size-chart { width: 100%; border: 1px solid #111; border-collapse: collapse; background: #fff; color: #111; }
       .size-chart th, .size-chart td { border: 1px solid #111; padding: 8px; text-align: center; font-size: 12px; }
       .payment-extra { display: none; gap: 8px; padding: 12px; border: 1px solid var(--line); background: #fafafa; }
@@ -575,7 +583,6 @@
         .meta b { font-size: 15px; line-height: 1.35; }
         .price-stack { justify-content: flex-start; font-size: 16px; font-weight: 700; }
         .price-wrap { align-items: flex-start; }
-        .product-tags { margin-top: 8px; }
         .sizes button { min-width: 36px; height: 36px; }
         .swatches button { width: 30px; height: 30px; }
         .card-actions { gap: 8px; margin-top: 14px; }
@@ -1181,12 +1188,14 @@
           ? `<img class="product-photo" src="${escapeMarkup(image)}" alt="${escapeMarkup(product.name)} ${escapeMarkup(colorLabel(color, product, classificationIndex))}" />`
           : mockMarkup(product.kind, color);
       };
-      const productVisualInnerMarkup = (product) => `
+      const productVisualInnerMarkup = (product, soldOut = false) => `
+        ${productImageTags(product) ? `<span class="image-tags">${productImageTags(product)}</span>` : ""}
         ${product.discountPercent > 0 ? `<span class="discount-badge">-${product.discountPercent}%</span>` : ""}
         <span class="color-arrow prev" data-gallery-prev="${product.id}">‹</span>
         <span class="color-arrow next" data-gallery-next="${product.id}">›</span>
-        <span class="color-name">${colorLabel(product.color, product, product.classificationIndex)}</span>
+        ${product.useColorImage ? `<span class="color-name">${colorLabel(product.color, product, product.classificationIndex)}</span>` : ""}
         ${productVisualMedia(product)}
+        ${soldOut ? `<span class="sold-out-overlay"><span>Hết hàng</span></span>` : ""}
       `;
       const classificationMarkup = (product, attributeName, selectedIndex = product.classificationIndex || 0) => {
         if (!Array.isArray(product.classifications) || !product.classifications.length) return "";
@@ -1197,9 +1206,9 @@
           }).join("")}
         </div>`;
       };
-      const visualMarkup = (product) => `
-        <button class="product-visual" data-detail="${product.id}" data-swipe="${product.id}" aria-label="Xem chi tiết sản phẩm ${product.name}">
-          ${productVisualInnerMarkup(product)}
+      const visualMarkup = (product, soldOut = false) => `
+        <button class="product-visual${soldOut ? " sold-out" : ""}" data-detail="${product.id}" data-swipe="${product.id}" aria-label="Xem chi tiết sản phẩm ${product.name}">
+          ${productVisualInnerMarkup(product, soldOut)}
         </button>
       `;
 
@@ -1228,9 +1237,10 @@
         kindKeywords[product.kind] || "",
         "cotton spandex form mau sac"
       ].join(" "));
-      const productTags = (product) => [
-        product.isNew ? `<span class="product-tag">New</span>` : "",
-        product.isBestSeller ? `<span class="product-tag">Best seller</span>` : ""
+      const productImageTags = (product) => [
+        product.isBestSeller ? `<span class="image-tag">Best seller</span>` : "",
+        product.isNew ? `<span class="image-tag">New</span>` : "",
+        product.isSale ? `<span class="image-tag sale">Sale</span>` : ""
       ].filter(Boolean).join("");
       const priceMarkup = (product, detail = false) => `
         <span class="price-wrap">
@@ -1258,10 +1268,8 @@
         }
         return `
         <article class="card">
-          ${visualMarkup(product)}
+          ${visualMarkup(product, soldOut)}
           <div class="meta"><div><b>${product.name}</b><div class="muted">${product.fit}</div></div>${priceMarkup(product)}</div>
-          <div class="product-tags">${productTags(product)}</div>
-          ${soldOut ? `<div class="product-tag" style="display:inline-block;margin-bottom:10px">Hết hàng</div>` : ""}
           ${product.kind.startsWith("gift-") ? `<div class="muted">Gói quà tiêu chuẩn BLANWHI</div>` : `
             <div class="sizes" data-size-group="${product.id}">
               ${sizeButtonsMarkup(product)}
@@ -1269,6 +1277,14 @@
           `}
           ${classificationMarkup(product, "data-card-classification")}
           <div class="swatches" data-swatches="${product.id}">${swatches.map((color, index) => swatchMarkup(product, color, index, `data-card-color="${product.id}:${index}"`)).join("")}</div>
+          <div class="card-quantity">
+            <span>Số lượng</span>
+            <span class="quantity-picker">
+              <button type="button" data-card-qty-change="${product.id}:-1" aria-label="Giảm số lượng" ${soldOut ? "disabled" : ""}>−</button>
+              <input type="number" min="1" max="999" value="${Math.max(1, Number(product.orderQty) || 1)}" inputmode="numeric" data-card-qty="${product.id}" aria-label="Số lượng ${escapeMarkup(product.name)}" ${soldOut ? "disabled" : ""} />
+              <button type="button" data-card-qty-change="${product.id}:1" aria-label="Tăng số lượng" ${soldOut ? "disabled" : ""}>+</button>
+            </span>
+          </div>
           <div class="card-actions">
             <button class="quick" data-buy="${product.id}" ${soldOut ? "disabled" : ""}>Mua ngay</button>
             <button class="quick" data-add="${product.id}" ${soldOut ? "disabled" : ""}>Thêm giỏ</button>
@@ -1950,7 +1966,7 @@
             <div class="detail-info">
               <h2>${product.name}</h2>
               ${priceMarkup(product, true)}
-              <p class="muted" style="color:${soldOut ? "#c00" : "#176b36"}">${available === null ? "Chưa liên kết tồn kho Pancake" : soldOut ? "Hết hàng" : `Còn có thể bán ${available} sản phẩm`}</p>
+              <p class="muted" style="color:${outOfStock ? "#c00" : "#176b36"}">${liveAvailable === null ? "Chưa liên kết tồn kho Pancake" : outOfStock ? "Hết hàng" : `Còn có thể bán ${liveAvailable} sản phẩm`}</p>
               ${product.kind.startsWith("gift-") ? `<div><p class="muted">Loại</p><strong>Gift Packaging</strong></div>` : `<div>
                 <p class="muted">Size</p>
                 <div class="sizes" data-variant-sizes>
@@ -1995,7 +2011,7 @@
               </div>
               <div class="variant-actions">
                 <button class="secondary" id="variantCancel">Huỷ</button>
-                <button class="primary" id="variantConfirm" ${outOfStock ? "disabled" : ""}>${outOfStock ? "Hết hàng" : "Thêm vào giỏ hàng"}</button>
+                <button class="primary" id="variantConfirm" ${outOfStock ? "disabled" : ""}>${outOfStock ? "Hết hàng" : variantState.mode === "buy" ? "Mua ngay" : "Thêm vào giỏ hàng"}</button>
               </div>
             </div>
           </div>
@@ -2006,7 +2022,19 @@
         const product = productData.find((item) => item.id === id);
         if (!product) return;
         await refreshProductAvailability(id);
-        variantState = { productId: id, mode, classificationIndex: product.classificationIndex || 0, colorIndex: product.colorIndex, size: product.size, qty: product.orderQty || 1 };
+        let classificationIndex = product.classificationIndex || 0;
+        let colorIndex = product.colorIndex || 0;
+        let size = product.size;
+        if (!hasStock(product, { classificationIndex, color: variantSwatches(product, classificationIndex)[colorIndex], size })) {
+          const classificationIndexes = product.classifications?.length ? product.classifications.map((_, index) => index) : [0];
+          const availableSelection = classificationIndexes.flatMap((nextClassificationIndex) =>
+            variantSwatches(product, nextClassificationIndex).flatMap((nextColor, nextColorIndex) =>
+              (product.sizes || ["M"]).map((nextSize) => ({ classificationIndex: nextClassificationIndex, colorIndex: nextColorIndex, color: nextColor, size: nextSize }))
+            )
+          ).find((selection) => hasStock(product, selection));
+          if (availableSelection) ({ classificationIndex, colorIndex, size } = availableSelection);
+        }
+        variantState = { productId: id, mode, classificationIndex, colorIndex, size, qty: Math.max(1, Number(product.orderQty) || 1) };
         renderVariantModal();
         variantModal.classList.add("open");
       }
@@ -2287,7 +2315,7 @@
         await refreshProductAvailability(id);
         const color = options.color || product.color;
         const size = options.size || product.size;
-        const qty = options.qty || 1;
+        const qty = Math.max(1, Math.floor(Number(options.qty) || 1));
         const classificationId = options.classificationId || "";
         const classificationName = options.classificationName || "";
         const classificationIndex = product.classifications?.findIndex((item) => item.id === classificationId);
@@ -2350,6 +2378,19 @@
       }
 
       document.getElementById("productGrid").addEventListener("click", (event) => {
+        const quantityChange = event.target.closest("[data-card-qty-change]");
+        if (quantityChange) {
+          event.preventDefault();
+          event.stopPropagation();
+          const [id, delta] = quantityChange.dataset.cardQtyChange.split(":");
+          const product = productData.find((item) => item.id === id);
+          if (product) {
+            product.orderQty = Math.min(999, Math.max(1, (Number(product.orderQty) || 1) + Number(delta)));
+            const input = productGrid.querySelector(`[data-card-qty="${id}"]`);
+            if (input) input.value = product.orderQty;
+          }
+          return;
+        }
         const cardClassification = event.target.closest("[data-card-classification]");
         if (cardClassification) {
           event.preventDefault();
@@ -2415,7 +2456,10 @@
           return;
         }
         const button = event.target.closest("[data-add]");
-        if (button) openVariant(button.dataset.add, "cart");
+        if (button) {
+          openVariant(button.dataset.add, "cart");
+          return;
+        }
         const wholesaleButton = event.target.closest("[data-wholesale]");
         if (wholesaleButton) {
           openWholesale(wholesaleButton.dataset.wholesale);
@@ -2424,7 +2468,22 @@
         const detailButton = event.target.closest("[data-detail]");
         if (detailButton) openDetail(detailButton.dataset.detail);
         const buyButton = event.target.closest("[data-buy]");
-        if (buyButton) openDetail(buyButton.dataset.buy);
+        if (buyButton) openVariant(buyButton.dataset.buy, "buy");
+      });
+      document.getElementById("productGrid").addEventListener("input", (event) => {
+        const quantityInput = event.target.closest("[data-card-qty]");
+        if (!quantityInput) return;
+        const product = productData.find((item) => item.id === quantityInput.dataset.cardQty);
+        const qty = Number(quantityInput.value);
+        if (product && qty >= 1 && qty <= 999) product.orderQty = Math.floor(qty);
+      });
+      document.getElementById("productGrid").addEventListener("change", (event) => {
+        const quantityInput = event.target.closest("[data-card-qty]");
+        if (!quantityInput) return;
+        const product = productData.find((item) => item.id === quantityInput.dataset.cardQty);
+        if (!product) return;
+        product.orderQty = Math.min(999, Math.max(1, Math.floor(Number(quantityInput.value) || 1)));
+        quantityInput.value = product.orderQty;
       });
       const swipeStart = {};
       document.getElementById("productGrid").addEventListener("touchstart", (event) => {
