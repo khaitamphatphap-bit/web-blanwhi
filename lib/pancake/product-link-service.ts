@@ -38,17 +38,24 @@ export class ProductLinkService {
         .map((variation) => [variation.sku.trim().toUpperCase(), variation])
     );
     const candidates = new Map<string, (typeof variations)[number]>();
+    const candidatesByWebSku = new Map<string, (typeof variations)[number]>();
 
     for (const snapshot of history) {
       if (!Array.isArray(snapshot.products)) continue;
       for (const historicalProduct of snapshot.products) {
         if (!historicalProduct?.id || !currentProducts.has(historicalProduct.id)) continue;
-        for (const row of buildProductInventory(historicalProduct)) {
+        const historicalRows = Array.isArray(historicalProduct.inventory)
+          ? historicalProduct.inventory
+          : buildProductInventory(historicalProduct);
+        for (const row of historicalRows) {
           const candidateKey = `${historicalProduct.id}::${row.key}`;
-          if (candidates.has(candidateKey)) continue;
           const variation = (row.pancakeVariationId && variationById.get(row.pancakeVariationId))
             || (row.pancakeSku && variationBySku.get(row.pancakeSku.trim().toUpperCase()));
-          if (variation) candidates.set(candidateKey, variation);
+          if (!variation) continue;
+          if (!candidates.has(candidateKey)) candidates.set(candidateKey, variation);
+          const webSku = String(row.sku || "").trim().toUpperCase();
+          const skuKey = `${historicalProduct.id}::${webSku}`;
+          if (webSku && !candidatesByWebSku.has(skuKey)) candidatesByWebSku.set(skuKey, variation);
         }
       }
     }
@@ -59,7 +66,8 @@ export class ProductLinkService {
       ...product,
       inventory: buildProductInventory(product).map((row) => {
         const alreadyLinked = Boolean(row.pancakeProductId || row.pancakeVariationId || row.pancakeSku);
-        const variation = candidates.get(`${product.id}::${row.key}`);
+        const variation = candidates.get(`${product.id}::${row.key}`)
+          || candidatesByWebSku.get(`${product.id}::${row.sku.trim().toUpperCase()}`);
         if (alreadyLinked || !variation) return row;
         recoveredCount += 1;
         return {
