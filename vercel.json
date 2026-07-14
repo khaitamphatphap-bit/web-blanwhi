@@ -4,6 +4,10 @@
     {
       "path": "/api/admin/orders/shipping-sync",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/admin/pancake/poll",
+      "schedule": "0 0 * * *"
     }
   ]
 }

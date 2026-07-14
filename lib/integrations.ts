@@ -88,7 +88,7 @@ export async function readIntegrationConfig(): Promise<IntegrationConfig> {
   try {
     const saved = await readJsonStore<Partial<IntegrationConfig>>("integrations.json", defaultIntegrationConfig);
     return {
-      pancake: { ...defaultIntegrationConfig.pancake, ...saved.pancake },
+      pancake: { ...defaultIntegrationConfig.pancake },
       misa: { ...defaultIntegrationConfig.misa, ...saved.misa },
       shipping: { ...defaultIntegrationConfig.shipping, ...saved.shipping },
       payment: {
@@ -104,7 +104,7 @@ export async function readIntegrationConfig(): Promise<IntegrationConfig> {
 
 export async function writeIntegrationConfig(config: IntegrationConfig) {
   const normalized: IntegrationConfig = {
-    pancake: { ...defaultIntegrationConfig.pancake, ...config.pancake },
+    pancake: { ...defaultIntegrationConfig.pancake },
     misa: { ...defaultIntegrationConfig.misa, ...config.misa },
     shipping: { ...defaultIntegrationConfig.shipping, ...config.shipping },
     payment: {

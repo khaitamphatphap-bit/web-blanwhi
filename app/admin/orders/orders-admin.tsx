@@ -73,6 +73,7 @@ const shippingLabels: Record<ShippingStatus, string> = {
   cancelled: "Đơn hủy",
   unknown: "Không rõ"
 };
+const pancakeStatusLabels: Record<NonNullable<ShopOrder["pancakeStatus"]>, string> = { pending_confirmation: "Chờ xác nhận", confirmed: "Đã xác nhận", packing: "Đóng gói", shipping: "Đang giao", completed: "Hoàn thành", cancelled: "Hủy", returned: "Hoàn hàng" };
 
 const stageOrder = orderStages.reduce<Record<OrderStage, number>>((map, stage, index) => {
   map[stage.value] = index;
@@ -261,15 +262,11 @@ export function OrdersAdmin({
       </section>
 
       <form onSubmit={saveIntegrations} className="mt-8 grid gap-4 border border-neutral-200 p-4 lg:grid-cols-3">
-        <IntegrationBox
-          title="Pancake POS"
-          enabled={integrations.pancake.enabled}
-          endpoint={integrations.pancake.endpoint}
-          inventoryEndpoint={integrations.pancake.inventoryEndpoint}
-          token={integrations.pancake.token}
-          endpointPlaceholder="https://.../pancake/orders"
-          onChange={(patch) => setIntegrations({ ...integrations, pancake: { ...integrations.pancake, ...patch } })}
-        />
+        <fieldset className="border border-neutral-200 p-4">
+          <legend className="px-2 text-sm font-semibold uppercase">Pancake POS</legend>
+          <p className="mt-2 text-sm text-neutral-600">API Key, Token và Secret được lưu trong Environment Variables, không lưu tại trình duyệt hoặc file cấu hình admin.</p>
+          <Link href="/admin/pancake" className="mt-4 inline-block border border-black bg-black px-4 py-3 text-xs uppercase text-white">Mở Pancake Integration</Link>
+        </fieldset>
         <IntegrationBox
           title="MISA eShop"
           enabled={integrations.misa.enabled}
@@ -429,6 +426,7 @@ export function OrdersAdmin({
                       </div>
                       <div className="border-t border-neutral-200 pt-2 text-xs text-neutral-500">
                         <div>Pancake: {order.externalSync?.pancake || "Chưa gửi"}</div>
+                        {order.pancakeStatus && <div>Trạng thái Pancake: <strong>{pancakeStatusLabels[order.pancakeStatus]}</strong></div>}
                         <div>MISA: {order.externalSync?.misa || "Chưa gửi"}</div>
                         <div>VC: {order.externalSync?.shipping || "Chưa cập nhật"}</div>
                       </div>

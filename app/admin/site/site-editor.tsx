@@ -566,7 +566,7 @@ function ProductForm({
   const [newClassificationName, setNewClassificationName] = useState("");
   const [newSize, setNewSize] = useState("");
   const inventoryRows = buildProductInventory(product);
-  const totalInventory = inventoryRows.reduce((sum, item) => sum + item.quantity, 0);
+  const totalInventory = inventoryRows.reduce((sum, item) => sum + Math.min(Number(item.publishQuantity || 0), Number(item.pancakeQuantity || 0)), 0);
   const updateInventoryItem = (key: string, patch: Partial<CmsProductInventoryItem>) => {
     const nextInventory = inventoryRows.map((item) => item.key === key ? { ...item, ...patch } : item);
     onChange({ ...product, inventory: nextInventory, inventoryManaged: true });
@@ -820,40 +820,27 @@ function ProductForm({
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h4 className="text-base font-bold uppercase">Số lượng hàng hóa / tồn kho</h4>
-            <p className="mt-1 text-xs text-neutral-600">Nhập số lượng riêng cho từng phân loại, màu và size. Khi số lượng = 0, khách sẽ thấy hết hàng và không mua được phân loại đó.</p>
+            <p className="mt-1 text-xs text-neutral-600">Liên kết từng phân loại, màu và size với Pancake. Website chỉ chỉnh số lượng mở bán; tồn Pancake là dữ liệu chỉ đọc.</p>
           </div>
           <div className="bg-black px-4 py-3 text-white"><span className="text-xs uppercase">Tổng tồn</span><strong className="ml-3 text-xl">{totalInventory}</strong></div>
         </div>
         <div className="mt-4 grid gap-3">
-          <div className="hidden rounded-none border border-neutral-300 bg-white px-4 py-3 text-xs font-semibold uppercase text-neutral-500 xl:grid xl:grid-cols-[minmax(180px,1.4fr)_minmax(140px,1fr)_80px_minmax(180px,1.1fr)_150px] xl:gap-3">
-            <span>Phân loại</span>
-            <span>Màu</span>
-            <span>Size</span>
-            <span>Mã SKU</span>
-            <span>Số lượng</span>
-          </div>
           {inventoryRows.map((item) => (
-            <div key={item.key} className="grid gap-3 border border-neutral-300 bg-white p-4 text-sm xl:grid-cols-[minmax(180px,1.4fr)_minmax(140px,1fr)_80px_minmax(180px,1.1fr)_150px] xl:items-center">
-              <div>
-                <span className="mb-1 block text-[10px] uppercase text-neutral-500 xl:hidden">Phân loại</span>
-                <strong>{inventoryClassificationName(item)}</strong>
+            <div key={item.key} className="border border-neutral-300 bg-white p-4 text-sm">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-200 pb-3">
+                <strong>{inventoryClassificationName(item)} · {inventoryColorName(item)} · Size {item.size}</strong>
+                <span className={`text-xs font-bold uppercase ${(item.publishQuantity || 0) > 0 && (item.pancakeQuantity || 0) > 0 ? "text-green-700" : "text-red-600"}`}>Có thể bán {Math.min(item.publishQuantity || 0, item.pancakeQuantity || 0)}</span>
               </div>
-              <div>
-                <span className="mb-1 block text-[10px] uppercase text-neutral-500 xl:hidden">Màu</span>
-                {inventoryColorName(item)}
+              <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                <label className="text-[10px] uppercase text-neutral-500">SKU website<input value={item.sku} onChange={(event) => updateInventoryItem(item.key, { sku: event.target.value.trim().toUpperCase() })} className="mt-1 h-11 w-full border px-3 font-mono text-xs normal-case" /></label>
+                <label className="text-[10px] uppercase text-neutral-500">Pancake Product ID<input value={item.pancakeProductId || ""} onChange={(event) => updateInventoryItem(item.key, { pancakeProductId: event.target.value.trim() })} placeholder="Product ID" className="mt-1 h-11 w-full border px-3 font-mono text-xs normal-case" /></label>
+                <label className="text-[10px] uppercase text-neutral-500">Pancake SKU<input value={item.pancakeSku || ""} onChange={(event) => updateInventoryItem(item.key, { pancakeSku: event.target.value.trim().toUpperCase() })} placeholder="SKU Pancake" className="mt-1 h-11 w-full border px-3 font-mono text-xs normal-case" /></label>
+                <label className="text-[10px] uppercase text-neutral-500">Số lượng mở bán<input aria-label={`Số lượng mở bán ${inventoryClassificationName(item)} ${inventoryColorName(item)} size ${item.size}`} type="number" min="0" step="1" value={item.publishQuantity || 0} onChange={(event) => updateInventoryItem(item.key, { publishQuantity: Math.max(0, Math.floor(Number(event.target.value) || 0)) })} className="mt-1 h-11 w-full border-2 border-black px-3 text-right text-lg font-bold normal-case" /></label>
               </div>
-              <div>
-                <span className="mb-1 block text-[10px] uppercase text-neutral-500 xl:hidden">Size</span>
-                <strong className="text-base">{item.size}</strong>
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs text-neutral-600">
+                <span>Tồn Pancake: <strong className="text-black">{item.pancakeQuantity || 0}</strong> (chỉ đọc)</span>
+                <button type="button" onClick={() => updateInventoryItem(item.key, { publishQuantity: 0 })} className="uppercase text-red-600">Đặt số lượng mở bán về 0</button>
               </div>
-              <label>
-                <span className="mb-1 block text-[10px] uppercase text-neutral-500 xl:hidden">Mã SKU</span>
-                <input value={item.sku} onChange={(event) => updateInventoryItem(item.key, { sku: event.target.value.trim().toUpperCase() })} className="h-11 w-full border px-3 font-mono text-xs" />
-              </label>
-              <label>
-                <span className="mb-1 block text-[10px] uppercase text-neutral-500 xl:hidden">Số lượng</span>
-                <input aria-label={`Số lượng ${inventoryClassificationName(item)} ${inventoryColorName(item)} size ${item.size}`} type="number" min="0" step="1" value={item.quantity} onChange={(event) => updateInventoryItem(item.key, { quantity: Math.max(0, Math.floor(Number(event.target.value) || 0)) })} className="h-11 w-full border-2 border-black px-3 text-right text-lg font-bold" />
-              </label>
             </div>
           ))}
         </div>

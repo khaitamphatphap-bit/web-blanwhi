@@ -63,12 +63,18 @@ export type ShippingStatus =
 export type OrderCustomer = {
   name: string;
   phone: string;
+  email?: string;
   address: string;
   note?: string;
 };
 
 export type OrderItem = {
   productId: string;
+  sku?: string;
+  pancakeSku?: string;
+  pancakeProductId?: string;
+  pancakeVariationId?: string;
+  inventoryKey?: string;
   name: string;
   color: string;
   size: string;
@@ -97,12 +103,15 @@ export type ShopOrder = {
   transactionId?: string;
   providerOrderId?: string;
   providerMessage?: string;
+  pancakeStatus?: "pending_confirmation" | "confirmed" | "packing" | "shipping" | "completed" | "cancelled" | "returned";
   externalSync?: {
     misa?: string;
     pancake?: string;
     shipping?: string;
     lastSyncedAt?: string;
   };
+  inventoryReservationApplied?: boolean;
+  inventoryReservationReleased?: boolean;
   createdAt: string;
   updatedAt: string;
 };

@@ -230,6 +230,7 @@
       .card-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
       .card-actions .quick { margin-top: 0; }
       .card-actions [data-add] { background: #000; color: #fff; }
+      .quick:disabled, .primary:disabled { cursor: not-allowed; opacity: .42; }
       .cart-overlay { position: fixed; inset: 0; z-index: 20; background: rgba(0,0,0,.24); opacity: 0; pointer-events: none; transition: opacity .25s ease; }
       .cart-overlay.open { opacity: 1; pointer-events: auto; }
       .cart-drawer { position: fixed; right: 0; top: 0; z-index: 21; width: min(440px, 100vw); height: 100vh; background: #fff; transform: translateX(100%); transition: transform .3s ease; display: flex; flex-direction: column; box-shadow: -24px 0 70px rgba(0,0,0,.12); }
@@ -1248,6 +1249,9 @@
       `;
       const productCardMarkup = (product) => {
         const swatches = variantSwatches(product);
+        const linkedRows = (product.inventory || []).filter((row) => row.pancakeProductId || row.pancakeVariationId || row.pancakeSku);
+        const productAvailable = linkedRows.reduce((sum, row) => sum + Number(row.availableQuantity ?? Math.min(Number(row.publishQuantity || 0), Number(row.pancakeQuantity || 0))), 0);
+        const soldOut = linkedRows.length > 0 && productAvailable <= 0;
         if (!swatches.includes(product.color)) {
           product.colorIndex = 0;
           product.color = swatches[0];
@@ -1257,6 +1261,7 @@
           ${visualMarkup(product)}
           <div class="meta"><div><b>${product.name}</b><div class="muted">${product.fit}</div></div>${priceMarkup(product)}</div>
           <div class="product-tags">${productTags(product)}</div>
+          ${soldOut ? `<div class="product-tag" style="display:inline-block;margin-bottom:10px">Hết hàng</div>` : ""}
           ${product.kind.startsWith("gift-") ? `<div class="muted">Gói quà tiêu chuẩn BLANWHI</div>` : `
             <div class="sizes" data-size-group="${product.id}">
               ${sizeButtonsMarkup(product)}
@@ -1265,8 +1270,8 @@
           ${classificationMarkup(product, "data-card-classification")}
           <div class="swatches" data-swatches="${product.id}">${swatches.map((color, index) => swatchMarkup(product, color, index, `data-card-color="${product.id}:${index}"`)).join("")}</div>
           <div class="card-actions">
-            <button class="quick" data-buy="${product.id}">Mua ngay</button>
-            <button class="quick" data-add="${product.id}">Thêm giỏ</button>
+            <button class="quick" data-buy="${product.id}" ${soldOut ? "disabled" : ""}>Mua ngay</button>
+            <button class="quick" data-add="${product.id}" ${soldOut ? "disabled" : ""}>Thêm giỏ</button>
           </div>
         </article>
       `;
@@ -1414,6 +1419,11 @@
             key: item.key || stockKey(item.classificationId || "", item.color || "", item.size || ""),
             sku: item.sku || "",
             quantity: Math.max(0, Math.floor(Number(item.quantity) || 0)),
+            publishQuantity: Math.max(0, Math.floor(Number(item.publishQuantity) || 0)),
+            pancakeQuantity: Math.max(0, Math.floor(Number(item.pancakeQuantity ?? item.quantity) || 0)),
+            pancakeProductId: item.pancakeProductId || "",
+            pancakeVariationId: item.pancakeVariationId || "",
+            pancakeSku: item.pancakeSku || "",
             size: item.size || "",
             color: item.color || "",
             classificationId: item.classificationId || ""
@@ -1429,6 +1439,51 @@
           salePercent,
           originalAmount
         };
+      }
+
+      function inventoryKeyFor(classificationId, color, size) {
+        return [classificationId || "product", color || "default", size || "one-size"].join("|");
+      }
+
+      function inventoryRowFor(product, classificationId, color, size) {
+        const key = inventoryKeyFor(classificationId, color, size);
+        return (product.inventory || []).find((row) => row.key === key) || null;
+      }
+
+      function availableFor(product, classificationId, color, size) {
+        const row = inventoryRowFor(product, classificationId, color, size);
+        if (!row) return product.inventoryConfigured ? 0 : null;
+        if (!(row.pancakeProductId || row.pancakeVariationId || row.pancakeSku)) return product.inventoryConfigured ? 0 : null;
+        return Number(row.availableQuantity ?? Math.min(Number(row.publishQuantity || 0), Number(row.pancakeQuantity || 0)));
+      }
+
+      async function refreshProductAvailability(productId) {
+        const product = productData.find((item) => item.id === productId);
+        if (!product) return;
+        try {
+          const response = await fetch(`${paymentApiBase}/api/inventory/availability?productId=${encodeURIComponent(productId)}&t=${Date.now()}`, { cache: "no-store" });
+          if (!response.ok) return;
+          const result = await response.json();
+          product.inventoryConfigured = Boolean(result.configured);
+          if (Array.isArray(result.items)) product.inventory = result.items;
+        } catch (error) {
+          console.warn("Không cập nhật được tồn kho Pancake", error);
+        }
+      }
+
+      async function refreshAllAvailability() {
+        try {
+          const response = await fetch(`${paymentApiBase}/api/inventory/availability?t=${Date.now()}`, { cache: "no-store" });
+          if (!response.ok) return;
+          const result = await response.json();
+          productData.forEach((product) => {
+            product.inventoryConfigured = Boolean(result.configured);
+            product.inventory = Array.isArray(result.items) ? result.items.filter((item) => item.productId === product.id) : product.inventory;
+          });
+          renderProducts(currentProductList.length ? currentProductList : productData, false);
+        } catch (error) {
+          console.warn("Không cập nhật được danh sách tồn kho Pancake", error);
+        }
       }
 
       function applySiteContent(content) {
@@ -1509,6 +1564,7 @@
             .filter((product) => product.active !== false)
             .map(normalizeCmsProduct);
           renderProducts(productData);
+          void refreshAllAvailability();
         }
       }
 
@@ -1602,6 +1658,7 @@
         cancelled: "Đơn hủy",
         unknown: "Đang cập nhật"
       };
+      const customerPancakeLabels = { pending_confirmation: "Chờ xác nhận", confirmed: "Đã xác nhận", packing: "Đóng gói", shipping: "Đang giao", completed: "Hoàn thành", cancelled: "Hủy", returned: "Hoàn hàng" };
       const customerVouchers = [
         { code: "BLANWHI5", title: "Giảm 5%", description: "Giảm 5% cho sản phẩm bán lẻ.", min: 500000, rate: .05, freeship: false, label: "-5%" },
         { code: "BLANWHI10", title: "Giảm 10%", description: "Giảm 10% cho sản phẩm bán lẻ.", min: 1000000, rate: .1, freeship: false, label: "-10%" },
@@ -1879,7 +1936,9 @@
         if (!product) return;
         const swatches = variantSwatches(product, variantState.classificationIndex);
         const color = swatches[variantState.colorIndex] || swatches[0];
-        const stock = stockFor(product, { classificationIndex: variantState.classificationIndex, color, size: variantState.size });
+        const classification = activeClassification(product, variantState.classificationIndex);
+        const liveAvailable = availableFor(product, classification?.id || "", color, variantState.size);
+        const stock = liveAvailable === null ? stockFor(product, { classificationIndex: variantState.classificationIndex, color, size: variantState.size }) : liveAvailable;
         if (stock !== Infinity && stock > 0 && variantState.qty > stock) variantState.qty = stock;
         const outOfStock = stock <= 0;
         const note = stockNote(product, { classificationIndex: variantState.classificationIndex, color, size: variantState.size, qty: variantState.qty });
@@ -1891,6 +1950,7 @@
             <div class="detail-info">
               <h2>${product.name}</h2>
               ${priceMarkup(product, true)}
+              <p class="muted" style="color:${soldOut ? "#c00" : "#176b36"}">${available === null ? "Chưa liên kết tồn kho Pancake" : soldOut ? "Hết hàng" : `Còn có thể bán ${available} sản phẩm`}</p>
               ${product.kind.startsWith("gift-") ? `<div><p class="muted">Loại</p><strong>Gift Packaging</strong></div>` : `<div>
                 <p class="muted">Size</p>
                 <div class="sizes" data-variant-sizes>
@@ -1942,9 +2002,10 @@
         `;
       }
 
-      function openVariant(id, mode) {
+      async function openVariant(id, mode) {
         const product = productData.find((item) => item.id === id);
         if (!product) return;
+        await refreshProductAvailability(id);
         variantState = { productId: id, mode, classificationIndex: product.classificationIndex || 0, colorIndex: product.colorIndex, size: product.size, qty: product.orderQty || 1 };
         renderVariantModal();
         variantModal.classList.add("open");
@@ -2002,7 +2063,7 @@
         wholesaleModal.classList.remove("open");
       }
 
-      function confirmVariant() {
+      async function confirmVariant() {
         const product = productData.find((item) => item.id === variantState.productId);
         if (!product) return;
         const classification = activeClassification(product, variantState.classificationIndex);
@@ -2015,32 +2076,26 @@
           classificationId: classification?.id || "",
           classificationName: classification?.name || ""
         };
-        if (!hasStock(product, { classificationIndex: variantState.classificationIndex, color: options.color, size: options.size })) {
+        const row = inventoryRowFor(product, options.classificationId, options.color, options.size);
+        const available = availableFor(product, options.classificationId, options.color, options.size);
+        if (available !== null && available < options.qty) {
+          alert(available <= 0 ? "Sản phẩm đã hết hàng." : `Sản phẩm chỉ còn có thể bán ${available}.`);
+          return;
+        }
+        if (available === null && !hasStock(product, { classificationIndex: variantState.classificationIndex, color: options.color, size: options.size })) {
           showSoldOut();
           renderVariantModal();
           return;
         }
+        Object.assign(options, { inventoryKey: row?.key || "", sku: row?.sku || "", pancakeSku: row?.pancakeSku || "", pancakeProductId: row?.pancakeProductId || "", pancakeVariationId: row?.pancakeVariationId || "" });
         product.classificationIndex = variantState.classificationIndex;
         product.colorIndex = variantState.colorIndex;
         product.color = options.color;
         product.size = options.size;
-        if (variantState.mode === "buy") {
-          const added = addToCart(product.id, options);
-          if (!added) {
-            renderVariantModal();
-            return;
-          }
-          closeVariant();
-          openCart();
-        }
+        closeVariant();
+        if (variantState.mode === "buy") await buyNow(product.id, options);
         else {
-          const added = addToCart(product.id, options);
-          if (!added) {
-            renderVariantModal();
-            return;
-          }
-          closeVariant();
-          openCart();
+          if (await addToCart(product.id, options)) openCart();
         }
       }
 
@@ -2161,6 +2216,7 @@
       }
 
       function customerOrderStatus(order) {
+        if (order.pancakeStatus && customerPancakeLabels[order.pancakeStatus]) return customerPancakeLabels[order.pancakeStatus];
         if (order.shippingStatus && customerShippingLabels[order.shippingStatus]) return customerShippingLabels[order.shippingStatus];
         return order.status || "Đã đặt";
       }
@@ -2186,6 +2242,7 @@
               trackingCode: serverOrder.trackingCode || order.trackingCode,
               shippingStatus: serverOrder.shippingStatus || order.shippingStatus,
               shippingMessage: serverOrder.shippingMessage || order.shippingMessage,
+              pancakeStatus: serverOrder.pancakeStatus || order.pancakeStatus,
               updatedAt: serverOrder.updatedAt ? new Date(serverOrder.updatedAt).toLocaleString("vi-VN") : order.updatedAt
             };
             return { ...merged, step: customerOrderStep(merged) };
@@ -2224,16 +2281,19 @@
         `).join("");
       }
 
-      function addToCart(id, options = {}) {
+      async function addToCart(id, options = {}) {
         const product = productData.find((item) => item.id === id);
         if (!product) return false;
+        await refreshProductAvailability(id);
         const color = options.color || product.color;
         const size = options.size || product.size;
         const qty = options.qty || 1;
         const classificationId = options.classificationId || "";
         const classificationName = options.classificationName || "";
         const classificationIndex = product.classifications?.findIndex((item) => item.id === classificationId);
-        const stock = stockFor(product, { classificationIndex: classificationIndex >= 0 ? classificationIndex : (product.classificationIndex || 0), color, size });
+        const row = inventoryRowFor(product, classificationId, color, size);
+        const available = availableFor(product, classificationId, color, size);
+        const stock = available === null ? stockFor(product, { classificationIndex: classificationIndex >= 0 ? classificationIndex : (product.classificationIndex || 0), color, size }) : available;
         if (stock <= 0) {
           showSoldOut();
           return false;
@@ -2249,7 +2309,7 @@
           existing.qty += qty;
           if (options.message !== undefined) existing.message = options.message;
         }
-        else cart.push({ ...product, cartId, color, size, qty, classificationId, classificationName, message: options.message || product.message || "" });
+        else cart.push({ ...product, cartId, color, size, qty, classificationId, classificationName, inventoryKey: options.inventoryKey || row?.key || "", sku: options.sku || row?.sku || "", pancakeSku: options.pancakeSku || row?.pancakeSku || "", pancakeProductId: options.pancakeProductId || row?.pancakeProductId || "", pancakeVariationId: options.pancakeVariationId || row?.pancakeVariationId || "", message: options.message || product.message || "" });
         renderCart();
         return true;
       }
@@ -2275,8 +2335,8 @@
         renderCheckoutSummary();
       }
 
-      function buyNow(id, options = {}) {
-        if (addToCart(id, options)) openCart();
+      async function buyNow(id, options = {}) {
+        if (await addToCart(id, options)) openCart();
       }
       function stockForCartItem(item) {
         const product = productData.find((entry) => entry.id === item.id);
@@ -3084,6 +3144,13 @@
             address: fields[2].value
           },
           items: cart.map((item) => ({
+            productId: item.id,
+            classificationId: item.classificationId || "",
+            inventoryKey: item.inventoryKey || "",
+            sku: item.sku || "",
+            pancakeSku: item.pancakeSku || "",
+            pancakeProductId: item.pancakeProductId || "",
+            pancakeVariationId: item.pancakeVariationId || "",
             name: item.name,
             qty: item.qty,
             price: item.amount,

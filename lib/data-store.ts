@@ -27,7 +27,7 @@ function shouldUseBlobStore(filename: string) {
 }
 
 function shouldUseEncryptedBlobStore(filename: string) {
-  return ["orders.json", "integrations.json"].includes(filename) && Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+  return ["orders.json", "integrations.json", "pancake-logs.json", "pancake-queue.json"].includes(filename) && Boolean(process.env.BLOB_READ_WRITE_TOKEN);
 }
 
 const siteContentBlobPath = "blanwhi/content/site-content.json";
@@ -260,13 +260,6 @@ export async function readJsonStore<T>(filename: string, fallback: T): Promise<T
   if (shouldUseEncryptedBlobStore(filename)) {
     const saved = await readEncryptedBlobJsonStore<T>(filename);
     if (saved !== null) return saved;
-    const file = await ensureJsonFile<T>(filename, fallback);
-    try {
-      const initialValue = JSON.parse(await readFile(file, "utf8")) as T;
-      return writeEncryptedBlobJsonStore(filename, initialValue);
-    } catch {
-      return writeEncryptedBlobJsonStore(filename, fallback);
-    }
   }
 
   const file = await ensureJsonFile<T>(filename, fallback);

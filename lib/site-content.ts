@@ -13,6 +13,12 @@ export type CmsProductInventoryItem = {
   key: string;
   sku: string;
   quantity: number;
+  publishQuantity?: number;
+  pancakeQuantity?: number;
+  pancakeProductId?: string;
+  pancakeVariationId?: string;
+  pancakeSku?: string;
+  lastSyncedAt?: string;
   size: string;
   color?: string;
   classificationId?: string;

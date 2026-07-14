@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
 import { jsonError } from "@/lib/api-errors";
 import { readIntegrationConfig } from "@/lib/integrations";
-import { createOrder, newOrderCode } from "@/lib/orders";
+import { createOrder, newOrderCode, updateOrder } from "@/lib/orders";
 import { checkoutTotals } from "@/lib/pricing";
 import { createMomoPayment, createVnpayUrl, createZaloPayPayment, fallbackPaymentUrl } from "@/lib/payment";
 import { CartItem, PaymentMethod, ShopOrder } from "@/lib/types";
+import { InventoryService } from "@/lib/pancake/inventory-service";
+import { OrderSyncService } from "@/lib/pancake/order-sync-service";
+import { buildProductInventory } from "@/lib/product-inventory";
+import { readSiteContent } from "@/lib/site-content";
 
 type CheckoutPayload = {
   customer?: {
@@ -12,6 +16,7 @@ type CheckoutPayload = {
     phone?: string;
     address?: string;
     note?: string;
+    email?: string;
   };
   paymentMethod?: PaymentMethod;
   items?: Array<CartItem | PreviewCheckoutItem>;
@@ -30,6 +35,13 @@ type CheckoutPayload = {
 };
 
 type PreviewCheckoutItem = {
+  productId?: string;
+  inventoryKey?: string;
+  sku?: string;
+  pancakeSku?: string;
+  pancakeProductId?: string;
+  pancakeVariationId?: string;
+  classificationId?: string;
   name: string;
   qty: number;
   price: number;
@@ -100,13 +112,39 @@ function normalizeItems(items: Array<CartItem | PreviewCheckoutItem>) {
     }
 
     return {
-      productId: `preview-${index + 1}`,
+      productId: item.productId || `preview-${index + 1}`,
+      inventoryKey: item.inventoryKey,
+      sku: item.sku,
+      pancakeSku: item.pancakeSku,
+      pancakeProductId: item.pancakeProductId,
+      pancakeVariationId: item.pancakeVariationId,
       name: item.classificationName ? `${item.name} - ${item.classificationName}` : item.name,
       color: item.color || item.designName || "",
       size: item.size || "",
       quantity: Number(item.qty || 1),
       unitPrice: Number(item.price || 0)
     };
+  });
+}
+
+async function hydratePancakeLinks(items: ReturnType<typeof normalizeItems>) {
+  const content = await readSiteContent();
+  return items.map((item) => {
+    const product = content.products.find((candidate) => candidate.id === item.productId);
+    if (!product) return item;
+    const rows = buildProductInventory(product);
+    const row = rows.find((candidate) =>
+      (item.inventoryKey && candidate.key === item.inventoryKey)
+      || (item.sku && candidate.sku.toUpperCase() === item.sku.toUpperCase())
+    );
+    return row ? {
+      ...item,
+      inventoryKey: row.key,
+      sku: row.sku,
+      pancakeSku: row.pancakeSku,
+      pancakeProductId: row.pancakeProductId,
+      pancakeVariationId: row.pancakeVariationId
+    } : item;
   });
 }
 
@@ -152,7 +190,10 @@ export async function POST(request: Request) {
       shipping: payload.totals?.shipping ?? computedTotals.shipping,
       total: payload.totals?.total ?? computedTotals.total
     };
-    const orderItems = normalizeItems(items);
+    const orderItems = await hydratePancakeLinks(normalizeItems(items));
+    const inventoryService = new InventoryService();
+    const pancakeConfigured = inventoryService.configured();
+    if (pancakeConfigured) await inventoryService.assertAvailable(orderItems);
     const now = new Date().toISOString();
     const order: ShopOrder = {
       id: crypto.randomUUID(),
@@ -163,6 +204,7 @@ export async function POST(request: Request) {
       customer: {
         name: customer.name,
         phone: customer.phone,
+        email: customer.email,
         address: customer.address,
         note: customer.note
       },
@@ -181,6 +223,17 @@ export async function POST(request: Request) {
     };
 
     await createOrder(order);
+    if (pancakeConfigured) {
+      await inventoryService.reserve(order.items, "decrease");
+      order.inventoryReservationApplied = true;
+      await updateOrder(order.code, { inventoryReservationApplied: true });
+      try {
+        const synced = await new OrderSyncService().create(order);
+        if (synced) Object.assign(order, synced);
+      } catch {
+        order.externalSync = { ...order.externalSync, pancake: "Đang chờ hệ thống gửi lại Pancake" };
+      }
+    }
 
     if (paymentMethod === "vnpay") {
       return json({ order, redirectUrl: createVnpayUrl(order, request, integrations.payment) });

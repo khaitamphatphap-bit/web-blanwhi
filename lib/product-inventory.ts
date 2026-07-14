@@ -32,6 +32,12 @@ export function buildProductInventory(product: CmsProduct): CmsProductInventoryI
       key,
       sku: saved?.sku || defaultInventorySku(product.id, classificationId, color, size),
       quantity: Math.max(0, Math.floor(Number(saved?.quantity) || 0)),
+      publishQuantity: Math.max(0, Math.floor(Number(saved?.publishQuantity) || 0)),
+      pancakeQuantity: Math.max(0, Math.floor(Number(saved?.pancakeQuantity ?? saved?.quantity) || 0)),
+      pancakeProductId: String(saved?.pancakeProductId || ""),
+      pancakeVariationId: String(saved?.pancakeVariationId || ""),
+      pancakeSku: String(saved?.pancakeSku || ""),
+      ...(saved?.lastSyncedAt ? { lastSyncedAt: saved.lastSyncedAt } : {}),
       size,
       ...(color ? { color } : {}),
       ...(classificationId ? { classificationId } : {})
