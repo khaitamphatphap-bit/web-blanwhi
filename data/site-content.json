@@ -2,7 +2,7 @@
   "brand": {
     "name": "BLANWHI",
     "logoUrl": "/umbrella-logo.png",
-    "footerText": "BLANWHI · Minimal commerce prototype"
+    "footerText": "BLANWHI · Thời trang tối giản, chất riêng"
   },
   "hero": {
     "overline": "Simple is forever",
@@ -46,26 +46,26 @@
   },
   "footerColumns": [
     {
-      "title": "Company",
+      "title": "Về BLANWHI",
       "lines": [
-        "About Us",
-        "Join Us",
-        "Store Locator"
+        "Về chúng tôi",
+        "Tuyển dụng",
+        "Hệ thống cửa hàng"
       ]
     },
     {
-      "title": "Customer Care",
+      "title": "Chăm sóc khách hàng",
       "lines": [
-        "FAQ",
-        "Return Policy",
-        "Promotion Terms"
+        "Câu hỏi thường gặp",
+        "Chính sách đổi trả",
+        "Điều khoản khuyến mãi"
       ]
     },
     {
-      "title": "Let’s stay<br />in touch.",
+      "title": "Kết nối<br />cùng BLANWHI",
       "lines": [
-        "E-mail address",
-        "By clicking subscribe, you agree to BLANWHI terms."
+        "Địa chỉ email",
+        "Khi đăng ký, bạn đồng ý với các điều khoản của BLANWHI."
       ]
     }
   ],

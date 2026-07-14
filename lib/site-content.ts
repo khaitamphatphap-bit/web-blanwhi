@@ -115,7 +115,7 @@ export const defaultSiteContent: SiteContent = {
   brand: {
     name: "BLANWHI",
     logoUrl: "/umbrella-logo.png",
-    footerText: "BLANWHI · Minimal commerce prototype"
+    footerText: "BLANWHI · Thời trang tối giản, chất riêng"
   },
   hero: {
     overline: "Simple is forever",
@@ -158,9 +158,9 @@ export const defaultSiteContent: SiteContent = {
     wholesaleZaloHref: "https://zalo.me/0900000000"
   },
   footerColumns: [
-    { title: "Company", lines: ["About Us", "Join Us", "Store Locator"] },
-    { title: "Customer Care", lines: ["FAQ", "Return Policy", "Promotion Terms"] },
-    { title: "Let’s stay<br />in touch.", lines: ["E-mail address", "By clicking subscribe, you agree to BLANWHI terms."] }
+    { title: "Về BLANWHI", lines: ["Về chúng tôi", "Tuyển dụng", "Hệ thống cửa hàng"] },
+    { title: "Chăm sóc khách hàng", lines: ["Câu hỏi thường gặp", "Chính sách đổi trả", "Điều khoản khuyến mãi"] },
+    { title: "Kết nối<br />cùng BLANWHI", lines: ["Địa chỉ email", "Khi đăng ký, bạn đồng ý với các điều khoản của BLANWHI."] }
   ],
   payment: {
     bank: {
@@ -250,11 +250,15 @@ export async function readSiteContent(): Promise<SiteContent> {
   return {
     ...defaultSiteContent,
     ...saved,
-    brand: { ...defaultSiteContent.brand, ...saved.brand },
+    brand: {
+      ...defaultSiteContent.brand,
+      ...saved.brand,
+      footerText: translateLegacyFooterText(saved.brand?.footerText || defaultSiteContent.brand.footerText)
+    },
     hero: { ...defaultSiteContent.hero, ...saved.hero },
     menu: { ...defaultSiteContent.menu, ...saved.menu },
     support: { ...defaultSiteContent.support, ...saved.support },
-    footerColumns: saved.footerColumns || defaultSiteContent.footerColumns,
+    footerColumns: translateLegacyFooterColumns(saved.footerColumns || defaultSiteContent.footerColumns),
     payment: {
       bank: {
         ...defaultSiteContent.payment.bank,
@@ -271,4 +275,31 @@ export async function writeSiteContent(content: SiteContent) {
 
 function parseMoneyValue(value: string) {
   return Number(String(value || "").replace(/[^0-9]/g, "")) || 0;
+}
+
+const legacyFooterTranslations: Record<string, string> = {
+  "Company": "Về BLANWHI",
+  "About Us": "Về chúng tôi",
+  "Join Us": "Tuyển dụng",
+  "Store Locator": "Hệ thống cửa hàng",
+  "Customer Care": "Chăm sóc khách hàng",
+  "FAQ": "Câu hỏi thường gặp",
+  "Return Policy": "Chính sách đổi trả",
+  "Promotion Terms": "Điều khoản khuyến mãi",
+  "Let’s stay<br />in touch.": "Kết nối<br />cùng BLANWHI",
+  "E-mail address": "Địa chỉ email",
+  "By clicking subscribe, you agree to BLANWHI terms.": "Khi đăng ký, bạn đồng ý với các điều khoản của BLANWHI."
+};
+
+function translateLegacyFooterText(value: string) {
+  return value === "BLANWHI · Minimal commerce prototype"
+    ? "BLANWHI · Thời trang tối giản, chất riêng"
+    : value;
+}
+
+function translateLegacyFooterColumns(columns: SiteContent["footerColumns"]) {
+  return columns.map((column) => ({
+    title: legacyFooterTranslations[column.title] || column.title,
+    lines: column.lines.map((line) => legacyFooterTranslations[line] || line)
+  }));
 }
