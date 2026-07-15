@@ -28,13 +28,16 @@ test("payload tạo đơn gửi đủ khách hàng, SKU, số lượng, giá và
     shipping: 30000,
     total: 620000,
     paymentMethod: "cod"
-  });
+  }, "1546106", { id: 3, name: "VTP", shopPartnerId: 10932 });
   assert.equal(payload.custom_id, "BLW-123");
   assert.equal(payload.items[0].variation_id, "variation-1");
   assert.equal(payload.items[0].variation_info.display_id, "AO-DEN-M");
   assert.equal(payload.items[0].variation_info.retail_price, 300000);
   assert.equal(payload.items[0].quantity, 2);
   assert.equal(payload.total_price, 620000);
+  assert.equal(payload.status, 12);
+  assert.equal(payload.partner.partner_id, 3);
+  assert.equal(payload.shop_partner_id, 10932);
 });
 
 test("đồng bộ trạng thái hoàn tất, hủy và hoàn hàng", () => {

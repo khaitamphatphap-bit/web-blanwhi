@@ -172,6 +172,15 @@ async function ensureDatabaseSchema() {
         create index if not exists blanwhi_store_history_key_created_idx
         on blanwhi_store_history (store_key, created_at desc)
       `);
+      await pool.query(`
+        create table if not exists blanwhi_keyed_store (
+          namespace text not null,
+          item_key text not null,
+          item_value jsonb not null,
+          updated_at timestamptz not null default now(),
+          primary key (namespace, item_key)
+        )
+      `);
     })();
   }
   await schemaReadyPromise;
@@ -270,6 +279,78 @@ export async function readJsonStore<T>(filename: string, fallback: T): Promise<T
   } catch {
     return fallback;
   }
+}
+
+export async function readKeyedJsonStore<T>(namespace: string, fallback: Record<string, T> = {}) {
+  if (hasDatabase()) {
+    await ensureDatabaseSchema();
+    const pool = await getPool();
+    if (pool) {
+      const result = await pool.query(
+        "select item_key, item_value from blanwhi_keyed_store where namespace = $1",
+        [namespace]
+      );
+      const legacy = await readJsonStore<Record<string, T>>(`${namespace}.json`, fallback);
+      if (result.rows.length) return {
+        ...legacy,
+        ...Object.fromEntries(result.rows.map((row) => [String(row.item_key), row.item_value as T]))
+      };
+      return legacy;
+    }
+  }
+  if (hasBlobStore()) {
+    const { get, list } = await import("@vercel/blob");
+    const prefix = `blanwhi/private-keyed/${namespace}/`;
+    const result = await list({ prefix, limit: 1000 });
+    if (result.blobs.length) {
+      const entries = await Promise.all(result.blobs.map(async (blob) => {
+        try {
+          const saved = await get(blob.pathname, { access: "public", useCache: false });
+          if (!saved || saved.statusCode !== 200) return null;
+          const encodedKey = blob.pathname.slice(prefix.length).replace(/\.enc\.json$/, "");
+          const key = Buffer.from(encodedKey, "base64url").toString("utf8");
+          return [key, await decryptJson<T>(await new Response(saved.stream).text())] as const;
+        } catch {
+          return null;
+        }
+      }));
+      const legacy = await readJsonStore<Record<string, T>>(`${namespace}.json`, fallback);
+      return { ...legacy, ...Object.fromEntries(entries.filter((entry) => entry !== null)) };
+    }
+  }
+  return readJsonStore<Record<string, T>>(`${namespace}.json`, fallback);
+}
+
+export async function writeKeyedJsonRecord<T>(namespace: string, itemKey: string, value: T) {
+  if (hasDatabase()) {
+    await ensureDatabaseSchema();
+    const pool = await getPool();
+    if (pool) {
+      await pool.query(
+        `insert into blanwhi_keyed_store (namespace, item_key, item_value, updated_at)
+         values ($1, $2, $3::jsonb, now())
+         on conflict (namespace, item_key)
+         do update set item_value = excluded.item_value, updated_at = now()`,
+        [namespace, itemKey, JSON.stringify(value)]
+      );
+      return value;
+    }
+  }
+  if (hasBlobStore()) {
+    const { put } = await import("@vercel/blob");
+    const encodedKey = Buffer.from(itemKey, "utf8").toString("base64url");
+    await put(`blanwhi/private-keyed/${namespace}/${encodedKey}.enc.json`, await encryptJson(value), {
+      access: "public",
+      addRandomSuffix: false,
+      allowOverwrite: true,
+      cacheControlMaxAge: 60,
+      contentType: "application/json"
+    });
+    return value;
+  }
+  const current = await readJsonStore<Record<string, T>>(`${namespace}.json`, {});
+  await writeJsonStore(`${namespace}.json`, { ...current, [itemKey]: value });
+  return value;
 }
 
 export async function readJsonStoreHistory<T>(filename: string, limit = 100): Promise<T[]> {

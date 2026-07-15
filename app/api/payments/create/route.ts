@@ -15,6 +15,9 @@ type CheckoutPayload = {
     name?: string;
     phone?: string;
     address?: string;
+    house?: string;
+    ward?: string;
+    province?: string;
     note?: string;
     email?: string;
   };
@@ -206,16 +209,19 @@ export async function POST(request: Request) {
         phone: customer.phone,
         email: customer.email,
         address: customer.address,
+        house: customer.house,
+        ward: customer.ward,
+        province: customer.province,
         note: customer.note
       },
       items: orderItems,
       subtotal: totals.subtotal,
       discount: totals.discount,
       shipping: totals.shipping,
-      shippingMethod: payload.shipping?.method || "Giao nhanh",
+      shippingMethod: payload.shipping?.method || "Viettel Post",
       shippingFeeLabel: payload.shipping?.feeLabel,
-      shippingCarrier: payload.shipping?.carrier || "GHN",
-      trackingCode: payload.shipping?.trackingCode || `VN${Date.now().toString().slice(-10)}`,
+      shippingCarrier: "Viettel Post",
+      trackingCode: "",
       shippingStatus: "not_created",
       total: totals.total,
       createdAt: now,

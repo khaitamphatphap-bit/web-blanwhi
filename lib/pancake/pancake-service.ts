@@ -56,6 +56,13 @@ function nestedRecord(value: unknown) {
   return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
 }
 
+export type PancakeShippingPartner = {
+  id: number;
+  name: string;
+  shopPartnerId?: number;
+  accountName?: string;
+};
+
 function variationName(item: Record<string, unknown>) {
   const product = nestedRecord(item.product);
   const productName = text(product, ["name", "display_name"]);
@@ -70,6 +77,8 @@ function variationName(item: Record<string, unknown>) {
 
 let variationCache: { expiresAt: number; value: PancakeVariation[] } | null = null;
 let variationRequest: Promise<PancakeVariation[]> | null = null;
+let partnerCache: { expiresAt: number; value: PancakeShippingPartner[] } | null = null;
+let partnerRequest: Promise<PancakeShippingPartner[]> | null = null;
 
 export class PancakeService {
   constructor(private readonly client = new ApiClient()) {}
@@ -122,8 +131,47 @@ export class PancakeService {
       }
     });
     const path = `/shops/${encodeURIComponent(this.shopId())}/orders`;
-    const payload = buildPancakeOrderPayload(order, this.shopId());
+    const shippingPartner = await this.viettelPostPartner().catch(() => {
+      const id = Number(process.env.PANCAKE_VTP_PARTNER_ID || 0);
+      const shopPartnerId = Number(process.env.PANCAKE_VTP_ACCOUNT_ID || 0);
+      return id > 0 ? { id, name: "VTP", ...(shopPartnerId > 0 ? { shopPartnerId } : {}) } : null;
+    });
+    const payload = buildPancakeOrderPayload(order, this.shopId(), shippingPartner || undefined);
     return this.client.request<Record<string, unknown>>(path, { method: "POST", body: payload });
+  }
+
+  async shippingPartners(): Promise<PancakeShippingPartner[]> {
+    if (partnerCache && partnerCache.expiresAt > Date.now()) return partnerCache.value;
+    if (partnerRequest) return partnerRequest;
+    partnerRequest = (async () => {
+      const response = await this.client.request<unknown>(`/shops/${encodeURIComponent(this.shopId())}/partners`);
+      const value = records(response).map((partner) => {
+      const accounts = Array.isArray(partner.accounts)
+        ? partner.accounts.filter((item): item is Record<string, unknown> => Boolean(item && typeof item === "object"))
+        : [];
+      const preferredAccountId = String(process.env.PANCAKE_VTP_ACCOUNT_ID || "").trim();
+      const account = accounts.find((item) => text(item, ["id"]) === preferredAccountId) || accounts[0];
+      return {
+        id: Number(text(partner, ["id", "partner_id"])) || 0,
+        name: text(partner, ["name", "partner_name"]),
+        ...(account ? { shopPartnerId: Number(text(account, ["id"])) || undefined, accountName: text(account, ["name"]) } : {})
+      };
+      }).filter((partner) => partner.id && partner.name);
+      partnerCache = { expiresAt: Date.now() + 60_000, value };
+      return value;
+    })();
+    try {
+      return await partnerRequest;
+    } finally {
+      partnerRequest = null;
+    }
+  }
+
+  async viettelPostPartner() {
+    const partners = await this.shippingPartners();
+    const configuredPartnerId = Number(process.env.PANCAKE_VTP_PARTNER_ID || 0);
+    return partners.find((partner) => configuredPartnerId > 0 && partner.id === configuredPartnerId)
+      || partners.find((partner) => /(^|\b)(vtp|viettel\s*post)(\b|$)/i.test(partner.name));
   }
 
   async cancelOrder(providerOrderId: string) {

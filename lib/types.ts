@@ -65,6 +65,9 @@ export type OrderCustomer = {
   phone: string;
   email?: string;
   address: string;
+  house?: string;
+  ward?: string;
+  province?: string;
   note?: string;
 };
 

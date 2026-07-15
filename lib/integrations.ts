@@ -53,8 +53,8 @@ export const defaultIntegrationConfig: IntegrationConfig = {
   misa: { enabled: false, endpoint: "", inventoryEndpoint: "", token: "" },
   shipping: {
     enabled: false,
-    provider: "ghn",
-    providerName: "Giao Hàng Nhanh",
+    provider: "viettelpost",
+    providerName: "Viettel Post",
     statusEndpoint: "",
     token: "",
     shopId: "",

@@ -44,13 +44,14 @@ export function pancakeOrderKey(orderCode: string) {
 
 export function buildPancakeOrderPayload(order: {
   code: string;
-  customer: { name: string; phone: string; email?: string; address: string; note?: string };
+  customer: { name: string; phone: string; email?: string; address: string; house?: string; ward?: string; province?: string; note?: string };
   items: Array<{ name: string; pancakeVariationId?: string; pancakeProductId?: string; pancakeSku?: string; sku?: string; quantity: number; unitPrice: number }>;
   discount: number;
   shipping: number;
   total: number;
   paymentMethod: string;
-}, shopId?: string) {
+}, shopId?: string, shippingPartner?: { id: number; name: string; shopPartnerId?: number }) {
+  const cod = order.paymentMethod === "cod" ? order.total : 0;
   return {
     ...(shopId ? { shop_id: Number(shopId) || shopId } : {}),
     custom_id: order.code,
@@ -58,10 +59,12 @@ export function buildPancakeOrderPayload(order: {
     bill_phone_number: order.customer.phone,
     bill_email: order.customer.email || "",
     shipping_address: {
-      address: order.customer.address,
+      address: order.customer.house || order.customer.address,
       full_address: order.customer.address,
       full_name: order.customer.name,
-      phone_number: order.customer.phone
+      phone_number: order.customer.phone,
+      ...(order.customer.ward ? { commune_name: order.customer.ward, ward_name: order.customer.ward } : {}),
+      ...(order.customer.province ? { province_name: order.customer.province } : {})
     },
     note: order.customer.note || "",
     note_print: order.customer.note || "",
@@ -88,8 +91,17 @@ export function buildPancakeOrderPayload(order: {
     shipping_fee: order.shipping,
     total_discount: order.discount,
     total_price: order.total,
-    cod: order.paymentMethod === "cod" ? order.total : 0,
+    cod,
     cash: 0,
-    status: 0
+    status: 12,
+    ...(shippingPartner ? {
+      shop_partner_id: shippingPartner.shopPartnerId,
+      partner: {
+        partner_id: shippingPartner.id,
+        partner_name: shippingPartner.name,
+        cod,
+        total_fee: order.shipping
+      }
+    } : {})
   };
 }

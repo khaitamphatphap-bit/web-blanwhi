@@ -3,7 +3,7 @@ import { readJsonStoreHistory } from "@/lib/data-store";
 import { PancakeIntegrationError } from "@/lib/pancake/exception-handler";
 import { PancakeService } from "@/lib/pancake/pancake-service";
 import { Validator } from "@/lib/pancake/validator";
-import { readSiteContent, writePancakeProductLink, writeSiteContent, type SiteContent } from "@/lib/site-content";
+import { readSiteContent, writePancakeProductLink, type SiteContent } from "@/lib/site-content";
 
 export type ProductLinkInput = {
   productId?: string;
@@ -60,30 +60,37 @@ export class ProductLinkService {
       }
     }
 
-    let recoveredCount = 0;
+    const recovered: Array<{ productId: string; rowKey: string; link: {
+      pancakeProductId: string;
+      pancakeVariationId: string;
+      pancakeSku: string;
+      pancakeQuantity: number;
+      lastSyncedAt: string;
+    } }> = [];
     const recoveredAt = new Date().toISOString();
-    const products = content.products.map((product) => ({
-      ...product,
-      inventory: buildProductInventory(product).map((row) => {
+    content.products.forEach((product) => {
+      buildProductInventory(product).forEach((row) => {
         const alreadyLinked = Boolean(row.pancakeProductId || row.pancakeVariationId || row.pancakeSku);
         const variation = candidates.get(`${product.id}::${row.key}`)
           || candidatesByWebSku.get(`${product.id}::${row.sku.trim().toUpperCase()}`);
-        if (alreadyLinked || !variation) return row;
-        recoveredCount += 1;
-        return {
-          ...row,
+        if (alreadyLinked || !variation) return;
+        recovered.push({
+          productId: product.id,
+          rowKey: row.key,
+          link: {
           pancakeProductId: variation.productId,
           pancakeVariationId: variation.id,
           pancakeSku: variation.sku,
           pancakeQuantity: variation.quantity,
           lastSyncedAt: recoveredAt
-        };
-      })
-    }));
+          }
+        });
+      });
+    });
 
-    if (recoveredCount > 0) await writeSiteContent({ ...content, products });
+    await Promise.all(recovered.map((item) => writePancakeProductLink(item.productId, item.rowKey, item.link)));
     return {
-      recoveredCount,
+      recoveredCount: recovered.length,
       scannedBackups: history.length,
       availablePancakeVariations: variations.length
     };
@@ -137,17 +144,6 @@ export class ProductLinkService {
     }
 
     await writePancakeProductLink(productId, rowKey, link);
-
-    const products = content.products.map((item) => item.id === productId
-      ? {
-          ...item,
-          inventory: inventory.map((inventoryItem) => inventoryItem.key === rowKey
-            ? { ...inventoryItem, ...link }
-            : inventoryItem)
-        }
-      : item);
-
-    await writeSiteContent({ ...content, products });
 
     const persistedProduct = (await readSiteContent()).products.find((item) => item.id === productId);
     const persistedRow = persistedProduct && buildProductInventory(persistedProduct).find((item) => item.key === rowKey);

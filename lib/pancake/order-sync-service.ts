@@ -32,6 +32,38 @@ function value(payload: Record<string, unknown>, keys: string[]) {
   return "";
 }
 
+function deepValue(payload: unknown, keys: string[], depth = 0): string {
+  if (!payload || typeof payload !== "object" || depth > 5) return "";
+  const record = payload as Record<string, unknown>;
+  for (const key of keys) {
+    const candidate = record[key];
+    if (candidate !== undefined && candidate !== null && String(candidate).trim()) return String(candidate).trim();
+  }
+  for (const candidate of Object.values(record)) {
+    if (Array.isArray(candidate)) {
+      for (const item of candidate) {
+        const found = deepValue(item, keys, depth + 1);
+        if (found) return found;
+      }
+    } else {
+      const found = deepValue(candidate, keys, depth + 1);
+      if (found) return found;
+    }
+  }
+  return "";
+}
+
+function shippingUpdate(payload: unknown, includeReadyStatus = true) {
+  const trackingCode = deepValue(payload, ["order_number_vtp", "extend_code", "tracking_id", "tracking_code"]);
+  const carrier = deepValue(payload, ["partner_name"]);
+  return {
+    ...(trackingCode ? { trackingCode } : {}),
+    shippingCarrier: /vtp|viettel/i.test(carrier) ? "Viettel Post" : (carrier || "Viettel Post"),
+    ...(includeReadyStatus ? { shippingStatus: "ready_to_ship" as const } : {}),
+    shippingMessage: trackingCode ? "Đã tạo vận đơn Viettel Post, sẵn sàng in và bàn giao." : "Đã chuyển sang Viettel Post, đang nhận mã vận đơn."
+  };
+}
+
 export class OrderSyncService {
   constructor(private readonly pancake = new PancakeService()) {}
 
@@ -58,6 +90,8 @@ export class OrderSyncService {
       const providerOrderId = externalId(response);
       const updated = await updateOrder(order.code, {
         providerOrderId: providerOrderId || order.providerOrderId,
+        pancakeStatus: "packing",
+        ...shippingUpdate(response),
         externalSync: {
           ...order.externalSync,
           pancake: `Đã tạo${providerOrderId ? ` #${providerOrderId}` : ""}`,
@@ -126,6 +160,9 @@ export class OrderSyncService {
       ...(mapped.status ? { status: mapped.status } : {}),
       ...(mapped.shippingStatus ? { shippingStatus: mapped.shippingStatus } : {}),
       ...(mapped.pancakeStatus ? { pancakeStatus: mapped.pancakeStatus } : {}),
+      ...(/vtp|viettel/i.test(deepValue(payload, ["partner_name"])) || deepValue(payload, ["order_number_vtp", "extend_code"])
+        ? shippingUpdate(payload, false)
+        : {}),
       inventoryReservationReleased: Boolean(order.inventoryReservationReleased || mapped.release),
       externalSync: { ...order.externalSync, pancake: `Pancake: ${pancakeStatus || "đã cập nhật"}`, lastSyncedAt: new Date().toISOString() }
     });

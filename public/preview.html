@@ -205,6 +205,7 @@
       .sale-price { color: #111; font-weight: 700; }
       .original-price { color: #999; font-size: .82em; font-weight: 500; text-decoration: line-through; text-decoration-thickness: 1px; }
       .discount-percent { color: #555; font-size: 11px; font-weight: 800; text-transform: uppercase; }
+      .sold-count { color: #8a8a8a; font-size: 10px; font-weight: 500; letter-spacing: .01em; }
       .detail-price { display: flex; flex-wrap: wrap; align-items: baseline; gap: 9px; font-size: 18px; }
       .detail-price + .discount-percent { font-size: 12px; }
       .muted { color: var(--muted); font-size: 12px; margin-top: 4px; }
@@ -898,7 +899,7 @@
         <textarea class="cart-note" id="cartNote" maxlength="500" placeholder="Ghi chú cho đơn hàng..."></textarea>
         <div class="shipping-picker">
           <button class="shipping-trigger" id="shippingTrigger" type="button">
-            <span class="shipping-trigger-main"><span class="shipping-logo" id="shippingLogo">GHN</span><span><b>Vận chuyển</b><small id="shippingSelectedText">Giao nhanh · Toàn quốc</small></span></span>
+            <span class="shipping-trigger-main"><span class="shipping-logo" id="shippingLogo">VTP</span><span><b>Vận chuyển</b><small id="shippingSelectedText">Viettel Post · Toàn quốc</small></span></span>
             <span>⌄</span>
           </button>
           <div class="shipping-options" id="shippingOptions">
@@ -908,8 +909,8 @@
               <span class="shipping-check"></span>
             </button>
             <button class="shipping-option active" type="button" data-shipping-method="fast">
-              <span class="shipping-logo">GHN</span>
-              <span><strong>Giao nhanh</strong><small>Giao đến tất cả địa chỉ trên Việt Nam.</small></span>
+              <span class="shipping-logo">VTP</span>
+              <span><strong>Viettel Post</strong><small>Giao đến tất cả địa chỉ trên Việt Nam.</small></span>
               <span class="shipping-check">✓</span>
             </button>
           </div>
@@ -1267,6 +1268,7 @@
             <span class="${product.hasSalePrice ? "sale-price" : ""}">${escapeMarkup(product.price)}</span>
           </span>
           ${product.discountPercent > 0 ? `<span class="discount-percent">Giảm ${product.discountPercent}%</span>` : ""}
+          <span class="sold-count">Đã bán ${Number(product.sold || 0).toLocaleString("vi-VN")}</span>
         </span>
       `;
       const sizeButtonsMarkup = (product, selectedSize = product.size, attributeFactory = (size) => `data-size="${product.id}:${size}"`, classificationIndex = product.classificationIndex || 0, color = product.color) => `
@@ -1891,8 +1893,8 @@
 
       function renderShippingMethod() {
         const express = selectedShippingMethod === "express";
-        shippingLogo.textContent = express ? "BOOK" : "GHN";
-        shippingSelectedText.textContent = express ? "Hỏa tốc · Dưới 25 km · Phí theo app" : "Giao nhanh · Toàn quốc";
+        shippingLogo.textContent = express ? "BOOK" : "VTP";
+        shippingSelectedText.textContent = express ? "Hỏa tốc · Dưới 25 km · Phí theo app" : "Viettel Post · Toàn quốc";
         shippingOptions.querySelectorAll("[data-shipping-method]").forEach((button) => {
           const active = button.dataset.shippingMethod === selectedShippingMethod;
           button.classList.toggle("active", active);
@@ -2333,7 +2335,7 @@
           ${cart.length ? cart.map((item) => `<div class="line"><span class="checkout-item-copy"><b>${item.qty}× ${escapeMarkup(item.name)}</b><small>${item.classificationName ? `${escapeMarkup(item.classificationName)} · ` : ""}${escapeMarkup(colorLabel(item.color, item, item.classificationIndex || 0))}${item.kind.startsWith("gift-") ? "" : ` · Size ${escapeMarkup(item.size)}`}</small></span><strong>${formatMoney(item.amount * item.qty)}</strong></div>`).join("") : `<p class="muted">Chưa có sản phẩm.</p>`}
           <div class="line"><span>Tạm tính</span><strong>${formatMoney(next.sub)}</strong></div>
           <div class="line"><span>${next.voucher.title}</span><strong>-${formatMoney(next.discount)}</strong></div>
-          <div class="line"><span>Vận chuyển · ${selectedShippingMethod === "express" ? "Hỏa tốc" : "Giao nhanh"}</span><strong>${next.shippingPending ? "Theo app" : formatMoney(next.shipping)}</strong></div>
+          <div class="line"><span>Vận chuyển · ${selectedShippingMethod === "express" ? "Hỏa tốc" : "Viettel Post"}</span><strong>${next.shippingPending ? "Theo app" : formatMoney(next.shipping)}</strong></div>
           <div class="line" style="font-size:18px"><span>Tổng</span><strong>${formatMoney(next.total)}</strong></div>
         `;
       }
@@ -3372,14 +3374,17 @@
         submitButton.textContent = "Đang tạo giao dịch...";
         const order = {
           code: `BLW-${Date.now().toString().slice(-6)}`,
-          trackingCode: `VN${Date.now().toString().slice(-10)}`,
+          trackingCode: "",
           status: paymentMethod === "cod" || paymentMethod === "bank_transfer" ? "Đã đặt" : "Chờ thanh toán",
           step: 0,
           paymentMethod,
           customer: {
             name: checkoutName.value.trim(),
             phone: checkoutPhone.value.trim(),
-            address: [checkoutAddress.value, checkoutWard.value, checkoutProvince.value].map((value) => value.trim()).filter(Boolean).join(", ")
+            address: [checkoutAddress.value, checkoutWard.value, checkoutProvince.value].map((value) => value.trim()).filter(Boolean).join(", "),
+            house: checkoutAddress.value.trim(),
+            ward: checkoutWard.value.trim(),
+            province: checkoutProvince.value.trim()
           },
           items: cart.map((item) => ({
             productId: item.id,
@@ -3400,7 +3405,7 @@
             customText: item.customText || ""
           })),
           note: orderNote,
-          shippingMethod: selectedShippingMethod === "express" ? "Hỏa tốc" : "Giao nhanh",
+          shippingMethod: selectedShippingMethod === "express" ? "Hỏa tốc" : "Viettel Post",
           shippingFee: next.shippingPending ? "Theo ứng dụng book giao hàng" : next.shipping,
           voucherCode: orderVoucherCode,
           total: next.total,
@@ -3421,16 +3426,17 @@
                 total: next.total
               },
               shipping: {
-                method: selectedShippingMethod === "express" ? "Hỏa tốc" : "Giao nhanh",
+                method: selectedShippingMethod === "express" ? "Hỏa tốc" : "Viettel Post",
                 feeLabel: next.shippingPending ? "Theo ứng dụng book giao hàng" : formatMoney(next.shipping),
-                carrier: selectedShippingMethod === "express" ? "BOOK" : "GHN",
-                trackingCode: order.trackingCode
+                carrier: selectedShippingMethod === "express" ? "BOOK" : "Viettel Post"
               }
             })
           });
           const result = await response.json();
           if (!response.ok) throw new Error(result.error || "Không thể tạo giao dịch thanh toán.");
           order.code = result.order?.code || order.code;
+          order.trackingCode = result.order?.trackingCode || "";
+          order.shippingCarrier = result.order?.shippingCarrier || (selectedShippingMethod === "express" ? "BOOK" : "Viettel Post");
           order.status = result.order?.status === "pending" ? "Chờ thanh toán" : result.order?.status === "paid" ? "Đã thanh toán" : order.status;
           if (saveCheckoutAddress.checked) saveCustomerAddress({
             ...order.customer,

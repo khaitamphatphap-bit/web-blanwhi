@@ -1,4 +1,4 @@
-import { readJsonStore, writeJsonStore } from "@/lib/data-store";
+import { readJsonStore, readKeyedJsonStore, writeJsonStore, writeKeyedJsonRecord } from "@/lib/data-store";
 import { buildProductInventory } from "@/lib/product-inventory";
 
 export type CmsProductClassification = {
@@ -227,7 +227,7 @@ export const defaultSiteContent: SiteContent = {
 export async function readSiteContent(): Promise<SiteContent> {
   const [saved, pancakeLinks] = await Promise.all([
     readJsonStore<Partial<SiteContent>>("site-content.json", defaultSiteContent),
-    readJsonStore<Record<string, PancakeLinkSnapshot>>("pancake-links.json", {})
+    readKeyedJsonStore<PancakeLinkSnapshot>("pancake-links", {})
   ]);
   const defaultProductsById = new Map(defaultSiteContent.products.map((product) => [product.id, product]));
   const products = (saved.products || defaultSiteContent.products).map((product) => {
@@ -295,9 +295,8 @@ export async function writePancakeProductLink(productId: string, rowKey: string,
   let saved!: PancakeLinkSnapshot;
   const operation = pancakeLinkWriteQueue.then(async () => {
     for (let attempt = 0; attempt < 3; attempt += 1) {
-      const current = await readJsonStore<Record<string, PancakeLinkSnapshot>>("pancake-links.json", {});
-      await writeJsonStore("pancake-links.json", { ...current, [key]: link });
-      const verified = await readJsonStore<Record<string, PancakeLinkSnapshot>>("pancake-links.json", {});
+      await writeKeyedJsonRecord("pancake-links", key, link);
+      const verified = await readKeyedJsonStore<PancakeLinkSnapshot>("pancake-links", {});
       const candidate = verified[key];
       if (candidate
         && String(candidate.pancakeVariationId || "") === String(link.pancakeVariationId || "")
@@ -330,14 +329,18 @@ export async function seedPancakeProductLinks(content: SiteContent) {
 
   let added = 0;
   const operation = pancakeLinkWriteQueue.then(async () => {
-    const current = await readJsonStore<Record<string, PancakeLinkSnapshot>>("pancake-links.json", {});
+    const current = await readKeyedJsonStore<PancakeLinkSnapshot>("pancake-links", {});
     const next = { ...current };
     for (const snapshot of snapshots) {
       if (Object.prototype.hasOwnProperty.call(next, snapshot.key)) continue;
       next[snapshot.key] = snapshot.link;
       added += 1;
     }
-    if (added) await writeJsonStore("pancake-links.json", next);
+    if (added) {
+      await Promise.all(snapshots
+        .filter((snapshot) => !Object.prototype.hasOwnProperty.call(current, snapshot.key))
+        .map((snapshot) => writeKeyedJsonRecord("pancake-links", snapshot.key, snapshot.link)));
+    }
   });
   pancakeLinkWriteQueue = operation.catch(() => undefined);
   await operation;
