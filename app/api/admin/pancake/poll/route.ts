@@ -15,8 +15,14 @@ export async function GET(request: Request) {
     const queue = await QueueHandler.process(async (job) => {
       if (job.type === "order.create") {
         const orderCode = String(job.payload.orderCode || "");
-        if (!await findOrderByCode(orderCode)) return;
+        const order = await findOrderByCode(orderCode);
+        if (!order || order.status === "cancelled") return;
         await new OrderSyncService().retry(orderCode);
+      } else if (job.type === "order.cancel") {
+        const orderCode = String(job.payload.orderCode || "");
+        const order = await findOrderByCode(orderCode);
+        if (!order) return;
+        await new OrderSyncService().cancel(order, false);
       } else if (job.type === "inventory.sync") {
         await new InventoryService().sync();
       }

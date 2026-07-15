@@ -77,9 +77,21 @@ export class PancakeService {
         throw new PancakeIntegrationError(`Sản phẩm ${item.name} chưa liên kết Pancake.`, "PRODUCT_NOT_LINKED", 409);
       }
     });
-    return this.client.request<Record<string, unknown>>(`/shops/${encodeURIComponent(this.shopId())}/orders`, {
-      method: "POST",
-      body: buildPancakeOrderPayload(order)
+    const path = `/shops/${encodeURIComponent(this.shopId())}/orders`;
+    const payload = buildPancakeOrderPayload(order);
+    try {
+      return await this.client.request<Record<string, unknown>>(path, { method: "POST", body: payload });
+    } catch (error) {
+      if (!(error instanceof PancakeIntegrationError) || ![400, 422].includes(error.status)) throw error;
+      return this.client.request<Record<string, unknown>>(path, { method: "POST", body: payload.order });
+    }
+  }
+
+  async cancelOrder(providerOrderId: string) {
+    const id = Validator.required(providerOrderId, "Pancake Order ID");
+    return this.client.request<Record<string, unknown>>(`/shops/${encodeURIComponent(this.shopId())}/orders/${encodeURIComponent(id)}`, {
+      method: "PUT",
+      body: { order: { status: "cancelled" } }
     });
   }
 

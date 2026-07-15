@@ -24,7 +24,7 @@ export async function updateOrderStatus(
   code: string,
   status: OrderStatus,
   patch: Partial<Pick<ShopOrder, "transactionId" | "providerOrderId" | "providerMessage">> = {}
-) {
+): Promise<ShopOrder | null> {
   const orders = await readOrders();
   let updated: ShopOrder | null = null;
   const next = orders.map((order) => {
@@ -41,7 +41,7 @@ export async function updateOrderStatus(
   return updated;
 }
 
-export async function updateOrder(code: string, patch: Partial<ShopOrder>) {
+export async function updateOrder(code: string, patch: Partial<ShopOrder>): Promise<ShopOrder | null> {
   const orders = await readOrders();
   let updated: ShopOrder | null = null;
   const next = orders.map((order) => {

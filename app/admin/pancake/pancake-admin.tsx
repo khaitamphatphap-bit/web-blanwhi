@@ -29,6 +29,7 @@ type PancakeVariation = {
 
 type Dashboard = {
   configuration: { apiKey: boolean; token: boolean; shopId: boolean; webhookSecret: boolean; baseUrl: string };
+  storage: { database: boolean; blob: boolean; persistent: boolean };
   webhookUrl: string;
   products: Array<{ id: string; name: string; rows: ProductRow[] }>;
   logs: Array<{ id: string; level: string; action: string; message: string; orderCode?: string; createdAt: string }>;
@@ -189,6 +190,7 @@ export function PancakeAdmin() {
             {([['PANCAKE_API_KEY', dashboard.configuration.apiKey], ['PANCAKE_TOKEN', dashboard.configuration.token], ['PANCAKE_SHOP_ID', dashboard.configuration.shopId], ['PANCAKE_WEBHOOK_SECRET', dashboard.configuration.webhookSecret]] as Array<[string, boolean]>).map(([name, ready]) => <div key={name} className="border p-3"><strong className="block text-xs">{name}</strong><span className={ready ? "text-green-700" : "text-red-600"}>{ready ? "Đã cấu hình" : name === "PANCAKE_TOKEN" ? "Không bắt buộc" : "Chưa có"}</span></div>)}
           </div>
           <p className="mt-3 break-all text-xs text-neutral-500">API: {dashboard.configuration.baseUrl}</p>
+          <p className={`mt-3 text-sm font-semibold ${dashboard.storage.persistent ? "text-green-700" : "text-red-600"}`}>Lưu đơn lâu dài: {dashboard.storage.persistent ? dashboard.storage.database ? "Cơ sở dữ liệu" : "Vercel Blob mã hóa" : "Chưa cấu hình"}</p>
           <button onClick={() => action("test")} disabled={Boolean(busy)} className="mt-4 h-11 bg-black px-5 text-xs uppercase text-white disabled:opacity-50">{busy === "test" ? "Đang kiểm tra..." : "Kiểm tra kết nối"}</button>
         </div>
         <div className="border border-black p-5">

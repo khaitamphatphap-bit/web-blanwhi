@@ -388,6 +388,11 @@
       .order-list { flex: 1; overflow: auto; padding: 20px 22px; display: grid; gap: 16px; align-content: start; }
       .order-card { border: 1px solid var(--line); padding: 16px; display: grid; gap: 12px; }
       .order-card h3 { margin: 0; font-size: 15px; }
+      .order-item-meta { margin: 3px 0 0; font-size: 12px; color: #777; }
+      .order-actions { display: flex; justify-content: flex-end; padding-top: 2px; }
+      .order-cancel { min-height: 40px; border: 1px solid #d43d32; background: #fff; color: #b42318; padding: 0 16px; font: inherit; font-size: 12px; font-weight: 700; text-transform: uppercase; cursor: pointer; }
+      .order-cancel:hover { background: #fff3f2; }
+      .order-cancel:disabled { cursor: wait; opacity: .55; }
       .status-track { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
       .status-step { border-top: 2px solid #ddd; padding-top: 7px; font-size: 11px; color: #888; }
       .status-step.active { border-color: #000; color: #000; font-weight: 600; }
@@ -2304,6 +2309,41 @@
         return order.status || "Đã đặt";
       }
 
+      function canCustomerCancel(order) {
+        if (["Đơn hủy", "Đã thanh toán", "Thanh toán thất bại"].includes(order.status)) return false;
+        if (["ready_to_ship", "shipping", "delivered", "returning", "returned", "cancelled"].includes(order.shippingStatus || "")) return false;
+        return !["confirmed", "packing", "shipping", "completed", "cancelled", "returned"].includes(order.pancakeStatus || "");
+      }
+
+      async function cancelCustomerOrder(code, phone, button) {
+        if (!confirm("Bạn chắc chắn muốn hủy đơn này? Số lượng mở bán sẽ được hoàn lại.")) return;
+        button.disabled = true;
+        const originalLabel = button.textContent;
+        button.textContent = "Đang hủy...";
+        try {
+          const response = await fetch(`/api/orders/${encodeURIComponent(code)}/cancel`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ phone, reason: "Khách yêu cầu hủy đơn" })
+          });
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.error || "Không thể hủy đơn.");
+          const nextOrders = loadOrders().map((order) => order.code === code ? {
+            ...order,
+            status: "Đơn hủy",
+            shippingStatus: "cancelled",
+            shippingMessage: "Khách yêu cầu hủy đơn",
+            updatedAt: new Date().toLocaleString("vi-VN")
+          } : order);
+          saveOrders(nextOrders);
+          renderOrders();
+        } catch (error) {
+          alert(error.message || "Không thể hủy đơn. Vui lòng thử lại.");
+          button.disabled = false;
+          button.textContent = originalLabel;
+        }
+      }
+
       async function syncCustomerOrderStatuses() {
         const orders = loadOrders();
         const codes = orders.map((order) => order.code).filter(Boolean);
@@ -2350,7 +2390,7 @@
               <p class="muted">${order.customer.name} · ${order.customer.phone}</p>
               <p class="muted">${order.customer.address}</p>
             </div>
-            <div>${order.items.map((item) => `<p class="muted">${item.qty}× ${item.name}${item.message ? ` · Lời nhắn: ${escapeMarkup(item.message)}` : ""}${item.customText ? ` · Chữ: ${escapeMarkup(item.customText)}` : ""}</p>`).join("")}</div>
+            <div>${order.items.map((item) => `<div><p class="muted">${item.qty}× ${escapeMarkup(item.name)}</p><p class="order-item-meta">${[item.classificationName, item.color, item.size ? `Size ${item.size}` : ""].filter(Boolean).map(escapeMarkup).join(" · ")}${item.message ? ` · Lời nhắn: ${escapeMarkup(item.message)}` : ""}${item.customText ? ` · Chữ: ${escapeMarkup(item.customText)}` : ""}</p></div>`).join("")}</div>
             <div class="line"><span>Mã vận đơn</span><strong>${order.trackingCode || "Đang cập nhật"}</strong></div>
             <p class="muted">Đơn vị vận chuyển: ${order.shippingCarrier || "Đang cập nhật"}</p>
             ${order.shippingMessage ? `<p class="muted">Trạng thái vận chuyển: ${escapeMarkup(order.shippingMessage)}</p>` : ""}
@@ -2360,6 +2400,7 @@
               ${["Đã đặt", "ĐVVC nhận đơn", "Đang giao", "Hoàn tất"].map((step, index) => `<div class="status-step ${index <= customerOrderStep(order) ? "active" : ""}">${step}</div>`).join("")}
             </div>
             <p class="muted">Cập nhật gần nhất: ${order.updatedAt}</p>
+            ${canCustomerCancel(order) ? `<div class="order-actions"><button class="order-cancel" type="button" data-cancel-order="${escapeMarkup(order.code)}" data-order-phone="${escapeMarkup(order.customer.phone)}">Hủy đơn</button></div>` : ""}
           </article>
         `).join("");
       }
@@ -3165,6 +3206,11 @@
       });
       cartButton.addEventListener("click", openCart);
       document.getElementById("ordersLink").addEventListener("click", openOrders);
+      orderList.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-cancel-order]");
+        if (!button) return;
+        cancelCustomerOrder(button.dataset.cancelOrder, button.dataset.orderPhone, button);
+      });
       cartOverlay.addEventListener("click", () => {
         closeCart();
         closeOrders();

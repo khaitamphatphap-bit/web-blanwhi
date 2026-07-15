@@ -1,7 +1,7 @@
 import { PancakeIntegrationError } from "@/lib/pancake/exception-handler";
 
 type RequestOptions = {
-  method?: "GET" | "POST" | "PUT";
+  method?: "GET" | "POST" | "PUT" | "DELETE";
   query?: Record<string, string | number | undefined>;
   body?: unknown;
 };
@@ -39,7 +39,14 @@ export class ApiClient {
         signal: controller.signal
       });
       const text = await response.text();
-      const data = text ? JSON.parse(text) : {};
+      let data: Record<string, unknown> = {};
+      try {
+        data = text ? JSON.parse(text) as Record<string, unknown> : {};
+      } catch {
+        if (!response.ok) {
+          throw new PancakeIntegrationError(`Pancake trả lỗi HTTP ${response.status}.`, "PANCAKE_API_ERROR", response.status, response.status >= 500);
+        }
+      }
       if (!response.ok || data?.success === false) {
         const message = data?.message || data?.error || `Pancake trả lỗi HTTP ${response.status}.`;
         throw new PancakeIntegrationError(String(message), "PANCAKE_API_ERROR", response.status, response.status >= 500 || response.status === 429);

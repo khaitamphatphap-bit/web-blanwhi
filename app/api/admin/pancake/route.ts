@@ -8,6 +8,7 @@ import { ProductLinkService } from "@/lib/pancake/product-link-service";
 import { QueueHandler } from "@/lib/pancake/queue-handler";
 import { buildProductInventory } from "@/lib/product-inventory";
 import { readSiteContent } from "@/lib/site-content";
+import { hasBlobStore, hasDatabase } from "@/lib/data-store";
 
 async function dashboard() {
   const content = await readSiteContent();
@@ -33,6 +34,11 @@ async function dashboard() {
       shopId: Boolean(process.env.PANCAKE_SHOP_ID),
       webhookSecret: Boolean(process.env.PANCAKE_WEBHOOK_SECRET),
       baseUrl: process.env.PANCAKE_API_BASE_URL || "https://pos.pages.fm/api/v1"
+    },
+    storage: {
+      database: hasDatabase(),
+      blob: hasBlobStore(),
+      persistent: hasDatabase() || hasBlobStore()
     },
     webhookUrl: "/api/webhooks/pancake",
     products,

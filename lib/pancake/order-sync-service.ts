@@ -38,7 +38,7 @@ export class OrderSyncService {
   async create(order: ShopOrder, enqueueOnFailure = true) {
     if (order.providerOrderId || order.externalSync?.pancake?.startsWith("Đã tạo")) return order;
     try {
-      const existing = await this.pancake.findOrder(order.code);
+      const existing = enqueueOnFailure ? null : await this.pancake.findOrder(order.code);
       if (existing) {
         const existingId = externalId(existing);
         const updated = await updateOrder(order.code, {
@@ -63,8 +63,31 @@ export class OrderSyncService {
     } catch (error) {
       const message = ExceptionHandler.message(error);
       await PancakeLogger.write("error", "order.create", message, order.code);
-      if (enqueueOnFailure) await QueueHandler.enqueue("order.create", { orderCode: order.code });
       await updateOrder(order.code, { externalSync: { ...order.externalSync, pancake: `Chờ gửi lại: ${message}`, lastSyncedAt: new Date().toISOString() } });
+      if (enqueueOnFailure) {
+        try { await QueueHandler.enqueue("order.create", { orderCode: order.code }); } catch { /* Lỗi hàng đợi không che mất lỗi Pancake gốc. */ }
+      }
+      throw error;
+    }
+  }
+
+  async cancel(order: ShopOrder, enqueueOnFailure = true) {
+    if (!order.providerOrderId) return order;
+    try {
+      await this.pancake.cancelOrder(order.providerOrderId);
+      const updated = await updateOrder(order.code, {
+        pancakeStatus: "cancelled",
+        externalSync: { ...order.externalSync, pancake: "Đã hủy trên Pancake", lastSyncedAt: new Date().toISOString() }
+      });
+      await PancakeLogger.write("info", "order.cancel", "Đã hủy đơn trên Pancake.", order.code);
+      return updated || order;
+    } catch (error) {
+      const message = ExceptionHandler.message(error);
+      await PancakeLogger.write("error", "order.cancel", message, order.code);
+      await updateOrder(order.code, { externalSync: { ...order.externalSync, pancake: `Chờ gửi yêu cầu hủy: ${message}`, lastSyncedAt: new Date().toISOString() } });
+      if (enqueueOnFailure) {
+        try { await QueueHandler.enqueue("order.cancel", { orderCode: order.code }); } catch { /* Lỗi hàng đợi không che mất lỗi Pancake gốc. */ }
+      }
       throw error;
     }
   }

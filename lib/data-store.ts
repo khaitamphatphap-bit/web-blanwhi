@@ -18,7 +18,7 @@ export function hasDatabase() {
   return Boolean(process.env.DATABASE_URL);
 }
 
-function hasBlobStore() {
+export function hasBlobStore() {
   return Boolean(process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID);
 }
 
@@ -27,7 +27,9 @@ function shouldUseBlobStore(filename: string) {
 }
 
 function shouldUseEncryptedBlobStore(filename: string) {
-  return ["orders.json", "integrations.json", "pancake-logs.json", "pancake-queue.json"].includes(filename) && Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+  return ["orders.json", "integrations.json", "pancake-logs.json", "pancake-queue.json"].includes(filename)
+    && hasBlobStore()
+    && Boolean(process.env.DATA_ENCRYPTION_KEY || process.env.PANCAKE_WEBHOOK_SECRET || process.env.BLOB_READ_WRITE_TOKEN);
 }
 
 const siteContentBlobPath = "blanwhi/content/site-content.json";
@@ -37,8 +39,8 @@ function encryptedBlobPath(filename: string) {
 }
 
 async function encryptionKey() {
-  const token = process.env.BLOB_READ_WRITE_TOKEN;
-  if (!token) throw new Error("Thiếu khóa lưu dữ liệu admin an toàn.");
+  const token = process.env.DATA_ENCRYPTION_KEY || process.env.PANCAKE_WEBHOOK_SECRET || process.env.BLOB_READ_WRITE_TOKEN;
+  if (!token) throw new Error("Thiếu DATA_ENCRYPTION_KEY hoặc PANCAKE_WEBHOOK_SECRET để mã hóa dữ liệu đơn hàng.");
   const { createHash } = await import("crypto");
   return createHash("sha256").update(`blanwhi-admin-v1:${token}`).digest();
 }

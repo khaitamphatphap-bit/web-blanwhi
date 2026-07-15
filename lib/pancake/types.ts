@@ -20,7 +20,7 @@ export type PancakeLog = {
 
 export type PancakeQueueJob = {
   id: string;
-  type: "order.create" | "inventory.sync" | "orders.poll";
+  type: "order.create" | "order.cancel" | "inventory.sync" | "orders.poll";
   payload: Record<string, unknown>;
   attempts: number;
   availableAt: string;

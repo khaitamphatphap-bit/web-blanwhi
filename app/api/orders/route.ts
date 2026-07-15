@@ -21,6 +21,7 @@ export async function GET(request: Request) {
           trackingCode: order.trackingCode,
           shippingStatus: order.shippingStatus,
           shippingMessage: order.shippingMessage,
+          pancakeStatus: order.pancakeStatus,
           updatedAt: order.updatedAt
         }))
     }, {
