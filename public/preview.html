@@ -2448,15 +2448,16 @@
       }
 
       function customerOrderStatus(order) {
+        if (order.status === "Đơn hủy" || order.shippingStatus === "cancelled") return "Đơn hủy";
         if (order.pancakeStatus && customerPancakeLabels[order.pancakeStatus]) return customerPancakeLabels[order.pancakeStatus];
         if (order.shippingStatus && customerShippingLabels[order.shippingStatus]) return customerShippingLabels[order.shippingStatus];
         return order.status || "Đã đặt";
       }
 
       function canCustomerCancel(order) {
-        if (["Đơn hủy", "Đã thanh toán", "Thanh toán thất bại"].includes(order.status)) return false;
-        if (["ready_to_ship", "shipping", "delivered", "returning", "returned", "cancelled"].includes(order.shippingStatus || "")) return false;
-        return !["confirmed", "packing", "shipping", "completed", "cancelled", "returned"].includes(order.pancakeStatus || "");
+        if (["Đơn hủy", "Thanh toán thất bại"].includes(order.status)) return false;
+        if (["shipping", "delivered", "delivery_failed", "returning", "returned", "cancelled"].includes(order.shippingStatus || "")) return false;
+        return !["shipping", "completed", "cancelled", "returned"].includes(order.pancakeStatus || "");
       }
 
       async function recoverCustomerOrder(order) {
@@ -2492,6 +2493,7 @@
           const nextOrders = loadOrders().map((order) => order.code === code ? {
             ...order,
             status: "Đơn hủy",
+            trackingCode: "",
             shippingStatus: "cancelled",
             shippingMessage: "Khách yêu cầu hủy đơn",
             updatedAt: new Date().toLocaleString("vi-VN")
@@ -2535,7 +2537,7 @@
               ...order,
               status: serverOrder.status === "paid" ? "Đã thanh toán" : serverOrder.status === "failed" ? "Thanh toán thất bại" : serverOrder.status === "cancelled" ? "Đơn hủy" : order.status === "Đơn hủy" ? "Đơn mới đặt" : order.status,
               shippingCarrier: serverOrder.shippingCarrier || order.shippingCarrier,
-              trackingCode: serverOrder.trackingCode || order.trackingCode,
+              trackingCode: Object.prototype.hasOwnProperty.call(serverOrder, "trackingCode") ? serverOrder.trackingCode : order.trackingCode,
               shippingStatus: serverOrder.shippingStatus || order.shippingStatus,
               shippingMessage: serverOrder.shippingMessage || order.shippingMessage,
               pancakeStatus: serverOrder.pancakeStatus || order.pancakeStatus,

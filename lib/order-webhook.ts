@@ -25,7 +25,11 @@ export function externalOrderCode(payload: ExternalOrderPayload) {
     "data.code",
     "order.code",
     "order.orderCode",
-    "order.order_code"
+    "order.order_code",
+    "ORDER_REFERENCE",
+    "DATA.ORDER_REFERENCE",
+    "data.ORDER_REFERENCE",
+    "data.order_reference"
   ]);
 }
 
@@ -62,6 +66,9 @@ export async function applyExternalOrderUpdate(
     "data.shipping_status",
     "data.status",
     "data.order_status",
+    "data.ORDER_STATUS",
+    "DATA.ORDER_STATUS",
+    "ORDER_STATUS",
     "order.shippingStatus",
     "order.deliveryStatus",
     "order.status"
@@ -74,6 +81,9 @@ export async function applyExternalOrderUpdate(
     "data.trackingCode",
     "data.tracking_code",
     "data.order_code",
+    "data.ORDER_NUMBER",
+    "DATA.ORDER_NUMBER",
+    "ORDER_NUMBER",
     "data.label_id",
     "order.trackingCode",
     "order.tracking_code"
@@ -93,6 +103,9 @@ export async function applyExternalOrderUpdate(
     "description",
     "data.message",
     "data.status_text",
+    "data.STATUS_NAME",
+    "DATA.STATUS_NAME",
+    "STATUS_NAME",
     "order.statusText"
   ]);
 

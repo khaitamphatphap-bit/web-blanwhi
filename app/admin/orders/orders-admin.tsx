@@ -64,7 +64,7 @@ const shippingProviders: Array<{ value: ShippingProvider; label: string; endpoin
 
 const shippingLabels: Record<ShippingStatus, string> = {
   not_created: "Chưa giao cho ĐVVC",
-  ready_to_ship: "Đã giao cho ĐVVC",
+  ready_to_ship: "Đã tạo vận đơn, chờ bàn giao",
   shipping: "Đang giao hàng",
   delivered: "Đã giao cho khách",
   delivery_failed: "Giao hàng thất bại",
@@ -458,12 +458,12 @@ function getOrderStage(order: ShopOrder): OrderStage {
   const shippingStatus = order.shippingStatus || "not_created";
   const hasCarrier = Boolean(order.trackingCode || order.shippingCarrier || order.externalSync?.shipping);
 
+  if (order.status === "cancelled" || shippingStatus === "cancelled" || order.pancakeStatus === "cancelled") return "cancelled";
   if (shippingStatus === "returning" || shippingStatus === "returned") return "returning";
   if (shippingStatus === "delivery_failed") return "delivery_failed";
   if (shippingStatus === "delivered") return "delivered";
   if (shippingStatus === "shipping") return "shipping";
-  if (shippingStatus === "ready_to_ship" || (hasCarrier && shippingStatus !== "cancelled")) return "handed_to_carrier";
-  if (order.status === "cancelled" || shippingStatus === "cancelled") return "cancelled";
+  if (shippingStatus === "ready_to_ship" || hasCarrier) return "handed_to_carrier";
   if (order.status === "pending" && order.paymentMethod !== "cod") return "payment_pending";
   if (order.status === "paid") return "paid";
   return "new";

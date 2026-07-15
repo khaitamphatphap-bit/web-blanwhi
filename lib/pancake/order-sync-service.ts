@@ -54,7 +54,7 @@ function deepValue(payload: unknown, keys: string[], depth = 0): string {
 }
 
 function shippingUpdate(payload: unknown, includeReadyStatus = true) {
-  const trackingCode = deepValue(payload, ["order_number_vtp", "extend_code", "tracking_id", "tracking_code"]);
+  const trackingCode = deepValue(payload, ["order_number_vtp", "extend_code", "tracking_id", "tracking_code", "ORDER_NUMBER", "order_number"]);
   const carrier = deepValue(payload, ["partner_name"]);
   return {
     ...(trackingCode ? { trackingCode } : {}),
@@ -64,6 +64,11 @@ function shippingUpdate(payload: unknown, includeReadyStatus = true) {
   };
 }
 
+function hasViettelPostShipping(payload: unknown) {
+  return /vtp|viettel/i.test(deepValue(payload, ["partner_name", "shipping_partner", "carrier"]))
+    || Boolean(deepValue(payload, ["order_number_vtp", "extend_code"]));
+}
+
 export class OrderSyncService {
   constructor(private readonly pancake = new PancakeService()) {}
 
@@ -71,8 +76,18 @@ export class OrderSyncService {
     const existing = await this.pancake.findOrder(order.code, order.customer.phone);
     if (!existing) return order;
     const existingId = externalId(existing);
+    const remoteStatus = value(existing, ["status", "order_status", "state"]);
+    const mapped = mapPancakeStatus(remoteStatus);
+    if (mapped.release && order.inventoryReservationApplied && !order.inventoryReservationReleased) {
+      await new InventoryService().reserve(order.items, "restore");
+    }
     const updated = await updateOrder(order.code, {
       providerOrderId: existingId || order.providerOrderId,
+      ...(mapped.status && order.status !== "cancelled" ? { status: mapped.status } : {}),
+      ...(mapped.shippingStatus ? { shippingStatus: mapped.shippingStatus } : {}),
+      ...(mapped.pancakeStatus ? { pancakeStatus: mapped.pancakeStatus } : {}),
+      ...(hasViettelPostShipping(existing) ? shippingUpdate(existing, false) : {}),
+      inventoryReservationReleased: Boolean(order.inventoryReservationReleased || mapped.release),
       externalSync: { ...order.externalSync, pancake: `Đã tồn tại trên Pancake${existingId ? ` #${existingId}` : ""}`, lastSyncedAt: new Date().toISOString() }
     });
     await PancakeLogger.write("info", "order.idempotency", "Đã nhận lại ID của đơn có sẵn trên Pancake.", order.code);
@@ -80,6 +95,8 @@ export class OrderSyncService {
   }
 
   async create(order: ShopOrder, enqueueOnFailure = true) {
+    const latest = await findOrderByCode(order.code);
+    if (latest?.status === "cancelled") return latest;
     if (order.providerOrderId || order.externalSync?.pancake?.startsWith("Đã tạo")) return order;
     try {
       const existing = enqueueOnFailure ? null : await this.pancake.findOrder(order.code, order.customer.phone);
@@ -153,14 +170,15 @@ export class OrderSyncService {
     if (!order) throw new PancakeIntegrationError(`Không tìm thấy đơn ${code}.`, "ORDER_NOT_FOUND", 404);
     const pancakeStatus = value(payload, ["status", "order_status", "state"]);
     const mapped = mapPancakeStatus(pancakeStatus);
+    const preserveCancellation = order.status === "cancelled" && mapped.pancakeStatus !== "cancelled";
     if (mapped.release && order.inventoryReservationApplied && !order.inventoryReservationReleased) {
       await new InventoryService().reserve(order.items, "restore");
     }
     const updated = await updateOrder(code, {
-      ...(mapped.status ? { status: mapped.status } : {}),
-      ...(mapped.shippingStatus ? { shippingStatus: mapped.shippingStatus } : {}),
-      ...(mapped.pancakeStatus ? { pancakeStatus: mapped.pancakeStatus } : {}),
-      ...(/vtp|viettel/i.test(deepValue(payload, ["partner_name"])) || deepValue(payload, ["order_number_vtp", "extend_code"])
+      ...(mapped.status && order.status !== "cancelled" ? { status: mapped.status } : {}),
+      ...(mapped.shippingStatus && !preserveCancellation ? { shippingStatus: mapped.shippingStatus } : {}),
+      ...(mapped.pancakeStatus && !preserveCancellation ? { pancakeStatus: mapped.pancakeStatus } : {}),
+      ...(hasViettelPostShipping(payload) && !preserveCancellation
         ? shippingUpdate(payload, false)
         : {}),
       inventoryReservationReleased: Boolean(order.inventoryReservationReleased || mapped.release),

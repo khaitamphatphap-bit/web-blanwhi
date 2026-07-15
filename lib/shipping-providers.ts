@@ -40,7 +40,14 @@ export function shippingProviderName(provider: ShippingProvider) {
 
 export function normalizeShippingStatus(value: unknown): ShippingStatus {
   const text = String(value || "").toLowerCase().trim();
-  if (["ready", "ready_to_ship", "created", "picking", "picked", "handover", "handed_to_carrier", "confirmed", "delivered_to_carrier"].includes(text)) return "ready_to_ship";
+  const numericStatus = /^-?\d+$/.test(text) ? Number(text) : NaN;
+  if (numericStatus === 105 || numericStatus === 107) return "cancelled";
+  if (numericStatus === 501) return "delivered";
+  if ([502, 503, 504, 505, 506, 507, 508, 509, 510, 515].includes(numericStatus)) return "returning";
+  if (numericStatus >= 200) return "shipping";
+  if (numericStatus >= 0 && numericStatus < 200) return "ready_to_ship";
+  if (["ready", "ready_to_ship", "created", "picking", "confirmed"].includes(text)) return "ready_to_ship";
+  if (["picked", "picked_up", "accepted_by_carrier", "handover", "handed_to_carrier", "delivered_to_carrier"].includes(text)) return "shipping";
   if (["shipping", "delivering", "in_transit", "transporting", "on_delivery", "delivering_order", "dang_giao", "đang giao"].includes(text)) return "shipping";
   if (["delivered", "success", "completed", "finish", "done", "delivered_successfully", "giao_thanh_cong", "đã giao"].includes(text)) return "delivered";
   if (["delivery_failed", "failed_delivery", "delivery_fail", "failed", "fail", "not_delivered", "khong_giao_duoc", "không giao được"].includes(text)) return "delivery_failed";
@@ -76,6 +83,7 @@ function resultFromPayload(provider: ShippingProvider, config: ShippingConfig, o
     "data.order_status",
     "data.status_id",
     "data.ORDER_STATUS",
+    "DATA.ORDER_STATUS",
     "order.status",
     "order.status_text",
     "order.status_id",
@@ -87,7 +95,7 @@ function resultFromPayload(provider: ShippingProvider, config: ShippingConfig, o
   return {
     provider,
     carrier: pickString(payload, ["data.carrier", "carrier"]) || config.providerName || shippingProviderName(provider),
-    trackingCode: pickString(payload, ["data.order_code", "data.label_id", "data.trackingCode", "data.tracking_code", "order.label", "order.tracking_id", "trackingCode", "tracking_code"]) || order.trackingCode || "",
+    trackingCode: pickString(payload, ["data.ORDER_NUMBER", "DATA.ORDER_NUMBER", "ORDER_NUMBER", "data.order_number", "data.order_code", "data.label_id", "data.trackingCode", "data.tracking_code", "order.ORDER_NUMBER", "order.order_number", "order.label", "order.tracking_id", "trackingCode", "tracking_code"]) || order.trackingCode || "",
     status: normalizeShippingStatus(rawStatus),
     message: pickString(payload, ["data.status_text", "data.message", "data.reason", "order.status_text", "message", "statusText", "description"]) || rawStatus,
     payload
@@ -139,7 +147,7 @@ async function fetchViettelPostStatus(endpoint: string, config: ShippingConfig, 
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      ...(config.token ? { Authorization: `Bearer ${config.token}` } : {})
+      ...(config.token ? { Token: config.token, Authorization: `Bearer ${config.token}` } : {})
     },
     body: JSON.stringify({
       ORDER_NUMBER: order.trackingCode,
@@ -151,6 +159,25 @@ async function fetchViettelPostStatus(endpoint: string, config: ShippingConfig, 
   const payload = await readPayload(response);
   if (!response.ok) throw new Error(`ViettelPost lỗi ${response.status}: ${pickString(payload, ["message"]) || "Không cập nhật được vận đơn."}`);
   return resultFromPayload("viettelpost", config, order, payload);
+}
+
+export async function cancelShippingOrder(config: ShippingConfig, order: ShopOrder, reason = "Khách hàng hủy đơn") {
+  if (config.provider !== "viettelpost") throw new Error("Hiện chỉ hỗ trợ tự hủy vận đơn Viettel Post.");
+  if (!config.token) throw new Error("Thiếu API token Viettel Post để hủy vận đơn.");
+  if (!order.trackingCode) return { ok: true, message: "Đơn chưa có mã vận đơn Viettel Post." };
+  const response = await fetch("https://partner.viettelpost.vn/v2/order/UpdateOrder", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Token: config.token,
+      Authorization: `Bearer ${config.token}`
+    },
+    body: JSON.stringify({ TYPE: 4, ORDER_NUMBER: order.trackingCode, NOTE: reason.slice(0, 150) })
+  });
+  const payload = await readPayload(response) as Record<string, unknown>;
+  const failed = !response.ok || payload.error === true || (payload.status !== undefined && Number(payload.status) !== 200);
+  if (failed) throw new Error(`Viettel Post không hủy được vận đơn: ${pickString(payload, ["message", "data.message"]) || `HTTP ${response.status}`}`);
+  return { ok: true, message: pickString(payload, ["message"]) || "Đã hủy vận đơn Viettel Post." };
 }
 
 async function fetchCustomStatus(endpoint: string, config: ShippingConfig, order: ShopOrder) {

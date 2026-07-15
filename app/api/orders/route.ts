@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { readOrders } from "@/lib/orders";
+import { OrderSyncService } from "@/lib/pancake/order-sync-service";
 
 export async function GET(request: Request) {
   const orders = await readOrders();
@@ -7,12 +8,19 @@ export async function GET(request: Request) {
   const codes = (url.searchParams.get("codes") || "")
     .split(",")
     .map((code) => code.trim())
-    .filter(Boolean);
+    .filter(Boolean)
+    .slice(0, 20);
 
   if (codes.length) {
     const allowed = new Set(codes);
+    const requested = orders.filter((order) => allowed.has(order.code)
+      && !["cancelled", "failed"].includes(order.status)
+      && !["delivered", "returned", "cancelled"].includes(order.shippingStatus || ""));
+    const sync = new OrderSyncService();
+    await Promise.allSettled(requested.map((order) => sync.reconcileExisting(order)));
+    const refreshedOrders = await readOrders();
     return NextResponse.json({
-      orders: orders
+      orders: refreshedOrders
         .filter((order) => allowed.has(order.code))
         .map((order) => ({
           code: order.code,

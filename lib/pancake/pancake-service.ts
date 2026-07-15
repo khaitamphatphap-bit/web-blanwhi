@@ -230,7 +230,7 @@ export class PancakeService {
 
   async findOrder(orderCode: string, customerPhone = "") {
     const expected = orderCode.trim().toUpperCase();
-    const searches = [...new Set([customerPhone.trim(), orderCode.trim(), ""].filter((value, index) => value || index === 2))];
+    const searches = [...new Set([orderCode.trim(), customerPhone.trim(), ""].filter((value, index) => value || index === 2))];
     for (const search of searches) {
       const match = records(await this.orders(search)).find((item) => {
         const partnerCode = deepText(item, ["custom_id", "partner_order_id", "order_code", "code"]).toUpperCase();
