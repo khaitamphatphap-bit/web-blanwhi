@@ -11,7 +11,7 @@ import { mapPancakeStatus } from "@/lib/pancake/domain";
 function externalId(payload: Record<string, unknown>) {
   const record = (payload.data && typeof payload.data === "object" ? payload.data : payload) as Record<string, unknown>;
   const order = (record.order && typeof record.order === "object" ? record.order : record) as Record<string, unknown>;
-  return String(order.id || order.order_id || order.display_id || "");
+  return String(order.id || order._id || order.order_id || order.display_id || "");
 }
 
 function remoteRecords(payload: unknown): Record<string, unknown>[] {
@@ -36,7 +36,7 @@ export class OrderSyncService {
   constructor(private readonly pancake = new PancakeService()) {}
 
   async reconcileExisting(order: ShopOrder) {
-    const existing = await this.pancake.findOrder(order.code);
+    const existing = await this.pancake.findOrder(order.code, order.customer.phone);
     if (!existing) return order;
     const existingId = externalId(existing);
     const updated = await updateOrder(order.code, {
@@ -50,7 +50,7 @@ export class OrderSyncService {
   async create(order: ShopOrder, enqueueOnFailure = true) {
     if (order.providerOrderId || order.externalSync?.pancake?.startsWith("Đã tạo")) return order;
     try {
-      const existing = enqueueOnFailure ? null : await this.pancake.findOrder(order.code);
+      const existing = enqueueOnFailure ? null : await this.pancake.findOrder(order.code, order.customer.phone);
       if (existing) {
         return this.reconcileExisting(order);
       }

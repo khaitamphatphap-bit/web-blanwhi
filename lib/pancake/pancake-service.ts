@@ -24,6 +24,24 @@ function text(record: Record<string, unknown>, keys: string[]) {
   return "";
 }
 
+function deepText(record: Record<string, unknown>, keys: string[], depth = 0): string {
+  const direct = text(record, keys);
+  if (direct || depth >= 4) return direct;
+  for (const value of Object.values(record)) {
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        if (!item || typeof item !== "object") continue;
+        const found = deepText(item as Record<string, unknown>, keys, depth + 1);
+        if (found) return found;
+      }
+    } else if (value && typeof value === "object") {
+      const found = deepText(value as Record<string, unknown>, keys, depth + 1);
+      if (found) return found;
+    }
+  }
+  return "";
+}
+
 function nestedRecord(value: unknown) {
   return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
 }
@@ -112,12 +130,17 @@ export class PancakeService {
     });
   }
 
-  async findOrder(orderCode: string) {
+  async findOrder(orderCode: string, customerPhone = "") {
     const expected = orderCode.trim().toUpperCase();
-    return records(await this.orders(orderCode)).find((item) => {
-      const partnerCode = text(item, ["custom_id", "partner_order_id", "order_code", "code"]).toUpperCase();
-      const externalCode = text(item, ["external_order_id"]).replace(/^BLANWHI:/i, "").toUpperCase();
-      return partnerCode === expected || externalCode === expected;
-    }) || null;
+    const searches = [...new Set([customerPhone.trim(), orderCode.trim(), ""].filter((value, index) => value || index === 2))];
+    for (const search of searches) {
+      const match = records(await this.orders(search)).find((item) => {
+        const partnerCode = deepText(item, ["custom_id", "partner_order_id", "order_code", "code"]).toUpperCase();
+        const externalCode = deepText(item, ["external_order_id"]).replace(/^BLANWHI:/i, "").toUpperCase();
+        return partnerCode === expected || externalCode === expected;
+      });
+      if (match) return match;
+    }
+    return null;
   }
 }
