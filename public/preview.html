@@ -393,6 +393,7 @@
       .order-cancel { min-height: 40px; border: 1px solid #d43d32; background: #fff; color: #b42318; padding: 0 16px; font: inherit; font-size: 12px; font-weight: 700; text-transform: uppercase; cursor: pointer; }
       .order-cancel:hover { background: #fff3f2; }
       .order-cancel:disabled { cursor: wait; opacity: .55; }
+      .order-cancelled-note { margin: 0; border: 1px solid #86b994; background: #f1faf3; color: #176b35; padding: 10px 12px; font-size: 12px; font-weight: 700; }
       .status-track { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
       .status-step { border-top: 2px solid #ddd; padding-top: 7px; font-size: 11px; color: #888; }
       .status-step.active { border-color: #000; color: #000; font-weight: 600; }
@@ -2315,17 +2316,34 @@
         return !["confirmed", "packing", "shipping", "completed", "cancelled", "returned"].includes(order.pancakeStatus || "");
       }
 
+      async function recoverCustomerOrder(order) {
+        if (!/^BLW-\d{14}-[A-Z0-9]{5}$/.test(String(order.code || ""))) return false;
+        if (["Đơn hủy", "Thanh toán thất bại"].includes(order.status)) return false;
+        const response = await fetch("/api/orders/recover", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(order)
+        });
+        return response.ok;
+      }
+
+      const requestOrderCancellation = (code, phone) => fetch(`/api/orders/${encodeURIComponent(code)}/cancel`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone, reason: "Khách yêu cầu hủy đơn" })
+      });
+
       async function cancelCustomerOrder(code, phone, button) {
         if (!confirm("Bạn chắc chắn muốn hủy đơn này? Số lượng mở bán sẽ được hoàn lại.")) return;
         button.disabled = true;
         const originalLabel = button.textContent;
         button.textContent = "Đang hủy...";
         try {
-          const response = await fetch(`/api/orders/${encodeURIComponent(code)}/cancel`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ phone, reason: "Khách yêu cầu hủy đơn" })
-          });
+          let response = await requestOrderCancellation(code, phone);
+          if (response.status === 404) {
+            const localOrder = loadOrders().find((order) => order.code === code);
+            if (localOrder && await recoverCustomerOrder(localOrder)) response = await requestOrderCancellation(code, phone);
+          }
           const result = await response.json();
           if (!response.ok) throw new Error(result.error || "Không thể hủy đơn.");
           const nextOrders = loadOrders().map((order) => order.code === code ? {
@@ -2337,6 +2355,7 @@
           } : order);
           saveOrders(nextOrders);
           renderOrders();
+          alert(`Đã hủy đơn ${code} thành công.`);
         } catch (error) {
           alert(error.message || "Không thể hủy đơn. Vui lòng thử lại.");
           button.disabled = false;
@@ -2351,8 +2370,19 @@
         try {
           const response = await fetch(`/api/orders?codes=${encodeURIComponent(codes.join(","))}`, { cache: "no-store" });
           if (!response.ok) return orders;
-          const data = await response.json();
-          const serverOrders = new Map((data.orders || []).map((order) => [order.code, order]));
+          let data = await response.json();
+          let serverOrders = new Map((data.orders || []).map((order) => [order.code, order]));
+          const missingOrders = orders.filter((order) => order.code && !serverOrders.has(order.code) && !["Đơn hủy", "Thanh toán thất bại"].includes(order.status));
+          if (missingOrders.length) {
+            const recovered = await Promise.allSettled(missingOrders.map(recoverCustomerOrder));
+            if (recovered.some((result) => result.status === "fulfilled" && result.value)) {
+              const refreshed = await fetch(`/api/orders?codes=${encodeURIComponent(codes.join(","))}`, { cache: "no-store" });
+              if (refreshed.ok) {
+                data = await refreshed.json();
+                serverOrders = new Map((data.orders || []).map((order) => [order.code, order]));
+              }
+            }
+          }
           let changed = false;
           const nextOrders = orders.map((order) => {
             const serverOrder = serverOrders.get(order.code);
@@ -2400,6 +2430,7 @@
               ${["Đã đặt", "ĐVVC nhận đơn", "Đang giao", "Hoàn tất"].map((step, index) => `<div class="status-step ${index <= customerOrderStep(order) ? "active" : ""}">${step}</div>`).join("")}
             </div>
             <p class="muted">Cập nhật gần nhất: ${order.updatedAt}</p>
+            ${order.status === "Đơn hủy" || order.shippingStatus === "cancelled" ? `<p class="order-cancelled-note">Đơn hàng đã được hủy thành công.</p>` : ""}
             ${canCustomerCancel(order) ? `<div class="order-actions"><button class="order-cancel" type="button" data-cancel-order="${escapeMarkup(order.code)}" data-order-phone="${escapeMarkup(order.customer.phone)}">Hủy đơn</button></div>` : ""}
           </article>
         `).join("");

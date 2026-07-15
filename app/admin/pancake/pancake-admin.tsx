@@ -245,7 +245,7 @@ export function PancakeAdmin() {
                     <label className="mt-3 block text-xs font-semibold uppercase">Chọn đúng biến thể Pancake
                       <select value={selectedVariationId} onChange={(event) => setSelectedVariationId(event.target.value)} className="mt-2 h-12 w-full border border-black bg-white px-3 text-sm font-normal normal-case">
                         <option value="">— Chọn sản phẩm/biến thể Pancake —</option>
-                        {filteredVariations.map((variation) => <option key={variation.id} value={variation.id}>SKU {variation.sku || variation.id} · Tồn {variation.quantity}</option>)}
+                        {filteredVariations.map((variation) => <option key={variation.id} value={variation.id}>{variation.name || "Sản phẩm Pancake"} · SKU {variation.sku || variation.id} · Tồn {variation.quantity}</option>)}
                       </select>
                     </label>
                     <div className="mt-3 flex flex-wrap gap-2">

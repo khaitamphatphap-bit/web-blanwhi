@@ -29,15 +29,18 @@ test("payload tạo đơn gửi đủ khách hàng, SKU, số lượng, giá và
     total: 620000,
     paymentMethod: "cod"
   });
-  assert.equal(payload.order.partner_order_id, "BLW-123");
-  assert.equal(payload.order.external_order_id, "BLANWHI:BLW-123");
-  assert.equal(payload.order.items[0].sku, "AO-DEN-M");
-  assert.equal(payload.order.items[0].quantity, 2);
-  assert.equal(payload.order.total_price, 620000);
+  assert.equal(payload.custom_id, "BLW-123");
+  assert.equal(payload.items[0].variation_id, "variation-1");
+  assert.equal(payload.items[0].variation_info.display_id, "AO-DEN-M");
+  assert.equal(payload.items[0].variation_info.retail_price, 300000);
+  assert.equal(payload.items[0].quantity, 2);
+  assert.equal(payload.total_price, 620000);
 });
 
 test("đồng bộ trạng thái hoàn tất, hủy và hoàn hàng", () => {
   assert.deepEqual(mapPancakeStatus("completed"), { pancakeStatus: "completed", status: "paid", shippingStatus: "delivered" });
   assert.deepEqual(mapPancakeStatus("cancelled"), { pancakeStatus: "cancelled", status: "cancelled", shippingStatus: "cancelled", release: true });
   assert.deepEqual(mapPancakeStatus("returned"), { pancakeStatus: "returned", shippingStatus: "returned", release: true });
+  assert.deepEqual(mapPancakeStatus("6"), { pancakeStatus: "cancelled", status: "cancelled", shippingStatus: "cancelled", release: true });
+  assert.deepEqual(mapPancakeStatus("2"), { pancakeStatus: "shipping", shippingStatus: "shipping" });
 });

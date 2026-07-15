@@ -24,6 +24,22 @@ function text(record: Record<string, unknown>, keys: string[]) {
   return "";
 }
 
+function nestedRecord(value: unknown) {
+  return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
+}
+
+function variationName(item: Record<string, unknown>) {
+  const product = nestedRecord(item.product);
+  const productName = text(product, ["name", "display_name"]);
+  const fields = Array.isArray(item.fields) ? item.fields : [];
+  const fieldValues = fields
+    .map((field) => text(nestedRecord(field), ["value", "keyValue"]))
+    .filter(Boolean);
+  return [text(item, ["name", "variation_name"]), productName, ...fieldValues]
+    .filter((value, index, values) => value && values.indexOf(value) === index)
+    .join(" · ");
+}
+
 let variationCache: { expiresAt: number; value: PancakeVariation[] } | null = null;
 let variationRequest: Promise<PancakeVariation[]> | null = null;
 
@@ -57,7 +73,7 @@ export class PancakeService {
         id: text(item, ["id", "variation_id"]),
         productId: text(item, ["product_id", "productId"]),
         sku: text(item, ["custom_id", "sku", "product_code", "display_id"]).toUpperCase(),
-        name: text(item, ["name", "product_name", "display_name"]),
+        name: variationName(item),
         quantity: Validator.quantity(item.remain_quantity ?? item.quantity ?? item.inventory_quantity ?? item.total_quantity),
         raw: item
       })).filter((item) => item.id || item.sku);
@@ -78,20 +94,15 @@ export class PancakeService {
       }
     });
     const path = `/shops/${encodeURIComponent(this.shopId())}/orders`;
-    const payload = buildPancakeOrderPayload(order);
-    try {
-      return await this.client.request<Record<string, unknown>>(path, { method: "POST", body: payload });
-    } catch (error) {
-      if (!(error instanceof PancakeIntegrationError) || ![400, 422].includes(error.status)) throw error;
-      return this.client.request<Record<string, unknown>>(path, { method: "POST", body: payload.order });
-    }
+    const payload = buildPancakeOrderPayload(order, this.shopId());
+    return this.client.request<Record<string, unknown>>(path, { method: "POST", body: payload });
   }
 
   async cancelOrder(providerOrderId: string) {
     const id = Validator.required(providerOrderId, "Pancake Order ID");
     return this.client.request<Record<string, unknown>>(`/shops/${encodeURIComponent(this.shopId())}/orders/${encodeURIComponent(id)}`, {
       method: "PUT",
-      body: { order: { status: "cancelled" } }
+      body: { status: 6 }
     });
   }
 
@@ -104,7 +115,7 @@ export class PancakeService {
   async findOrder(orderCode: string) {
     const expected = orderCode.trim().toUpperCase();
     return records(await this.orders()).find((item) => {
-      const partnerCode = text(item, ["partner_order_id", "order_code", "code"]).toUpperCase();
+      const partnerCode = text(item, ["custom_id", "partner_order_id", "order_code", "code"]).toUpperCase();
       const externalCode = text(item, ["external_order_id"]).replace(/^BLANWHI:/i, "").toUpperCase();
       return partnerCode === expected || externalCode === expected;
     }) || null;
