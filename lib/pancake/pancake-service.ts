@@ -24,6 +24,9 @@ function text(record: Record<string, unknown>, keys: string[]) {
   return "";
 }
 
+let variationCache: { expiresAt: number; value: PancakeVariation[] } | null = null;
+let variationRequest: Promise<PancakeVariation[]> | null = null;
+
 export class PancakeService {
   constructor(private readonly client = new ApiClient()) {}
 
@@ -44,17 +47,28 @@ export class PancakeService {
   }
 
   async variations(): Promise<PancakeVariation[]> {
-    const response = await this.client.request<unknown>(`/shops/${encodeURIComponent(this.shopId())}/products/variations`, {
-      query: { page_number: 1, page_size: 1000 }
-    });
-    return records(response).map((item) => ({
-      id: text(item, ["id", "variation_id"]),
-      productId: text(item, ["product_id", "productId"]),
-      sku: text(item, ["custom_id", "sku", "product_code", "display_id"]).toUpperCase(),
-      name: text(item, ["name", "product_name", "display_name"]),
-      quantity: Validator.quantity(item.remain_quantity ?? item.quantity ?? item.inventory_quantity ?? item.total_quantity),
-      raw: item
-    })).filter((item) => item.id || item.sku);
+    if (variationCache && variationCache.expiresAt > Date.now()) return variationCache.value;
+    if (variationRequest) return variationRequest;
+    variationRequest = (async () => {
+      const response = await this.client.request<unknown>(`/shops/${encodeURIComponent(this.shopId())}/products/variations`, {
+        query: { page_number: 1, page_size: 1000 }
+      });
+      const value = records(response).map((item) => ({
+        id: text(item, ["id", "variation_id"]),
+        productId: text(item, ["product_id", "productId"]),
+        sku: text(item, ["custom_id", "sku", "product_code", "display_id"]).toUpperCase(),
+        name: text(item, ["name", "product_name", "display_name"]),
+        quantity: Validator.quantity(item.remain_quantity ?? item.quantity ?? item.inventory_quantity ?? item.total_quantity),
+        raw: item
+      })).filter((item) => item.id || item.sku);
+      variationCache = { expiresAt: Date.now() + 5000, value };
+      return value;
+    })();
+    try {
+      return await variationRequest;
+    } finally {
+      variationRequest = null;
+    }
   }
 
   async createOrder(order: ShopOrder) {

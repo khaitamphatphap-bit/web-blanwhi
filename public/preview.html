@@ -154,7 +154,7 @@
       .filters { border-block: 1px solid var(--line); padding: 16px 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
       select { height: 44px; border: 1px solid var(--line); background: #fff; padding: 0 12px; color: #111; }
       .grid { padding: 30px 0 64px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 44px 20px; }
-      .card { min-width: 0; height: 100%; display: flex; flex-direction: column; }
+      .card { min-width: 0; height: 100%; display: flex; flex-direction: column; content-visibility: auto; contain-intrinsic-size: 320px 680px; }
       .pagination { margin: -28px 0 64px; display: none; align-items: center; justify-content: center; gap: 8px; }
       .pagination.visible { display: flex; }
       .pagination button { min-width: 40px; height: 40px; padding: 0 13px; border: 1px solid var(--line); background: #fff; color: #111; font-size: 11px; font-weight: 700; text-transform: uppercase; cursor: pointer; }
@@ -246,6 +246,9 @@
       .cart-row .product-visual { width: 72px; aspect-ratio: 4 / 5; }
       .cart-row h3 { margin: 0; font-size: 13px; }
       .cart-row p { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
+      .cart-row .cart-variant { color: #555; line-height: 1.45; }
+      .checkout-item-copy { display: grid; gap: 3px; }
+      .checkout-item-copy small { color: #777; font-size: 11px; line-height: 1.4; }
       .cart-message-label { display: block; margin-top: 10px; color: #777; font-size: 10px; font-weight: 700; text-transform: uppercase; }
       .cart-message { width: 100%; min-height: 58px; margin-top: 5px; border: 1px solid var(--line); padding: 8px; resize: vertical; color: #333; background: #fafafa; font: inherit; font-size: 12px; line-height: 1.45; }
       .cart-item-actions { display: grid; justify-items: end; gap: 8px; }
@@ -1175,8 +1178,16 @@
       const productVisualMedia = (product, color = product.color, classificationIndex = product.classificationIndex || 0) => {
         const image = productImageUrl(product, color, classificationIndex);
         return image
-          ? `<img class="product-photo" src="${escapeMarkup(image)}" alt="${escapeMarkup(product.name)} ${escapeMarkup(colorLabel(color, product, classificationIndex))}" />`
+          ? `<img class="product-photo" src="${escapeMarkup(image)}" alt="${escapeMarkup(product.name)} ${escapeMarkup(colorLabel(color, product, classificationIndex))}" loading="lazy" decoding="async" />`
           : mockMarkup(product.kind, color);
+      };
+      const cartItemVisualMedia = (item) => {
+        const classificationIndex = Number.isInteger(item.classificationIndex) ? item.classificationIndex : 0;
+        const variantImage = activeVariant(item, classificationIndex)?.colorImages?.[item.color] || item.colorImages?.[item.color] || "";
+        const image = variantImage || productImageUrl(item, item.color, classificationIndex);
+        return image
+          ? `<img class="product-photo" src="${escapeMarkup(image)}" alt="${escapeMarkup(item.name)} ${escapeMarkup(colorLabel(item.color, item, classificationIndex))}" loading="lazy" decoding="async" />`
+          : mockMarkup(item.kind, item.color);
       };
       const productVisualInnerMarkup = (product, soldOut = false) => `
         ${productImageTags(product) ? `<span class="image-tags">${productImageTags(product)}</span>` : ""}
@@ -1490,7 +1501,7 @@
             product.inventoryConfigured = Boolean(result.configured);
             product.inventory = Array.isArray(result.items) ? result.items.filter((item) => item.productId === product.id) : product.inventory;
           });
-          productData.forEach(renderProductCard);
+          renderProducts(currentProductList, false);
         } catch (error) {
           console.warn("Không cập nhật được danh sách tồn kho Pancake", error);
         }
@@ -2190,10 +2201,11 @@
         } else {
           cartItems.innerHTML = cart.map((item) => `
             <div class="cart-row">
-              <div class="product-visual">${mockMarkup(item.kind, item.color)}</div>
+              <div class="product-visual">${cartItemVisualMedia(item)}</div>
               <div>
-                <h3>${item.name}</h3>
-                <p>${item.price}${item.kind.startsWith("gift-") ? "" : ` · ${item.size}`}${item.classificationName ? ` · ${escapeMarkup(item.classificationName)}` : ""}${item.designName ? ` · ${item.designName}` : ""}</p>
+                <h3>${escapeMarkup(item.name)}</h3>
+                ${item.kind.startsWith("gift-") ? "" : `<p class="cart-variant">${item.classificationName ? `${escapeMarkup(item.classificationName)} · ` : ""}${escapeMarkup(colorLabel(item.color, item, item.classificationIndex || 0))} · Size ${escapeMarkup(item.size)}</p>`}
+                <p>${escapeMarkup(item.price)}${item.designName ? ` · ${escapeMarkup(item.designName)}` : ""}</p>
                 ${item.customText ? `<p>Chữ thiết kế: ${escapeMarkup(item.customText)}</p>` : ""}
                 ${item.kind === "gift-card" ? `
                   <label class="cart-message-label" for="cart-message-${item.cartId}">Lời nhắn bạn gửi</label>
@@ -2239,7 +2251,7 @@
         ` : "";
         checkoutSummary.innerHTML = `
           <h3 style="margin:0 0 8px">Đơn hàng</h3>
-          ${cart.length ? cart.map((item) => `<div class="line"><span>${item.qty}× ${item.name}</span><strong>${formatMoney(item.amount * item.qty)}</strong></div>`).join("") : `<p class="muted">Chưa có sản phẩm.</p>`}
+          ${cart.length ? cart.map((item) => `<div class="line"><span class="checkout-item-copy"><b>${item.qty}× ${escapeMarkup(item.name)}</b><small>${item.classificationName ? `${escapeMarkup(item.classificationName)} · ` : ""}${escapeMarkup(colorLabel(item.color, item, item.classificationIndex || 0))}${item.kind.startsWith("gift-") ? "" : ` · Size ${escapeMarkup(item.size)}`}</small></span><strong>${formatMoney(item.amount * item.qty)}</strong></div>`).join("") : `<p class="muted">Chưa có sản phẩm.</p>`}
           <div class="line"><span>Tạm tính</span><strong>${formatMoney(next.sub)}</strong></div>
           <div class="line"><span>${next.voucher.title}</span><strong>-${formatMoney(next.discount)}</strong></div>
           <div class="line"><span>Vận chuyển · ${selectedShippingMethod === "express" ? "Hỏa tốc" : "Giao nhanh"}</span><strong>${next.shippingPending ? "Theo app" : formatMoney(next.shipping)}</strong></div>
@@ -2380,7 +2392,7 @@
           existing.qty += qty;
           if (options.message !== undefined) existing.message = options.message;
         }
-        else cart.push({ ...product, cartId, color, size, qty, classificationId, classificationName, inventoryKey: options.inventoryKey || row?.key || "", sku: options.sku || row?.sku || "", pancakeSku: options.pancakeSku || row?.pancakeSku || "", pancakeProductId: options.pancakeProductId || row?.pancakeProductId || "", pancakeVariationId: options.pancakeVariationId || row?.pancakeVariationId || "", message: options.message || product.message || "" });
+        else cart.push({ ...product, cartId, color, size, qty, classificationId, classificationName, classificationIndex: classificationIndex >= 0 ? classificationIndex : (product.classificationIndex || 0), inventoryKey: options.inventoryKey || row?.key || "", sku: options.sku || row?.sku || "", pancakeSku: options.pancakeSku || row?.pancakeSku || "", pancakeProductId: options.pancakeProductId || row?.pancakeProductId || "", pancakeVariationId: options.pancakeVariationId || row?.pancakeVariationId || "", message: options.message || product.message || "" });
         renderCart();
         return true;
       }
@@ -3199,11 +3211,12 @@
       document.getElementById("openCustomerBankApp").addEventListener("click", openSelectedBankApp);
       document.getElementById("checkoutForm").addEventListener("submit", async (event) => {
         event.preventDefault();
-        const fields = [...event.currentTarget.querySelectorAll("input, textarea")];
+        const checkoutForm = event.currentTarget;
+        const fields = [...checkoutForm.querySelectorAll("input, textarea")];
         const next = totals();
         const selectedPay = document.querySelector("input[name='pay']:checked")?.value || "cod";
         const paymentMethod = paymentMethodMap[selectedPay] || "cod";
-        const submitButton = event.currentTarget.querySelector("button[type='submit']");
+        const submitButton = checkoutForm.querySelector("button[type='submit']");
         submitButton.disabled = true;
         submitButton.textContent = "Đang tạo giao dịch...";
         const order = {
@@ -3278,7 +3291,7 @@
           voucherCode.value = "";
           renderCart();
           checkoutModal.classList.remove("open");
-          event.currentTarget.reset();
+          checkoutForm.reset();
           if (result.redirectUrl) {
             window.location.href = result.redirectUrl;
           } else {
