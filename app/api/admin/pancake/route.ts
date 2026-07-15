@@ -7,6 +7,7 @@ import { PancakeService } from "@/lib/pancake/pancake-service";
 import { ProductLinkService } from "@/lib/pancake/product-link-service";
 import { QueueHandler } from "@/lib/pancake/queue-handler";
 import { buildProductInventory } from "@/lib/product-inventory";
+import { findOrderByCode, updateOrder } from "@/lib/orders";
 import { readSiteContent, seedPancakeProductLinks } from "@/lib/site-content";
 import { hasBlobStore, hasDatabase } from "@/lib/data-store";
 
@@ -60,6 +61,7 @@ export async function POST(request: Request) {
       productId?: string;
       rowKey?: string;
       variationId?: string;
+      providerOrderId?: string;
       variation?: { id?: string; productId?: string; sku?: string; quantity?: number };
     };
     if (body.action === "variations") {
@@ -67,6 +69,17 @@ export async function POST(request: Request) {
     }
     if (body.action === "link-product") {
       return NextResponse.json({ ok: true, result: await new ProductLinkService().update(body) });
+    }
+    if (body.action === "cancel-linked-order" && body.orderCode && body.providerOrderId) {
+      const order = await findOrderByCode(body.orderCode);
+      if (!order) return NextResponse.json({ error: "Không tìm thấy đơn hàng website." }, { status: 404 });
+      if (order.status !== "cancelled") {
+        return NextResponse.json({ error: "Chỉ được đối chiếu hủy đơn khách đã hủy trên website." }, { status: 409 });
+      }
+      const linked = await updateOrder(order.code, { providerOrderId: String(body.providerOrderId).trim() });
+      if (!linked) return NextResponse.json({ error: "Không thể lưu ID đơn Pancake." }, { status: 500 });
+      const result = await new OrderSyncService().cancel(linked, false);
+      return NextResponse.json({ ok: true, result });
     }
     let result: unknown;
     if (body.action === "test") result = await new PancakeService().testConnection();

@@ -13,6 +13,10 @@ function records(payload: unknown): Record<string, unknown>[] {
     const nested = records(record[key]);
     if (nested.length) return nested;
   }
+  for (const value of Object.values(record)) {
+    const nested = records(value);
+    if (nested.length) return nested;
+  }
   return [];
 }
 
@@ -40,6 +44,12 @@ function deepText(record: Record<string, unknown>, keys: string[], depth = 0): s
     }
   }
   return "";
+}
+
+function deepContainsValue(value: unknown, expected: string, depth = 0): boolean {
+  if (depth >= 5 || value === null || value === undefined) return false;
+  if (typeof value !== "object") return String(value).trim().toUpperCase() === expected;
+  return Object.values(value as Record<string, unknown>).some((nested) => deepContainsValue(nested, expected, depth + 1));
 }
 
 function nestedRecord(value: unknown) {
@@ -137,7 +147,7 @@ export class PancakeService {
       const match = records(await this.orders(search)).find((item) => {
         const partnerCode = deepText(item, ["custom_id", "partner_order_id", "order_code", "code"]).toUpperCase();
         const externalCode = deepText(item, ["external_order_id"]).replace(/^BLANWHI:/i, "").toUpperCase();
-        return partnerCode === expected || externalCode === expected;
+        return partnerCode === expected || externalCode === expected || deepContainsValue(item, expected);
       });
       if (match) return match;
     }

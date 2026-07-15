@@ -2463,7 +2463,7 @@
             changed = true;
             const merged = {
               ...order,
-              status: serverOrder.status === "paid" ? "Đã thanh toán" : serverOrder.status === "failed" ? "Thanh toán thất bại" : serverOrder.status === "cancelled" ? "Đơn hủy" : order.status,
+              status: serverOrder.status === "paid" ? "Đã thanh toán" : serverOrder.status === "failed" ? "Thanh toán thất bại" : serverOrder.status === "cancelled" ? "Đơn hủy" : order.status === "Đơn hủy" ? "Đơn mới đặt" : order.status,
               shippingCarrier: serverOrder.shippingCarrier || order.shippingCarrier,
               trackingCode: serverOrder.trackingCode || order.trackingCode,
               shippingStatus: serverOrder.shippingStatus || order.shippingStatus,
