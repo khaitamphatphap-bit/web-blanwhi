@@ -1977,11 +1977,13 @@
         cartDrawer.classList.remove("open");
       }
 
-      async function openOrders() {
+      function openOrders() {
         cartOverlay.classList.add("open");
         ordersDrawer.classList.add("open");
-        await syncCustomerOrderStatuses();
         renderOrders();
+        void syncCustomerOrderStatuses().then(() => {
+          if (ordersDrawer.classList.contains("open")) renderOrders();
+        });
       }
 
       function closeOrders() {
