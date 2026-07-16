@@ -64,6 +64,9 @@ const shippingProviders: Array<{ value: ShippingProvider; label: string; endpoin
 
 const shippingLabels: Record<ShippingStatus, string> = {
   not_created: "Chưa giao cho ĐVVC",
+  awaiting_creation: "Chờ tạo vận đơn",
+  finding_driver: "Đang tìm tài xế",
+  driver_assigned: "Đã có tài xế",
   ready_to_ship: "Đã tạo vận đơn, chờ bàn giao",
   shipping: "Đang giao hàng",
   delivered: "Đã giao cho khách",
@@ -82,10 +85,12 @@ const stageOrder = orderStages.reduce<Record<OrderStage, number>>((map, stage, i
 
 export function OrdersAdmin({
   initialOrders,
-  initialIntegrations
+  initialIntegrations,
+  deliveryConfig
 }: {
   initialOrders: ShopOrder[];
   initialIntegrations: IntegrationConfig;
+  deliveryConfig: { provider: "ahamove" | "lalamove"; configured: boolean; senderReady: boolean };
 }) {
   const [orders, setOrders] = useState(initialOrders);
   const [integrations, setIntegrations] = useState(initialIntegrations);
@@ -163,7 +168,28 @@ export function OrdersAdmin({
     }
   }
 
+  async function manageExpress(order: ShopOrder, action: "create" | "track" | "cancel") {
+    setBusyCode(`${order.code}-express-${action}`);
+    setMessage("");
+    try {
+      const response = await fetch(`/api/admin/orders/${order.code}/express`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Không xử lý được vận đơn hỏa tốc.");
+      await refreshOrders();
+      setMessage(action === "create" ? `Đã tạo vận đơn hỏa tốc ${order.code}.` : action === "cancel" ? `Đã hủy vận đơn hỏa tốc ${order.code}.` : `Đã cập nhật vận đơn hỏa tốc ${order.code}.`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Không xử lý được vận đơn hỏa tốc.");
+    } finally {
+      setBusyCode("");
+    }
+  }
+
   async function updateShipping(order: ShopOrder) {
+    if (order.deliveryType === "express") return manageExpress(order, order.deliveryOrderId ? "track" : "create");
     setBusyCode(`${order.code}-shipping`);
     setMessage("");
     try {
@@ -308,6 +334,15 @@ export function OrdersAdmin({
           <input value={integrations.shipping.shopId} onChange={(event) => setIntegrations({ ...integrations, shipping: { ...integrations.shipping, shopId: event.target.value } })} placeholder="Shop ID nếu hãng yêu cầu" className="mt-2 h-10 w-full border px-3 text-sm" />
           <input value={integrations.shipping.clientId} onChange={(event) => setIntegrations({ ...integrations, shipping: { ...integrations.shipping, clientId: event.target.value } })} placeholder="Client ID / mã khách hàng nếu có" className="mt-2 h-10 w-full border px-3 text-sm" />
         </fieldset>
+        <fieldset className="border border-neutral-200 p-4">
+          <legend className="px-2 text-sm font-semibold uppercase">Giao hỏa tốc</legend>
+          <div className="mt-2 space-y-2 text-sm">
+            <p><b>Đơn vị:</b> {deliveryConfig.provider === "ahamove" ? "Ahamove" : "Lalamove"}</p>
+            <p className={deliveryConfig.configured ? "text-emerald-700" : "text-amber-700"}>{deliveryConfig.configured ? "API Key/Secret đã được cấu hình." : "Chưa có DELIVERY_API_KEY/DELIVERY_SECRET."}</p>
+            <p className={deliveryConfig.senderReady ? "text-emerald-700" : "text-amber-700"}>{deliveryConfig.senderReady ? "Địa chỉ và tọa độ kho đã sẵn sàng." : "Thiếu thông tin điểm lấy hàng trong Environment Variables."}</p>
+            <p className="text-xs leading-5 text-neutral-500">Khóa API chỉ lưu trong Vercel Environment Variables, không hiển thị hoặc lưu trong trang admin.</p>
+          </div>
+        </fieldset>
         <PaymentMerchantBox
           title="VNPAY merchant"
           enabled={integrations.payment.vnpay.enabled}
@@ -380,7 +415,7 @@ export function OrdersAdmin({
                 </div>
                 <div className="flex flex-wrap gap-2 lg:justify-end">
                   <button onClick={() => setExpandedOrderCode(isOpen ? "" : order.code)} className="h-9 border border-black px-3 text-xs uppercase">{isOpen ? "Đóng" : "Chi tiết"}</button>
-                  <button onClick={() => updateShipping(order)} disabled={busyCode === `${order.code}-shipping`} className="h-9 border border-neutral-300 px-3 text-xs uppercase disabled:opacity-50">Cập nhật VC</button>
+                  <button onClick={() => updateShipping(order)} disabled={busyCode.startsWith(order.code)} className="h-9 border border-neutral-300 px-3 text-xs uppercase disabled:opacity-50">Cập nhật VC</button>
                 </div>
               </div>
               {isOpen && (
@@ -420,6 +455,25 @@ export function OrdersAdmin({
                         {shippingLabels[order.shippingStatus || "not_created"]}
                       </span>
                       {order.shippingMessage && <p className="text-neutral-600">{order.shippingMessage}</p>}
+                      {order.deliveryType === "express" && (
+                        <div className="mt-3 space-y-2 border border-blue-200 bg-blue-50 p-3">
+                          <p className="font-semibold text-blue-900">🚀 Giao hỏa tốc</p>
+                          {!order.deliveryOrderId ? (
+                            <button onClick={() => manageExpress(order, "create")} disabled={busyCode === `${order.code}-express-create`} className="h-10 w-full bg-black px-3 text-xs uppercase text-white disabled:opacity-50">🚀 Tạo vận đơn hỏa tốc</button>
+                          ) : (
+                            <div className="grid gap-2 sm:grid-cols-2">
+                              <button onClick={() => manageExpress(order, "track")} disabled={busyCode === `${order.code}-express-track`} className="h-9 border border-black bg-white px-3 text-xs uppercase disabled:opacity-50">Cập nhật hỏa tốc</button>
+                              {!["shipping", "delivered", "cancelled"].includes(order.shippingStatus || "") && (
+                                <button onClick={() => manageExpress(order, "cancel")} disabled={busyCode === `${order.code}-express-cancel`} className="h-9 border border-red-500 bg-white px-3 text-xs uppercase text-red-600 disabled:opacity-50">Hủy vận đơn</button>
+                              )}
+                            </div>
+                          )}
+                          {order.deliveryOrderId && <p><b>Mã đơn giao:</b> {order.deliveryOrderId}</p>}
+                          {order.deliveryDriver && <p><b>Tài xế:</b> {order.deliveryDriver.name || order.deliveryDriver.id || "Đang cập nhật"}{order.deliveryDriver.phone ? ` · ${order.deliveryDriver.phone}` : ""}{order.deliveryDriver.plateNumber ? ` · ${order.deliveryDriver.plateNumber}` : ""}</p>}
+                          {order.deliveryFeeActual !== undefined && <p><b>Phí thực tế:</b> {money(order.deliveryFeeActual)}</p>}
+                          {order.deliveryTrackingUrl && <a href={order.deliveryTrackingUrl} target="_blank" rel="noreferrer" className="inline-block border-b border-blue-800 text-blue-800">Mở link theo dõi →</a>}
+                        </div>
+                      )}
                       <div className="grid gap-2 pt-2 sm:grid-cols-2">
                         <button onClick={() => syncOrder(order, "pancake")} disabled={busyCode === `${order.code}-pancake`} className="h-9 border border-neutral-300 bg-white px-3 text-xs uppercase disabled:opacity-50">Gửi Pancake</button>
                         <button onClick={() => syncOrder(order, "misa")} disabled={busyCode === `${order.code}-misa`} className="h-9 border border-neutral-300 bg-white px-3 text-xs uppercase disabled:opacity-50">Gửi MISA</button>
@@ -463,7 +517,7 @@ function getOrderStage(order: ShopOrder): OrderStage {
   if (shippingStatus === "delivery_failed") return "delivery_failed";
   if (shippingStatus === "delivered") return "delivered";
   if (shippingStatus === "shipping") return "shipping";
-  if (shippingStatus === "ready_to_ship" || hasCarrier) return "handed_to_carrier";
+  if (["finding_driver", "driver_assigned", "ready_to_ship"].includes(shippingStatus) || hasCarrier) return "handed_to_carrier";
   if (order.status === "pending" && order.paymentMethod !== "cod") return "payment_pending";
   if (order.status === "paid") return "paid";
   return "new";
@@ -572,7 +626,7 @@ function paymentStatusClass(status: OrderStatus) {
 
 function shippingStatusClass(status: ShippingStatus) {
   if (status === "delivered") return "border-emerald-600 bg-emerald-50 text-emerald-700";
-  if (status === "shipping" || status === "ready_to_ship") return "border-blue-500 bg-blue-50 text-blue-700";
+  if (["finding_driver", "driver_assigned", "shipping", "ready_to_ship"].includes(status)) return "border-blue-500 bg-blue-50 text-blue-700";
   if (status === "returning" || status === "returned") return "border-orange-500 bg-orange-50 text-orange-700";
   if (status === "delivery_failed" || status === "cancelled") return "border-red-500 bg-red-50 text-red-700";
   return "border-neutral-400 bg-neutral-100 text-neutral-700";

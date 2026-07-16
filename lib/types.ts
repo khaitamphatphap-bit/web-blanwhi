@@ -51,6 +51,9 @@ export type PaymentMethod = "cod" | "bank_transfer" | "vnpay" | "onepay" | "alep
 export type OrderStatus = "pending" | "paid" | "failed" | "cancelled";
 export type ShippingStatus =
   | "not_created"
+  | "awaiting_creation"
+  | "finding_driver"
+  | "driver_assigned"
   | "ready_to_ship"
   | "shipping"
   | "delivered"
@@ -73,6 +76,8 @@ export type OrderCustomer = {
   districtId?: string;
   wardId?: string;
   note?: string;
+  latitude?: string;
+  longitude?: string;
 };
 
 export type OrderItem = {
@@ -106,6 +111,18 @@ export type ShopOrder = {
   trackingCode?: string;
   shippingStatus?: ShippingStatus;
   shippingMessage?: string;
+  deliveryType?: "standard" | "express";
+  deliveryProvider?: "ahamove" | "lalamove";
+  deliveryOrderId?: string;
+  deliveryQuotationId?: string;
+  deliveryDriver?: { id?: string; name?: string; phone?: string; plateNumber?: string };
+  deliveryTrackingUrl?: string;
+  deliveryFeeEstimated?: number;
+  deliveryFeeActual?: number;
+  deliveryWeightGrams?: number;
+  deliveryLengthCm?: number;
+  deliveryWidthCm?: number;
+  deliveryHeightCm?: number;
   total: number;
   transactionId?: string;
   providerOrderId?: string;

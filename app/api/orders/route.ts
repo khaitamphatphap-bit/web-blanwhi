@@ -29,6 +29,12 @@ export async function GET(request: Request) {
           trackingCode: order.trackingCode,
           shippingStatus: order.shippingStatus,
           shippingMessage: order.shippingMessage,
+          deliveryType: order.deliveryType,
+          deliveryProvider: order.deliveryProvider,
+          deliveryOrderId: order.deliveryOrderId,
+          deliveryDriver: order.deliveryDriver,
+          deliveryTrackingUrl: order.deliveryTrackingUrl,
+          deliveryFeeActual: order.deliveryFeeActual,
           pancakeStatus: order.pancakeStatus,
           updatedAt: order.updatedAt
         }))

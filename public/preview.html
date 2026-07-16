@@ -878,8 +878,8 @@
           </button>
           <div class="shipping-options" id="shippingOptions">
             <button class="shipping-option" type="button" data-shipping-method="express">
-              <span class="shipping-logo">BOOK</span>
-              <span><strong>Hỏa tốc</strong><small>Địa chỉ dưới 25 km từ kho · Phí theo ứng dụng book giao hàng.<br />Có ngay trong ngày, tối đa 4h.</small></span>
+              <span class="shipping-logo">HT</span>
+              <span><strong>Giao hỏa tốc</strong><small>Ahamove / Lalamove · Hiển thị phí tạm tính trước khi đặt.<br />Phí thực tế được cập nhật khi tạo vận đơn.</small></span>
               <span class="shipping-check"></span>
             </button>
             <button class="shipping-option active" type="button" data-shipping-method="fast">
@@ -1657,6 +1657,9 @@
       let orderVoucherCode = "";
       let selectedVoucherCode = "";
       let selectedShippingMethod = "fast";
+      let expressShippingQuote = { fee: 50000, provider: "", providerName: "Hỏa tốc", estimated: true, quotationId: "", message: "Phí tạm tính" };
+      let expressQuoteTimer = 0;
+      let expressRecipientCoordinates = { latitude: "", longitude: "" };
       let selectedBank = "vcb";
       let shopBankReceiverName = "BLANWHI STORE";
       let shopBankAccountNumber = "0123 456 789";
@@ -1808,6 +1811,9 @@
       const paymentMethodMap = { card: "vnpay", wallet: "momo", zalopay: "zalopay", transfer: "bank_transfer" };
       const customerShippingLabels = {
         not_created: "Đơn mới đặt",
+        awaiting_creation: "Chờ tạo vận đơn",
+        finding_driver: "Đang tìm tài xế",
+        driver_assigned: "Đã có tài xế",
         ready_to_ship: "Đã giao cho đơn vị vận chuyển",
         shipping: "Đang giao hàng",
         delivered: "Đã giao hàng cho khách",
@@ -1833,10 +1839,11 @@
         const retailSub = cart.filter((item) => !item.wholesale).reduce((sum, item) => sum + item.amount * item.qty, 0);
         const voucher = bestVoucher(retailSub);
         const discount = Math.round(retailSub * voucher.rate);
-        const shipping = selectedShippingMethod === "express"
-          ? 0
+        const express = selectedShippingMethod === "express";
+        const shipping = express
+          ? Math.max(0, Number(expressShippingQuote.fee || 50000))
           : sub === 0 || sub >= 2000000 || voucher.freeship ? 0 : 30000;
-        return { sub, voucher, discount, shipping, shippingPending: selectedShippingMethod === "express", total: Math.max(sub - discount + shipping, 0) };
+        return { sub, voucher, discount, shipping, shippingPending: false, shippingEstimated: express && expressShippingQuote.estimated, total: Math.max(sub - discount + shipping, 0) };
       };
       const bankOptions = [
         ["vcb", "Vietcombank"],
@@ -1933,10 +1940,41 @@
         if (!account) customerBankAccount.placeholder = `Nhập số tài khoản ${bankName} của khách`;
       }
 
+      async function captureExpressCoordinates() {
+        if (!navigator.geolocation || expressRecipientCoordinates.latitude) return;
+        await new Promise((resolve) => navigator.geolocation.getCurrentPosition(
+          (position) => {
+            expressRecipientCoordinates = { latitude: String(position.coords.latitude), longitude: String(position.coords.longitude) };
+            resolve();
+          },
+          () => resolve(),
+          { enableHighAccuracy: true, timeout: 5000, maximumAge: 300000 }
+        ));
+      }
+
+      async function refreshExpressShippingQuote() {
+        window.clearTimeout(expressQuoteTimer);
+        expressQuoteTimer = window.setTimeout(async () => {
+          try {
+            const address = [checkoutAddress.value, selectedGeoName(checkoutWard), selectedGeoName(checkoutDistrict), selectedGeoName(checkoutProvince)].map((value) => value.trim()).filter(Boolean).join(", ");
+            const response = await fetch(`${paymentApiBase}/api/delivery/quote`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ address, ...expressRecipientCoordinates, cod: totals().sub, quantity: cart.reduce((sum, item) => sum + item.qty, 0) })
+            });
+            if (!response.ok) return;
+            expressShippingQuote = await response.json();
+            if (selectedShippingMethod === "express") renderShippingMethod();
+          } catch {
+            // Giữ phí tạm tính nếu API hỏa tốc chưa sẵn sàng.
+          }
+        }, 250);
+      }
+
       function renderShippingMethod() {
         const express = selectedShippingMethod === "express";
-        shippingLogo.textContent = express ? "BOOK" : "VTP";
-        shippingSelectedText.textContent = express ? "Hỏa tốc · Dưới 25 km · Phí theo app" : "Viettel Post · Toàn quốc";
+        shippingLogo.textContent = express ? (expressShippingQuote.provider === "ahamove" ? "AHA" : expressShippingQuote.provider === "lalamove" ? "LALA" : "HT") : "VTP";
+        shippingSelectedText.textContent = express ? `Hỏa tốc · ${expressShippingQuote.estimated ? "Tạm tính " : ""}${formatMoney(expressShippingQuote.fee || 50000)}` : "Viettel Post · Toàn quốc";
         shippingOptions.querySelectorAll("[data-shipping-method]").forEach((button) => {
           const active = button.dataset.shippingMethod === selectedShippingMethod;
           button.classList.toggle("active", active);
@@ -2376,7 +2414,7 @@
           ${cart.length ? cart.map((item) => `<div class="line"><span class="checkout-item-copy"><b>${item.qty}× ${escapeMarkup(item.name)}</b><small>${item.classificationName ? `${escapeMarkup(item.classificationName)} · ` : ""}${escapeMarkup(colorLabel(item.color, item, item.classificationIndex || 0))}${item.kind.startsWith("gift-") ? "" : ` · Size ${escapeMarkup(item.size)}`}</small></span><strong>${formatMoney(item.amount * item.qty)}</strong></div>`).join("") : `<p class="muted">Chưa có sản phẩm.</p>`}
           <div class="line"><span>Tạm tính</span><strong>${formatMoney(next.sub)}</strong></div>
           <div class="line"><span>${next.voucher.title}</span><strong>-${formatMoney(next.discount)}</strong></div>
-          <div class="line"><span>Vận chuyển · ${selectedShippingMethod === "express" ? "Hỏa tốc" : "Viettel Post"}</span><strong>${next.shippingPending ? "Theo app" : formatMoney(next.shipping)}</strong></div>
+          <div class="line"><span>Vận chuyển · ${selectedShippingMethod === "express" ? "Hỏa tốc" : "Viettel Post"}</span><strong>${next.shippingEstimated ? `Tạm tính ${formatMoney(next.shipping)}` : formatMoney(next.shipping)}</strong></div>
           <div class="line" style="font-size:18px"><span>Tổng</span><strong>${formatMoney(next.total)}</strong></div>
         `;
       }
@@ -2416,7 +2454,7 @@
         const status = order.shippingStatus || "";
         if (status === "delivered") return 3;
         if (["shipping", "delivery_failed", "returning", "returned"].includes(status)) return 2;
-        if (status === "ready_to_ship") return 1;
+        if (["awaiting_creation", "finding_driver", "driver_assigned", "ready_to_ship"].includes(status)) return 1;
         return Math.max(order.step || 0, order.status === "Đã thanh toán" ? 1 : 0);
       }
 
@@ -2513,6 +2551,12 @@
               trackingCode: Object.prototype.hasOwnProperty.call(serverOrder, "trackingCode") ? serverOrder.trackingCode : order.trackingCode,
               shippingStatus: serverOrder.shippingStatus || order.shippingStatus,
               shippingMessage: serverOrder.shippingMessage || order.shippingMessage,
+              deliveryType: serverOrder.deliveryType || order.deliveryType,
+              deliveryProvider: serverOrder.deliveryProvider || order.deliveryProvider,
+              deliveryOrderId: serverOrder.deliveryOrderId || order.deliveryOrderId,
+              deliveryDriver: serverOrder.deliveryDriver || order.deliveryDriver,
+              deliveryTrackingUrl: serverOrder.deliveryTrackingUrl || order.deliveryTrackingUrl,
+              deliveryFeeActual: serverOrder.deliveryFeeActual ?? order.deliveryFeeActual,
               pancakeStatus: serverOrder.pancakeStatus || order.pancakeStatus,
               updatedAt: serverOrder.updatedAt ? new Date(serverOrder.updatedAt).toLocaleString("vi-VN") : order.updatedAt
             };
@@ -2542,6 +2586,8 @@
             <div class="line"><span>Mã vận đơn</span><strong>${order.trackingCode || "Đang cập nhật"}</strong></div>
             <p class="muted">Đơn vị vận chuyển: ${order.shippingCarrier || "Đang cập nhật"}</p>
             ${order.shippingMessage ? `<p class="muted">Trạng thái vận chuyển: ${escapeMarkup(order.shippingMessage)}</p>` : ""}
+            ${order.deliveryDriver ? `<p class="muted">Tài xế: ${escapeMarkup(order.deliveryDriver.name || order.deliveryDriver.id || "Đã nhận chuyến")}${order.deliveryDriver.phone ? " · " + escapeMarkup(order.deliveryDriver.phone) : ""}</p>` : ""}
+            ${order.deliveryTrackingUrl ? `<p><a href="${escapeMarkup(order.deliveryTrackingUrl)}" target="_blank" rel="noreferrer">Theo dõi giao hỏa tốc →</a></p>` : ""}
             ${order.note ? `<p class="muted">Ghi chú: ${escapeMarkup(order.note)}</p>` : ""}
             <div class="line"><span>Tổng tiền</span><strong>${formatMoney(order.total)}</strong></div>
             <div class="status-track">
@@ -3030,6 +3076,7 @@
         selectedShippingMethod = option.dataset.shippingMethod;
         shippingOptions.classList.remove("open");
         renderShippingMethod();
+        if (selectedShippingMethod === "express") void captureExpressCoordinates().then(refreshExpressShippingQuote);
       });
       voucherCode.addEventListener("input", () => {
         orderVoucherCode = voucherCode.value.trim();
@@ -3412,10 +3459,13 @@
       });
       document.getElementById("openCustomerBankApp").addEventListener("click", openSelectedBankApp);
       savedAddressSelect.addEventListener("change", () => void applySavedAddress(savedAddressSelect.value));
+      checkoutAddress.addEventListener("input", () => { if (selectedShippingMethod === "express") void refreshExpressShippingQuote(); });
       checkoutProvince.addEventListener("change", () => {
+        if (selectedShippingMethod === "express") void refreshExpressShippingQuote();
         void loadDistricts(checkoutProvince.value).catch((error) => alert(error.message));
       });
       checkoutDistrict.addEventListener("change", () => {
+        if (selectedShippingMethod === "express") void refreshExpressShippingQuote();
         void loadWards(checkoutProvince.value, checkoutDistrict.value).catch((error) => alert(error.message));
       });
       document.getElementById("checkoutForm").addEventListener("submit", async (event) => {
@@ -3443,7 +3493,9 @@
             district: selectedGeoName(checkoutDistrict).trim(),
             districtId: checkoutDistrict.value,
             province: selectedGeoName(checkoutProvince).trim(),
-            provinceId: checkoutProvince.value
+            provinceId: checkoutProvince.value,
+            latitude: expressRecipientCoordinates.latitude,
+            longitude: expressRecipientCoordinates.longitude
           },
           items: cart.map((item) => ({
             productId: item.id,
@@ -3465,7 +3517,7 @@
           })),
           note: orderNote,
           shippingMethod: selectedShippingMethod === "express" ? "Hỏa tốc" : "Viettel Post",
-          shippingFee: next.shippingPending ? "Theo ứng dụng book giao hàng" : next.shipping,
+          shippingFee: next.shipping,
           voucherCode: orderVoucherCode,
           total: next.total,
           updatedAt: new Date().toLocaleString("vi-VN")
@@ -3481,13 +3533,17 @@
               totals: {
                 subtotal: next.sub,
                 discount: next.discount,
-                shipping: next.shippingPending ? 0 : next.shipping,
+                shipping: next.shipping,
                 total: next.total
               },
               shipping: {
-                method: selectedShippingMethod === "express" ? "Hỏa tốc" : "Viettel Post",
-                feeLabel: next.shippingPending ? "Theo ứng dụng book giao hàng" : formatMoney(next.shipping),
-                carrier: selectedShippingMethod === "express" ? "BOOK" : "Viettel Post"
+                method: selectedShippingMethod === "express" ? "Giao hỏa tốc" : "Giao tiêu chuẩn",
+                feeLabel: next.shippingEstimated ? "Tạm tính " + formatMoney(next.shipping) : formatMoney(next.shipping),
+                carrier: selectedShippingMethod === "express" ? (expressShippingQuote.providerName || "Hỏa tốc") : "Viettel Post",
+                type: selectedShippingMethod === "express" ? "express" : "standard",
+                provider: expressShippingQuote.provider || undefined,
+                quotationId: expressShippingQuote.quotationId || undefined,
+                estimatedFee: next.shipping
               }
             })
           });
@@ -3495,8 +3551,8 @@
           if (!response.ok) throw new Error(result.error || "Không thể tạo giao dịch thanh toán.");
           order.code = result.order?.code || order.code;
           order.trackingCode = result.order?.trackingCode || "";
-          order.shippingCarrier = result.order?.shippingCarrier || (selectedShippingMethod === "express" ? "BOOK" : "Viettel Post");
-          order.status = result.order?.status === "pending" ? "Chờ thanh toán" : result.order?.status === "paid" ? "Đã thanh toán" : order.status;
+          order.shippingCarrier = result.order?.shippingCarrier || (selectedShippingMethod === "express" ? (expressShippingQuote.providerName || "Hỏa tốc") : "Viettel Post");
+          order.status = selectedShippingMethod === "express" ? "Chờ tạo vận đơn" : result.order?.status === "pending" ? "Chờ thanh toán" : result.order?.status === "paid" ? "Đã thanh toán" : order.status;
           if (saveCheckoutAddress.checked) saveCustomerAddress({
             ...order.customer,
             house: checkoutAddress.value
@@ -3507,6 +3563,8 @@
           orderVoucherCode = "";
           selectedVoucherCode = "";
           selectedShippingMethod = "fast";
+          expressShippingQuote = { fee: 50000, provider: "", providerName: "Hỏa tốc", estimated: true, quotationId: "", message: "Phí tạm tính" };
+          expressRecipientCoordinates = { latitude: "", longitude: "" };
           cartNote.value = "";
           voucherCode.value = "";
           renderCart();

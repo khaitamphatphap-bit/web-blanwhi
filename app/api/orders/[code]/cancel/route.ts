@@ -5,6 +5,7 @@ import { OrderSyncService } from "@/lib/pancake/order-sync-service";
 import { readIntegrationConfig } from "@/lib/integrations";
 import { cancelShippingOrder, fetchShippingStatus } from "@/lib/shipping-providers";
 import { jsonError } from "@/lib/api-errors";
+import { OrderService } from "@/lib/services/order-service";
 
 type Params = { params: Promise<{ code: string }> };
 
@@ -44,6 +45,9 @@ export async function POST(request: Request, { params }: Params) {
   }
 
   const reason = body.reason?.trim() || "Khách yêu cầu hủy đơn";
+  if (current.deliveryType === "express" && current.deliveryOrderId && current.shippingStatus !== "cancelled") {
+    current = await new OrderService().cancelExpressDelivery(code, reason);
+  }
   if (current.trackingCode && canUseDirectVtp && current.shippingStatus !== "cancelled") {
     await cancelShippingOrder(config.shipping, current, reason);
   }

@@ -84,9 +84,9 @@ export class OrderSyncService {
     const updated = await updateOrder(order.code, {
       providerOrderId: existingId || order.providerOrderId,
       ...(mapped.status && order.status !== "cancelled" ? { status: mapped.status } : {}),
-      ...(mapped.shippingStatus ? { shippingStatus: mapped.shippingStatus } : {}),
+      ...(mapped.shippingStatus && order.deliveryType !== "express" ? { shippingStatus: mapped.shippingStatus } : {}),
       ...(mapped.pancakeStatus ? { pancakeStatus: mapped.pancakeStatus } : {}),
-      ...(hasViettelPostShipping(existing) ? shippingUpdate(existing, false) : {}),
+      ...(order.deliveryType !== "express" && hasViettelPostShipping(existing) ? shippingUpdate(existing, false) : {}),
       inventoryReservationReleased: Boolean(order.inventoryReservationReleased || mapped.release),
       externalSync: { ...order.externalSync, pancake: `Đã tồn tại trên Pancake${existingId ? ` #${existingId}` : ""}`, lastSyncedAt: new Date().toISOString() }
     });
@@ -108,7 +108,7 @@ export class OrderSyncService {
       const updated = await updateOrder(order.code, {
         providerOrderId: providerOrderId || order.providerOrderId,
         pancakeStatus: "packing",
-        ...shippingUpdate(response),
+        ...(order.deliveryType === "express" ? { shippingStatus: "awaiting_creation" as const, shippingCarrier: "", trackingCode: "", shippingMessage: "Chờ tạo vận đơn hỏa tốc" } : shippingUpdate(response)),
         externalSync: {
           ...order.externalSync,
           pancake: `Đã tạo${providerOrderId ? ` #${providerOrderId}` : ""}`,
@@ -176,9 +176,9 @@ export class OrderSyncService {
     }
     const updated = await updateOrder(code, {
       ...(mapped.status && order.status !== "cancelled" ? { status: mapped.status } : {}),
-      ...(mapped.shippingStatus && !preserveCancellation ? { shippingStatus: mapped.shippingStatus } : {}),
+      ...(mapped.shippingStatus && !preserveCancellation && order.deliveryType !== "express" ? { shippingStatus: mapped.shippingStatus } : {}),
       ...(mapped.pancakeStatus && !preserveCancellation ? { pancakeStatus: mapped.pancakeStatus } : {}),
-      ...(hasViettelPostShipping(payload) && !preserveCancellation
+      ...(order.deliveryType !== "express" && hasViettelPostShipping(payload) && !preserveCancellation
         ? shippingUpdate(payload, false)
         : {}),
       inventoryReservationReleased: Boolean(order.inventoryReservationReleased || mapped.release),

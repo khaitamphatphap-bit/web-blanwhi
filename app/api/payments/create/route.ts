@@ -6,7 +6,7 @@ import { checkoutTotals } from "@/lib/pricing";
 import { createMomoPayment, createVnpayUrl, createZaloPayPayment, fallbackPaymentUrl } from "@/lib/payment";
 import { CartItem, PaymentMethod, ShopOrder } from "@/lib/types";
 import { InventoryService } from "@/lib/pancake/inventory-service";
-import { OrderSyncService } from "@/lib/pancake/order-sync-service";
+import { POSSyncService } from "@/lib/services/pos-sync-service";
 import { buildProductInventory } from "@/lib/product-inventory";
 import { readSiteContent } from "@/lib/site-content";
 
@@ -24,6 +24,8 @@ type CheckoutPayload = {
     wardId?: string;
     note?: string;
     email?: string;
+    latitude?: string;
+    longitude?: string;
   };
   paymentMethod?: PaymentMethod;
   items?: Array<CartItem | PreviewCheckoutItem>;
@@ -38,6 +40,10 @@ type CheckoutPayload = {
     feeLabel?: string;
     carrier?: string;
     trackingCode?: string;
+    type?: "standard" | "express";
+    provider?: "ahamove" | "lalamove";
+    quotationId?: string;
+    estimatedFee?: number;
   };
 };
 
@@ -223,7 +229,9 @@ export async function POST(request: Request) {
         district: customer.district,
         districtId: customer.districtId,
         wardId: customer.wardId,
-        note: customer.note
+        note: customer.note,
+        latitude: customer.latitude,
+        longitude: customer.longitude
       },
       items: orderItems,
       subtotal: totals.subtotal,
@@ -231,9 +239,14 @@ export async function POST(request: Request) {
       shipping: totals.shipping,
       shippingMethod: payload.shipping?.method || "Viettel Post",
       shippingFeeLabel: payload.shipping?.feeLabel,
-      shippingCarrier: "Viettel Post",
+      shippingCarrier: payload.shipping?.type === "express" ? "" : "Viettel Post",
       trackingCode: "",
-      shippingStatus: "not_created",
+      shippingStatus: payload.shipping?.type === "express" ? "awaiting_creation" : "not_created",
+      shippingMessage: payload.shipping?.type === "express" ? "Chờ tạo vận đơn hỏa tốc" : "",
+      deliveryType: payload.shipping?.type || "standard",
+      deliveryProvider: payload.shipping?.provider,
+      deliveryQuotationId: payload.shipping?.quotationId,
+      deliveryFeeEstimated: payload.shipping?.estimatedFee ?? totals.shipping,
       total: totals.total,
       createdAt: now,
       updatedAt: now
@@ -244,14 +257,7 @@ export async function POST(request: Request) {
       order.externalSync = { ...order.externalSync, pancake: "Đang gửi Pancake" };
       after(async () => {
         try {
-          await inventoryService.reserve(order.items, "decrease");
-          order.inventoryReservationApplied = true;
-          await updateOrder(order.code, { inventoryReservationApplied: true });
-        } catch {
-          // Pancake vẫn là kho thật; lỗi cập nhật hạn mức web không được chặn gửi đơn POS.
-        }
-        try {
-          await new OrderSyncService().create(order);
+          await new POSSyncService().confirmOrder(order);
         } catch {
           await updateOrder(order.code, {
             externalSync: { ...order.externalSync, pancake: "Đang chờ hệ thống gửi lại Pancake", lastSyncedAt: new Date().toISOString() }

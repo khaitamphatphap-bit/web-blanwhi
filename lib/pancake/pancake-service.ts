@@ -139,7 +139,7 @@ export class PancakeService {
       }
     });
     const path = `/shops/${encodeURIComponent(this.shopId())}/orders`;
-    const shippingPartner = await this.viettelPostPartner().catch(() => {
+    const shippingPartner = order.deliveryType === "express" ? null : await this.viettelPostPartner().catch(() => {
       const id = Number(process.env.PANCAKE_VTP_PARTNER_ID || 0);
       const shopPartnerId = Number(process.env.PANCAKE_VTP_ACCOUNT_ID || 0);
       return id > 0 ? { id, name: "VTP", ...(shopPartnerId > 0 ? { shopPartnerId } : {}) } : null;
