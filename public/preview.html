@@ -119,23 +119,8 @@
       .hero-actions { display: flex; gap: 14px; margin-top: 28px; }
       .hero-actions a { display: inline-flex; align-items: center; justify-content: center; min-width: 116px; height: 34px; border: 1px solid #111; font-size: 11px; font-weight: 800; text-transform: uppercase; }
       .hero-actions a:first-child { background: #000; color: #fff; }
-      .stack-scene { position: relative; min-height: 470px; }
-      .theme-image { display: none; width: 100%; aspect-ratio: 4 / 5; max-height: 520px; object-fit: cover; box-shadow: 18px 18px 34px rgba(0,0,0,.12); background: #f4f4f4; }
-      .stack-scene.has-theme { min-height: 470px; display: grid; align-items: end; }
-      .stack-scene.has-theme .theme-image { display: block; }
-      .stack-scene.has-theme .back-panel,
-      .stack-scene.has-theme .pedestal,
-      .stack-scene.has-theme .shirt-stack { display: none; }
-      .back-panel { position: absolute; right: 4%; top: 0; width: 245px; height: 390px; background: #fff; box-shadow: 18px 18px 34px rgba(0,0,0,.12); }
-      .pedestal { position: absolute; right: 0; bottom: 28px; width: 470px; height: 112px; background: #fff; box-shadow: -10px -8px 30px rgba(0,0,0,.06); }
-      .shirt-stack { position: absolute; right: -2%; bottom: 66px; width: 560px; height: 330px; transform: scale(1.12); transform-origin: bottom right; }
-      .folded-shirt { position: absolute; right: 0; width: 430px; height: 72px; border-radius: 16px 42px 28px 16px; background: var(--fold); box-shadow: 0 18px 30px rgba(0,0,0,.14); }
-      .folded-shirt::after { content: ""; position: absolute; right: 0; top: 0; width: 102px; height: 70px; border-radius: 0 40px 28px 0; background: linear-gradient(90deg, rgba(255,255,255,.08), rgba(0,0,0,.2)); }
-      .folded-shirt:nth-child(1) { top: 0; --fold:#fff; border: 1px solid #ededed; }
-      .folded-shirt:nth-child(2) { top: 50px; --fold:#d8d8d8; }
-      .folded-shirt:nth-child(3) { top: 100px; --fold:#9b9b9b; }
-      .folded-shirt:nth-child(4) { top: 150px; --fold:#555; }
-      .folded-shirt:nth-child(5) { top: 200px; --fold:#080808; }
+      .stack-scene { position: relative; min-height: 0; aspect-ratio: 4 / 3; display: grid; place-items: center; overflow: hidden; background: #fff; }
+      .theme-image { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 72% center; background: #fff; }
       .benefits { position: absolute; left: 60px; right: 60px; bottom: 32px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; border-radius: 28px; background: rgba(255,255,255,.98); box-shadow: 0 18px 38px rgba(0,0,0,.13); overflow: hidden; }
       .benefit { min-height: 118px; display: grid; grid-template-columns: 52px 1fr; gap: 14px; align-items: center; padding: 22px; border-right: 1px solid #e8e8e8; }
       .benefit:last-child { border-right: 0; }
@@ -530,10 +515,8 @@
         .hero { margin-top: -126px; padding-top: 170px; padding-bottom: 330px; min-height: 900px; }
         .hero-top { grid-template-columns: 1fr; }
         .hero-copy { padding-top: 0; }
-        .stack-scene { min-height: 320px; }
-        .back-panel { width: 150px; height: 250px; }
-        .pedestal { width: 280px; }
-        .shirt-stack { right: 2%; width: 300px; transform: scale(.78); transform-origin: bottom right; }
+        .stack-scene { width: 100%; max-width: 680px; margin-inline: auto; aspect-ratio: 3 / 2; }
+        .theme-image { object-position: 68% center; }
         .benefits { left: 22px; right: 22px; grid-template-columns: 1fr; bottom: 24px; }
         .benefit { min-height: auto; border-right: 0; border-bottom: 1px solid #eee; }
         .benefit:last-child { border-bottom: 0; }
@@ -715,17 +698,8 @@
               </button>
             </div>
           </div>
-          <div class="stack-scene" aria-label="Chồng áo thun BLANWHI" data-cms-theme-scene>
-            <img class="theme-image" alt="Theme BLANWHI" data-cms-theme-image />
-            <div class="back-panel"></div>
-            <div class="pedestal"></div>
-            <div class="shirt-stack">
-              <span class="folded-shirt"></span>
-              <span class="folded-shirt"></span>
-              <span class="folded-shirt"></span>
-              <span class="folded-shirt"></span>
-              <span class="folded-shirt"></span>
-            </div>
+          <div class="stack-scene" aria-label="Chồng vải BLANWHI" data-cms-theme-scene>
+            <img class="theme-image" src="/blanwhi-fabric-stack.png" alt="Chồng vải BLANWHI từ trắng đến đen" data-cms-theme-image />
           </div>
         </div>
         <div class="benefits">
@@ -1556,9 +1530,8 @@
           document.querySelector("[data-cms-hero-description]").textContent = content.hero.description || "";
           const themeScene = document.querySelector("[data-cms-theme-scene]");
           const themeImage = document.querySelector("[data-cms-theme-image]");
-          const themeUrl = content.hero.themeImageUrl || "";
+          const themeUrl = content.hero.themeImageUrl || "/blanwhi-fabric-stack.png";
           if (themeScene && themeImage) {
-            themeScene.classList.toggle("has-theme", Boolean(themeUrl));
             themeImage.src = themeUrl;
           }
         }
