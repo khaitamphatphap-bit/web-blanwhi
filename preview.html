@@ -1135,16 +1135,84 @@
         const gallery = Array.isArray(product.galleryImages) ? product.galleryImages.filter(Boolean) : [];
         return gallery[product.galleryIndex || 0] || product.image || colorImage || "";
       };
+      const imageWarmCache = new Set();
+      const imageWarmQueue = [];
+      let imageWarmRunning = false;
+      const isImageUrl = (url) => (typeof url === "string" && /^https?:\/\//.test(url)) || (typeof url === "string" && url.startsWith("/"));
+      const imageOrigin = (url) => {
+        try {
+          return new URL(url, location.href).origin;
+        } catch {
+          return "";
+        }
+      };
+      const preconnectImageOrigins = (urls) => {
+        [...new Set(urls.map(imageOrigin).filter((origin) => origin && origin !== location.origin))].slice(0, 6).forEach((origin) => {
+          if ([...document.head.querySelectorAll("link[data-image-origin]")].some((link) => link.dataset.imageOrigin === origin)) return;
+          const link = document.createElement("link");
+          link.rel = "preconnect";
+          link.href = origin;
+          link.crossOrigin = "anonymous";
+          link.dataset.imageOrigin = origin;
+          document.head.appendChild(link);
+        });
+      };
+      const collectProductImageUrls = (products, limit = 80) => {
+        const urls = [];
+        const add = (url) => {
+          if (!isImageUrl(url) || urls.includes(url)) return;
+          urls.push(url);
+        };
+        products.forEach((product) => {
+          add(product.image);
+          (product.galleryImages || []).forEach(add);
+          Object.values(product.colorImages || {}).forEach(add);
+          (product.classifications || []).forEach((classification) => Object.values(classification.colorImages || {}).forEach(add));
+        });
+        return urls.slice(0, limit);
+      };
+      const warmImage = (url, priority = "auto") => new Promise((resolve) => {
+        if (!isImageUrl(url) || imageWarmCache.has(url)) return resolve(false);
+        imageWarmCache.add(url);
+        const image = new Image();
+        image.decoding = "async";
+        image.loading = "eager";
+        image.fetchPriority = priority;
+        image.onload = () => resolve(true);
+        image.onerror = () => resolve(false);
+        image.src = url;
+      });
+      const drainImageWarmQueue = async () => {
+        if (imageWarmRunning) return;
+        imageWarmRunning = true;
+        while (imageWarmQueue.length) {
+          const next = imageWarmQueue.shift();
+          await warmImage(next.url, next.priority);
+        }
+        imageWarmRunning = false;
+      };
+      const queueWarmImages = (urls, priority = "auto") => {
+        const cleanUrls = urls.filter((url) => isImageUrl(url) && !imageWarmCache.has(url));
+        preconnectImageOrigins(cleanUrls);
+        cleanUrls.forEach((url) => imageWarmQueue.push({ url, priority }));
+        void drainImageWarmQueue();
+      };
+      const warmProductImages = (products, visibleProducts = products) => {
+        queueWarmImages(collectProductImageUrls(visibleProducts, 36), "high");
+        const warmRest = () => queueWarmImages(collectProductImageUrls(products, 120), "low");
+        if ("requestIdleCallback" in window) window.requestIdleCallback(warmRest, { timeout: 1200 });
+        else window.setTimeout(warmRest, 300);
+      };
       const swatchMarkup = (product, color, index, attribute, classificationIndex = product.classificationIndex || 0) => {
         const image = activeVariant(product, classificationIndex).colorImages?.[color] || product.colorImages?.[color] || "";
         const label = colorLabel(color, product, classificationIndex);
-        const content = image ? `<img src="${escapeMarkup(image)}" alt="${escapeMarkup(label)}" />` : escapeMarkup(label.slice(0, 1));
+        const content = image ? `<img src="${escapeMarkup(image)}" alt="${escapeMarkup(label)}" loading="eager" decoding="async" fetchpriority="low" />` : escapeMarkup(label.slice(0, 1));
         return `<button type="button" class="${index === product.colorIndex ? "active" : ""}" ${attribute} aria-label="Chọn màu ${escapeMarkup(label)} cho ${escapeMarkup(product.name)}" title="${escapeMarkup(label)}">${content}</button>`;
       };
       const productVisualMedia = (product, color = product.color, classificationIndex = product.classificationIndex || 0) => {
         const image = productImageUrl(product, color, classificationIndex);
         return image
-          ? `<img class="product-photo" src="${escapeMarkup(image)}" alt="${escapeMarkup(product.name)} ${escapeMarkup(colorLabel(color, product, classificationIndex))}" />`
+          ? `<img class="product-photo" src="${escapeMarkup(image)}" alt="${escapeMarkup(product.name)} ${escapeMarkup(colorLabel(color, product, classificationIndex))}" loading="eager" decoding="async" fetchpriority="high" />`
           : mockMarkup(product.kind, color);
       };
       const productVisualInnerMarkup = (product) => `
@@ -1256,6 +1324,7 @@
             <div><strong>Không tìm thấy sản phẩm</strong><span>Thử tìm theo Tee, Hoodie, Pants, màu đen, trắng, xám hoặc form boxy.</span></div>
           </div>
         `;
+        warmProductImages(list, visibleProducts);
         searchCount.textContent = list.length
           ? `Hiển thị ${pageStart + 1}-${Math.min(pageStart + productsPerPage, list.length)} / ${list.length} sản phẩm`
           : `0/${productData.length} sản phẩm`;
