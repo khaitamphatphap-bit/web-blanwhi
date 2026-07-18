@@ -28,6 +28,13 @@ ADMIN_PASSWORD=change-this-strong-password
 ENABLE_DEMO_PAYMENTS=false
 DATABASE_URL=postgresql://...
 
+R2_ACCOUNT_ID=
+R2_BUCKET_NAME=
+R2_ACCESS_KEY_ID=
+R2_SECRET_ACCESS_KEY=
+R2_PUBLIC_BASE_URL=
+R2_OBJECT_PREFIX=blanwhi
+
 VNPAY_TMN_CODE=
 VNPAY_HASH_SECRET=
 VNPAY_PAYMENT_URL=https://pay.vnpay.vn/vpcpay.html
@@ -116,6 +123,29 @@ DATABASE_URL="postgresql://..." npm run db:import-json
 ```
 
 Nếu chưa có `DATABASE_URL`, web vẫn chạy bằng file JSON trong thư mục `data/` để test local.
+
+## Kho ảnh Cloudflare R2
+
+Ảnh upload từ trang admin dùng Cloudflare R2 khi production có đủ các biến:
+
+```bash
+R2_ACCOUNT_ID=
+R2_BUCKET_NAME=
+R2_ACCESS_KEY_ID=
+R2_SECRET_ACCESS_KEY=
+R2_PUBLIC_BASE_URL=
+R2_OBJECT_PREFIX=blanwhi
+```
+
+`R2_PUBLIC_BASE_URL` là domain public của bucket, ví dụ domain custom hoặc domain public R2 mà Cloudflare cấp. Sau khi thêm đủ biến trên Vercel, ảnh mới upload trong admin sẽ lưu vào R2 thay vì Vercel Blob.
+
+Để copy ảnh cũ từ Vercel Blob sang R2 và đổi URL trong dữ liệu local:
+
+```bash
+R2_ACCOUNT_ID="..." R2_BUCKET_NAME="..." R2_ACCESS_KEY_ID="..." R2_SECRET_ACCESS_KEY="..." R2_PUBLIC_BASE_URL="https://..." npm run images:migrate-r2
+```
+
+Script sẽ tự backup `data/site-content.json`, upload ảnh sang R2, cập nhật URL ảnh trong `data/site-content.json`, rồi nhúng lại dữ liệu vào `preview.html` và `public/preview.html`.
 
 ## Lưu ý trước khi nhận đơn thật
 

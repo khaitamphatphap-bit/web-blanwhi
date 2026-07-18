@@ -1,11 +1,13 @@
 import { mkdir, writeFile } from "fs/promises";
 import path from "path";
 import { NextResponse } from "next/server";
-import { put } from "@vercel/blob";
 import { jsonError } from "@/lib/api-errors";
+import { hasR2ImageStorage, uploadImageToR2 } from "@/lib/image-storage";
 
 const allowedTypes = new Set(["image/png", "image/jpeg", "image/webp", "image/gif"]);
 const maxUploadSize = 4 * 1024 * 1024;
+
+export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   try {
@@ -27,17 +29,17 @@ export async function POST(request: Request) {
     const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
     if (process.env.VERCEL || process.env.NODE_ENV === "production") {
-      if (!process.env.BLOB_READ_WRITE_TOKEN && !process.env.BLOB_STORE_ID) {
-        return NextResponse.json({ error: "Chưa cấu hình kho ảnh Vercel Blob cho website." }, { status: 500 });
+      if (!hasR2ImageStorage()) {
+        return NextResponse.json({ error: "Chưa cấu hình Cloudflare R2 cho kho ảnh. Vào Vercel thêm R2_ACCOUNT_ID, R2_BUCKET_NAME, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_PUBLIC_BASE_URL." }, { status: 500 });
       }
 
-      const blob = await put(`blanwhi/${filename}`, bytes, {
-        access: "public",
+      const url = await uploadImageToR2({
+        bytes,
         contentType: file.type,
-        addRandomSuffix: true
+        filename
       });
 
-      return NextResponse.json({ url: blob.url });
+      return NextResponse.json({ url });
     }
 
     const uploadDir = path.join(process.cwd(), "public", "uploads");
