@@ -583,6 +583,7 @@ function ProductForm({
   const [newColorName, setNewColorName] = useState("");
   const [newClassificationName, setNewClassificationName] = useState("");
   const [newSize, setNewSize] = useState("");
+  const [inventoryOpen, setInventoryOpen] = useState(false);
   const inventoryRows = buildProductInventory(product);
   const totalInventory = inventoryRows.reduce((sum, item) => sum + Math.min(Number(item.publishQuantity || 0), Number(item.pancakeQuantity || 0)), 0);
   const updateInventoryItem = (key: string, patch: Partial<CmsProductInventoryItem>) => {
@@ -844,10 +845,23 @@ function ProductForm({
             <h4 className="text-base font-bold uppercase">Số lượng hàng hóa / tồn kho</h4>
             <p className="mt-1 text-xs text-neutral-600">Liên kết từng phân loại, màu và size với Pancake. Website chỉ chỉnh số lượng mở bán; tồn Pancake là dữ liệu chỉ đọc.</p>
           </div>
-          <div className="bg-black px-4 py-3 text-white"><span className="text-xs uppercase">Tổng tồn</span><strong className="ml-3 text-xl">{totalInventory}</strong></div>
+          <div className="flex items-center gap-2">
+            <div className="bg-black px-4 py-3 text-white"><span className="text-xs uppercase">Tổng tồn</span><strong className="ml-3 text-xl">{totalInventory}</strong></div>
+            <button
+              type="button"
+              aria-expanded={inventoryOpen}
+              aria-controls="product-inventory-details"
+              onClick={() => setInventoryOpen((open) => !open)}
+              className="flex h-12 w-12 items-center justify-center border-2 border-black bg-white text-2xl font-bold transition hover:bg-black hover:text-white"
+              title={inventoryOpen ? "Thu gọn tồn kho" : "Mở đầy đủ tồn kho"}
+            >
+              {inventoryOpen ? "−" : "+"}
+            </button>
+          </div>
         </div>
-        <div className="mt-4 grid gap-3">
-          {inventoryRows.map((item) => (
+        {inventoryOpen && (
+          <div id="product-inventory-details" className="mt-4 grid gap-3">
+            {inventoryRows.map((item) => (
             <div key={item.key} className="border border-neutral-300 bg-white p-4 text-sm">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-200 pb-3">
                 <strong>{inventoryClassificationName(item)} · {inventoryColorName(item)} · Size {item.size}</strong>
@@ -864,8 +878,9 @@ function ProductForm({
                 <button type="button" onClick={() => updateInventoryItem(item.key, { publishQuantity: 0 })} className="uppercase text-red-600">Đặt số lượng mở bán về 0</button>
               </div>
             </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="mt-5 border-t pt-4">

@@ -1,5 +1,6 @@
 import { mkdir, readFile, readdir, writeFile } from "fs/promises";
 import path from "path";
+import { hasR2ImageStorage, readR2Text, writeR2Text } from "@/lib/image-storage";
 
 type PgPool = {
   query: (text: string, params?: unknown[]) => Promise<{ rows: Array<Record<string, unknown>> }>;
@@ -22,6 +23,10 @@ export function hasBlobStore() {
   return Boolean(process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID);
 }
 
+export function hasR2Store() {
+  return hasR2ImageStorage();
+}
+
 function shouldUseBlobStore(filename: string) {
   return filename === "site-content.json" && hasBlobStore();
 }
@@ -33,6 +38,15 @@ function shouldUseEncryptedBlobStore(filename: string) {
 }
 
 const siteContentBlobPath = "blanwhi/content/site-content.json";
+const siteContentR2Path = "blanwhi/data/site-content.json";
+
+function encryptedR2Path(filename: string) {
+  return "blanwhi/data/private/" + filename.replace(/\.json$/, "") + ".enc.json";
+}
+
+function keyedR2IndexPath(namespace: string) {
+  return "blanwhi/data/private-keyed-index/" + namespace + ".enc.json";
+}
 
 function encryptedBlobPath(filename: string) {
   return `blanwhi/private/${filename.replace(/\.json$/, "")}.enc.json`;
@@ -48,7 +62,7 @@ function warnBlobFallback(action: string, error: unknown) {
 }
 
 async function encryptionKey() {
-  const token = process.env.DATA_ENCRYPTION_KEY || process.env.PANCAKE_WEBHOOK_SECRET || process.env.BLOB_READ_WRITE_TOKEN;
+  const token = process.env.DATA_ENCRYPTION_KEY || process.env.PANCAKE_WEBHOOK_SECRET || process.env.BLOB_READ_WRITE_TOKEN || process.env.R2_SECRET_ACCESS_KEY;
   if (!token) throw new Error("Thiếu DATA_ENCRYPTION_KEY hoặc PANCAKE_WEBHOOK_SECRET để mã hóa dữ liệu đơn hàng.");
   const { createHash } = await import("crypto");
   return createHash("sha256").update(`blanwhi-admin-v1:${token}`).digest();
@@ -77,6 +91,46 @@ async function decryptJson<T>(text: string) {
   decipher.setAuthTag(Buffer.from(envelope.tag, "base64"));
   const plaintext = Buffer.concat([decipher.update(Buffer.from(envelope.data, "base64")), decipher.final()]);
   return JSON.parse(plaintext.toString("utf8")) as T;
+}
+
+async function readR2JsonStore<T>() {
+  const text = await readR2Text(siteContentR2Path);
+  return text === null ? null : JSON.parse(text) as T;
+}
+
+async function writeR2JsonStore<T>(value: T) {
+  const previous = await readR2Text(siteContentR2Path);
+  if (previous !== null) {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    await writeR2Text("blanwhi/data/content-history/site-content-" + timestamp + ".json", previous);
+  }
+  await writeR2Text(siteContentR2Path, JSON.stringify(value));
+  return value;
+}
+
+async function readEncryptedR2JsonStore<T>(filename: string) {
+  const text = await readR2Text(encryptedR2Path(filename));
+  return text === null ? null : decryptJson<T>(text);
+}
+
+async function writeEncryptedR2JsonStore<T>(filename: string, value: T) {
+  const pathname = encryptedR2Path(filename);
+  const previous = await readR2Text(pathname);
+  if (previous !== null) {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    await writeR2Text("blanwhi/data/private-history/" + toStoreKey(filename) + "-" + timestamp + ".enc.json", previous);
+  }
+  await writeR2Text(pathname, await encryptJson(value));
+  return value;
+}
+
+async function readKeyedR2Index<T>(namespace: string) {
+  const text = await readR2Text(keyedR2IndexPath(namespace));
+  return text === null ? null : decryptJson<Record<string, T>>(text);
+}
+
+async function writeKeyedR2Index<T>(namespace: string, value: Record<string, T>) {
+  await writeR2Text(keyedR2IndexPath(namespace), await encryptJson(value));
 }
 
 async function readEncryptedBlobJsonStore<T>(filename: string) {
@@ -290,6 +344,24 @@ export async function readJsonStore<T>(filename: string, fallback: T): Promise<T
     }
   }
 
+  if (hasR2Store() && filename === "site-content.json") {
+    try {
+      const saved = await readR2JsonStore<T>();
+      if (saved !== null) return saved;
+    } catch (error) {
+      warnBlobFallback("read R2 " + filename, error);
+    }
+  }
+
+  if (hasR2Store() && ["orders.json", "integrations.json", "pancake-logs.json", "pancake-queue.json", "pancake-links.json"].includes(filename)) {
+    try {
+      const saved = await readEncryptedR2JsonStore<T>(filename);
+      if (saved !== null) return saved;
+    } catch (error) {
+      warnBlobFallback("read encrypted R2 " + filename, error);
+    }
+  }
+
   if (shouldUseBlobStore(filename)) {
     try {
       const saved = await readBlobJsonStore<T>();
@@ -331,6 +403,17 @@ export async function readKeyedJsonStore<T>(namespace: string, fallback: Record<
         ...Object.fromEntries(result.rows.map((row) => [String(row.item_key), row.item_value as T]))
       };
       return legacy;
+    }
+  }
+  if (hasR2Store()) {
+    try {
+      const indexed = await readKeyedR2Index<T>(namespace);
+      if (indexed) {
+        const legacy = await readJsonStore<Record<string, T>>(namespace + ".json", fallback);
+        return { ...legacy, ...indexed };
+      }
+    } catch (error) {
+      warnBlobFallback("read R2 keyed store " + namespace, error);
     }
   }
   if (hasBlobStore()) {
@@ -385,6 +468,11 @@ export async function writeKeyedJsonRecord<T>(namespace: string, itemKey: string
       );
       return value;
     }
+  }
+  if (hasR2Store()) {
+    const indexed = await readKeyedR2Index<T>(namespace) || {};
+    await writeKeyedR2Index(namespace, { ...indexed, [itemKey]: value });
+    return value;
   }
   if (hasBlobStore()) {
     const { put } = await import("@vercel/blob");
@@ -501,6 +589,14 @@ export async function writeJsonStore<T>(filename: string, value: T) {
       }
       return value;
     }
+  }
+
+  if (hasR2Store() && filename === "site-content.json") {
+    return writeR2JsonStore(value);
+  }
+
+  if (hasR2Store() && ["orders.json", "integrations.json", "pancake-logs.json", "pancake-queue.json", "pancake-links.json"].includes(filename)) {
+    return writeEncryptedR2JsonStore(filename, value);
   }
 
   if (shouldUseBlobStore(filename)) {
