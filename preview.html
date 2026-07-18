@@ -154,6 +154,9 @@
       .filters { border-block: 1px solid var(--line); padding: 16px 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
       select { height: 44px; border: 1px solid var(--line); background: #fff; padding: 0 12px; color: #111; }
       .grid { padding: 30px 0 64px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 44px 20px; }
+      .grid.is-preparing { min-height: min(900px, 120vw); }
+      .grid.is-preparing #productGrid > .card { opacity: 0; transform: translateY(6px); }
+      .grid.is-ready #productGrid > .card { opacity: 1; transform: none; transition: opacity .18s ease, transform .18s ease; }
       .pagination { margin: -28px 0 64px; display: none; align-items: center; justify-content: center; gap: 8px; }
       .pagination.visible { display: flex; }
       .pagination button { min-width: 40px; height: 40px; padding: 0 13px; border: 1px solid var(--line); background: #fff; color: #111; font-size: 11px; font-weight: 700; text-transform: uppercase; cursor: pointer; }
@@ -1077,6 +1080,7 @@
         }
       })();
       const productGrid = document.getElementById("productGrid");
+      const productGridShell = productGrid.closest(".grid");
       const productPagination = document.getElementById("productPagination");
       const searchPanel = document.getElementById("searchPanel");
       const searchToggle = document.getElementById("searchToggle");
@@ -1093,6 +1097,7 @@
       const productsPerPage = 12;
       let currentProductPage = 1;
       let currentProductList = productData;
+      let productRenderToken = 0;
       let siteContentSignature = "";
       const comboText = (kind) => {
         if (kind === "tee") return "Mua kèm quần hoặc 2 áo cùng tone: từ 2 sản phẩm giảm 5%, từ 3 sản phẩm giảm 10%.";
@@ -1182,6 +1187,21 @@
         });
         return urls.slice(0, limit);
       };
+      const collectVisibleCardImageUrls = (products, limit = 64) => {
+        const urls = [];
+        const add = (url) => {
+          try {
+            if (new URL(url, location.href).hostname.includes("blob.vercel-storage.com")) return;
+          } catch {}
+          if (!isImageUrl(url) || urls.includes(url)) return;
+          urls.push(url);
+        };
+        products.forEach((product) => {
+          add(productImageUrl(product));
+          variantSwatches(product).forEach((color) => add(activeVariant(product).colorImages?.[color] || product.colorImages?.[color]));
+        });
+        return urls.slice(0, limit);
+      };
       const warmImage = (url, priority = "auto") => new Promise((resolve) => {
         if (!isImageUrl(url) || imageWarmCache.has(url)) return resolve(false);
         imageWarmCache.add(url);
@@ -1193,12 +1213,25 @@
         image.onerror = () => resolve(false);
         image.src = url;
       });
+      const preloadImageBatch = (urls, priority = "high", timeout = 1800) => {
+        const cleanUrls = urls.filter((url) => isImageUrl(url) && !imageWarmCache.has(url));
+        preconnectImageOrigins(cleanUrls);
+        if (!cleanUrls.length) return Promise.resolve();
+        let timeoutId = 0;
+        const timeoutPromise = new Promise((resolve) => {
+          timeoutId = window.setTimeout(resolve, timeout);
+        });
+        return Promise.race([
+          Promise.allSettled(cleanUrls.map((url) => warmImage(url, priority))),
+          timeoutPromise
+        ]).finally(() => window.clearTimeout(timeoutId));
+      };
       const drainImageWarmQueue = async () => {
         if (imageWarmRunning) return;
         imageWarmRunning = true;
         while (imageWarmQueue.length) {
-          const next = imageWarmQueue.shift();
-          await warmImage(next.url, next.priority);
+          const batch = imageWarmQueue.splice(0, 8);
+          await Promise.allSettled(batch.map((next) => warmImage(next.url, next.priority)));
         }
         imageWarmRunning = false;
       };
@@ -1331,22 +1364,37 @@
         `;
       }
       function renderProducts(list = productData, resetPage = true) {
+        const renderToken = ++productRenderToken;
         currentProductList = list;
         if (resetPage) currentProductPage = 1;
         const totalPages = Math.max(1, Math.ceil(list.length / productsPerPage));
         currentProductPage = Math.min(currentProductPage, totalPages);
         const pageStart = (currentProductPage - 1) * productsPerPage;
         const visibleProducts = list.slice(pageStart, pageStart + productsPerPage);
-        productGrid.innerHTML = visibleProducts.length ? visibleProducts.map(productCardMarkup).join("") : `
-          <div class="empty-search">
-            <div><strong>Không tìm thấy sản phẩm</strong><span>Thử tìm theo Tee, Hoodie, Pants, màu đen, trắng, xám hoặc form boxy.</span></div>
-          </div>
-        `;
-        warmProductImages(list, visibleProducts);
         searchCount.textContent = list.length
           ? `Hiển thị ${pageStart + 1}-${Math.min(pageStart + productsPerPage, list.length)} / ${list.length} sản phẩm`
           : `0/${productData.length} sản phẩm`;
         renderProductPagination();
+        if (!visibleProducts.length) {
+          productGridShell.classList.remove("is-preparing", "is-ready");
+          productGrid.innerHTML = `
+            <div class="empty-search">
+              <div><strong>Không tìm thấy sản phẩm</strong><span>Thử tìm theo Tee, Hoodie, Pants, màu đen, trắng, xám hoặc form boxy.</span></div>
+            </div>
+          `;
+          return;
+        }
+        productGridShell.classList.add("is-preparing");
+        productGridShell.classList.remove("is-ready");
+        preloadImageBatch(collectVisibleCardImageUrls(visibleProducts, 72), "high", 1800).then(() => {
+          if (renderToken !== productRenderToken) return;
+          productGrid.innerHTML = visibleProducts.map(productCardMarkup).join("");
+          warmProductImages(list, visibleProducts);
+          requestAnimationFrame(() => {
+            productGridShell.classList.remove("is-preparing");
+            productGridShell.classList.add("is-ready");
+          });
+        });
       }
       function filterProducts() {
         const query = normalizeSearch(productSearch.value.trim());
