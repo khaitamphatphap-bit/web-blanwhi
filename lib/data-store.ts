@@ -38,6 +38,15 @@ function encryptedBlobPath(filename: string) {
   return `blanwhi/private/${filename.replace(/\.json$/, "")}.enc.json`;
 }
 
+function keyedBlobIndexPath(namespace: string) {
+  return `blanwhi/private-keyed-index/${namespace}.enc.json`;
+}
+
+function warnBlobFallback(action: string, error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  console.warn(`[BLANWHI storage] ${action} failed; using the repository fallback. ${message}`);
+}
+
 async function encryptionKey() {
   const token = process.env.DATA_ENCRYPTION_KEY || process.env.PANCAKE_WEBHOOK_SECRET || process.env.BLOB_READ_WRITE_TOKEN;
   if (!token) throw new Error("Thiếu DATA_ENCRYPTION_KEY hoặc PANCAKE_WEBHOOK_SECRET để mã hóa dữ liệu đơn hàng.");
@@ -75,6 +84,24 @@ async function readEncryptedBlobJsonStore<T>(filename: string) {
   const result = await get(encryptedBlobPath(filename), { access: "public", useCache: false });
   if (!result || result.statusCode !== 200) return null;
   return decryptJson<T>(await new Response(result.stream).text());
+}
+
+async function readKeyedBlobIndex<T>(namespace: string) {
+  const { get } = await import("@vercel/blob");
+  const result = await get(keyedBlobIndexPath(namespace), { access: "public", useCache: false });
+  if (!result || result.statusCode !== 200) return null;
+  return decryptJson<Record<string, T>>(await new Response(result.stream).text());
+}
+
+async function writeKeyedBlobIndex<T>(namespace: string, value: Record<string, T>) {
+  const { put } = await import("@vercel/blob");
+  await put(keyedBlobIndexPath(namespace), await encryptJson(value), {
+    access: "public",
+    addRandomSuffix: false,
+    allowOverwrite: true,
+    cacheControlMaxAge: 60,
+    contentType: "application/json"
+  });
 }
 
 async function writeEncryptedBlobJsonStore<T>(filename: string, value: T) {
@@ -264,13 +291,21 @@ export async function readJsonStore<T>(filename: string, fallback: T): Promise<T
   }
 
   if (shouldUseBlobStore(filename)) {
-    const saved = await readBlobJsonStore<T>();
-    if (saved !== null) return saved;
+    try {
+      const saved = await readBlobJsonStore<T>();
+      if (saved !== null) return saved;
+    } catch (error) {
+      warnBlobFallback(`read ${filename}`, error);
+    }
   }
 
   if (shouldUseEncryptedBlobStore(filename)) {
-    const saved = await readEncryptedBlobJsonStore<T>(filename);
-    if (saved !== null) return saved;
+    try {
+      const saved = await readEncryptedBlobJsonStore<T>(filename);
+      if (saved !== null) return saved;
+    } catch (error) {
+      warnBlobFallback(`read ${filename}`, error);
+    }
   }
 
   const file = await ensureJsonFile<T>(filename, fallback);
@@ -299,23 +334,38 @@ export async function readKeyedJsonStore<T>(namespace: string, fallback: Record<
     }
   }
   if (hasBlobStore()) {
-    const { get, list } = await import("@vercel/blob");
-    const prefix = `blanwhi/private-keyed/${namespace}/`;
-    const result = await list({ prefix, limit: 1000 });
-    if (result.blobs.length) {
-      const entries = await Promise.all(result.blobs.map(async (blob) => {
-        try {
-          const saved = await get(blob.pathname, { access: "public", useCache: false });
-          if (!saved || saved.statusCode !== 200) return null;
-          const encodedKey = blob.pathname.slice(prefix.length).replace(/\.enc\.json$/, "");
-          const key = Buffer.from(encodedKey, "base64url").toString("utf8");
-          return [key, await decryptJson<T>(await new Response(saved.stream).text())] as const;
-        } catch {
-          return null;
-        }
-      }));
-      const legacy = await readJsonStore<Record<string, T>>(`${namespace}.json`, fallback);
-      return { ...legacy, ...Object.fromEntries(entries.filter((entry) => entry !== null)) };
+    try {
+      const indexed = await readKeyedBlobIndex<T>(namespace);
+      if (indexed) {
+        const legacy = await readJsonStore<Record<string, T>>(`${namespace}.json`, fallback);
+        return { ...legacy, ...indexed };
+      }
+
+      // One-time migration for stores created before the compact index existed.
+      // Avoid Blob.list() on every request because it consumes the limited
+      // advanced-operations quota and can suspend the whole store.
+      const { get, list } = await import("@vercel/blob");
+      const prefix = `blanwhi/private-keyed/${namespace}/`;
+      const result = await list({ prefix, limit: 1000 });
+      if (result.blobs.length) {
+        const entries = await Promise.all(result.blobs.map(async (blob) => {
+          try {
+            const saved = await get(blob.pathname, { access: "public", useCache: false });
+            if (!saved || saved.statusCode !== 200) return null;
+            const encodedKey = blob.pathname.slice(prefix.length).replace(/\.enc\.json$/, "");
+            const key = Buffer.from(encodedKey, "base64url").toString("utf8");
+            return [key, await decryptJson<T>(await new Response(saved.stream).text())] as const;
+          } catch {
+            return null;
+          }
+        }));
+        const legacy = await readJsonStore<Record<string, T>>(`${namespace}.json`, fallback);
+        const merged = { ...legacy, ...Object.fromEntries(entries.filter((entry) => entry !== null)) };
+        await writeKeyedBlobIndex(namespace, merged);
+        return merged;
+      }
+    } catch (error) {
+      warnBlobFallback(`read keyed store ${namespace}`, error);
     }
   }
   return readJsonStore<Record<string, T>>(`${namespace}.json`, fallback);
@@ -346,6 +396,8 @@ export async function writeKeyedJsonRecord<T>(namespace: string, itemKey: string
       cacheControlMaxAge: 60,
       contentType: "application/json"
     });
+    const indexed = await readKeyedBlobIndex<T>(namespace) || {};
+    await writeKeyedBlobIndex(namespace, { ...indexed, [itemKey]: value });
     return value;
   }
   const current = await readJsonStore<Record<string, T>>(`${namespace}.json`, {});

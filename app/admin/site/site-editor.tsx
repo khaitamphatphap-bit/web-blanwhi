@@ -58,6 +58,7 @@ async function prepareImageForUpload(file: File) {
 
 export function SiteEditor() {
   const [content, setContent] = useState<SiteContent | null>(null);
+  const [loadError, setLoadError] = useState("");
   const [selectedId, setSelectedId] = useState("");
   const [jsonDraft, setJsonDraft] = useState("");
   const [message, setMessage] = useState("");
@@ -65,14 +66,22 @@ export function SiteEditor() {
   const [inventoryBusy, setInventoryBusy] = useState("");
   const editorRef = useRef<HTMLDivElement | null>(null);
 
+  async function loadContent() {
+    setLoadError("");
+    try {
+      const response = await fetch("/api/site", { cache: "no-store" });
+      if (!response.ok) throw new Error(`Không tải được dữ liệu website (lỗi ${response.status}).`);
+      const data = await response.json() as SiteContent;
+      setContent(data);
+      setSelectedId(data.products?.[0]?.id || "");
+      setJsonDraft(JSON.stringify(data, null, 2));
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : "Không tải được dữ liệu website.");
+    }
+  }
+
   useEffect(() => {
-    fetch("/api/site")
-      .then((response) => response.json())
-      .then((data) => {
-        setContent(data);
-        setSelectedId(data.products?.[0]?.id || "");
-        setJsonDraft(JSON.stringify(data, null, 2));
-      });
+    void loadContent();
   }, []);
 
   const selectedProduct = useMemo(
@@ -272,7 +281,16 @@ export function SiteEditor() {
   }
 
   if (!content) {
-    return <main className="mx-auto min-h-screen max-w-6xl bg-white p-8">Đang tải admin...</main>;
+    return (
+      <main className="mx-auto min-h-screen max-w-6xl bg-white p-8">
+        <p>{loadError || "Đang tải admin..."}</p>
+        {loadError && (
+          <button type="button" onClick={() => void loadContent()} className="mt-4 border border-black px-4 py-2 text-xs uppercase">
+            Tải lại dữ liệu
+          </button>
+        )}
+      </main>
+    );
   }
 
   return (
