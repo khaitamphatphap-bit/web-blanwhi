@@ -111,18 +111,37 @@ export class PancakeService {
     if (variationCache && variationCache.expiresAt > Date.now()) return variationCache.value;
     if (variationRequest) return variationRequest;
     variationRequest = (async () => {
-      const response = await this.client.request<unknown>(`/shops/${encodeURIComponent(this.shopId())}/products/variations`, {
-        query: { page_number: 1, page_size: 1000 }
-      });
-      const value = records(response).map((item) => ({
-        id: text(item, ["id", "variation_id"]),
-        productId: text(item, ["product_id", "productId"]),
-        sku: text(item, ["custom_id", "sku", "product_code", "display_id"]).toUpperCase(),
-        name: variationName(item),
-        quantity: Validator.quantity(item.remain_quantity ?? item.quantity ?? item.inventory_quantity ?? item.total_quantity),
-        raw: item
-      })).filter((item) => item.id || item.sku);
-      variationCache = { expiresAt: Date.now() + 5000, value };
+      const pageSize = 100;
+      const maxPages = 100;
+      const variationByKey = new Map<string, PancakeVariation>();
+
+      for (let pageNumber = 1; pageNumber <= maxPages; pageNumber += 1) {
+        const response = await this.client.request<unknown>(`/shops/${encodeURIComponent(this.shopId())}/products/variations`, {
+          query: { page_number: pageNumber, page_size: pageSize }
+        });
+        const pageRecords = records(response);
+        let addedCount = 0;
+
+        for (const item of pageRecords) {
+          const variation = {
+            id: text(item, ["id", "variation_id"]),
+            productId: text(item, ["product_id", "productId"]),
+            sku: text(item, ["custom_id", "sku", "product_code", "display_id"]).toUpperCase(),
+            name: variationName(item),
+            quantity: Validator.quantity(item.remain_quantity ?? item.quantity ?? item.inventory_quantity ?? item.total_quantity),
+            raw: item
+          };
+          if (!variation.id && !variation.sku) continue;
+          const key = variation.id || `sku:${variation.sku}`;
+          if (!variationByKey.has(key)) addedCount += 1;
+          variationByKey.set(key, variation);
+        }
+
+        if (pageRecords.length < pageSize || addedCount === 0) break;
+      }
+
+      const value = Array.from(variationByKey.values());
+      variationCache = { expiresAt: Date.now() + 30_000, value };
       return value;
     })();
     try {
