@@ -288,6 +288,15 @@ export async function readSiteContent(): Promise<SiteContent> {
       bank: {
         ...defaultSiteContent.payment.bank,
         ...saved.payment?.bank,
+        accountNumber: !saved.payment?.bank?.accountNumber || /0123\s*456\s*789/.test(saved.payment.bank.accountNumber)
+          ? defaultSiteContent.payment.bank.accountNumber
+          : saved.payment.bank.accountNumber,
+        bankName: !saved.payment?.bank?.accountNumber || /0123\s*456\s*789/.test(saved.payment.bank.accountNumber)
+          ? defaultSiteContent.payment.bank.bankName
+          : saved.payment.bank.bankName || defaultSiteContent.payment.bank.bankName,
+        bankCode: !saved.payment?.bank?.accountNumber || /0123\s*456\s*789/.test(saved.payment.bank.accountNumber)
+          ? defaultSiteContent.payment.bank.bankCode
+          : saved.payment.bank.bankCode || defaultSiteContent.payment.bank.bankCode,
         receiverName: !saved.payment?.bank?.receiverName || saved.payment.bank.receiverName === "BLANWHI STORE"
           ? defaultSiteContent.payment.bank.receiverName
           : saved.payment.bank.receiverName
