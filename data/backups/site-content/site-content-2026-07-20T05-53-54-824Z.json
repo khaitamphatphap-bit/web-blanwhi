@@ -176,14 +176,14 @@
           "key": "product|variant-1783923310603|XS",
           "sku": "ĐEN-XS",
           "quantity": 0,
-          "publishQuantity": 1,
+          "publishQuantity": 0,
           "pancakeQuantity": 75,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
           "pancakeVariationId": "2f8d87fc-2909-4170-8862-e2b4eeb69312",
           "pancakeSku": "THUNTRONDENXS",
-          "lastSyncedAt": "2026-07-18T09:34:41.179Z",
           "size": "XS",
-          "color": "variant-1783923310603"
+          "color": "variant-1783923310603",
+          "lastSyncedAt": "2026-07-18T09:34:41.179Z"
         },
         {
           "key": "product|variant-1783923310603|S",
@@ -194,9 +194,9 @@
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
           "pancakeVariationId": "7c911827-d8de-4bdb-93c2-fc434bb4d016",
           "pancakeSku": "THUNTRONDENS",
-          "lastSyncedAt": "2026-07-18T09:34:51.095Z",
           "size": "S",
-          "color": "variant-1783923310603"
+          "color": "variant-1783923310603",
+          "lastSyncedAt": "2026-07-18T09:34:51.095Z"
         },
         {
           "key": "product|variant-1783923310603|M",
@@ -207,9 +207,9 @@
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
           "pancakeVariationId": "20da7577-c57e-4360-99f2-c5d4af247055",
           "pancakeSku": "THUNTRONDENM",
-          "lastSyncedAt": "2026-07-20T05:20:54.917Z",
           "size": "M",
-          "color": "variant-1783923310603"
+          "color": "variant-1783923310603",
+          "lastSyncedAt": "2026-07-20T05:20:54.917Z"
         },
         {
           "key": "product|variant-1783923310603|L",
@@ -220,9 +220,9 @@
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
           "pancakeVariationId": "a0aad8fd-f5eb-4544-8d18-0d499e947299",
           "pancakeSku": "THUNTRONDENL",
-          "lastSyncedAt": "2026-07-20T05:21:08.076Z",
           "size": "L",
-          "color": "variant-1783923310603"
+          "color": "variant-1783923310603",
+          "lastSyncedAt": "2026-07-20T05:21:08.076Z"
         },
         {
           "key": "product|variant-1783923310603|XL",
@@ -233,9 +233,9 @@
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
           "pancakeVariationId": "98dc20dc-849a-48c7-a6c7-4070efbe1195",
           "pancakeSku": "THUNTRONDENXL",
-          "lastSyncedAt": "2026-07-20T05:21:43.562Z",
           "size": "XL",
-          "color": "variant-1783923310603"
+          "color": "variant-1783923310603",
+          "lastSyncedAt": "2026-07-20T05:21:43.562Z"
         },
         {
           "key": "product|variant-1783923329459|XS",
@@ -246,9 +246,9 @@
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
           "pancakeVariationId": "87c409f4-856c-4a57-8a92-16c6b89c24fd",
           "pancakeSku": "THUNTRONTRANGXS",
-          "lastSyncedAt": "2026-07-20T05:22:16.661Z",
           "size": "XS",
-          "color": "variant-1783923329459"
+          "color": "variant-1783923329459",
+          "lastSyncedAt": "2026-07-20T05:22:16.661Z"
         },
         {
           "key": "product|variant-1783923329459|S",
@@ -259,9 +259,9 @@
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
           "pancakeVariationId": "ba0c6aaa-afa5-460d-bb1e-10d8caca22be",
           "pancakeSku": "THUNTRONTRANGS",
-          "lastSyncedAt": "2026-07-20T05:22:37.759Z",
           "size": "S",
-          "color": "variant-1783923329459"
+          "color": "variant-1783923329459",
+          "lastSyncedAt": "2026-07-20T05:22:37.759Z"
         },
         {
           "key": "product|variant-1783923329459|M",
@@ -272,9 +272,9 @@
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
           "pancakeVariationId": "1f24e056-c1bf-4061-8f2e-f10213e434ff",
           "pancakeSku": "THUNTRONTRANGM",
-          "lastSyncedAt": "2026-07-20T05:23:04.151Z",
           "size": "M",
-          "color": "variant-1783923329459"
+          "color": "variant-1783923329459",
+          "lastSyncedAt": "2026-07-20T05:23:04.151Z"
         },
         {
           "key": "product|variant-1783923329459|L",
@@ -285,9 +285,9 @@
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
           "pancakeVariationId": "0e21d7f6-2e31-4d41-9919-d1548950f01e",
           "pancakeSku": "THUNTRONTRANGL",
-          "lastSyncedAt": "2026-07-20T05:23:21.085Z",
           "size": "L",
-          "color": "variant-1783923329459"
+          "color": "variant-1783923329459",
+          "lastSyncedAt": "2026-07-20T05:23:21.085Z"
         },
         {
           "key": "product|variant-1783923329459|XL",
@@ -298,9 +298,9 @@
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
           "pancakeVariationId": "428a5d5b-2b83-4144-a335-7cf91573d0a5",
           "pancakeSku": "THUNTRONTRANGXL",
-          "lastSyncedAt": "2026-07-20T05:23:31.509Z",
           "size": "XL",
-          "color": "variant-1783923329459"
+          "color": "variant-1783923329459",
+          "lastSyncedAt": "2026-07-20T05:23:31.509Z"
         },
         {
           "key": "product|variant-1783923343419|XS",
@@ -311,9 +311,9 @@
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
           "pancakeVariationId": "46df1da9-9cc3-42ce-b63f-38e96d05454c",
           "pancakeSku": "THUNTRONXAMXS",
-          "lastSyncedAt": "2026-07-20T05:23:51.547Z",
           "size": "XS",
-          "color": "variant-1783923343419"
+          "color": "variant-1783923343419",
+          "lastSyncedAt": "2026-07-20T05:23:51.547Z"
         },
         {
           "key": "product|variant-1783923343419|S",
@@ -324,9 +324,9 @@
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
           "pancakeVariationId": "a15446a2-88b1-4eea-8127-3ed5963d3e0c",
           "pancakeSku": "THUNTRONXAMS",
-          "lastSyncedAt": "2026-07-20T05:24:21.105Z",
           "size": "S",
-          "color": "variant-1783923343419"
+          "color": "variant-1783923343419",
+          "lastSyncedAt": "2026-07-20T05:24:21.105Z"
         },
         {
           "key": "product|variant-1783923343419|M",
@@ -337,9 +337,9 @@
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
           "pancakeVariationId": "18bb4c3a-abff-408e-9693-d6f530202581",
           "pancakeSku": "THUNTRONXAMM",
-          "lastSyncedAt": "2026-07-20T05:24:31.109Z",
           "size": "M",
-          "color": "variant-1783923343419"
+          "color": "variant-1783923343419",
+          "lastSyncedAt": "2026-07-20T05:24:31.109Z"
         },
         {
           "key": "product|variant-1783923343419|L",
@@ -350,9 +350,9 @@
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
           "pancakeVariationId": "e4fdc276-8acd-474b-b125-6de128712839",
           "pancakeSku": "THUNTRONXAML",
-          "lastSyncedAt": "2026-07-20T05:24:42.475Z",
           "size": "L",
-          "color": "variant-1783923343419"
+          "color": "variant-1783923343419",
+          "lastSyncedAt": "2026-07-20T05:24:42.475Z"
         },
         {
           "key": "product|variant-1783923343419|XL",
@@ -363,9 +363,9 @@
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
           "pancakeVariationId": "a5d4c9cd-5e17-449b-95f9-a5e8438eebb8",
           "pancakeSku": "THUNTRONXAMXL",
-          "lastSyncedAt": "2026-07-20T05:25:12.382Z",
           "size": "XL",
-          "color": "variant-1783923343419"
+          "color": "variant-1783923343419",
+          "lastSyncedAt": "2026-07-20T05:25:12.382Z"
         },
         {
           "key": "product|variant-1783923355811|XS",
@@ -376,9 +376,9 @@
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
           "pancakeVariationId": "0a250864-7b09-4d76-9656-99039585c1f3",
           "pancakeSku": "THUNTRONXAMCARBONXS",
-          "lastSyncedAt": "2026-07-20T05:25:23.462Z",
           "size": "XS",
-          "color": "variant-1783923355811"
+          "color": "variant-1783923355811",
+          "lastSyncedAt": "2026-07-20T05:25:23.462Z"
         },
         {
           "key": "product|variant-1783923355811|S",
@@ -389,9 +389,9 @@
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
           "pancakeVariationId": "c9b30ef9-f0cf-4b19-8288-91f07b8746a7",
           "pancakeSku": "THUNTRONXAMCARBONS",
-          "lastSyncedAt": "2026-07-20T05:25:33.605Z",
           "size": "S",
-          "color": "variant-1783923355811"
+          "color": "variant-1783923355811",
+          "lastSyncedAt": "2026-07-20T05:25:33.605Z"
         },
         {
           "key": "product|variant-1783923355811|M",
@@ -402,9 +402,9 @@
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
           "pancakeVariationId": "a7facc2e-6505-4626-9a90-7491325442ef",
           "pancakeSku": "THUNTRONXAMCARBONM",
-          "lastSyncedAt": "2026-07-20T05:25:54.699Z",
           "size": "M",
-          "color": "variant-1783923355811"
+          "color": "variant-1783923355811",
+          "lastSyncedAt": "2026-07-20T05:25:54.699Z"
         },
         {
           "key": "product|variant-1783923355811|L",
@@ -415,9 +415,9 @@
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
           "pancakeVariationId": "67fbcd0e-121b-403b-8f39-44f28325f233",
           "pancakeSku": "THUNTRONXAMCARBONL",
-          "lastSyncedAt": "2026-07-20T05:26:23.597Z",
           "size": "L",
-          "color": "variant-1783923355811"
+          "color": "variant-1783923355811",
+          "lastSyncedAt": "2026-07-20T05:26:23.597Z"
         },
         {
           "key": "product|variant-1783923355811|XL",
@@ -428,9 +428,9 @@
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
           "pancakeVariationId": "72372f51-4ca3-4566-9a02-02e5afa4c948",
           "pancakeSku": "THUNTRONXAMCARBONXL",
-          "lastSyncedAt": "2026-07-20T05:26:44.229Z",
           "size": "XL",
-          "color": "variant-1783923355811"
+          "color": "variant-1783923355811",
+          "lastSyncedAt": "2026-07-20T05:26:44.229Z"
         },
         {
           "key": "product|variant-1783923359539|XS",
@@ -441,9 +441,9 @@
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
           "pancakeVariationId": "b98c1821-d635-4564-b36d-8fa542bbd76c",
           "pancakeSku": "THUNTRONTITANXS",
-          "lastSyncedAt": "2026-07-20T05:26:58.509Z",
           "size": "XS",
-          "color": "variant-1783923359539"
+          "color": "variant-1783923359539",
+          "lastSyncedAt": "2026-07-20T05:26:58.509Z"
         },
         {
           "key": "product|variant-1783923359539|S",
@@ -454,9 +454,9 @@
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
           "pancakeVariationId": "559b367b-ea77-4d1f-b2c9-068df6bad38f",
           "pancakeSku": "THUNTRONTITANS",
-          "lastSyncedAt": "2026-07-20T05:27:23.501Z",
           "size": "S",
-          "color": "variant-1783923359539"
+          "color": "variant-1783923359539",
+          "lastSyncedAt": "2026-07-20T05:27:23.501Z"
         },
         {
           "key": "product|variant-1783923359539|M",
@@ -467,9 +467,9 @@
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
           "pancakeVariationId": "23611d0a-0e86-4d8c-8aed-4dc31e33e7ec",
           "pancakeSku": "THUNTRONTITANM",
-          "lastSyncedAt": "2026-07-20T05:27:50.082Z",
           "size": "M",
-          "color": "variant-1783923359539"
+          "color": "variant-1783923359539",
+          "lastSyncedAt": "2026-07-20T05:27:50.082Z"
         },
         {
           "key": "product|variant-1783923359539|L",
@@ -480,9 +480,9 @@
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
           "pancakeVariationId": "aaac26ed-814d-48e0-b765-18dadf387851",
           "pancakeSku": "THUNTRONTITANL",
-          "lastSyncedAt": "2026-07-20T05:28:00.907Z",
           "size": "L",
-          "color": "variant-1783923359539"
+          "color": "variant-1783923359539",
+          "lastSyncedAt": "2026-07-20T05:28:00.907Z"
         },
         {
           "key": "product|variant-1783923359539|XL",
@@ -493,9 +493,9 @@
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
           "pancakeVariationId": "fa01a513-b02b-4660-ae3c-289f77a2fa64",
           "pancakeSku": "THUNTRONTITANXL",
-          "lastSyncedAt": "2026-07-20T05:28:18.436Z",
           "size": "XL",
-          "color": "variant-1783923359539"
+          "color": "variant-1783923359539",
+          "lastSyncedAt": "2026-07-20T05:28:18.436Z"
         },
         {
           "key": "product|variant-1783923366075|XS",
@@ -506,9 +506,9 @@
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
           "pancakeVariationId": "48d8d878-5d71-40fb-a9a5-365007cd1930",
           "pancakeSku": "THUNTRONNAUXS",
-          "lastSyncedAt": "2026-07-20T05:28:48.841Z",
           "size": "XS",
-          "color": "variant-1783923366075"
+          "color": "variant-1783923366075",
+          "lastSyncedAt": "2026-07-20T05:28:48.841Z"
         },
         {
           "key": "product|variant-1783923366075|S",
@@ -519,9 +519,9 @@
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
           "pancakeVariationId": "d87db99d-6515-4d4d-b9a4-aecdba377ee8",
           "pancakeSku": "THUNTRONNAUS",
-          "lastSyncedAt": "2026-07-20T05:28:58.141Z",
           "size": "S",
-          "color": "variant-1783923366075"
+          "color": "variant-1783923366075",
+          "lastSyncedAt": "2026-07-20T05:28:58.141Z"
         },
         {
           "key": "product|variant-1783923366075|M",
@@ -532,9 +532,9 @@
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
           "pancakeVariationId": "b1c150df-0902-488c-9b54-d32b94d1e10b",
           "pancakeSku": "THUNTRONNAUM",
-          "lastSyncedAt": "2026-07-20T05:29:07.609Z",
           "size": "M",
-          "color": "variant-1783923366075"
+          "color": "variant-1783923366075",
+          "lastSyncedAt": "2026-07-20T05:29:07.609Z"
         },
         {
           "key": "product|variant-1783923366075|L",
@@ -545,9 +545,9 @@
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
           "pancakeVariationId": "c1d9bad0-dcac-4c97-8f2f-0fb614fd0375",
           "pancakeSku": "THUNTRONNAUL",
-          "lastSyncedAt": "2026-07-20T05:29:27.569Z",
           "size": "L",
-          "color": "variant-1783923366075"
+          "color": "variant-1783923366075",
+          "lastSyncedAt": "2026-07-20T05:29:27.569Z"
         },
         {
           "key": "product|variant-1783923366075|XL",
@@ -558,9 +558,9 @@
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
           "pancakeVariationId": "976e0ea0-416b-4165-b208-52adbde24b9d",
           "pancakeSku": "THUNTRONNAUXL",
-          "lastSyncedAt": "2026-07-20T05:29:37.319Z",
           "size": "XL",
-          "color": "variant-1783923366075"
+          "color": "variant-1783923366075",
+          "lastSyncedAt": "2026-07-20T05:29:37.319Z"
         },
         {
           "key": "product|variant-1783923379411|XS",
@@ -571,9 +571,9 @@
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
           "pancakeVariationId": "00d5367d-b0f2-4703-b1b5-c0a65becdc47",
           "pancakeSku": "THUNTRONXANHDEEPFORESTXS",
-          "lastSyncedAt": "2026-07-20T05:30:12.329Z",
           "size": "XS",
-          "color": "variant-1783923379411"
+          "color": "variant-1783923379411",
+          "lastSyncedAt": "2026-07-20T05:30:12.329Z"
         },
         {
           "key": "product|variant-1783923379411|S",
@@ -584,9 +584,9 @@
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
           "pancakeVariationId": "bdf479ae-6e66-40df-b2d5-3089e6bd8f65",
           "pancakeSku": "THUNTRONXANHDEEPFORESTS",
-          "lastSyncedAt": "2026-07-20T05:30:21.433Z",
           "size": "S",
-          "color": "variant-1783923379411"
+          "color": "variant-1783923379411",
+          "lastSyncedAt": "2026-07-20T05:30:21.433Z"
         },
         {
           "key": "product|variant-1783923379411|M",
@@ -597,9 +597,9 @@
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
           "pancakeVariationId": "379cb8d3-9ff4-4853-bea5-83e3a239876e",
           "pancakeSku": "THUNTRONXANHDEEPFORESTM",
-          "lastSyncedAt": "2026-07-20T05:30:50.709Z",
           "size": "M",
-          "color": "variant-1783923379411"
+          "color": "variant-1783923379411",
+          "lastSyncedAt": "2026-07-20T05:30:50.709Z"
         },
         {
           "key": "product|variant-1783923379411|L",
@@ -610,9 +610,9 @@
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
           "pancakeVariationId": "8dac7e39-bdc1-4db5-ad72-cefb36904253",
           "pancakeSku": "THUNTRONXANHDEEPFORESTL",
-          "lastSyncedAt": "2026-07-20T05:31:54.176Z",
           "size": "L",
-          "color": "variant-1783923379411"
+          "color": "variant-1783923379411",
+          "lastSyncedAt": "2026-07-20T05:31:54.176Z"
         },
         {
           "key": "product|variant-1783923379411|XL",
@@ -623,9 +623,9 @@
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
           "pancakeVariationId": "c966abde-772d-4611-a69f-5eea4ffdd08e",
           "pancakeSku": "THUNTRONXANHDEEPFORESTXL",
-          "lastSyncedAt": "2026-07-20T05:32:18.282Z",
           "size": "XL",
-          "color": "variant-1783923379411"
+          "color": "variant-1783923379411",
+          "lastSyncedAt": "2026-07-20T05:32:18.282Z"
         },
         {
           "key": "product|variant-1783923372203|XS",
@@ -636,9 +636,9 @@
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
           "pancakeVariationId": "447d9d1d-25a9-4a0c-ad7b-129ad47524a0",
           "pancakeSku": "THUNTRONXANHNAVYXS",
-          "lastSyncedAt": "2026-07-20T05:33:01.270Z",
           "size": "XS",
-          "color": "variant-1783923372203"
+          "color": "variant-1783923372203",
+          "lastSyncedAt": "2026-07-20T05:33:01.270Z"
         },
         {
           "key": "product|variant-1783923372203|S",
@@ -649,9 +649,9 @@
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
           "pancakeVariationId": "56e66caf-606e-4aca-aeb2-082786dc8390",
           "pancakeSku": "THUNTRONXANHNAVYS",
-          "lastSyncedAt": "2026-07-20T05:34:00.188Z",
           "size": "S",
-          "color": "variant-1783923372203"
+          "color": "variant-1783923372203",
+          "lastSyncedAt": "2026-07-20T05:34:00.188Z"
         },
         {
           "key": "product|variant-1783923372203|M",
@@ -662,9 +662,9 @@
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
           "pancakeVariationId": "c93c0042-d4bf-4be7-92fd-77dad9e7a40c",
           "pancakeSku": "THUNTRONXANHNAVYM",
-          "lastSyncedAt": "2026-07-20T05:34:09.877Z",
           "size": "M",
-          "color": "variant-1783923372203"
+          "color": "variant-1783923372203",
+          "lastSyncedAt": "2026-07-20T05:34:09.877Z"
         },
         {
           "key": "product|variant-1783923372203|L",
@@ -675,9 +675,9 @@
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
           "pancakeVariationId": "f7c2ea5e-016b-4eb6-b7b3-fa9db71745a0",
           "pancakeSku": "THUNTRONXANHNAVYL",
-          "lastSyncedAt": "2026-07-20T05:34:19.457Z",
           "size": "L",
-          "color": "variant-1783923372203"
+          "color": "variant-1783923372203",
+          "lastSyncedAt": "2026-07-20T05:34:19.457Z"
         },
         {
           "key": "product|variant-1783923372203|XL",
@@ -688,9 +688,9 @@
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
           "pancakeVariationId": "f7c2ea5e-016b-4eb6-b7b3-fa9db71745a0",
           "pancakeSku": "THUNTRONXANHNAVYL",
-          "lastSyncedAt": "2026-07-20T05:34:35.003Z",
           "size": "XL",
-          "color": "variant-1783923372203"
+          "color": "variant-1783923372203",
+          "lastSyncedAt": "2026-07-20T05:34:35.003Z"
         },
         {
           "key": "product|variant-1783923382533|XS",
@@ -701,9 +701,9 @@
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
           "pancakeVariationId": "991334dd-d5d8-4e04-95aa-26f3e20e02d6",
           "pancakeSku": "THUNTRONSAMACXS",
-          "lastSyncedAt": "2026-07-20T05:35:03.971Z",
           "size": "XS",
-          "color": "variant-1783923382533"
+          "color": "variant-1783923382533",
+          "lastSyncedAt": "2026-07-20T05:35:03.971Z"
         },
         {
           "key": "product|variant-1783923382533|S",
@@ -714,9 +714,9 @@
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
           "pancakeVariationId": "df7a9ad3-603c-45a6-84e4-9c9e870bba8d",
           "pancakeSku": "THUNTRONSAMACS",
-          "lastSyncedAt": "2026-07-20T05:35:20.137Z",
           "size": "S",
-          "color": "variant-1783923382533"
+          "color": "variant-1783923382533",
+          "lastSyncedAt": "2026-07-20T05:35:20.137Z"
         },
         {
           "key": "product|variant-1783923382533|M",
@@ -727,20 +727,19 @@
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
           "pancakeVariationId": "ac88dbe9-0a58-4f49-a437-cab2d44d1bf1",
           "pancakeSku": "THUNTRONSAMACM",
-          "lastSyncedAt": "2026-07-20T05:35:28.619Z",
           "size": "M",
-          "color": "variant-1783923382533"
+          "color": "variant-1783923382533",
+          "lastSyncedAt": "2026-07-20T05:35:28.619Z"
         },
         {
           "key": "product|variant-1783923382533|L",
           "sku": "SA-MẠC-L",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 59,
-          "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
-          "pancakeVariationId": "2636017a-5de4-418e-b5fd-5c741f51e8ca",
-          "pancakeSku": "THUNTRONSAMACL",
-          "lastSyncedAt": "2026-07-20T05:35:48.682Z",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "L",
           "color": "variant-1783923382533"
         },
@@ -749,11 +748,10 @@
           "sku": "SA-MẠC-XL",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 37,
-          "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
-          "pancakeVariationId": "28494911-a3a7-4ef9-b93d-5a37c1e58d46",
-          "pancakeSku": "THUNTRONSAMACXL",
-          "lastSyncedAt": "2026-07-20T05:35:57.318Z",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "XL",
           "color": "variant-1783923382533"
         },
@@ -762,11 +760,10 @@
           "sku": "XANH-IDYLLIC-XS",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 4,
-          "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
-          "pancakeVariationId": "e797d920-83fd-4c25-915d-c6da8e5936cf",
-          "pancakeSku": "THUNTRONXANHMINTXS",
-          "lastSyncedAt": "2026-07-20T05:36:08.569Z",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "XS",
           "color": "variant-1783923388789"
         },
@@ -775,11 +772,10 @@
           "sku": "XANH-IDYLLIC-S",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 23,
-          "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
-          "pancakeVariationId": "b09938ab-1327-40ee-998b-d7ac3a5e1367",
-          "pancakeSku": "THUNTRONXANHMINTS",
-          "lastSyncedAt": "2026-07-20T05:36:18.065Z",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "S",
           "color": "variant-1783923388789"
         },
@@ -788,11 +784,10 @@
           "sku": "XANH-IDYLLIC-M",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 15,
-          "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
-          "pancakeVariationId": "ed0cb587-e3f3-4c7a-a048-c5cdeae5136c",
-          "pancakeSku": "THUNTRONXANHMINTM",
-          "lastSyncedAt": "2026-07-20T05:36:29.475Z",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "M",
           "color": "variant-1783923388789"
         },
@@ -801,11 +796,10 @@
           "sku": "XANH-IDYLLIC-L",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 50,
-          "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
-          "pancakeVariationId": "e2f851c8-9c3f-4901-9d81-aacd56c8fc13",
-          "pancakeSku": "THUNTRONXANHMINTL",
-          "lastSyncedAt": "2026-07-20T05:36:54.888Z",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "L",
           "color": "variant-1783923388789"
         },
@@ -814,11 +808,10 @@
           "sku": "XANH-IDYLLIC-XL",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 19,
-          "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
-          "pancakeVariationId": "4d4b6b51-733f-41d4-af42-8dd235aa80f3",
-          "pancakeSku": "THUNTRONXANHMINTXL",
-          "lastSyncedAt": "2026-07-20T05:37:09.588Z",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "XL",
           "color": "variant-1783923388789"
         },
@@ -828,10 +821,9 @@
           "quantity": 0,
           "publishQuantity": 0,
           "pancakeQuantity": 0,
-          "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
-          "pancakeVariationId": "89af4c21-6c67-4e9c-bcb7-86b778b58598",
-          "pancakeSku": "THUNTRONHONGXS",
-          "lastSyncedAt": "2026-07-20T05:37:21.036Z",
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "XS",
           "color": "variant-1783923392572"
         },
@@ -841,10 +833,9 @@
           "quantity": 0,
           "publishQuantity": 0,
           "pancakeQuantity": 0,
-          "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
-          "pancakeVariationId": "d11df5e4-cb38-4675-910a-210146afe12f",
-          "pancakeSku": "THUNTRONHONGS",
-          "lastSyncedAt": "2026-07-20T05:37:33.717Z",
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "S",
           "color": "variant-1783923392572"
         },
@@ -854,10 +845,9 @@
           "quantity": 0,
           "publishQuantity": 0,
           "pancakeQuantity": 0,
-          "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
-          "pancakeVariationId": "f2652bc7-bea5-4ad1-b8b9-3ec164c43a3a",
-          "pancakeSku": "THUNTRONHONGM",
-          "lastSyncedAt": "2026-07-20T05:37:45.851Z",
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "M",
           "color": "variant-1783923392572"
         },
@@ -866,11 +856,10 @@
           "sku": "PINK-SUGAR-L",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 10,
-          "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
-          "pancakeVariationId": "d6972a81-1f0e-4cb6-b2fa-2fa2c1817f16",
-          "pancakeSku": "THUNTRONHONGL",
-          "lastSyncedAt": "2026-07-20T05:37:57.672Z",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "L",
           "color": "variant-1783923392572"
         },
@@ -880,10 +869,9 @@
           "quantity": 0,
           "publishQuantity": 0,
           "pancakeQuantity": 0,
-          "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
-          "pancakeVariationId": "17330a08-069d-41b1-aa28-648fcdf6ddcc",
-          "pancakeSku": "THUNTRONHONGXL",
-          "lastSyncedAt": "2026-07-20T05:38:15.252Z",
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "XL",
           "color": "variant-1783923392572"
         },
@@ -892,11 +880,10 @@
           "sku": "BROKEN-OK-SPECIAL-EDITION-XS",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 9,
-          "pancakeProductId": "5270a14a-4028-434e-bf78-d3b7e2ba5a6c",
-          "pancakeVariationId": "a54fb5df-27a3-49aa-93b0-7933cbd5e657",
-          "pancakeSku": "BROKEN-OKXS",
-          "lastSyncedAt": "2026-07-20T05:38:50.396Z",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "XS",
           "color": "variant-1783923403107"
         },
@@ -905,11 +892,10 @@
           "sku": "BROKEN-OK-SPECIAL-EDITION-S",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 14,
-          "pancakeProductId": "5270a14a-4028-434e-bf78-d3b7e2ba5a6c",
-          "pancakeVariationId": "5bd35dd3-53a6-419b-b2fa-19ca27302060",
-          "pancakeSku": "BROKEN-OKS",
-          "lastSyncedAt": "2026-07-20T05:38:58.946Z",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "S",
           "color": "variant-1783923403107"
         },
@@ -918,11 +904,10 @@
           "sku": "BROKEN-OK-SPECIAL-EDITION-M",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 2,
-          "pancakeProductId": "5270a14a-4028-434e-bf78-d3b7e2ba5a6c",
-          "pancakeVariationId": "085b8a60-14e1-4448-8971-ee8387ed8c7f",
-          "pancakeSku": "BROKEN-OKM",
-          "lastSyncedAt": "2026-07-20T05:39:06.183Z",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "M",
           "color": "variant-1783923403107"
         },
@@ -931,11 +916,10 @@
           "sku": "BROKEN-OK-SPECIAL-EDITION-L",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 6,
-          "pancakeProductId": "5270a14a-4028-434e-bf78-d3b7e2ba5a6c",
-          "pancakeVariationId": "8581baee-384c-4322-9256-7c0bb2630b22",
-          "pancakeSku": "BROKEN-OKL",
-          "lastSyncedAt": "2026-07-20T05:39:13.217Z",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "L",
           "color": "variant-1783923403107"
         },
@@ -944,11 +928,10 @@
           "sku": "BROKEN-OK-SPECIAL-EDITION-XL",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 12,
-          "pancakeProductId": "5270a14a-4028-434e-bf78-d3b7e2ba5a6c",
-          "pancakeVariationId": "d97a490e-8572-439e-8fe8-3b070c5a40dc",
-          "pancakeSku": "BROKEN-OKXL",
-          "lastSyncedAt": "2026-07-20T05:39:50.722Z",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "XL",
           "color": "variant-1783923403107"
         },
@@ -958,10 +941,9 @@
           "quantity": 0,
           "publishQuantity": 0,
           "pancakeQuantity": 0,
-          "pancakeProductId": "271cf103-3c09-4b0b-97be-a090bcbc8a62",
-          "pancakeVariationId": "c434bb4a-66a7-44ae-a4ef-ece599ab0c9b",
-          "pancakeSku": "1",
-          "lastSyncedAt": "2026-07-20T05:40:03.408Z",
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "XS",
           "color": "variant-1783923411467"
         },
@@ -971,10 +953,9 @@
           "quantity": 0,
           "publishQuantity": 0,
           "pancakeQuantity": 0,
-          "pancakeProductId": "271cf103-3c09-4b0b-97be-a090bcbc8a62",
-          "pancakeVariationId": "627eae58-36ac-4592-be64-96968ec43390",
-          "pancakeSku": "2",
-          "lastSyncedAt": "2026-07-20T05:40:14.150Z",
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "S",
           "color": "variant-1783923411467"
         },
@@ -984,10 +965,9 @@
           "quantity": 0,
           "publishQuantity": 0,
           "pancakeQuantity": 0,
-          "pancakeProductId": "271cf103-3c09-4b0b-97be-a090bcbc8a62",
-          "pancakeVariationId": "13198142-ad5e-46a3-b5e6-9fe5f7527c2b",
-          "pancakeSku": "3",
-          "lastSyncedAt": "2026-07-20T05:40:38.036Z",
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "M",
           "color": "variant-1783923411467"
         },
@@ -997,10 +977,9 @@
           "quantity": 0,
           "publishQuantity": 0,
           "pancakeQuantity": 0,
-          "pancakeProductId": "271cf103-3c09-4b0b-97be-a090bcbc8a62",
-          "pancakeVariationId": "364be392-4ac0-4de4-a905-ec93984f88e9",
-          "pancakeSku": "4",
-          "lastSyncedAt": "2026-07-20T05:41:08.446Z",
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "L",
           "color": "variant-1783923411467"
         },
@@ -1010,10 +989,9 @@
           "quantity": 0,
           "publishQuantity": 0,
           "pancakeQuantity": 0,
-          "pancakeProductId": "271cf103-3c09-4b0b-97be-a090bcbc8a62",
-          "pancakeVariationId": "1ff8e5e4-1248-40d0-b981-f3d332113c2f",
-          "pancakeSku": "5",
-          "lastSyncedAt": "2026-07-20T05:41:16.394Z",
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "XL",
           "color": "variant-1783923411467"
         },
@@ -1023,10 +1001,9 @@
           "quantity": 0,
           "publishQuantity": 0,
           "pancakeQuantity": 0,
-          "pancakeProductId": "271cf103-3c09-4b0b-97be-a090bcbc8a62",
-          "pancakeVariationId": "3e6c2519-bebf-4509-a4ea-06152b002346",
-          "pancakeSku": "6",
-          "lastSyncedAt": "2026-07-20T05:41:25.475Z",
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "XS",
           "color": "variant-1783923407099"
         },
@@ -1036,10 +1013,9 @@
           "quantity": 0,
           "publishQuantity": 0,
           "pancakeQuantity": 0,
-          "pancakeProductId": "271cf103-3c09-4b0b-97be-a090bcbc8a62",
-          "pancakeVariationId": "21d563a4-3c87-4781-9b80-11b57f18c524",
-          "pancakeSku": "7",
-          "lastSyncedAt": "2026-07-20T05:41:34.703Z",
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "S",
           "color": "variant-1783923407099"
         },
@@ -1049,10 +1025,9 @@
           "quantity": 0,
           "publishQuantity": 0,
           "pancakeQuantity": 0,
-          "pancakeProductId": "271cf103-3c09-4b0b-97be-a090bcbc8a62",
-          "pancakeVariationId": "776c8aa4-dc4b-46d2-b71e-968dd4b725aa",
-          "pancakeSku": "8",
-          "lastSyncedAt": "2026-07-20T05:41:43.559Z",
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "M",
           "color": "variant-1783923407099"
         },
@@ -1062,10 +1037,9 @@
           "quantity": 0,
           "publishQuantity": 0,
           "pancakeQuantity": 0,
-          "pancakeProductId": "271cf103-3c09-4b0b-97be-a090bcbc8a62",
-          "pancakeVariationId": "24c6f9fb-ac0b-4971-ad79-36ebdec1cf28",
-          "pancakeSku": "9",
-          "lastSyncedAt": "2026-07-20T05:41:55.187Z",
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "L",
           "color": "variant-1783923407099"
         },
@@ -1075,10 +1049,9 @@
           "quantity": 0,
           "publishQuantity": 0,
           "pancakeQuantity": 0,
-          "pancakeProductId": "271cf103-3c09-4b0b-97be-a090bcbc8a62",
-          "pancakeVariationId": "b5c6658b-9b8c-4750-b1c9-2b38c67711ed",
-          "pancakeSku": "10",
-          "lastSyncedAt": "2026-07-20T05:42:02.438Z",
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "XL",
           "color": "variant-1783923407099"
         }
@@ -1159,52 +1132,48 @@
           "sku": "ĐEN-S",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 31,
-          "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
-          "pancakeVariationId": "cf466380-c0fe-4363-b0a0-d730bc76d290",
-          "pancakeSku": "1",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "S",
-          "color": "variant-1783928949879",
-          "lastSyncedAt": "2026-07-20T05:44:43.454Z"
+          "color": "variant-1783928949879"
         },
         {
           "key": "product|variant-1783928949879|M",
           "sku": "ĐEN-M",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 2,
-          "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
-          "pancakeVariationId": "31171440-895a-4b21-8376-dba82b1f197b",
-          "pancakeSku": "2",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "M",
-          "color": "variant-1783928949879",
-          "lastSyncedAt": "2026-07-20T05:44:50.494Z"
+          "color": "variant-1783928949879"
         },
         {
           "key": "product|variant-1783928949879|L",
           "sku": "ĐEN-L",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 11,
-          "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
-          "pancakeVariationId": "eb0a1d4a-9501-4109-b3bd-d016dd4b409f",
-          "pancakeSku": "3",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "L",
-          "color": "variant-1783928949879",
-          "lastSyncedAt": "2026-07-20T05:44:57.029Z"
+          "color": "variant-1783928949879"
         },
         {
           "key": "product|variant-1783928949879|XL",
           "sku": "ĐEN-XL",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 22,
-          "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
-          "pancakeVariationId": "714d7d8b-d140-4e3d-b7a7-0d11278691f8",
-          "pancakeSku": "4",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "XL",
-          "color": "variant-1783928949879",
-          "lastSyncedAt": "2026-07-20T05:45:03.857Z"
+          "color": "variant-1783928949879"
         },
         {
           "key": "product|variant-1783928949879|XXL",
@@ -1212,25 +1181,23 @@
           "quantity": 0,
           "publishQuantity": 0,
           "pancakeQuantity": 0,
-          "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
-          "pancakeVariationId": "98e9b474-454c-4ecd-8890-fd364d89dcbb",
-          "pancakeSku": "5",
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "XXL",
-          "color": "variant-1783928949879",
-          "lastSyncedAt": "2026-07-20T05:45:10.664Z"
+          "color": "variant-1783928949879"
         },
         {
           "key": "product|variant-1783928952822|S",
           "sku": "TRẮNG-S",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 4,
-          "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
-          "pancakeVariationId": "d63521ef-c5af-40f3-a901-10d099e0c5b9",
-          "pancakeSku": "11",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "S",
-          "color": "variant-1783928952822",
-          "lastSyncedAt": "2026-07-20T05:45:19.589Z"
+          "color": "variant-1783928952822"
         },
         {
           "key": "product|variant-1783928952822|M",
@@ -1238,155 +1205,143 @@
           "quantity": 0,
           "publishQuantity": 0,
           "pancakeQuantity": 0,
-          "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
-          "pancakeVariationId": "b1e0afee-7183-4ce6-b54c-4c933dd1e750",
-          "pancakeSku": "12",
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "M",
-          "color": "variant-1783928952822",
-          "lastSyncedAt": "2026-07-20T05:45:26.439Z"
+          "color": "variant-1783928952822"
         },
         {
           "key": "product|variant-1783928952822|L",
           "sku": "TRẮNG-L",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 25,
-          "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
-          "pancakeVariationId": "ca6a200c-87b6-45f3-9122-e6d239be9df0",
-          "pancakeSku": "13",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "L",
-          "color": "variant-1783928952822",
-          "lastSyncedAt": "2026-07-20T05:45:33.896Z"
+          "color": "variant-1783928952822"
         },
         {
           "key": "product|variant-1783928952822|XL",
           "sku": "TRẮNG-XL",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 36,
-          "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
-          "pancakeVariationId": "7920ce8b-5705-453e-b996-48be879fe852",
-          "pancakeSku": "14",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "XL",
-          "color": "variant-1783928952822",
-          "lastSyncedAt": "2026-07-20T05:45:40.833Z"
+          "color": "variant-1783928952822"
         },
         {
           "key": "product|variant-1783928952822|XXL",
           "sku": "TRẮNG-XXL",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 44,
-          "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
-          "pancakeVariationId": "6437848b-d3ed-4cd5-8646-34faeb3691bd",
-          "pancakeSku": "15",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "XXL",
-          "color": "variant-1783928952822",
-          "lastSyncedAt": "2026-07-20T05:45:49.352Z"
+          "color": "variant-1783928952822"
         },
         {
           "key": "product|variant-1783928955190|S",
           "sku": "XÁM-S",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 5,
-          "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
-          "pancakeVariationId": "813eaadd-962b-4e34-a131-1dd2185892ee",
-          "pancakeSku": "6",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "S",
-          "color": "variant-1783928955190",
-          "lastSyncedAt": "2026-07-20T05:45:56.558Z"
+          "color": "variant-1783928955190"
         },
         {
           "key": "product|variant-1783928955190|M",
           "sku": "XÁM-M",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 34,
-          "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
-          "pancakeVariationId": "f1e57c3f-93e3-444c-8a6e-97606181481c",
-          "pancakeSku": "7",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "M",
-          "color": "variant-1783928955190",
-          "lastSyncedAt": "2026-07-20T05:46:37.780Z"
+          "color": "variant-1783928955190"
         },
         {
           "key": "product|variant-1783928955190|L",
           "sku": "XÁM-L",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 25,
-          "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
-          "pancakeVariationId": "6520a83b-613a-430f-92e2-18e4de7f19ff",
-          "pancakeSku": "8",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "L",
-          "color": "variant-1783928955190",
-          "lastSyncedAt": "2026-07-20T05:46:44.997Z"
+          "color": "variant-1783928955190"
         },
         {
           "key": "product|variant-1783928955190|XL",
           "sku": "XÁM-XL",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 11,
-          "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
-          "pancakeVariationId": "48776278-9f7f-4c34-a1b2-30184968564b",
-          "pancakeSku": "9",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "XL",
-          "color": "variant-1783928955190",
-          "lastSyncedAt": "2026-07-20T05:46:53.662Z"
+          "color": "variant-1783928955190"
         },
         {
           "key": "product|variant-1783928955190|XXL",
           "sku": "XÁM-XXL",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 23,
-          "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
-          "pancakeVariationId": "067d4373-2820-410b-9284-62ca371da20f",
-          "pancakeSku": "10",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "XXL",
-          "color": "variant-1783928955190",
-          "lastSyncedAt": "2026-07-20T05:47:08.324Z"
+          "color": "variant-1783928955190"
         },
         {
           "key": "product|variant-1783928959238|S",
           "sku": "XÁM-GHI-S",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 5,
-          "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
-          "pancakeVariationId": "d0730932-61d1-4e37-bce4-f7d28b20111a",
-          "pancakeSku": "21",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "S",
-          "color": "variant-1783928959238",
-          "lastSyncedAt": "2026-07-20T05:47:21.772Z"
+          "color": "variant-1783928959238"
         },
         {
           "key": "product|variant-1783928959238|M",
           "sku": "XÁM-GHI-M",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 2,
-          "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
-          "pancakeVariationId": "278b2676-df76-4048-8051-0159bdc18d81",
-          "pancakeSku": "22",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "M",
-          "color": "variant-1783928959238",
-          "lastSyncedAt": "2026-07-20T05:47:29.286Z"
+          "color": "variant-1783928959238"
         },
         {
           "key": "product|variant-1783928959238|L",
           "sku": "XÁM-GHI-L",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 4,
-          "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
-          "pancakeVariationId": "1d6bc738-3355-41a8-88b2-6adf332ba00f",
-          "pancakeSku": "23",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "L",
-          "color": "variant-1783928959238",
-          "lastSyncedAt": "2026-07-20T05:47:36.429Z"
+          "color": "variant-1783928959238"
         },
         {
           "key": "product|variant-1783928959238|XL",
@@ -1394,194 +1349,179 @@
           "quantity": 0,
           "publishQuantity": 0,
           "pancakeQuantity": 0,
-          "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
-          "pancakeVariationId": "70fd17fe-ed8b-47d8-b040-81ee31c43ff8",
-          "pancakeSku": "24",
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "XL",
-          "color": "variant-1783928959238",
-          "lastSyncedAt": "2026-07-20T05:47:45.632Z"
+          "color": "variant-1783928959238"
         },
         {
           "key": "product|variant-1783928959238|XXL",
           "sku": "XÁM-GHI-XXL",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 8,
-          "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
-          "pancakeVariationId": "7cf73ff1-1c22-416e-9896-186daa46923e",
-          "pancakeSku": "25",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "XXL",
-          "color": "variant-1783928959238",
-          "lastSyncedAt": "2026-07-20T05:47:53.298Z"
+          "color": "variant-1783928959238"
         },
         {
           "key": "product|variant-1783929018934|S",
           "sku": "XÁM-CARBON-S",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 19,
-          "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
-          "pancakeVariationId": "68da1004-8e2f-4435-9911-5a2bd51bc14c",
-          "pancakeSku": "26",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "S",
-          "color": "variant-1783929018934",
-          "lastSyncedAt": "2026-07-20T05:48:04.220Z"
+          "color": "variant-1783929018934"
         },
         {
           "key": "product|variant-1783929018934|M",
           "sku": "XÁM-CARBON-M",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 39,
-          "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
-          "pancakeVariationId": "7c26b765-c8b6-4c82-bf96-7c3b6a09e0f2",
-          "pancakeSku": "27",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "M",
-          "color": "variant-1783929018934",
-          "lastSyncedAt": "2026-07-20T05:48:11.717Z"
+          "color": "variant-1783929018934"
         },
         {
           "key": "product|variant-1783929018934|L",
           "sku": "XÁM-CARBON-L",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 31,
-          "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
-          "pancakeVariationId": "ff2af289-35ad-4a42-9f58-aec7ac517091",
-          "pancakeSku": "28",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "L",
-          "color": "variant-1783929018934",
-          "lastSyncedAt": "2026-07-20T05:48:25.640Z"
+          "color": "variant-1783929018934"
         },
         {
           "key": "product|variant-1783929018934|XL",
           "sku": "XÁM-CARBON-XL",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 6,
-          "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
-          "pancakeVariationId": "396b18ce-9988-4416-a255-466cba07d212",
-          "pancakeSku": "29",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "XL",
-          "color": "variant-1783929018934",
-          "lastSyncedAt": "2026-07-20T05:48:35.430Z"
+          "color": "variant-1783929018934"
         },
         {
           "key": "product|variant-1783929018934|XXL",
           "sku": "XÁM-CARBON-XXL",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 5,
-          "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
-          "pancakeVariationId": "e13b265f-d291-479a-b0cf-5d7ae05816e9",
-          "pancakeSku": "30",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "XXL",
-          "color": "variant-1783929018934",
-          "lastSyncedAt": "2026-07-20T05:48:43.089Z"
+          "color": "variant-1783929018934"
         },
         {
           "key": "product|variant-1783929025678|S",
           "sku": "XANH-BLUE-WHALE-S",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 9,
-          "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
-          "pancakeVariationId": "64f3f9dd-cbc3-4bc7-a731-ce9c00547e39",
-          "pancakeSku": "16",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "S",
-          "color": "variant-1783929025678",
-          "lastSyncedAt": "2026-07-20T05:48:52.395Z"
+          "color": "variant-1783929025678"
         },
         {
           "key": "product|variant-1783929025678|M",
           "sku": "XANH-BLUE-WHALE-M",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 7,
-          "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
-          "pancakeVariationId": "2aec7150-9ca5-4570-a22a-3236537639aa",
-          "pancakeSku": "17",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "M",
-          "color": "variant-1783929025678",
-          "lastSyncedAt": "2026-07-20T05:49:00.624Z"
+          "color": "variant-1783929025678"
         },
         {
           "key": "product|variant-1783929025678|L",
           "sku": "XANH-BLUE-WHALE-L",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 18,
-          "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
-          "pancakeVariationId": "fe7ce347-a1f2-4f90-add1-9bbb6f142def",
-          "pancakeSku": "18",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "L",
-          "color": "variant-1783929025678",
-          "lastSyncedAt": "2026-07-20T05:49:10.472Z"
+          "color": "variant-1783929025678"
         },
         {
           "key": "product|variant-1783929025678|XL",
           "sku": "XANH-BLUE-WHALE-XL",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 3,
-          "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
-          "pancakeVariationId": "04063ce4-d9ff-463e-92d9-643bcbb11a87",
-          "pancakeSku": "20",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "XL",
-          "color": "variant-1783929025678",
-          "lastSyncedAt": "2026-07-20T05:49:19.935Z"
+          "color": "variant-1783929025678"
         },
         {
           "key": "product|variant-1783929025678|XXL",
           "sku": "XANH-BLUE-WHALE-XXL",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 3,
-          "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
-          "pancakeVariationId": "04063ce4-d9ff-463e-92d9-643bcbb11a87",
-          "pancakeSku": "20",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "XXL",
-          "color": "variant-1783929025678",
-          "lastSyncedAt": "2026-07-20T05:49:27.280Z"
+          "color": "variant-1783929025678"
         },
         {
           "key": "product|variant-1783929029238|S",
           "sku": "XÁM-TIÊU-S",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 2,
-          "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
-          "pancakeVariationId": "be86b041-47f4-4ecd-8a39-3ed1461c7cfc",
-          "pancakeSku": "31",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "S",
-          "color": "variant-1783929029238",
-          "lastSyncedAt": "2026-07-20T05:49:35.343Z"
+          "color": "variant-1783929029238"
         },
         {
           "key": "product|variant-1783929029238|M",
           "sku": "XÁM-TIÊU-M",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 3,
-          "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
-          "pancakeVariationId": "996f3efd-a912-4237-85e3-1634f20bf98e",
-          "pancakeSku": "32",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "M",
-          "color": "variant-1783929029238",
-          "lastSyncedAt": "2026-07-20T05:49:47.421Z"
+          "color": "variant-1783929029238"
         },
         {
           "key": "product|variant-1783929029238|L",
           "sku": "XÁM-TIÊU-L",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 12,
-          "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
-          "pancakeVariationId": "e51fbf79-d97c-488b-8cb9-0990db4c29d2",
-          "pancakeSku": "33",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "L",
-          "color": "variant-1783929029238",
-          "lastSyncedAt": "2026-07-20T05:49:56.928Z"
+          "color": "variant-1783929029238"
         },
         {
           "key": "product|variant-1783929029238|XL",
@@ -1589,25 +1529,23 @@
           "quantity": 0,
           "publishQuantity": 0,
           "pancakeQuantity": 0,
-          "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
-          "pancakeVariationId": "a4105075-aac6-4b85-9e81-5fbe3303d975",
-          "pancakeSku": "34",
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "XL",
-          "color": "variant-1783929029238",
-          "lastSyncedAt": "2026-07-20T05:50:06.536Z"
+          "color": "variant-1783929029238"
         },
         {
           "key": "product|variant-1783929029238|XXL",
           "sku": "XÁM-TIÊU-XXL",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 8,
-          "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
-          "pancakeVariationId": "bca58a72-a4fc-4c32-85b0-94f2d8df292b",
-          "pancakeSku": "35",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "XXL",
-          "color": "variant-1783929029238",
-          "lastSyncedAt": "2026-07-20T05:50:14.914Z"
+          "color": "variant-1783929029238"
         }
       ],
       "usageAndCare": "Có thể giặt máy được - dùng được máy sấy ( dưới 50 độ )",
@@ -1672,51 +1610,47 @@
           "quantity": 0,
           "publishQuantity": 0,
           "pancakeQuantity": 0,
-          "pancakeProductId": "265b0390-7937-4f9b-8510-fdfd8874b0b1",
-          "pancakeVariationId": "b5b65f11-53ce-463e-a101-960ba8df3525",
-          "pancakeSku": "17",
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "XS",
-          "color": "variant-1783928458279",
-          "lastSyncedAt": "2026-07-20T05:50:35.035Z"
+          "color": "variant-1783928458279"
         },
         {
           "key": "product|variant-1783928458279|S",
           "sku": "XÁM-WASH-S",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 23,
-          "pancakeProductId": "265b0390-7937-4f9b-8510-fdfd8874b0b1",
-          "pancakeVariationId": "489939da-2d70-4640-bd5b-0d3c84f9fbb8",
-          "pancakeSku": "18",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "S",
-          "color": "variant-1783928458279",
-          "lastSyncedAt": "2026-07-20T05:50:43.759Z"
+          "color": "variant-1783928458279"
         },
         {
           "key": "product|variant-1783928458279|M",
           "sku": "XÁM-WASH-M",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 22,
-          "pancakeProductId": "265b0390-7937-4f9b-8510-fdfd8874b0b1",
-          "pancakeVariationId": "87db985b-cd01-4838-bb95-400c0e919880",
-          "pancakeSku": "19",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "M",
-          "color": "variant-1783928458279",
-          "lastSyncedAt": "2026-07-20T05:50:51.095Z"
+          "color": "variant-1783928458279"
         },
         {
           "key": "product|variant-1783928458279|L",
           "sku": "XÁM-WASH-L",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 21,
-          "pancakeProductId": "265b0390-7937-4f9b-8510-fdfd8874b0b1",
-          "pancakeVariationId": "3c538756-5271-4119-bb93-335607755b95",
-          "pancakeSku": "20",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "L",
-          "color": "variant-1783928458279",
-          "lastSyncedAt": "2026-07-20T05:50:58.387Z"
+          "color": "variant-1783928458279"
         },
         {
           "key": "product|variant-1783928458279|XL",
@@ -1724,12 +1658,11 @@
           "quantity": 0,
           "publishQuantity": 0,
           "pancakeQuantity": 0,
-          "pancakeProductId": "265b0390-7937-4f9b-8510-fdfd8874b0b1",
-          "pancakeVariationId": "ffc305ae-d363-4f28-a0ba-0231e7bd14d8",
-          "pancakeSku": "21",
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "XL",
-          "color": "variant-1783928458279",
-          "lastSyncedAt": "2026-07-20T05:51:05.683Z"
+          "color": "variant-1783928458279"
         },
         {
           "key": "product|variant-1783928463143|XS",
@@ -1737,51 +1670,47 @@
           "quantity": 0,
           "publishQuantity": 0,
           "pancakeQuantity": 0,
-          "pancakeProductId": "265b0390-7937-4f9b-8510-fdfd8874b0b1",
-          "pancakeVariationId": "c50269e1-852c-4d3a-a349-ec87ad213e4f",
-          "pancakeSku": "12",
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "XS",
-          "color": "variant-1783928463143",
-          "lastSyncedAt": "2026-07-20T05:51:12.960Z"
+          "color": "variant-1783928463143"
         },
         {
           "key": "product|variant-1783928463143|S",
           "sku": "SA-MẠC-WASH-S",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 21,
-          "pancakeProductId": "265b0390-7937-4f9b-8510-fdfd8874b0b1",
-          "pancakeVariationId": "41197faf-4c1a-4c20-adee-36c512b3df1c",
-          "pancakeSku": "13",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "S",
-          "color": "variant-1783928463143",
-          "lastSyncedAt": "2026-07-20T05:51:20.017Z"
+          "color": "variant-1783928463143"
         },
         {
           "key": "product|variant-1783928463143|M",
           "sku": "SA-MẠC-WASH-M",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 18,
-          "pancakeProductId": "265b0390-7937-4f9b-8510-fdfd8874b0b1",
-          "pancakeVariationId": "047dff4e-58f9-4bc8-88d6-4879e3c42f0d",
-          "pancakeSku": "14",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "M",
-          "color": "variant-1783928463143",
-          "lastSyncedAt": "2026-07-20T05:51:29.189Z"
+          "color": "variant-1783928463143"
         },
         {
           "key": "product|variant-1783928463143|L",
           "sku": "SA-MẠC-WASH-L",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 18,
-          "pancakeProductId": "265b0390-7937-4f9b-8510-fdfd8874b0b1",
-          "pancakeVariationId": "e7402323-3694-40a1-8423-458a428635d4",
-          "pancakeSku": "15",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "L",
-          "color": "variant-1783928463143",
-          "lastSyncedAt": "2026-07-20T05:51:35.527Z"
+          "color": "variant-1783928463143"
         },
         {
           "key": "product|variant-1783928463143|XL",
@@ -1789,25 +1718,23 @@
           "quantity": 0,
           "publishQuantity": 0,
           "pancakeQuantity": 0,
-          "pancakeProductId": "265b0390-7937-4f9b-8510-fdfd8874b0b1",
-          "pancakeVariationId": "c83f4f99-e3c8-4bc5-b24e-32f95cdcf59b",
-          "pancakeSku": "16",
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "XL",
-          "color": "variant-1783928463143",
-          "lastSyncedAt": "2026-07-20T05:51:42.256Z"
+          "color": "variant-1783928463143"
         },
         {
           "key": "product|variant-1784364657779|XS",
           "sku": "XÁM-CARBON-WASH-XS",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 8,
-          "pancakeProductId": "265b0390-7937-4f9b-8510-fdfd8874b0b1",
-          "pancakeVariationId": "05fc0ac0-ae40-4f5c-9dd3-d75f224a92f8",
-          "pancakeSku": "1",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "XS",
-          "color": "variant-1784364657779",
-          "lastSyncedAt": "2026-07-20T05:51:51.802Z"
+          "color": "variant-1784364657779"
         },
         {
           "key": "product|variant-1784364657779|S",
@@ -1815,38 +1742,35 @@
           "quantity": 0,
           "publishQuantity": 0,
           "pancakeQuantity": 0,
-          "pancakeProductId": "265b0390-7937-4f9b-8510-fdfd8874b0b1",
-          "pancakeVariationId": "9846c884-2d8e-4aaa-b767-e3e1cd8b8eef",
-          "pancakeSku": "2",
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "S",
-          "color": "variant-1784364657779",
-          "lastSyncedAt": "2026-07-20T05:52:05.188Z"
+          "color": "variant-1784364657779"
         },
         {
           "key": "product|variant-1784364657779|M",
           "sku": "XÁM-CARBON-WASH-M",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 1,
-          "pancakeProductId": "265b0390-7937-4f9b-8510-fdfd8874b0b1",
-          "pancakeVariationId": "8f1e834f-c7f1-4be0-9d46-317922ccbe6b",
-          "pancakeSku": "3",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "M",
-          "color": "variant-1784364657779",
-          "lastSyncedAt": "2026-07-20T05:52:12.621Z"
+          "color": "variant-1784364657779"
         },
         {
           "key": "product|variant-1784364657779|L",
           "sku": "XÁM-CARBON-WASH-L",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 1,
-          "pancakeProductId": "265b0390-7937-4f9b-8510-fdfd8874b0b1",
-          "pancakeVariationId": "cad3dc29-e186-4123-bf6c-5b2cfc9482ce",
-          "pancakeSku": "4",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "L",
-          "color": "variant-1784364657779",
-          "lastSyncedAt": "2026-07-20T05:52:24.136Z"
+          "color": "variant-1784364657779"
         },
         {
           "key": "product|variant-1784364657779|XL",
@@ -1854,64 +1778,59 @@
           "quantity": 0,
           "publishQuantity": 0,
           "pancakeQuantity": 0,
-          "pancakeProductId": "265b0390-7937-4f9b-8510-fdfd8874b0b1",
-          "pancakeVariationId": "cf4d184b-6cd7-4877-b13e-0e647c1fb317",
-          "pancakeSku": "5",
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "XL",
-          "color": "variant-1784364657779",
-          "lastSyncedAt": "2026-07-20T05:52:31.204Z"
+          "color": "variant-1784364657779"
         },
         {
           "key": "product|variant-1783928452287|XS",
           "sku": "NÂU-DARK-CHOCO-WASH-XS",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 17,
-          "pancakeProductId": "265b0390-7937-4f9b-8510-fdfd8874b0b1",
-          "pancakeVariationId": "4bc3b88b-aeb3-4ca8-b0f6-76765bc16f4b",
-          "pancakeSku": "6",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "XS",
-          "color": "variant-1783928452287",
-          "lastSyncedAt": "2026-07-20T05:52:41.328Z"
+          "color": "variant-1783928452287"
         },
         {
           "key": "product|variant-1783928452287|S",
           "sku": "NÂU-DARK-CHOCO-WASH-S",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 28,
-          "pancakeProductId": "265b0390-7937-4f9b-8510-fdfd8874b0b1",
-          "pancakeVariationId": "91ebc8db-1b78-4e82-899e-9a766a11bda3",
-          "pancakeSku": "7",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "S",
-          "color": "variant-1783928452287",
-          "lastSyncedAt": "2026-07-20T05:52:52.131Z"
+          "color": "variant-1783928452287"
         },
         {
           "key": "product|variant-1783928452287|M",
           "sku": "NÂU-DARK-CHOCO-WASH-M",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 3,
-          "pancakeProductId": "265b0390-7937-4f9b-8510-fdfd8874b0b1",
-          "pancakeVariationId": "a3742a5b-f8cc-4088-a7a3-9faf8d895305",
-          "pancakeSku": "8",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "M",
-          "color": "variant-1783928452287",
-          "lastSyncedAt": "2026-07-20T05:53:00.067Z"
+          "color": "variant-1783928452287"
         },
         {
           "key": "product|variant-1783928452287|L",
           "sku": "NÂU-DARK-CHOCO-WASH-L",
           "quantity": 0,
           "publishQuantity": 0,
-          "pancakeQuantity": 10,
-          "pancakeProductId": "265b0390-7937-4f9b-8510-fdfd8874b0b1",
-          "pancakeVariationId": "1800a3d1-a040-45b2-9dc7-79b78fc9d4c3",
-          "pancakeSku": "9",
+          "pancakeQuantity": 0,
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "L",
-          "color": "variant-1783928452287",
-          "lastSyncedAt": "2026-07-20T05:53:06.850Z"
+          "color": "variant-1783928452287"
         },
         {
           "key": "product|variant-1783928452287|XL",
@@ -1919,12 +1838,11 @@
           "quantity": 0,
           "publishQuantity": 0,
           "pancakeQuantity": 0,
-          "pancakeProductId": "265b0390-7937-4f9b-8510-fdfd8874b0b1",
-          "pancakeVariationId": "03720413-5ea6-4164-b54d-431505b4cc62",
-          "pancakeSku": "10",
+          "pancakeProductId": "",
+          "pancakeVariationId": "",
+          "pancakeSku": "",
           "size": "XL",
-          "color": "variant-1783928452287",
-          "lastSyncedAt": "2026-07-20T05:53:14.264Z"
+          "color": "variant-1783928452287"
         }
       ],
       "material": "95% Cotton - 5% Spandex",

@@ -584,11 +584,23 @@ function ProductForm({
   const [newClassificationName, setNewClassificationName] = useState("");
   const [newSize, setNewSize] = useState("");
   const [inventoryOpen, setInventoryOpen] = useState(false);
+  const [bulkInventoryOpen, setBulkInventoryOpen] = useState(false);
+  const [bulkPublishQuantity, setBulkPublishQuantity] = useState("0");
+  const [bulkInventoryScope, setBulkInventoryScope] = useState<"all" | "linked">("all");
   const inventoryRows = buildProductInventory(product);
   const totalInventory = inventoryRows.reduce((sum, item) => sum + Math.min(Number(item.publishQuantity || 0), Number(item.pancakeQuantity || 0)), 0);
   const updateInventoryItem = (key: string, patch: Partial<CmsProductInventoryItem>) => {
     const nextInventory = inventoryRows.map((item) => item.key === key ? { ...item, ...patch } : item);
     onChange({ ...product, inventory: nextInventory, inventoryManaged: true });
+  };
+  const applyBulkPublishQuantity = () => {
+    const quantity = Math.max(0, Math.floor(Number(bulkPublishQuantity) || 0));
+    const nextInventory = inventoryRows.map((item) => {
+      const isLinked = Boolean(item.pancakeVariationId || item.pancakeProductId || item.pancakeSku);
+      return bulkInventoryScope === "all" || isLinked ? { ...item, publishQuantity: quantity } : item;
+    });
+    onChange({ ...product, inventory: nextInventory, inventoryManaged: true });
+    setInventoryOpen(true);
   };
   const inventoryClassificationName = (item: CmsProductInventoryItem) =>
     product.classifications?.find((classification) => classification.id === item.classificationId)?.name || product.name;
@@ -845,8 +857,17 @@ function ProductForm({
             <h4 className="text-base font-bold uppercase">Số lượng hàng hóa / tồn kho</h4>
             <p className="mt-1 text-xs text-neutral-600">Liên kết từng phân loại, màu và size với Pancake. Website chỉ chỉnh số lượng mở bán; tồn Pancake là dữ liệu chỉ đọc.</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2">
             <div className="bg-black px-4 py-3 text-white"><span className="text-xs uppercase">Tổng tồn</span><strong className="ml-3 text-xl">{totalInventory}</strong></div>
+            <button
+              type="button"
+              aria-expanded={bulkInventoryOpen}
+              aria-controls="bulk-inventory-editor"
+              onClick={() => setBulkInventoryOpen((open) => !open)}
+              className="h-12 border-2 border-black bg-white px-4 text-xs font-bold uppercase transition hover:bg-black hover:text-white"
+            >
+              Chỉnh hàng loạt
+            </button>
             <button
               type="button"
               aria-expanded={inventoryOpen}
@@ -859,6 +880,43 @@ function ProductForm({
             </button>
           </div>
         </div>
+        {bulkInventoryOpen && (
+          <div id="bulk-inventory-editor" className="mt-4 border-2 border-black bg-white p-4">
+            <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] md:items-end">
+              <label className="text-xs font-bold uppercase text-neutral-600">
+                Áp dụng cho
+                <select
+                  value={bulkInventoryScope}
+                  onChange={(event) => setBulkInventoryScope(event.target.value as "all" | "linked")}
+                  className="mt-1 h-11 w-full border border-black bg-white px-3 text-sm font-normal normal-case"
+                >
+                  <option value="all">Tất cả màu, size và phân loại</option>
+                  <option value="linked">Chỉ các dòng đã liên kết Pancake</option>
+                </select>
+              </label>
+              <label className="text-xs font-bold uppercase text-neutral-600">
+                Số lượng mở bán mới
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  inputMode="numeric"
+                  value={bulkPublishQuantity}
+                  onChange={(event) => setBulkPublishQuantity(event.target.value)}
+                  className="mt-1 h-11 w-full border-2 border-black px-3 text-right text-lg font-bold normal-case"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={applyBulkPublishQuantity}
+                className="h-11 border-2 border-black bg-black px-5 text-xs font-bold uppercase text-white transition hover:bg-white hover:text-black"
+              >
+                Áp dụng
+              </button>
+            </div>
+            <p className="mt-3 text-xs leading-relaxed text-neutral-500">Thao tác này chỉ đổi số lượng mở bán trên website, không sửa tồn kho Pancake. Bấm “Lưu thay đổi” ở đầu trang để lưu chính thức.</p>
+          </div>
+        )}
         {inventoryOpen && (
           <div id="product-inventory-details" className="mt-4 grid gap-3">
             {inventoryRows.map((item) => (
