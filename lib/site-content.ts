@@ -179,9 +179,9 @@ export const defaultSiteContent: SiteContent = {
   payment: {
     bank: {
       receiverName: "HỘ KINH DOANH BLANWHI – BNW",
-      accountNumber: "0123 456 789",
-      bankName: "Vietcombank",
-      bankCode: "vcb"
+      accountNumber: "879886688",
+      bankName: "MB Bank",
+      bankCode: "mb"
     }
   },
   products: [

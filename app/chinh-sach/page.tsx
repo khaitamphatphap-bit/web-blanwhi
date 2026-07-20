@@ -92,7 +92,7 @@ export default function PolicyPage() {
     </section>)}
     <section style={{ marginTop: 38, padding: 24, background: "#f4f4f2", lineHeight: 1.7 }}>
       <strong>HỘ KINH DOANH BLANWHI – BNW</strong><br />
-      Địa chỉ: 282/19/6 Bùi Hữu Nghĩa, Phường 2, Quận Bình Thạnh, Thành phố Hồ Chí Minh<br />
+      Địa chỉ: 282/49, Phường Gia Định, Thành phố Hồ Chí Minh<br />
       Mã số HKD: 079093030935 do UBND Quận Bình Thạnh cấp ngày 16/09/2022<br />
       Chủ hộ kinh doanh: Nguyễn Việt Thắng<br />Hotline: <a href="tel:0866561480">0866561480</a>
     </section>
