@@ -77,6 +77,5123 @@
       "bankCode": "mb"
     }
   },
+  "policies": [
+    {
+      "id": "bao-mat",
+      "title": "Chính sách bảo mật",
+      "sourceFile": "1. CHÍNH SÁCH BẢO MẬT THÔNG TIN.docx",
+      "blocks": [
+        {
+          "text": "CHÍNH SÁCH BẢO MẬT THÔNG TIN",
+          "runs": [
+            {
+              "text": "CHÍNH SÁCH BẢO MẬT THÔNG TIN",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Cám ơn quý khách đã quan tâm và truy cập vào website blanwhi.com. Chúng tôi tôn trọng và cam kết sẽ bảo mật những thông tin mang tính riêng tư của Quý khách.",
+          "runs": [
+            {
+              "text": "Cám ơn quý khách đã quan tâm và truy cập vào website"
+            },
+            {
+              "text": " "
+            },
+            {
+              "text": "blanwhi.com",
+              "bold": true
+            },
+            {
+              "text": ".",
+              "bold": true
+            },
+            {
+              "text": " Chúng tôi tôn trọng và cam kết sẽ bảo mật những thông tin mang tính riêng tư của Quý khách."
+            }
+          ],
+          "style": "Normal (Web)",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Chính sách bảo mật sẽ giải thích cách chúng tôi tiếp nhận, sử dụng và (trong trường hợp nào đó) tiết lộ thông tin cá nhân của Quý khách.",
+          "runs": [
+            {
+              "text": "Chính sách bảo mật sẽ giải thích cách chúng tôi tiếp nhận, sử dụng và (trong trường hợp nào đó) tiết lộ thông tin cá nhân của Quý khách."
+            }
+          ],
+          "style": "Normal (Web)",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Bảo vệ dữ liệu cá nhân và gây dựng được niềm tin cho quý khách là vấn đề rất quan trọng với chúng tôi. Vì vậy, chúng tôi sẽ dùng tên và các thông tin khác liên quan đến quý khách tuân thủ theo nội dung của Chính sách bảo mật. Chúng tôi chỉ thu thập những thông tin cần thiết liên quan đến giao dịch mua bán.",
+          "runs": [
+            {
+              "text": "Bảo vệ dữ liệu cá nhân và gây dựng được niềm tin cho quý khách là vấn đề rất quan trọng với chúng tôi. Vì vậy, chúng tôi sẽ dùng tên và các thông tin khác liên quan đến quý khách tuân thủ theo nội dung của Chính sách bảo mật. Chúng tôi chỉ thu thập những thông tin cần thiết liên quan đến giao dịch mua bán."
+            }
+          ],
+          "style": "Normal (Web)",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Chúng tôi nêu những điều kiện đảm bảo tuyệt đối dưới đây để quý khách hàng biết rõ và có thể chắc chắn rằng chúng tôi tôn trọng tất cả những quyền lợi riêng tư cũng như nguyên tắc bảo mật thông tin nhạy cảm cá nhân khi các thông tin của quý khách hàng cung cấp riêng cho website blanwhi.com. Trước khi truy cập đăng tải thông tin, quý khách hàng nên đọc qua những quy định bảo mật cần thiết để biết và tránh những điều mà quý khách hàng không mong muốn về sau.",
+          "runs": [
+            {
+              "text": "Chúng tôi nêu những điều kiện đảm bảo tuyệt đối dưới đây để quý khách hàng biết rõ và có thể chắc chắn rằng chúng tôi tôn trọng tất cả những quyền lợi riêng tư cũng như nguyên tắc bảo mật thông tin nhạy cảm cá nhân khi các thông tin của quý khách hàng cung cấp riêng cho website "
+            },
+            {
+              "text": "blanwhi.com",
+              "bold": true
+            },
+            {
+              "text": ". Trước khi truy cập đăng tải thông tin, quý khách hàng nên đọc qua những quy định bảo mật cần thiết để biết và tránh những điều mà quý khách hàng không mong muốn về sau."
+            }
+          ],
+          "style": "Normal (Web)",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "1. Địa chỉ của đơn vị thu thập thông tin và quản lý thông tin",
+          "runs": [
+            {
+              "text": "1. ",
+              "bold": true
+            },
+            {
+              "text": "Địa chỉ của đơn vị thu thập thông tin và quản lý thông tin",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "- HỘ KINH DOANH BLANWHI - BNW",
+          "runs": [
+            {
+              "text": "- "
+            },
+            {
+              "text": "HỘ KINH DOANH BLANWHI - BNW"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "- Địa chỉ: 282/49, Phường Gia Định, Thành phố Hồ Chí Minh",
+          "runs": [
+            {
+              "text": "- "
+            },
+            {
+              "text": "Địa chỉ: "
+            },
+            {
+              "text": "282/49, Phường Gia Định, Thành phố Hồ Chí Minh"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "- Số điện thoại: 0866561480",
+          "runs": [
+            {
+              "text": "- Số điện thoại:"
+            },
+            {
+              "text": " "
+            },
+            {
+              "text": "0866561480"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "2. Mục đích và phạm vi thu thập thông tin ",
+          "runs": [
+            {
+              "text": "2",
+              "bold": true
+            },
+            {
+              "text": ". Mục đích và phạm vi thu thập thông tin",
+              "bold": true
+            },
+            {
+              "text": " ",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "\t2.1 Mục đích thu thập thông tin",
+          "runs": [
+            {
+              "text": "\t"
+            },
+            {
+              "text": "2.1 Mục đích thu thập thông tin",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Website blanwhi.com thu thập thông tin khách hàng để:",
+          "runs": [
+            {
+              "text": "Website "
+            },
+            {
+              "text": "blanwhi.com ",
+              "bold": true
+            },
+            {
+              "text": "thu thập thông tin khách hàng để:"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "- Cung cấp sản phẩm theo nhu cầu của khách hàng;",
+          "runs": [
+            {
+              "text": "- Cung cấp sản phẩm theo nhu cầu của khách hàng;"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "- Liên hệ xác nhận khi khách hàng xác lập giao dịch trên website blanwhi.com;",
+          "runs": [
+            {
+              "text": "- Liên hệ xác nhận khi khách hàng xác lập giao dịch trên "
+            },
+            {
+              "text": "w"
+            },
+            {
+              "text": "ebsite "
+            },
+            {
+              "text": "blanwhi.com",
+              "bold": true
+            },
+            {
+              "text": ";",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "- Liên lạc và giải quyết với khách hàng trong những trường hợp đặc biệt;",
+          "runs": [
+            {
+              "text": "- Liên lạc và giải quyết với khách hàng trong những trường hợp đặc biệt;"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "- Thực hiện việc quản lý website blanwhi.com, gửi thông tin cập nhật về website, các chương trình khuyến mại, ưu đãi/tri ân tới khách hàng;",
+          "runs": [
+            {
+              "text": "- Thực hiện việc quản lý "
+            },
+            {
+              "text": "w"
+            },
+            {
+              "text": "ebsite "
+            },
+            {
+              "text": "blanwhi.com",
+              "bold": true
+            },
+            {
+              "text": ", gửi thông tin cập nhật về website, các chương trình khuyến mại, ưu đãi/tri ân tới khách hàng;"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "- Ngăn ngừa các hoạt động phá hủy tài khoản người dùng của khách hàng hoặc các hoạt động giả mạo;",
+          "runs": [
+            {
+              "text": "- Ngăn ngừa các hoạt động phá hủy tài khoản người dùng của khách hàng hoặc các hoạt động giả mạo;"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "- Quản lý, phân tích, đánh giá số liệu để xây dựng chính sách bán và chính sách phục vụ Khách hàng phù hợp;",
+          "runs": [
+            {
+              "text": "- Quản lý, phân tích, đánh giá số liệu để xây dựng chính sách bán và chính sách phục vụ Khách hàng phù hợp;"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "- Tiếp nhận thông tin, góp ý, đề xuất, khiếu nại của Khách hàng nhằm cải thiện chất lượng dịch vụ của blanwhi.com;",
+          "runs": [
+            {
+              "text": "- Tiếp nhận thông tin, góp ý, đề xuất, khiếu nại của Khách hàng nhằm cải thiện chất lượng dịch vụ của "
+            },
+            {
+              "text": "blanwhi.com",
+              "bold": true
+            },
+            {
+              "text": ";"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "- Không sử dụng thông tin cá nhân của thành viên ngoài mục đích xác nhận và liên hệ có liên quan đến giao dịch tại blanwhi.com;",
+          "runs": [
+            {
+              "text": "- Không sử dụng thông tin cá nhân của thành viên ngoài mục đích xác nhận và liên hệ có liên quan đến giao dịch tại "
+            },
+            {
+              "text": "blanwhi.com",
+              "bold": true
+            },
+            {
+              "text": ";"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "- Trong trường hợp có yêu cầu của pháp luật: HỘ KINH DOANH BLANWHI - BNW có trách nhiệm hợp tác cung cấp thông tin cá nhân thành viên khi có yêu cầu từ cơ quan tư pháp bao gồm: Viện kiểm sát, tòa án, cơ quan công an điều tra liên quan đến hành vi vi phạm pháp luật nào đó của khách hàng. Ngoài ra, không ai có quyền xâm phạm vào thông tin cá nhân của thành viên.",
+          "runs": [
+            {
+              "text": "- Trong trường hợp có yêu cầu của pháp luật:"
+            },
+            {
+              "text": " ",
+              "bold": true
+            },
+            {
+              "text": "HỘ KINH DOANH BLANWHI - BNW",
+              "bold": true
+            },
+            {
+              "text": " "
+            },
+            {
+              "text": "có trách nhiệm hợp tác cung cấp thông tin cá nhân thành viên khi có yêu cầu từ cơ quan tư pháp bao gồm: Viện kiểm sát, tòa án, cơ quan công an điều tra liên quan đến hành vi vi phạm pháp luật nào đó của khách hàng. Ngoài ra, không ai có quyền xâm phạm vào thông tin cá nhân của thành viên."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "2.2. Phạm vi thu thập thông tin",
+          "runs": [
+            {
+              "text": "2.",
+              "bold": true
+            },
+            {
+              "text": "2. Phạm vi ",
+              "bold": true
+            },
+            {
+              "text": "thu",
+              "bold": true
+            },
+            {
+              "text": " thập ",
+              "bold": true
+            },
+            {
+              "text": "thông tin",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Việc thu thập thông tin cá nhân được thực hiện trên cơ sở khách hàng tự khai báo để đăng ký mua hàng trực tuyến tại website blanwhi.com. Tùy từng thời điểm, thông tin thu thập sẽ bao gồm nhưng không giới hạn ở:",
+          "runs": [
+            {
+              "text": "Việc thu thập thông tin cá nhân được thực hiện trên cơ sở khách hàng tự khai báo để đăng ký mua hàng trực tuyến tại "
+            },
+            {
+              "text": "w"
+            },
+            {
+              "text": "ebsite "
+            },
+            {
+              "text": "blanwhi.com",
+              "bold": true
+            },
+            {
+              "text": ". Tùy từng thời điểm, thông tin thu thập sẽ bao gồm nhưng không giới hạn ở:"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "– Họ và tên",
+          "runs": [
+            {
+              "text": "– Họ và tên"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "– Địa chỉ",
+          "runs": [
+            {
+              "text": "– Địa chỉ"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "– Điện thoại",
+          "runs": [
+            {
+              "text": "– Điện thoại"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "– Thư điện tử",
+          "runs": [
+            {
+              "text": "– "
+            },
+            {
+              "text": "Thư điện tử"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "– Địa chỉ liên hệ/giao hàng",
+          "runs": [
+            {
+              "text": "– Địa chỉ liên hệ/giao hàng"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Chúng tôi chỉ thu thập các thông tin cần thiết, phù hợp với mục đích sử dụng đã thông báo và không yêu cầu người dùng cung cấp các thông tin không liên quan đến việc cung cấp sản phẩm/dịch vụ, trừ trường hợp pháp luật có quy định khác hoặc người dùng tự nguyện cung cấp.",
+          "runs": [
+            {
+              "text": "Chúng tôi chỉ thu thập các thông tin cần thiết, phù hợp với mục đích sử dụng đã thông báo và không yêu cầu người dùng cung cấp các thông tin không liên quan đến việc cung cấp sản phẩm/dịch vụ, trừ trường hợp pháp luật có quy định khác hoặc người dùng tự nguyện cung cấp."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "3. Phạm vi sử dụng thông tin",
+          "runs": [
+            {
+              "text": "3. ",
+              "bold": true
+            },
+            {
+              "text": "Phạm vi sử dụng thông tin",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Thông tin cá nhân của người dùng được sử dụng cho các mục đích sau:",
+          "runs": [
+            {
+              "text": "Thông tin cá nhân của người dùng được sử dụng cho các mục đích sau:"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "–  Liên hệ xác nhận đơn hàng và giao hàng cho thành viên khi nhận được yêu cầu từ thành viên;",
+          "runs": [
+            {
+              "text": "–  Liên hệ xác nhận đơn hàng và giao hàng cho thành viên khi nhận được yêu cầu từ thành viên;"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "–  Cung cấp thông tin về sản phẩm đến khách hàng nếu có yêu cầu từ khách hàng;",
+          "runs": [
+            {
+              "text": "–  Cung cấp thông tin về sản phẩm đến khách hàng nếu có yêu cầu từ khách hàng;"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "–  Gửi email tiếp thị, khuyến mại về hàng hóa do chúng tôi bán;",
+          "runs": [
+            {
+              "text": "–  Gửi email tiếp thị, khuyến mại về hàng hóa do chúng tôi bán;"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "–  Gửi các thông báo về các hoạt động trên website;",
+          "runs": [
+            {
+              "text": "–  Gửi các thông báo về các hoạt động trên website"
+            },
+            {
+              "text": ";"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "–  Liên lạc và giải quyết với người dùng trong những trường hợp đặc biệt;",
+          "runs": [
+            {
+              "text": "–  Liên lạc và giải quyết với người dùng trong những trường hợp đặc biệt;"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "–  Không sử dụng thông tin cá nhân của người dùng ngoài mục đích xác nhận và liên hệ có liên quan đến giao dịch;",
+          "runs": [
+            {
+              "text": "–  Không sử dụng thông tin cá nhân của người dùng ngoài mục đích xác nhận và liên hệ có liên quan đến giao dịch"
+            },
+            {
+              "text": ";"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "–  Khi có yêu cầu của cơ quan tư pháp bao gồm: Viện kiểm sát, tòa án, cơ quan công an điều tra liên quan đến hành vi vi phạm pháp luật nào đó của khách hàng.",
+          "runs": [
+            {
+              "text": "–  Khi có yêu cầu của cơ quan tư pháp bao gồm: Viện kiểm sát, tòa án, cơ quan công an điều tra liên quan đến hành vi vi phạm pháp luật nào đó của khách hàng."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Ngoài ra, các thông tin giao dịch bao gồm: lịch sử mua hàng, giá trị giao dịch và phương thức thanh toán cũng được website blanwhi.com lưu trữ để giải quyết các vấn đề có thể phát sinh sau này.",
+          "runs": [
+            {
+              "text": "Ngoài ra, các thông tin giao dịch bao gồm: lịch sử mua hàng, giá trị giao dịch và phương thức thanh toán cũng được "
+            },
+            {
+              "text": "w"
+            },
+            {
+              "text": "ebsite "
+            },
+            {
+              "text": "blanwhi.com",
+              "bold": true
+            },
+            {
+              "text": " "
+            },
+            {
+              "text": "lưu trữ để giải quyết các vấn đề có thể phát sinh sau này."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "4. Thời gian lưu trữ thông tin",
+          "runs": [
+            {
+              "text": "4",
+              "bold": true
+            },
+            {
+              "text": ". Thời gian lưu trữ thông tin",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Chúng tôi sẽ lưu trữ các thông tin cá nhân do khách hàng cung cấp trên các hệ thống nội bộ của chúng tôi trong quá trình cung cấp sản phẩm cho khách hàng, cho đến khi hoàn thành mục đích thu thập, hoặc khi khách hàng có yêu cầu hủy các thông tin đã cung cấp.",
+          "runs": [
+            {
+              "text": "Chúng tôi sẽ lưu trữ các thông tin cá nhân do khách hàng cung cấp trên các hệ thống nội bộ của chúng tôi trong quá trình cung cấp sản phẩm cho khách hàng, cho đến khi hoàn thành mục đích thu thập, hoặc khi khách hàng có yêu cầu hủy các thông tin đã cung cấp."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "5. Tổ chức, cá nhân có thể được tiếp cận thông tin cá nhân",
+          "runs": [
+            {
+              "text": "5",
+              "bold": true
+            },
+            {
+              "text": ". ",
+              "bold": true
+            },
+            {
+              "text": "Tổ chức, cá nhân có thể được tiếp cận thông tin cá nhân",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Thông tin cá nhân của người dùng có thể được tiếp cận bởi các chủ thể sau đây trong phạm vi cần thiết:",
+          "runs": [
+            {
+              "text": "Thông tin cá nhân của người dùng có thể được tiếp cận bởi các chủ thể sau đây trong phạm vi cần thiết:"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "–  Bộ phận quản lý, chăm sóc khách hàng, kinh doanh, kỹ thuật, kế toán hoặc các bộ phận liên quan của blanwhi.com;",
+          "runs": [
+            {
+              "text": "–  Bộ phận quản lý, chăm sóc khách hàng, kinh doanh, kỹ thuật, kế toán hoặc các bộ phận liên quan của"
+            },
+            {
+              "text": " "
+            },
+            {
+              "text": "blanwhi.com",
+              "bold": true
+            },
+            {
+              "text": ";"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "–  Các đối tác có ký Hợp đồng để thực hiện một phần dịch vụ cho blanwhi.com (đối tác kỹ thuật, đối tác cung cấp dịch vụ thanh toán trực tuyến…). Các đối tác này sẽ nhận được những thông tin theo thỏa thuận hợp đồng (có thể 1 phần hoặc toàn bộ thông tin tùy theo điều khoản của Hợp đồng) để tiến hành hỗ trợ người dùng sử dụng dịch vụ do blanwhi.com cung cấp;",
+          "runs": [
+            {
+              "text": "–  Các đối tác có ký Hợp đồng để thực hiện một phần dịch vụ cho "
+            },
+            {
+              "text": "blanwhi.com",
+              "bold": true
+            },
+            {
+              "text": " "
+            },
+            {
+              "text": "(đối tác kỹ thuật, đối tác cung cấp dịch vụ thanh toán trực tuyến…). Các đối tác này sẽ nhận được những thông tin theo thỏa thuận hợp đồng (có thể 1 phần hoặc toàn bộ thông tin tùy theo điều khoản của Hợp đồng) để tiến hành hỗ trợ người dùng sử dụng dịch vụ do "
+            },
+            {
+              "text": "blanwhi.com",
+              "bold": true
+            },
+            {
+              "text": " "
+            },
+            {
+              "text": "cung cấp;"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "–  Cơ quan nhà nước có thẩm quyền khi có yêu cầu hợp pháp theo quy định của pháp luật;",
+          "runs": [
+            {
+              "text": "–  Cơ quan nhà nước có thẩm quyền khi có yêu cầu hợp pháp theo quy định của pháp luật;"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "–  Tổ chức, cá nhân khác khi có sự đồng ý của người dùng hoặc theo quy định pháp luật.",
+          "runs": [
+            {
+              "text": "–  Tổ chức, cá nhân khác khi có sự đồng ý của người dùng hoặc theo quy định pháp luật."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Các bên được tiếp cận thông tin cá nhân của người dùng có trách nhiệm bảo mật và chỉ được sử dụng thông tin trong phạm vi cần thiết để thực hiện công việc, dịch vụ hoặc nghĩa vụ liên quan.",
+          "runs": [
+            {
+              "text": "Các bên được tiếp cận thông tin cá nhân của người dùng có trách nhiệm bảo mật và chỉ được sử dụng thông tin trong phạm vi cần thiết để thực hiện công việc, dịch vụ hoặc nghĩa vụ liên quan."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Chúng tôi không bán, trao đổi, cho thuê hoặc tự ý cung cấp thông tin cá nhân của người dùng cho bên thứ ba vì mục đích thương mại nếu không có sự đồng ý của người dùng, trừ trường hợp pháp luật có quy định khác.",
+          "runs": [
+            {
+              "text": "Chúng tôi không bán, trao đổi, cho thuê hoặc tự ý cung cấp thông tin cá nhân của người dùng cho bên thứ ba vì mục đích thương mại nếu không có sự đồng ý của người dùng, trừ trường hợp pháp luật có quy định khác."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "6. Biện pháp bảo mật thông tin, dữ liệu của người dùng",
+          "runs": [
+            {
+              "text": "6. ",
+              "bold": true
+            },
+            {
+              "text": "Biện pháp bảo mật thông tin, dữ liệu của người dùng",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Chúng tôi áp dụng các biện pháp kỹ thuật và quản lý phù hợp nhằm bảo vệ thông tin cá nhân của người dùng, bao gồm nhưng không giới hạn:",
+          "runs": [
+            {
+              "text": "Chúng tôi áp dụng các biện pháp kỹ thuật và quản lý phù hợp nhằm bảo vệ thông tin cá nhân của người dùng, bao gồm nhưng không giới hạn:"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "–  Kiểm soát quyền truy cập vào hệ thống lưu trữ dữ liệu;",
+          "runs": [
+            {
+              "text": "–  Kiểm soát quyền truy cập vào hệ thống lưu trữ dữ liệu;"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "–  Giới hạn nhân sự được tiếp cận thông tin cá nhân theo phạm vi công việc;",
+          "runs": [
+            {
+              "text": "–  Giới hạn nhân sự được tiếp cận thông tin cá nhân theo phạm vi công việc;"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "–  Sử dụng các biện pháp bảo mật phù hợp để hạn chế nguy cơ mất mát, rò rỉ, truy cập trái phép, sửa đổi hoặc phá hủy dữ liệu;",
+          "runs": [
+            {
+              "text": "–  Sử dụng các biện pháp bảo mật phù hợp để hạn chế nguy cơ mất mát, rò rỉ, truy cập trái phép, sửa đổi hoặc phá hủy dữ liệu;"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "–  Thường xuyên rà soát, kiểm tra và cập nhật các biện pháp bảo mật khi cần thiết;",
+          "runs": [
+            {
+              "text": "–  Thường xuyên rà soát, kiểm tra và cập nhật các biện pháp bảo mật khi cần thiết;"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "–  Yêu cầu các bên thứ ba có liên quan cam kết bảo mật thông tin theo thỏa thuận và quy định pháp luật.",
+          "runs": [
+            {
+              "text": "–  Yêu cầu các bên thứ ba có liên quan cam kết bảo mật thông tin theo thỏa thuận và quy định pháp luật."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Người dùng có trách nhiệm tự bảo mật thông tin tài khoản, mật khẩu, mã xác thực và các thông tin đăng nhập của mình nếu website có chức năng tài khoản. Người dùng cần thông báo ngay cho chúng tôi khi phát hiện hoặc nghi ngờ thông tin cá nhân, tài khoản hoặc mật khẩu bị lộ, bị sử dụng trái phép hoặc có dấu hiệu mất an toàn.",
+          "runs": [
+            {
+              "text": "Người dùng có trách nhiệm tự bảo mật thông tin tài khoản, mật khẩu, mã xác thực và các thông tin đăng nhập của mình nếu website có chức năng tài khoản. Người dùng cần thông báo ngay cho chúng tôi khi phát hiện hoặc nghi ngờ thông tin cá nhân, tài khoản hoặc mật khẩu bị lộ, bị sử dụng trái phép hoặc có dấu hiệu mất an toàn."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Mặc dù chúng tôi nỗ lực áp dụng các biện pháp bảo mật cần thiết, không có hệ thống truyền tải hoặc lưu trữ dữ liệu nào trên môi trường Internet có thể được bảo đảm an toàn tuyệt đối. Trong trường hợp xảy ra sự cố ảnh hưởng đến dữ liệu cá nhân, chúng tôi sẽ kịp thời thực hiện các biện pháp xử lý, khắc phục và thông báo theo quy định của pháp luật.",
+          "runs": [
+            {
+              "text": "Mặc dù chúng tôi nỗ lực áp dụng các biện pháp bảo mật cần thiết, không có hệ thống truyền tải hoặc lưu trữ dữ liệu nào trên môi trường Internet có thể được bảo đảm an toàn tuyệt đối. Trong trường hợp xảy ra sự cố ảnh hưởng đến dữ liệu cá nhân, chúng tôi sẽ kịp thời thực hiện các biện pháp xử lý, khắc phục và thông báo theo quy định của pháp luật."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "7. Phương thức, quy trình để người dùng xem, chỉnh sửa hoặc yêu cầu chỉnh sửa dữ liệu",
+          "runs": [
+            {
+              "text": "7. ",
+              "bold": true
+            },
+            {
+              "text": "Phương thức, quy trình để người dùng xem, chỉnh sửa hoặc yêu cầu chỉnh sửa dữ liệu",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Khách hàng có quyền kiểm tra, xem, cập nhật, chỉnh sửa hoặc yêu cầu chỉnh sửa thông tin cá nhân của mình đã cung cấp trên website.",
+          "runs": [
+            {
+              "text": "Khách hàng có quyền kiểm tra, xem, cập nhật, chỉnh sửa hoặc yêu cầu chỉnh sửa thông tin cá nhân của mình đã cung cấp trên website."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Người dùng có thể thực hiện theo một trong các phương thức sau:",
+          "runs": [
+            {
+              "text": "Người dùng có thể thực hiện theo một trong các phương thức sau:"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "- Liên hệ với bộ phận chăm sóc khách hàng của website qua số điện thoại: 0866561480 hoặc các kênh liên hệ được công bố trên website để yêu cầu hỗ trợ xem, chỉnh sửa dữ liệu cá nhân.",
+          "runs": [
+            {
+              "text": "- "
+            },
+            {
+              "text": "Liên hệ với bộ phận chăm sóc khách hàng củ"
+            },
+            {
+              "text": "a website qua "
+            },
+            {
+              "text": "số điện thoại: "
+            },
+            {
+              "text": "0866561480"
+            },
+            {
+              "text": " "
+            },
+            {
+              "text": "hoặc các kênh liên hệ được công bố trên website để yêu cầu hỗ trợ xem, chỉnh sửa dữ liệu cá nhân."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Yêu cầu của khách hàng cần nêu rõ nội dung đề nghị, bao gồm thông tin cần xem, chỉnh sửa hoặc lý do yêu cầu nếu có và thông tin liên hệ để website phản hồi. ",
+          "runs": [
+            {
+              "text": "Yêu cầu của khách hàng cần nêu rõ nội dung đề nghị, bao gồm thông tin cần xem, chỉnh sửa hoặc lý do yêu cầu nếu có và thông tin liên hệ để website phản hồi. "
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Sau khi tiếp nhận yêu cầu, website có thể yêu cầu khách hàng cung cấp thông tin cần thiết để xác minh danh tính, bảo đảm yêu cầu được thực hiện bởi đúng chủ thể dữ liệu. Trường hợp yêu cầu hợp lệ, website sẽ tiến hành xử lý trong phạm vi phù hợp và thông báo kết quả cho khách hàng trong thời gian hợp lý.",
+          "runs": [
+            {
+              "text": "Sau khi tiếp nhận yêu cầu, website có thể yêu cầu khách hàng cung cấp thông tin cần thiết để xác minh danh tính, bảo đảm yêu cầu được thực hiện bởi đúng chủ thể dữ liệu. Trường hợp yêu cầu hợp lệ, website sẽ tiến hành xử lý trong phạm vi phù hợp và thông báo kết quả cho khách hàng trong thời gian hợp lý."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Trường hợp không thể thực hiện toàn bộ hoặc một phần yêu cầu do yêu cầu không hợp lệ, không đủ căn cứ xác minh hoặc thuộc trường hợp website phải tiếp tục lưu giữ, xử lý dữ liệu theo quy định pháp luật, website sẽ thông báo lý do cho khách hàng..",
+          "runs": [
+            {
+              "text": "Trường hợp không thể thực hiện toàn bộ hoặc một phần yêu cầu do yêu cầu không hợp lệ, không đủ căn cứ xác minh hoặc thuộc trường hợp website phải tiếp tục lưu giữ, xử lý dữ liệu theo quy định pháp luật, website sẽ thông báo lý do cho khách hàng.."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "8. Phương thức, quy trình tiếp nhận yêu cầu xóa, hủy hoặc hạn chế xử lý dữ liệu cá nhân",
+          "runs": [
+            {
+              "text": "8",
+              "bold": true
+            },
+            {
+              "text": ". Phương thức, quy trình tiếp nhận yêu cầu xóa, hủy hoặc hạn chế xử lý dữ liệu cá nhân",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Người dùng có quyền yêu cầu xóa, hủy hoặc hạn chế xử lý dữ liệu cá nhân của mình trong các trường hợp phù hợp với quy định của pháp luật.",
+          "runs": [
+            {
+              "text": "Người dùng có quyền yêu cầu xóa, hủy hoặc hạn chế xử lý dữ liệu cá nhân của mình trong các trường hợp phù hợp với quy định của pháp luật."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Người dùng gửi yêu cầu thông qua một trong các phương thức sau:",
+          "runs": [
+            {
+              "text": "Người dùng gửi yêu cầu thông qua một trong các phương thức sau:"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Liên hệ với bộ phận chăm sóc khách hàng của website qua số điện thoại: 0866561480 hoặc các kênh liên hệ được công bố trên website để yêu cầu xóa, hủy hoặc hạn chế xử lý dữ liệu cá nhân.",
+          "runs": [
+            {
+              "text": "Liên hệ với bộ phận chăm sóc khách hàng của website qua "
+            },
+            {
+              "text": "số điện thoại: "
+            },
+            {
+              "text": "0866561480"
+            },
+            {
+              "text": " "
+            },
+            {
+              "text": "hoặc các kênh liên hệ được công bố trên website để yêu cầu xóa, hủy hoặc hạn chế xử lý dữ liệu cá nhân."
+            }
+          ],
+          "style": "List Paragraph",
+          "listMarker": "-",
+          "listLevel": 0
+        },
+        {
+          "text": "Yêu cầu của khách hàng cần nêu rõ nội dung đề nghị, bao gồm thông tin liên hệ để website phản hồi; Nội dung yêu cầu cụ thể: xóa, hủy, hạn chế xử lý hoặc phạm vi dữ liệu cần xử lý; Tài liệu/thông tin xác minh danh tính nếu được yêu cầu; Lý do yêu cầu, nếu có.",
+          "runs": [
+            {
+              "text": "Yêu cầu của khách hàng cần nêu rõ nội dung đề nghị, bao gồm thông tin liên hệ để website phản hồi; Nội dung yêu cầu cụ thể: xóa, hủy, hạn chế xử lý hoặc phạm vi dữ liệu cần xử lý; Tài liệu/thông tin xác minh danh tính nếu được yêu cầu;"
+            },
+            {
+              "text": " "
+            },
+            {
+              "text": "Lý do yêu cầu, nếu có."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Sau khi tiếp nhận yêu cầu, chúng tôi sẽ kiểm tra, xác minh và xử lý theo quy định pháp luật. Trong trường hợp yêu cầu hợp lệ, chúng tôi sẽ thực hiện việc xóa, hủy hoặc hạn chế xử lý dữ liệu trong phạm vi phù hợp.",
+          "runs": [
+            {
+              "text": "Sau khi tiếp nhận yêu cầu, chúng tôi sẽ kiểm tra, xác minh và xử lý theo quy định pháp luật. Trong trường hợp yêu cầu hợp lệ, chúng tôi sẽ thực hiện việc xóa, hủy hoặc hạn chế xử lý dữ liệu trong phạm vi phù hợp."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Chúng tôi có quyền từ chối thực hiện yêu cầu trong các trường hợp sau:",
+          "runs": [
+            {
+              "text": "Chúng tôi có quyền từ chối thực hiện yêu cầu trong các trường hợp sau:"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Dữ liệu cần được lưu trữ để thực hiện nghĩa vụ pháp lý;",
+          "runs": [
+            {
+              "text": "Dữ liệu cần được lưu trữ để thực hiện nghĩa vụ pháp lý;"
+            }
+          ],
+          "style": "List Paragraph",
+          "listMarker": "-",
+          "listLevel": 0
+        },
+        {
+          "text": "Dữ liệu liên quan đến việc giải quyết tranh chấp, khiếu nại, vi phạm hoặc bảo vệ quyền và lợi ích hợp pháp của chúng tôi, người dùng hoặc bên thứ ba;",
+          "runs": [
+            {
+              "text": "Dữ liệu liên quan đến việc giải quyết tranh chấp, khiếu nại, vi phạm hoặc bảo vệ quyền và lợi ích hợp pháp của chúng tôi, người dùng hoặc bên thứ ba;"
+            }
+          ],
+          "style": "List Paragraph",
+          "listMarker": "-",
+          "listLevel": 0
+        },
+        {
+          "text": "Yêu cầu không đủ căn cứ xác minh người yêu cầu là chủ thể dữ liệu hoặc người đại diện hợp pháp;",
+          "runs": [
+            {
+              "text": "Yêu cầu không đủ căn cứ xác minh người yêu cầu là chủ thể dữ liệu hoặc người đại diện hợp pháp;"
+            }
+          ],
+          "style": "List Paragraph",
+          "listMarker": "-",
+          "listLevel": 0
+        },
+        {
+          "text": "Trường hợp khác theo quy định của pháp luật.",
+          "runs": [
+            {
+              "text": "Trường hợp khác theo quy định của pháp luật."
+            }
+          ],
+          "style": "List Paragraph",
+          "listMarker": "-",
+          "listLevel": 0
+        },
+        {
+          "text": "9. Phương thức, quy trình tiếp nhận và giải quyết khiếu nại, yêu cầu, phản ánh liên quan đến việc bảo mật thông tin",
+          "runs": [
+            {
+              "text": "9. ",
+              "bold": true
+            },
+            {
+              "text": "Phương thức, quy trình tiếp nhận và giải quyết khiếu nại, yêu cầu, phản ánh liên quan đến việc bảo mật thông tin",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Khi có khiếu nại, phản ánh hoặc yêu cầu liên quan đến việc thu thập, sử dụng, lưu trữ, bảo mật hoặc xử lý thông tin cá nhân, người dùng có thể liên hệ với chúng tôi thông qua:",
+          "runs": [
+            {
+              "text": "Khi có khiếu nại, phản ánh hoặc yêu cầu liên quan đến việc thu thập, sử dụng, lưu trữ, bảo mật hoặc xử lý thông tin cá nhân, người dùng có thể liên hệ với chúng tôi thông qua:"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Đơn vị tiếp nhận: HỘ KINH DOANH BLANWHI - BNW",
+          "runs": [
+            {
+              "text": "Đơn vị tiếp nhận: "
+            },
+            {
+              "text": "HỘ KINH DOANH BLANWHI - BNW"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "- Địa chỉ: 282/49, Phường Gia Định, Thành phố Hồ Chí Minh",
+          "runs": [
+            {
+              "text": "- "
+            },
+            {
+              "text": "Địa chỉ: "
+            },
+            {
+              "text": "282/49, Phường Gia Định, Thành phố Hồ Chí Minh"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "- Số điện thoại: 0866561480",
+          "runs": [
+            {
+              "text": "- Số điện thoại:"
+            },
+            {
+              "text": " "
+            },
+            {
+              "text": "0866561480"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Thời gian tiếp nhận: 08h00 – 17h30, từ thứ Hai đến thứ Sáu",
+          "runs": [
+            {
+              "text": "Thời gian tiếp nhận: 08h00 – 17h30, từ thứ Hai đến thứ Sáu"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "* Quy trình xử lý khiếu nại được thực hiện như sau:",
+          "runs": [
+            {
+              "text": "* Quy trình xử lý khiếu nại được thực hiện như sau:"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Bước 1: Tiếp nhận yêu cầu/khiếu nại",
+          "runs": [
+            {
+              "text": "Bước 1: Tiếp nhận yêu cầu/khiếu nại",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Người dùng gửi nội dung khiếu nại, phản ánh hoặc yêu cầu kèm theo thông tin liên hệ và tài liệu liên quan, nếu có.",
+          "runs": [
+            {
+              "text": "Người dùng gửi nội dung khiếu nại, phản ánh hoặc yêu cầu kèm theo thông tin liên hệ và tài liệu liên quan, nếu có."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Bước 2: Xác minh thông tin",
+          "runs": [
+            {
+              "text": "Bước 2: Xác minh thông tin",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Chúng tôi kiểm tra nội dung phản ánh, xác minh thông tin người gửi yêu cầu và đánh giá phạm vi sự việc trong vòng 03 ngày làm việc kể từ ngày tiếp nhận yêu cầu/khiếu nại.",
+          "runs": [
+            {
+              "text": "Chúng tôi kiểm tra nội dung phản ánh, xác minh thông tin người gửi yêu cầu và đánh giá phạm vi sự việc trong vòng 03 ngày làm việc kể từ ngày tiếp nhận yêu cầu/khiếu nại."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Bước 3: Xử lý và phản hồi",
+          "runs": [
+            {
+              "text": "Bước 3: Xử lý và phản hồi",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Chúng tôi tiến hành xử lý yêu cầu/khiếu nại trong thời hạn phù hợp theo quy định pháp luật và tính chất vụ việc trong vòng tối thiểu 03 ngày làm việc tiếp theo. Trường hợp vụ việc phức tạp hoặc cần thêm thời gian xác minh, chúng tôi sẽ thông báo cho người dùng về thời gian xử lý dự kiến.",
+          "runs": [
+            {
+              "text": "Chúng tôi tiến hành xử lý yêu cầu/khiếu nại trong thời hạn phù hợp theo quy định pháp luật và tính chất vụ việc trong vòng tối thiểu 03 ngày làm việc tiếp theo. Trường hợp vụ việc phức tạp hoặc cần thêm thời gian xác minh, chúng tôi sẽ thông báo cho người dùng về thời gian xử lý dự kiến."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Bước 4: Khắc phục và bảo vệ quyền lợi người dùng",
+          "runs": [
+            {
+              "text": "Bước 4: Khắc phục và bảo vệ quyền lợi người dùng",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Nếu phát hiện có sai sót, vi phạm hoặc rủi ro liên quan đến thông tin cá nhân, chúng tôi sẽ áp dụng biện pháp khắc phục cần thiết nhằm hạn chế thiệt hại và bảo vệ quyền lợi hợp pháp của người dùng.",
+          "runs": [
+            {
+              "text": "Nếu phát hiện có sai sót, vi phạm hoặc rủi ro liên quan đến thông tin cá nhân, chúng tôi sẽ áp dụng biện pháp khắc phục cần thiết nhằm hạn chế thiệt hại và bảo vệ quyền lợi hợp pháp của người dùng."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Trong trường hợp người dùng không đồng ý với kết quả giải quyết, người dùng có quyền thực hiện khiếu nại, tố cáo, khởi kiện hoặc yêu cầu cơ quan có thẩm quyền giải quyết theo quy định pháp luật.",
+          "runs": [
+            {
+              "text": "Trong trường hợp người dùng không đồng ý với kết quả giải quyết, người dùng có quyền thực hiện khiếu nại, tố cáo, khởi kiện hoặc yêu cầu cơ quan có thẩm quyền giải quyết theo quy định pháp luật."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "10. Cam kết bảo mật thông tin ",
+          "runs": [
+            {
+              "text": "10. ",
+              "bold": true
+            },
+            {
+              "text": "Cam kết bảo mật thông tin ",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Chúng tôi cam kết:",
+          "runs": [
+            {
+              "text": "Chúng tôi cam kết:"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Thu thập và xử lý thông tin cá nhân đúng mục đích, phạm vi đã thông báo;",
+          "runs": [
+            {
+              "text": "Thu thập và xử lý thông tin cá nhân đúng mục đích, phạm vi đã thông báo;"
+            }
+          ],
+          "style": "List Paragraph",
+          "listMarker": "-",
+          "listLevel": 0
+        },
+        {
+          "text": "Không tự ý tiết lộ, chuyển giao hoặc cung cấp thông tin cá nhân của người dùng cho bên thứ ba nếu không có sự đồng ý của người dùng, trừ trường hợp pháp luật có quy định khác;",
+          "runs": [
+            {
+              "text": "Không tự ý tiết lộ, chuyển giao hoặc cung cấp thông tin cá nhân của người dùng cho bên thứ ba nếu không có sự đồng ý của người dùng, trừ trường hợp pháp luật có quy định khác;"
+            }
+          ],
+          "style": "List Paragraph",
+          "listMarker": "-",
+          "listLevel": 0
+        },
+        {
+          "text": "Áp dụng các biện pháp cần thiết để bảo vệ thông tin cá nhân của người dùng;",
+          "runs": [
+            {
+              "text": "Áp dụng các biện pháp cần thiết để bảo vệ thông tin cá nhân của người dùng;"
+            }
+          ],
+          "style": "List Paragraph",
+          "listMarker": "-",
+          "listLevel": 0
+        },
+        {
+          "text": "Hỗ trợ người dùng thực hiện quyền xem, chỉnh sửa, xóa, hủy, hạn chế xử lý dữ liệu cá nhân theo quy định pháp luật;",
+          "runs": [
+            {
+              "text": "Hỗ trợ người dùng thực hiện quyền xem, chỉnh sửa, xóa, hủy, hạn chế xử lý dữ liệu cá nhân theo quy định pháp luật;"
+            }
+          ],
+          "style": "List Paragraph",
+          "listMarker": "-",
+          "listLevel": 0
+        },
+        {
+          "text": " -    Tiếp nhận và xử lý kịp thời các phản ánh, khiếu nại liên quan đến việc bảo mật thông tin.",
+          "runs": [
+            {
+              "text": " -    "
+            },
+            {
+              "text": "Tiếp nhận và xử lý kịp thời các phản ánh, khiếu nại liên quan đến việc bảo mật thông tin."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "11. Quyền của khách hàng",
+          "runs": [
+            {
+              "text": "11. Quyề",
+              "bold": true
+            },
+            {
+              "text": "n ",
+              "bold": true
+            },
+            {
+              "text": "của khách hàng",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Khách hàng có các quyền sau:",
+          "runs": [
+            {
+              "text": "Khách hàng có các quyền sau:"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "+ Yêu cầu truy cập, chỉnh sửa hoặc xóa thông tin cá nhân của mình.",
+          "runs": [
+            {
+              "text": "+ Yêu cầu truy cập, chỉnh sửa hoặc xóa thông tin cá nhân của mình."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "+ Từ chối nhận các thông tin quảng cáo, khuyến mãi từ nền tảng",
+          "runs": [
+            {
+              "text": "+ Từ chối nhận các thông tin quảng cáo, khuyến mãi từ "
+            },
+            {
+              "text": "nền tảng"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "+ Đưa ra khiếu nại nếu có vi phạm về bảo mật thông tin cá nhân.",
+          "runs": [
+            {
+              "text": "+ Đưa ra khiếu nại nếu có vi phạm về bảo mật thông tin cá nhân."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "12. Thay đổi Chính sách bảo mật",
+          "runs": [
+            {
+              "text": "12. Thay đổi Chính sách bảo mật",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Chúng tôi có quyền sửa đổi, bổ sung Chính sách bảo mật này tùy từng thời điểm để phù hợp với nhu cầu vận hành, thay đổi dịch vụ hoặc quy định pháp luật.",
+          "runs": [
+            {
+              "text": "Chúng tôi có quyền sửa đổi, bổ sung Chính sách bảo mật này tùy từng thời điểm để phù hợp với nhu cầu vận hành, thay đổi dịch vụ hoặc quy định pháp luật."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Phiên bản cập nhật sẽ được đăng tải trên website và có hiệu lực kể từ thời điểm đăng tải hoặc thời điểm khác được nêu rõ trong thông báo cập nhật.",
+          "runs": [
+            {
+              "text": "Phiên bản cập nhật sẽ được đăng tải trên website và có hiệu lực kể từ thời điểm đăng tải hoặc thời điểm khác được nêu rõ trong thông báo cập nhật."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Khách hàng nên thường xuyên kiểm tra Chính sách bảo mật để cập nhật các thay đổi (nếu có).",
+          "runs": [
+            {
+              "text": "Khách hàng nên thường xuyên kiểm tra Chính sách bảo mật để cập nhật các thay đổi (nếu có)."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "13. Thông tin liên hệ",
+          "runs": [
+            {
+              "text": "13. Thông tin liên hệ",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Mọi yêu cầu, thắc mắc, phản ánh hoặc khiếu nại liên quan đến Chính sách bảo mật này, vui lòng liên hệ:",
+          "runs": [
+            {
+              "text": "Mọi yêu cầu, thắc mắc, phản ánh hoặc khiếu nại liên quan đến Chính sách bảo mật này, vui lòng liên hệ:"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "- HỘ KINH DOANH BLANWHI - BNW",
+          "runs": [
+            {
+              "text": "- "
+            },
+            {
+              "text": "HỘ KINH DOANH BLANWHI - BNW"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "- Địa chỉ: 282/49, Phường Gia Định, Thành phố Hồ Chí Minh",
+          "runs": [
+            {
+              "text": "- "
+            },
+            {
+              "text": "Địa chỉ: "
+            },
+            {
+              "text": "282/49, Phường Gia Định, Thành phố Hồ Chí Minh"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "- Số điện thoại: 0866561480",
+          "runs": [
+            {
+              "text": "- Số điện thoại:"
+            },
+            {
+              "text": " "
+            },
+            {
+              "text": "0866561480"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        }
+      ]
+    },
+    {
+      "id": "phan-anh-khieu-nai",
+      "title": "Phương thức tiếp nhận và giải quyết phản ánh, yêu cầu, khiếu nại",
+      "sourceFile": "2. PHƯƠNG THỨC TIẾP NHẬN VÀ GIẢI QUYẾT PHẢN ÁNH.docx",
+      "blocks": [
+        {
+          "text": "PHƯƠNG THỨC TIẾP NHẬN VÀ GIẢI QUYẾT PHẢN ÁNH, YÊU CẦU, ",
+          "runs": [
+            {
+              "text": "PHƯƠNG THỨC TIẾP NHẬN VÀ GIẢI QUYẾT PHẢN ÁNH, YÊU CẦU, ",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "KHIẾU NẠI",
+          "runs": [
+            {
+              "text": "KHIẾU NẠI",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "1. Cơ chế giải quyết",
+          "runs": [
+            {
+              "text": "1. Cơ chế giải quyết",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Mọi khiếu nại từ phía Khách hàng đều được giải quyết trên cơ sở thương lượng. Trường hợp không đạt được thỏa thuận như mong muốn, một trong hai bên có quyền đưa vụ việc ra Cơ quan nhà nước có thẩm quyền để giải quyết.",
+          "runs": [
+            {
+              "text": "Mọi khiếu nại từ phía Khách hàng đều được giải quyết trên cơ sở thương lượng. Trường hợp không đạt được thỏa thuận như mong muốn, một trong hai bên có quyền đưa vụ việc ra Cơ quan nhà nước có thẩm quyền để giải quyết."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Trong trường hợp xảy ra sự cố do lỗi của blanwhi.com, chúng tôi sẽ ngay lập tức áp dụng các biện pháp cần thiết để đảm bảo quyền lợi cho khách hàng.",
+          "runs": [
+            {
+              "text": "Trong trường hợp xảy ra sự cố do lỗi củ"
+            },
+            {
+              "text": "a "
+            },
+            {
+              "text": "blanwhi.com",
+              "bold": true
+            },
+            {
+              "text": ", chúng"
+            },
+            {
+              "text": " tôi sẽ ngay lập tức áp dụng các biện pháp cần thiết để đảm bảo quyền lợi cho khách hàng."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "2. Phương thức tiếp nhận phản ánh, yêu cầu, khiếu nại",
+          "runs": [
+            {
+              "text": "2. Phương thức tiếp nhận phản ánh, yêu cầu, khiếu nại",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Khách hàng có thể gửi khiếu nại để yêu cầu blanwhi.com giải quyết bằng cách thức sau:",
+          "runs": [
+            {
+              "text": "Khách hàng có thể gửi khiếu nại để yêu cầu "
+            },
+            {
+              "text": "blanwhi.com",
+              "bold": true
+            },
+            {
+              "text": " "
+            },
+            {
+              "text": "giải quyết"
+            },
+            {
+              "text": " bằng cách thức sau:"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "\t* Cách 1: Gọi điện đến số điện thoại: 0866561480",
+          "runs": [
+            {
+              "text": "\t"
+            },
+            {
+              "text": "* Cách "
+            },
+            {
+              "text": "1"
+            },
+            {
+              "text": ": Gọi điện đến số điện thoại: "
+            },
+            {
+              "text": "0866561480"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "* Cách 2: Gửi trực tiếp tới địa chỉ sau đây: 282/49, Phường Gia Định, Thành phố Hồ Chí Minh",
+          "runs": [
+            {
+              "text": "* Cách "
+            },
+            {
+              "text": "2"
+            },
+            {
+              "text": ": Gửi trực tiếp tới địa chỉ sau đây: "
+            },
+            {
+              "text": "282/49, Phường Gia Định, Thành phố Hồ Chí Minh"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "3. Trình tự, thủ tục tiếp nhận và xử lý phản ánh, yêu cầu, khiếu nại,",
+          "runs": [
+            {
+              "text": "3. Trình tự, thủ tục tiếp nhận và xử lý phản ánh, yêu cầu, khiếu nại,",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Bước 1: Gửi khiếu nại",
+          "runs": [
+            {
+              "text": "Bước 1:",
+              "bold": true
+            },
+            {
+              "text": " "
+            },
+            {
+              "text": "Gửi khiếu nại",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Khách hàng gửi khiếu nại về dịch vụ hoặc quyền lợi chưa được đảm bảo đầy đủ blanwhi.com qua các cách thức đã quy định ở trên.",
+          "runs": [
+            {
+              "text": "Khách hàng gửi khiếu nại về dịch vụ hoặc quyền lợi chưa được đảm bảo đầy đủ "
+            },
+            {
+              "text": "blanwhi.com",
+              "bold": true
+            },
+            {
+              "text": " "
+            },
+            {
+              "text": "qua các cách thức đã quy định ở trên."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Bước 2: Tiếp nhận và xử lý khiếu nại",
+          "runs": [
+            {
+              "text": "Bước 2: Tiếp nhận và xử lý khiếu nại",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "blanwhi.com sẽ tiếp nhận các khiếu nại của Khách hàng và tiến hành xác minh thông tin trong vòng 03 ngày làm việc kể từ ngày tiếp nhận.",
+          "runs": [
+            {
+              "text": "blanwhi.com",
+              "bold": true
+            },
+            {
+              "text": " "
+            },
+            {
+              "text": "sẽ tiếp"
+            },
+            {
+              "text": " nhận các khiếu nại của Khách hàng và tiến hành xác minh thông tin "
+            },
+            {
+              "text": "trong vòng 03 ngày làm việc kể từ ngày tiếp nhận."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Bước 3: Giải quyết & Phản hồi tới khách hàng",
+          "runs": [
+            {
+              "text": "Bước 3: ",
+              "bold": true
+            },
+            {
+              "text": "Giải quyết & ",
+              "bold": true
+            },
+            {
+              "text": "P",
+              "bold": true
+            },
+            {
+              "text": "hản hồi tới khách hàng",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Thời hạn dự kiến giải quyết:",
+          "runs": [
+            {
+              "text": "Thời hạn dự kiến giải quyết:"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Không quá 03 ngày làm việc đối với vụ việc phổ biến, thông thường như phản ánh chất lượng phục vụ chăm sóc khách hàng; sản phẩm giao đến bị lỗi/thiếu; chất lượng sản phẩm khác mô tả và ảnh chụp.",
+          "runs": [
+            {
+              "text": "Không quá "
+            },
+            {
+              "text": "03 ngày làm việc",
+              "bold": true
+            },
+            {
+              "text": " đối với vụ việc "
+            },
+            {
+              "text": "phổ biến, "
+            },
+            {
+              "text": "thông thườ"
+            },
+            {
+              "text": "ng như phản ánh chất lượng phục vụ chăm sóc khách hàng; sản phẩm giao đến bị lỗi/thiếu; chất lượng sản phẩm khác mô tả và ảnh chụp."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "•",
+          "listLevel": 0
+        },
+        {
+          "text": "Không quá 07 ngày làm việc đối với vụ việc phức tạp cần xác minh nhiều bên hoặc phụ thuộc kết quả xác minh của đơn vị liên quan.",
+          "runs": [
+            {
+              "text": "Không quá "
+            },
+            {
+              "text": "07 ngày làm việc",
+              "bold": true
+            },
+            {
+              "text": " đối với vụ việc phức tạp cần xác minh nhiều bên hoặc phụ thuộc kết quả xác minh của đơn vị liên quan."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "•",
+          "listLevel": 0
+        },
+        {
+          "text": "blanwhi.com sẽ cố gắng xác minh thông tin và giải quyết khiếu nại một cách nhanh chóng, kịp thời để đảm bảo quyền lợi cho Khách hàng. Trường hợp nằm ngoài khả năng và thẩm quyền của blanwhi.com thì chúng tôi sẽ yêu cầu Khách hàng đưa vụ việc này ra cơ quan nhà nước có thẩm quyền giải quyết theo pháp luật.",
+          "runs": [
+            {
+              "text": "blanwhi.com",
+              "bold": true
+            },
+            {
+              "text": " "
+            },
+            {
+              "text": "sẽ cố gắng xác minh thông tin và giải quyết khiếu nại một cách nhanh chóng, kịp thời để đảm bảo quyền lợi cho Khách hàng. Trường hợp nằm ngoài khả năng và thẩm quyền của "
+            },
+            {
+              "text": "blanwhi.com",
+              "bold": true
+            },
+            {
+              "text": " "
+            },
+            {
+              "text": "thì chúng"
+            },
+            {
+              "text": " tôi sẽ yêu cầu Khách hàng đưa vụ việc này ra cơ quan nhà nước có thẩm quyền giải quyết theo pháp luật."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "4. Biện pháp và công cụ hỗ trợ giải quyết phản ánh, yêu cầu, khiếu nại",
+          "runs": [
+            {
+              "text": "4. Biện pháp và công cụ hỗ trợ giải quyết phản ánh, yêu cầu, khiếu nại",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Để hỗ trợ việc giải quyết phản ánh, yêu cầu, khiếu nại, blanwhi.com áp dụng một hoặc nhiều biện pháp sau:",
+          "runs": [
+            {
+              "text": "Để hỗ trợ việc giải quyết phản ánh, yêu cầu, khiếu "
+            },
+            {
+              "text": "nại, "
+            },
+            {
+              "text": "blanwhi.com",
+              "bold": true
+            },
+            {
+              "text": " "
+            },
+            {
+              "text": "áp dụng một hoặc "
+            },
+            {
+              "text": "nhiều biện pháp sau:"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Lưu trữ thông tin lịch sử giao dịch trên hệ thống; ",
+          "runs": [
+            {
+              "text": "Lưu tr"
+            },
+            {
+              "text": "ữ thông tin lịch sử giao dịch trên hệ thống; "
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "•",
+          "listLevel": 0
+        },
+        {
+          "text": "Lưu trữ nội dung trao đổi giữa các bên; ",
+          "runs": [
+            {
+              "text": "Lưu tr"
+            },
+            {
+              "text": "ữ nội dung trao đổi giữa các bên; "
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "•",
+          "listLevel": 0
+        },
+        {
+          "text": "Kiểm tra chứng từ, hóa đơn và các tài liệu liên quan; ",
+          "runs": [
+            {
+              "text": "Ki"
+            },
+            {
+              "text": "ểm tra chứng từ, hóa đơn và các tài liệu liên quan; "
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "•",
+          "listLevel": 0
+        },
+        {
+          "text": "Tiếp nhận và lưu trữ chứng cứ do khách hàng cung cấp; ",
+          "runs": [
+            {
+              "text": "Ti"
+            },
+            {
+              "text": "ếp nhận và lưu trữ chứng cứ do khách hàng cung cấp; "
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "•",
+          "listLevel": 0
+        },
+        {
+          "text": "Phân công bộ phận chuyên trách tiếp nhận và xử lý; ",
+          "runs": [
+            {
+              "text": "Phân công b"
+            },
+            {
+              "text": "ộ phận chuyên trách tiếp nhận và xử lý; "
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "•",
+          "listLevel": 0
+        },
+        {
+          "text": "Lưu hồ sơ giải quyết để phục vụ công tác kiểm tra, đối chiếu khi cần thiết.",
+          "runs": [
+            {
+              "text": "Lưu h"
+            },
+            {
+              "text": "ồ sơ giải quyết để phục vụ công tác kiểm tra, đối chiếu khi cần thiết."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "•",
+          "listLevel": 0
+        },
+        {
+          "text": "5. Căn cứ và quy trình đưa ra quyết định giải quyết",
+          "runs": [
+            {
+              "text": "5. Căn cứ và quy trình đưa ra quyết định giải quyết",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Kết quả giải quyết phản ánh, yêu cầu hoặc khiếu nại được blanwhi.com xem xét trên cơ sở:",
+          "runs": [
+            {
+              "text": "Kết quả giải quyết phản ánh, yêu cầu hoặc khiếu nại được "
+            },
+            {
+              "text": "blanwhi.com",
+              "bold": true
+            },
+            {
+              "text": " "
+            },
+            {
+              "text": "xem xét trên cơ sở:"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Thông tin do khách hàng và các bên liên quan cung cấp; ",
+          "runs": [
+            {
+              "text": "Thông tin do khách hàng và các bên liên quan cung c"
+            },
+            {
+              "text": "ấp; "
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "•",
+          "listLevel": 0
+        },
+        {
+          "text": "Dữ liệu được lưu trữ trên hệ thống của blanwhi.com; ",
+          "runs": [
+            {
+              "text": "D"
+            },
+            {
+              "text": "ữ liệu được lưu trữ trên hệ thống của "
+            },
+            {
+              "text": "blanwhi.com",
+              "bold": true
+            },
+            {
+              "text": "; "
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "•",
+          "listLevel": 0
+        },
+        {
+          "text": "Lịch sử giao dịch; ",
+          "runs": [
+            {
+              "text": "L"
+            },
+            {
+              "text": "ịch sử giao dịch; "
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "•",
+          "listLevel": 0
+        },
+        {
+          "text": "Hợp đồng, điều khoản sử dụng, chính sách đã công bố trên website; ",
+          "runs": [
+            {
+              "text": "H"
+            },
+            {
+              "text": "ợp đồng, điều khoản sử dụng, chính sách đã công bố trên website; "
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "•",
+          "listLevel": 0
+        },
+        {
+          "text": "Quy định của pháp luật hiện hành; ",
+          "runs": [
+            {
+              "text": "Quy đ"
+            },
+            {
+              "text": "ịnh của pháp luật hiện hành; "
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "•",
+          "listLevel": 0
+        },
+        {
+          "text": "Các tài liệu, chứng cứ hợp pháp khác. ",
+          "runs": [
+            {
+              "text": "Các tài li"
+            },
+            {
+              "text": "ệu, chứng cứ hợp pháp khác. "
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "•",
+          "listLevel": 0
+        },
+        {
+          "text": "Quyết định giải quyết được đưa ra sau khi blanwhi.com hoàn tất việc xác minh và đánh giá toàn bộ hồ sơ liên quan.",
+          "runs": [
+            {
+              "text": "Quyết định giải quyết được đưa ra sau khi "
+            },
+            {
+              "text": "blanwhi.com",
+              "bold": true
+            },
+            {
+              "text": " "
+            },
+            {
+              "text": "hoàn tất việc xác minh và đánh giá toàn bộ hồ sơ liên quan."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Trường hợp các bên không đồng ý với kết quả giải quyết của blanwhi.com, các bên có quyền tiếp tục thương lượng hoặc yêu cầu cơ quan nhà nước có thẩm quyền hoặc Tòa án giải quyết theo quy định của pháp luật.",
+          "runs": [
+            {
+              "text": "Trường hợp các bên không đồng ý với kết quả giải quyết của "
+            },
+            {
+              "text": "blanwhi.com",
+              "bold": true
+            },
+            {
+              "text": ", các bên có quyền tiếp tục thương lượng hoặc yêu cầu cơ quan nhà nước có thẩm quyền hoặc Tòa án giải quyết theo quy định của pháp luật."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "",
+          "runs": [],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        }
+      ]
+    },
+    {
+      "id": "gia",
+      "title": "Chính sách về giá",
+      "sourceFile": "3. CHÍNH SÁCH VỀ GIÁ.docx",
+      "blocks": [
+        {
+          "text": "CHÍNH SÁCH VỀ GIÁ",
+          "runs": [
+            {
+              "text": "CHÍNH SÁCH VỀ GIÁ",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "1. Phạm vi áp dụng",
+          "runs": [
+            {
+              "text": "1. Phạm vi áp dụng",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Chính sách này quy định về việc niêm yết giá và áp dụng giá đối với các sản phẩm được cung cấp trên blanwhi.com, nhằm bảo đảm tính công khai, minh bạch và tuân thủ quy định của pháp luật.",
+          "runs": [
+            {
+              "text": "Chính sách này quy định về việc niêm yết giá và áp dụng giá đối với các "
+            },
+            {
+              "text": "sản phẩm"
+            },
+            {
+              "text": " được cung cấp trên "
+            },
+            {
+              "text": "blanwhi.com",
+              "bold": true
+            },
+            {
+              "text": ", nhằm bảo đảm tính công khai, minh bạch và tuân thủ quy định của pháp luật."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "2. Chính sách niêm yết giá đối với hàng hóa, sản phẩm",
+          "runs": [
+            {
+              "text": "2. Chính sách niêm yết giá đối với hàng hóa, ",
+              "bold": true
+            },
+            {
+              "text": "sản phẩm",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Giá sản phẩm được niêm yết trên website do HỘ KINH DOANH BLANWHI - BNW trực tiếp quyết định và công bố. ",
+          "runs": [
+            {
+              "text": "Giá "
+            },
+            {
+              "text": "sản phẩm"
+            },
+            {
+              "text": " được niêm yết trên website do "
+            },
+            {
+              "text": "HỘ KINH DOANH BLANWHI - BNW"
+            },
+            {
+              "text": " "
+            },
+            {
+              "text": "trực tiếp quyết định và công bố. "
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "1.",
+          "listLevel": 0
+        },
+        {
+          "text": "Giá được hiển thị bằng Đồng Việt Nam (VNĐ)",
+          "runs": [
+            {
+              "text": "Giá được hiển thị bằng Đồng Việt Nam (VNĐ)"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "2.",
+          "listLevel": 0
+        },
+        {
+          "text": "Giá của từng sản phẩm được hiển thị rõ ràng trên website trước khi khách hàng thực hiện đặt sản phẩm. ",
+          "runs": [
+            {
+              "text": "Giá của từng "
+            },
+            {
+              "text": "sản phẩm"
+            },
+            {
+              "text": " được hiển thị rõ ràng trên website trước khi khách hàng thực hiện đặt "
+            },
+            {
+              "text": "sản phẩm"
+            },
+            {
+              "text": ". "
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "3.",
+          "listLevel": 0
+        },
+        {
+          "text": "Website công khai đầy đủ các khoản chi phí mà khách hàng phải thanh toán, bao gồm: ",
+          "runs": [
+            {
+              "text": "Website công khai đầy đủ các khoản chi phí mà khách hàng phải thanh toán, bao gồm: "
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "4.",
+          "listLevel": 0
+        },
+        {
+          "text": "Giá sản phẩm (nếu có); ",
+          "runs": [
+            {
+              "text": "Giá"
+            },
+            {
+              "text": " "
+            },
+            {
+              "text": "sản phẩm"
+            },
+            {
+              "text": " (nếu có); "
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "•",
+          "listLevel": 0
+        },
+        {
+          "text": "Phí vận chuyển hoặc các khoản chi phí phát sinh khác (nếu có). ",
+          "runs": [
+            {
+              "text": "Phí vận chuyển hoặc các khoản chi phí phát sinh khác (nếu có). "
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "•",
+          "listLevel": 0
+        },
+        {
+          "text": "Trước khi khách hàng hoàn tất giao dịch, hệ thống sẽ hiển thị tổng số tiền phải thanh toán, bao gồm toàn bộ các khoản thu theo quy định.",
+          "runs": [
+            {
+              "text": "Trước khi khách hàng hoàn tất giao dịch, hệ thống sẽ hiển thị "
+            },
+            {
+              "text": "tổng số tiền phải thanh toán",
+              "bold": true
+            },
+            {
+              "text": ", bao gồm toàn bộ các khoản thu theo quy định."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "1.",
+          "listLevel": 0
+        },
+        {
+          "text": "3. Áp dụng giá",
+          "runs": [
+            {
+              "text": "3. Áp dụng giá",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Giá áp dụng đối với khách hàng là mức giá được hiển thị trên website tại thời điểm khách hàng hoàn tất việc đặt sản phẩm và được hệ thống xác nhận. ",
+          "runs": [
+            {
+              "text": "Giá áp dụng đối với khách hàng là mức giá được hiển thị trên website tại thời điểm khách hàng hoàn tất việc đặt "
+            },
+            {
+              "text": "sản phẩm"
+            },
+            {
+              "text": " và được hệ thống xác nhận. "
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "1.",
+          "listLevel": 0
+        },
+        {
+          "text": "Sau khi giao dịch được xác nhận thành công, HỘ KINH DOANH BLANWHI - BNW không tự ý thay đổi giá của giao dịch đã được xác lập, trừ các trường hợp: ",
+          "runs": [
+            {
+              "text": "Sau khi giao dịch được xác nhận thành công, "
+            },
+            {
+              "text": "HỘ KINH DOANH BLANWHI - BNW"
+            },
+            {
+              "text": " "
+            },
+            {
+              "text": "không tự ý thay đổi giá của giao dịch đã được xác lập, trừ các trường hợp: "
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "2.",
+          "listLevel": 0
+        },
+        {
+          "text": "Có sự đồng ý của khách hàng; ",
+          "runs": [
+            {
+              "text": "Có sự đồng ý của khách hàng; "
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "•",
+          "listLevel": 0
+        },
+        {
+          "text": "Có yêu cầu của cơ quan nhà nước có thẩm quyền; ",
+          "runs": [
+            {
+              "text": "Có yêu cầu của cơ quan nhà nước có thẩm quyền; "
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "•",
+          "listLevel": 0
+        },
+        {
+          "text": "Xảy ra sự kiện bất khả kháng hoặc lỗi kỹ thuật ảnh hưởng trực tiếp đến việc hiển thị giá và được pháp luật cho phép điều chỉnh. ",
+          "runs": [
+            {
+              "text": "Xảy ra sự kiện bất khả kháng hoặc lỗi kỹ thuật ảnh hưởng trực tiếp đến việc hiển thị giá và được pháp luật cho phép điều chỉnh. "
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "•",
+          "listLevel": 0
+        },
+        {
+          "text": "4. Điều chỉnh giá",
+          "runs": [
+            {
+              "text": "4. Điều chỉnh giá",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "HỘ KINH DOANH BLANWHI - BNW có quyền điều chỉnh giá sản phẩm nhằm phù hợp với chính sách kinh doanh, chương trình khuyến mại hoặc biến động của thị trường. ",
+          "runs": [
+            {
+              "text": "HỘ KINH DOANH BLANWHI - BNW"
+            },
+            {
+              "text": " "
+            },
+            {
+              "text": "có quyền điều chỉnh giá "
+            },
+            {
+              "text": "sản phẩm"
+            },
+            {
+              "text": " nhằm phù hợp với chính sách kinh doanh, chương trình khuyến mại hoặc biến động của thị trường. "
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "1.",
+          "listLevel": 0
+        },
+        {
+          "text": "Việc điều chỉnh giá không ảnh hưởng đến các giao dịch đã được khách hàng đặt thành công và đã được hệ thống xác nhận, trừ trường hợp các bên có thỏa thuận khác hoặc pháp luật có quy định khác. ",
+          "runs": [
+            {
+              "text": "Việc điều chỉnh giá không ảnh hưởng đến các giao dịch đã được khách hàng đặt thành công và đã được hệ thống xác nhận, trừ trường hợp các bên có thỏa thuận khác hoặc pháp luật có quy định khác. "
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "2.",
+          "listLevel": 0
+        },
+        {
+          "text": "",
+          "runs": [],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "",
+          "runs": [],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "",
+          "runs": [],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "",
+          "runs": [],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        }
+      ]
+    },
+    {
+      "id": "thanh-toan",
+      "title": "Chính sách về thanh toán",
+      "sourceFile": "4. CHÍNH SÁCH THANH TOÁN.docx",
+      "blocks": [
+        {
+          "text": "CHÍNH SÁCH THANH TOÁN",
+          "runs": [
+            {
+              "text": "CHÍNH SÁCH THANH TOÁN",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Các hình thức thanh toán",
+          "runs": [
+            {
+              "text": "Các hình thức thanh toán",
+              "bold": true
+            }
+          ],
+          "style": "List Paragraph",
+          "listMarker": "1.",
+          "listLevel": 0
+        },
+        {
+          "text": "Hộ Kinh Doanh BLANWHI - BNW hiện áp dụng các phương thức Thanh toán sau:",
+          "runs": [
+            {
+              "text": "Hộ Kinh Doanh "
+            },
+            {
+              "text": "BLANWHI - BNW"
+            },
+            {
+              "text": " "
+            },
+            {
+              "text": "hiện áp dụng các phương thứ"
+            },
+            {
+              "text": "c Thanh toán sau:"
+            }
+          ],
+          "style": "Normal (Web)",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "1.1. Phương thức thanh toán khi nhận hàng (COD):",
+          "runs": [
+            {
+              "text": "1",
+              "bold": true
+            },
+            {
+              "text": ".1. Phương thức thanh toán khi",
+              "bold": true
+            },
+            {
+              "text": " nhận hàng (COD):",
+              "bold": true
+            }
+          ],
+          "style": "Normal (Web)",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Với hình thức COD, Khách hàng thanh toán bằng tiền mặt cho nhân viên giao hàng hoặc đơn vị vận chuyển khi nhận hàng. Quý khách vui lòng thanh toán 100% giá trị đơn hàng và phí giao hàng (nếu có) tại thời điểm nhận hàng.",
+          "runs": [
+            {
+              "text": "Với hình thức COD, Khách hàng thanh toán bằng tiền mặt cho nhân viên giao hàng hoặc đơn vị vận chuyển khi nhận hàng."
+            },
+            {
+              "text": " "
+            },
+            {
+              "text": "Quý khách vui lòng thanh toán 100% giá trị đơn hàng "
+            },
+            {
+              "text": "và"
+            },
+            {
+              "text": " phí giao hàng (nếu có) tại thời điểm nhận hàng."
+            }
+          ],
+          "style": "Normal (Web)",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Khách hàng có trách nhiệm kiểm tra thông tin đơn hàng, tình trạng bao bì, số lượng hàng hóa và số tiền cần thanh toán trước khi thực hiện thanh toán cho nhân viên giao hàng hoặc đơn vị vận chuyển.",
+          "runs": [
+            {
+              "text": "Khách hàng có trách nhiệm kiểm tra thông tin đơn hàng, tình trạng bao bì, số lượng hàng hóa và số tiền cần thanh toán trước khi thực hiện thanh toán cho nhân viên giao hàng hoặc đơn vị vận chuyển."
+            }
+          ],
+          "style": "Normal (Web)",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Sau khi Khách hàng hoàn tất thanh toán COD, đơn hàng được xem là đã thanh toán theo giá trị thực tế được xác nhận tại thời điểm giao hàng, trừ trường hợp các bên có thỏa thuận khác hoặc phát sinh yêu cầu đổi trả, hoàn tiền theo chính sách của Hộ Kinh Doanh BLANWHI - BNW.",
+          "runs": [
+            {
+              "text": "Sau khi Khách hàng hoàn tất thanh toán COD, đơn hàng được xem là đã thanh toán theo giá trị thực tế được xác nhận tại thời điểm giao hàng, trừ trường hợp các bên có thỏa thuận khác hoặc phát sinh yêu cầu đổi trả, hoàn tiền theo chính sách của "
+            },
+            {
+              "text": "Hộ Kinh Doanh "
+            },
+            {
+              "text": "BLANWHI - BNW"
+            },
+            {
+              "text": "."
+            }
+          ],
+          "style": "Normal (Web)",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "1.2. Phương thức thanh toán qua “chuyển khoản”",
+          "runs": [
+            {
+              "text": "1",
+              "bold": true
+            },
+            {
+              "text": ".2. Phương thức thanh toán qua “chuyển khoản”",
+              "bold": true
+            }
+          ],
+          "style": "Normal (Web)",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Thông tin tài khoản nhận thanh toán:",
+          "runs": [
+            {
+              "text": "Thông tin tài khoản nhận thanh toán:"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "- Tên tài khoản: ",
+          "runs": [
+            {
+              "text": "- Tên tài khoản: "
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "- Số tài khoản: ……..",
+          "runs": [
+            {
+              "text": "- Số tài khoản: …….."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "- Ngân hàng: ………",
+          "runs": [
+            {
+              "text": "- Ngân hàng: ………"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Lưu ý: Khách hàng chuyển khoản đúng số tiền và nội dung để hệ thống tự động đối soát. Đơn sẽ cập nhật sau khi nhận được giao dịch.",
+          "runs": [
+            {
+              "text": "Lưu ý: Khách hàng chuyển khoản đúng số tiền và nội dung để hệ thống tự động đối soát. Đơn sẽ cập nhật sau khi nhận được giao dịch."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "1.3. Phương thức thanh toán qua Ví điện tử ZaloPay",
+          "runs": [
+            {
+              "text": "1",
+              "bold": true
+            },
+            {
+              "text": ".3.",
+              "bold": true
+            },
+            {
+              "text": " "
+            },
+            {
+              "text": "Phương thức thanh toán qua Ví điện tử ZaloPay",
+              "bold": true
+            }
+          ],
+          "style": "Normal (Web)",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Tại từng thời điểm, nền tảng có thể tích hợp cho Khách hàng các hình thức thanh toán mà ZaloPay cung cấp:",
+          "runs": [
+            {
+              "text": "Tại từng thời điểm, nền tảng có thể tích hợp cho Khách hàng các hình thức thanh toán mà ZaloPay cung cấp:"
+            }
+          ],
+          "style": "Normal (Web)",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Thẻ ATM nội địa/thẻ quốc tế",
+          "runs": [
+            {
+              "text": "Thẻ ATM nội địa/thẻ quốc tế"
+            }
+          ],
+          "style": "Normal (Web)",
+          "listMarker": "•",
+          "listLevel": 0
+        },
+        {
+          "text": "Thẻ tín dụng",
+          "runs": [
+            {
+              "text": "Thẻ tín dụng"
+            }
+          ],
+          "style": "Normal (Web)",
+          "listMarker": "•",
+          "listLevel": 0
+        },
+        {
+          "text": "Chuyển khoản ngân hàng qua mã Zalopay QR đa năng (VietQR)",
+          "runs": [
+            {
+              "text": "Chuyển khoản ngân hàng qua mã Zalopay QR đa năng (VietQR)"
+            }
+          ],
+          "style": "Normal (Web)",
+          "listMarker": "•",
+          "listLevel": 0
+        },
+        {
+          "text": "Thanh toán mã Zalopay QR bằng ứng dụng Zalo/Zalopay",
+          "runs": [
+            {
+              "text": "Thanh toán mã Zalopay QR bằng ứng dụng Zalo/Zalopay"
+            }
+          ],
+          "style": "Normal (Web)",
+          "listMarker": "•",
+          "listLevel": 0
+        },
+        {
+          "text": "Nền tảng cam kết tính năng thanh toán được cung cấp bởi Đối tác Cổng thanh toán đã được cấp phép hoạt động hợp pháp tại Việt Nam, theo đó, các tiêu chuẩn bảo mật thanh toán thẻ của nền tảng, đảm bảo tuân thủ theo các tiêu chuẩn bảo mật của Đối tác Cổng thanh toán.",
+          "runs": [
+            {
+              "text": "Nền tảng cam kết tính năng thanh toán được cung cấp bởi Đối tác Cổng thanh toán đã được cấp phép hoạt động hợp pháp tại Việt Nam, theo đó, các tiêu chuẩn bảo mật thanh toán thẻ của nền tảng, đảm bảo tuân thủ theo các tiêu chuẩn bảo mật của Đối tác Cổng thanh toán."
+            }
+          ],
+          "style": "Normal (Web)",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "2. Bảo mật thanh toán",
+          "runs": [
+            {
+              "text": "2.",
+              "bold": true
+            },
+            {
+              "text": " Bảo mật thanh toán",
+              "bold": true
+            }
+          ],
+          "style": "Normal (Web)",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "HỘ KINH DOANH BLANWHI - BNW cam kết áp dụng các biện pháp cần thiết nhằm bảo đảm an toàn, bảo mật thông tin trong quá trình thanh toán trên website blanwhi.com.",
+          "runs": [
+            {
+              "text": "HỘ KINH DOANH BLANWHI - BNW cam kết áp dụng các biện pháp cần thiết nhằm bảo đảm an toàn, bảo mật thông tin trong quá trình thanh toán trên website "
+            },
+            {
+              "text": "blanwhi.com",
+              "bold": true
+            },
+            {
+              "text": "."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "2.1. Bảo mật thông tin thanh toán",
+          "runs": [
+            {
+              "text": "2",
+              "bold": true
+            },
+            {
+              "text": ".1. Bảo mật thông tin thanh toán",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Các giao dịch thanh toán trực tuyến được thực hiện thông qua Đối tác Cổng thanh toán được cấp phép hoạt động hợp pháp tại Việt Nam và áp dụng các tiêu chuẩn bảo mật theo quy định của pháp luật cũng như quy định của Đối tác Cổng thanh toán.",
+          "runs": [
+            {
+              "text": "Các giao dịch thanh toán trực tuyến được thực hiện thông qua Đối tác Cổng thanh toán được cấp phép hoạt động hợp pháp tại Việt Nam và áp dụng các tiêu chuẩn bảo mật theo quy định của pháp luật cũng như quy định của Đối tác Cổng thanh toán."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "•",
+          "listLevel": 0
+        },
+        {
+          "text": "Thông tin thanh toán của Khách hàng được truyền tải thông qua kết nối được mã hóa và các biện pháp bảo mật do Đối tác Cổng thanh toán áp dụng nhằm hạn chế nguy cơ truy cập trái phép.",
+          "runs": [
+            {
+              "text": "Thông tin thanh toán của Khách hàng được truyền tải thông qua kết nối được mã hóa và các biện pháp bảo mật do Đối tác Cổng thanh toán áp dụng nhằm hạn chế nguy cơ truy cập trái phép."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "•",
+          "listLevel": 0
+        },
+        {
+          "text": "Việc xác thực giao dịch được thực hiện theo phương thức do ngân hàng hoặc Đối tác Cổng thanh toán quy định tại từng thời điểm (bao gồm nhưng không giới hạn ở OTP, Smart OTP hoặc các hình thức xác thực hợp pháp khác).",
+          "runs": [
+            {
+              "text": "Việc xác thực giao dịch được thực hiện theo phương thức do ngân hàng hoặc Đối tác Cổng thanh toán quy định tại từng thời điểm (bao gồm nhưng không giới hạn ở OTP, Smart OTP hoặc các hình thức xác thực hợp pháp khác)."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "•",
+          "listLevel": 0
+        },
+        {
+          "text": "2.2. Lưu trữ thông tin thanh toán",
+          "runs": [
+            {
+              "text": "2",
+              "bold": true
+            },
+            {
+              "text": ".2. Lưu trữ thông tin thanh toán",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "HỘ KINH DOANH BLANWHI - BNW không trực tiếp lưu trữ thông tin thẻ thanh toán (bao gồm số thẻ, mã CVV/CVC, ngày hết hạn hoặc các thông tin xác thực khác của Khách hàng).",
+          "runs": [
+            {
+              "text": "HỘ KINH DOANH BLANWHI - BNW không trực tiếp lưu trữ thông tin thẻ thanh toán (bao gồm số thẻ, mã CVV/CVC, ngày hết hạn hoặc các thông tin xác thực khác của Khách hàng)."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "•",
+          "listLevel": 0
+        },
+        {
+          "text": "Trường hợp Khách hàng lựa chọn lưu phương thức thanh toán để sử dụng cho các giao dịch tiếp theo, website chỉ lưu trữ mã định danh (Token) hoặc dữ liệu đã được mã hóa do Đối tác Cổng thanh toán cung cấp; việc quản lý và bảo mật thông tin thanh toán được thực hiện bởi Đối tác Cổng thanh toán theo quy định của pháp luật.",
+          "runs": [
+            {
+              "text": "Trường hợp Khách hàng lựa chọn lưu phương thức thanh toán để sử dụng cho các giao dịch tiếp theo, website chỉ lưu trữ mã định danh (Token) hoặc dữ liệu đã được mã hóa do Đối tác Cổng thanh toán cung cấp; việc quản lý và bảo mật thông tin thanh toán được thực hiện bởi Đối tác Cổng thanh toán theo quy định của pháp luật."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "•",
+          "listLevel": 0
+        },
+        {
+          "text": "Website chỉ lưu trữ các thông tin cần thiết phục vụ việc đối soát và quản lý giao dịch như mã đơn hàng, mã giao dịch, thời gian thanh toán, phương thức thanh toán và trạng thái thanh toán.",
+          "runs": [
+            {
+              "text": "Website chỉ lưu trữ các thông tin cần thiết phục vụ việc đối soát và quản lý giao dịch như mã đơn hàng, mã giao dịch, thời gian thanh toán, phương thức thanh toán và trạng thái thanh toán."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "•",
+          "listLevel": 0
+        },
+        {
+          "text": "2.3. Trách nhiệm của Khách hàng",
+          "runs": [
+            {
+              "text": "2",
+              "bold": true
+            },
+            {
+              "text": ".3. Trách nhiệm của Khách hàng",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Để bảo đảm an toàn trong quá trình thanh toán, Khách hàng có trách nhiệm:",
+          "runs": [
+            {
+              "text": "Để bảo đảm an toàn trong quá trình thanh toán, Khách hàng có trách nhiệm:"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Bảo mật thông tin tài khoản, mật khẩu, mã OTP và các phương thức xác thực giao dịch của mình.",
+          "runs": [
+            {
+              "text": "Bảo mật thông tin tài khoản, mật khẩu, mã OTP và các phương thức xác thực giao dịch của mình."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "•",
+          "listLevel": 0
+        },
+        {
+          "text": "Không cung cấp thông tin xác thực thanh toán cho bất kỳ tổ chức hoặc cá nhân nào, trừ trường hợp thực hiện giao dịch thông qua ngân hàng hoặc Đối tác Cổng thanh toán hợp pháp.",
+          "runs": [
+            {
+              "text": "Không cung cấp thông tin xác thực thanh toán cho bất kỳ tổ chức hoặc cá nhân nào, trừ trường hợp thực hiện giao dịch thông qua ngân hàng hoặc Đối tác Cổng thanh toán hợp pháp."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "•",
+          "listLevel": 0
+        },
+        {
+          "text": "Kiểm tra đầy đủ thông tin đơn hàng, giá trị thanh toán và thông tin người nhận trước khi xác nhận giao dịch.",
+          "runs": [
+            {
+              "text": "Kiểm tra đầy đủ thông tin đơn hàng, giá trị thanh toán và thông tin người nhận trước khi xác nhận giao dịch."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "•",
+          "listLevel": 0
+        },
+        {
+          "text": "Thông báo ngay cho HỘ KINH DOANH BLANWHI - BNW hoặc ngân hàng/Đối tác Cổng thanh toán khi phát hiện dấu hiệu giao dịch bất thường hoặc nghi ngờ có hành vi truy cập trái phép.",
+          "runs": [
+            {
+              "text": "Thông báo ngay cho HỘ KINH DOANH BLANWHI - BNW hoặc ngân hàng/Đối tác Cổng thanh toán khi phát hiện dấu hiệu giao dịch bất thường hoặc nghi ngờ có hành vi truy cập trái phép."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "•",
+          "listLevel": 0
+        },
+        {
+          "text": "2.4. Xử lý sự cố thanh toán",
+          "runs": [
+            {
+              "text": "2",
+              "bold": true
+            },
+            {
+              "text": ".4. Xử lý sự cố thanh toán",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Trong trường hợp phát hiện dấu hiệu gian lận, truy cập trái phép, giao dịch bất thường hoặc có yêu cầu từ cơ quan nhà nước có thẩm quyền, HỘ KINH DOANH BLANWHI - BNW có quyền tạm thời từ chối hoặc tạm dừng xử lý giao dịch để tiến hành xác minh nhằm bảo vệ quyền và lợi ích hợp pháp của Khách hàng cũng như của HỘ KINH DOANH BLANWHI - BNW.",
+          "runs": [
+            {
+              "text": "Trong trường hợp phát hiện dấu hiệu gian lận, truy cập trái phép, giao dịch bất thường hoặc có yêu cầu từ cơ quan nhà nước có thẩm quyền, HỘ KINH DOANH BLANWHI - BNW có quyền "
+            },
+            {
+              "text": "tạm thời từ chối hoặc tạm dừng xử lý giao dịch để tiến hành xác minh nhằm bảo vệ quyền và lợi ích hợp pháp của Khách hàng cũng như của HỘ KINH DOANH BLANWHI - BNW."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "HỘ KINH DOANH BLANWHI - BNW cam kết tuân thủ các quy định của pháp luật Việt Nam về giao dịch điện tử, thanh toán không dùng tiền mặt, bảo vệ dữ liệu cá nhân và các quy định pháp luật có liên quan trong quá trình tiếp nhận, xử lý và bảo mật thông tin thanh toán của Khách hàng.",
+          "runs": [
+            {
+              "text": "HỘ KINH DOANH BLANWHI - BNW cam kết tuân thủ các quy định của pháp luật Việt Nam về giao dịch điện tử, thanh toán không dùng tiền mặt, bảo vệ dữ liệu cá nhân và các quy định pháp luật có liên quan trong quá trình tiếp nhận, xử lý và bảo mật thông tin thanh toán của Khách hàng."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "",
+          "runs": [],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        }
+      ]
+    },
+    {
+      "id": "giao-hang",
+      "title": "Chính sách về giao hàng",
+      "sourceFile": "5. CHÍNH SÁCH VỀ GIAO HÀNG.docx",
+      "blocks": [
+        {
+          "text": "CHÍNH SÁCH VỀ GIAO HÀNG ",
+          "runs": [
+            {
+              "text": "CHÍNH SÁCH VỀ GIAO HÀNG",
+              "bold": true
+            },
+            {
+              "text": " "
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "",
+          "runs": [],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "1.  Phạm vi giao hàng",
+          "runs": [
+            {
+              "text": "1.  Phạm vi giao hàng",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "HỘ KINH DOANH BLANWHI - BNW giao hàng trên toàn quốc. Địa chỉ giao hàng phải chính xác và nằm trong phạm vi hỗ trợ của đơn vị vận chuyển.",
+          "runs": [
+            {
+              "text": "HỘ KINH DOANH BLANWHI - BNW"
+            },
+            {
+              "text": " "
+            },
+            {
+              "text": "giao hàng trên toàn quốc. Địa chỉ giao hàng phải chính xác và nằm trong phạm vi hỗ trợ của đơn vị vận chuyển."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "2. Phương thức giao hàng, đơn vị vận chuyển ",
+          "runs": [
+            {
+              "text": "2. Phương thức giao hàng, đơn vị vận chuyển",
+              "bold": true
+            },
+            {
+              "text": " "
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "HỘ KINH DOANH BLANWHI - BNW sẽ thực hiện giao hàng thông qua đơn vị vận chuyển phù hợp. Đơn vị vận chuyển có thể bao gồm: Viettel Post, VNPost, Giao Hàng Nhanh (GHN), Giao Hàng Tiết Kiệm (GHTK) hoặc các đơn vị vận chuyển hợp pháp khác do HỘ KINH DOANH BLANWHI - BNW lựa chọn tùy từng khu vực và thời điểm",
+          "runs": [
+            {
+              "text": "HỘ KINH DOANH BLANWHI - BNW"
+            },
+            {
+              "text": " ",
+              "bold": true
+            },
+            {
+              "text": "sẽ thực hiện giao hàng thông qua đơn vị vận chuyển"
+            },
+            {
+              "text": " phù hợp"
+            },
+            {
+              "text": ". Đơn vị vận chuyển có thể bao gồm: Viettel Post, VNPost, Giao Hàng Nhanh (GHN), Giao Hàng Tiết Kiệm (GHTK) hoặc các đơn vị vận chuyển hợp pháp khác do "
+            },
+            {
+              "text": "HỘ KINH DOANH BLANWHI - BNW"
+            },
+            {
+              "text": " ",
+              "bold": true
+            },
+            {
+              "text": "lựa chọn tùy từng khu vực và thời điểm"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "3. Chi phí và thời gian vận chuyển",
+          "runs": [
+            {
+              "text": "3. Chi phí và thời gian vận chuyển",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "3.1 Phí vận chuyển: ",
+          "runs": [
+            {
+              "text": "3.1 Phí vận chuyển",
+              "bold": true
+            },
+            {
+              "text": ": "
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Chi phí vận chuyển sẽ tùy thuộc vào vị trí địa lý của địa chỉ mà bạn nhận hàng, được tính căn cứ vào bảng giá cước hiện hành của các đơn vị vận chuyển liên kết. Phí vận chuyển được tính riêng theo từng đơn hàng và hiển thị rõ ràng trước khi Khách hàng xác nhận. HỘ KINH DOANH BLANWHI - BNW có quyền điều chỉnh phí vận chuyển khi có thay đổi từ phía đơn vị vận chuyển hoặc phát sinh chi phí thực tế.",
+          "runs": [
+            {
+              "text": "Chi phí vận chuyển sẽ tùy thuộc vào vị trí địa lý của địa chỉ mà bạn nhận hàng, được tính căn cứ vào bảng giá cước hiện hành của các đơn vị vận chuyển liên kết. "
+            },
+            {
+              "text": "Phí vận chuyển được tính riêng theo từng đơn hàng và hiển thị rõ ràng trước khi Khách hàng xác nhận. "
+            },
+            {
+              "text": "HỘ KINH DOANH BLANWHI - BNW"
+            },
+            {
+              "text": " có quyền điều chỉnh phí vận chuyển khi có thay đổi từ phía đơn vị vận chuyển hoặc phát sinh chi phí thực tế."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Đối với đơn hàng COD, khách hàng thanh toán tổng số tiền phải trả, bao gồm giá trị hàng hóa và phí vận chuyển, nếu có, cho nhân viên giao hàng khi nhận hàng.",
+          "runs": [
+            {
+              "text": "Đối với đơn hàng COD, khách hàng thanh toán tổng số tiền phải trả, bao gồm giá trị hàng hóa và phí vận chuyển, nếu có, cho nhân viên giao hàng khi nhận hàng."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "3.2. Thời gian giao hàng: ",
+          "runs": [
+            {
+              "text": "3.2. Thời gian giao hàng:",
+              "bold": true
+            },
+            {
+              "text": " "
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Thời gian giao hàng dự kiến được tính từ thời điểm đơn hàng được xác nhận thành công và bàn giao cho đơn vị vận chuyển.",
+          "runs": [
+            {
+              "text": "Thời gian giao hàng dự kiến được tính từ thời điểm đơn hàng được xác nhận thành công và bàn giao cho đơn vị vận chuyển."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Thời gian giao hàng thường trong khoảng từ 1-5 ngày kể từ ngày chốt đơn hàng hoặc theo thỏa thuận với khách khi đặt hàng:",
+          "runs": [
+            {
+              "text": "Thời gian giao hàng thường trong khoảng từ 1-5 ngày kể từ ngày chốt đơn hàng hoặc theo thỏa thuận với khách khi đặt hàng:"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "a) Khu vực nội thành các thành phố lớn: dự kiến từ 01 đến 03 ngày làm việc;",
+          "runs": [
+            {
+              "text": "a) Khu vực nội thành các thành phố lớn: dự kiến từ 01 đến 03 ngày làm việc;"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "b) Khu vực ngoại thành, tỉnh/thành khác: dự kiến từ 03 đến 05 ngày làm việc;",
+          "runs": [
+            {
+              "text": "b) Khu vực ngoại thành, tỉnh/thành khác: dự kiến từ 03 đến 05 ngày làm việc;"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "c) Khu vực vùng sâu, vùng xa, hải đảo hoặc khu vực có điều kiện vận chuyển đặc thù: thời gian giao hàng có thể kéo dài hơn tùy theo lịch trình của đơn vị vận chuyển.",
+          "runs": [
+            {
+              "text": "c) Khu vực vùng sâu, vùng xa, hải đảo hoặc khu vực có điều kiện vận chuyển đặc thù: thời gian giao hàng có thể kéo dài hơn tùy theo lịch trình của đơn vị vận chuyển."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Thông thường sau khi nhận được thông tin đặt hàng chúng tôi sẽ xử lý đơn hàng trong vòng 24h và phản hồi lại thông tin cho khách hàng về việc thanh toán và giao nhận.",
+          "runs": [
+            {
+              "text": "Thông thường sau khi nhận được thông tin đặt hàng chúng tôi sẽ xử lý đơn hàng trong vòng 24h và phản hồi lại thông tin cho khách hàng về việc thanh toán và giao nhận."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Thời gian giao hàng nêu trên chỉ mang tính chất dự kiến và có thể thay đổi trong các trường hợp sau:",
+          "runs": [
+            {
+              "text": "Thời gian giao hàng nêu trên chỉ mang tính chất dự kiến và có thể thay đổi trong các trường hợp sau:"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Không liên hệ được với Khách hàng qua số điện thoại đã cung cấp;",
+          "runs": [
+            {
+              "text": "Không liên hệ được với Khách hàng qua số điện thoại đã cung cấp;"
+            }
+          ],
+          "style": "List Paragraph",
+          "listMarker": "•",
+          "listLevel": 0
+        },
+        {
+          "text": "Địa chỉ giao hàng không chính xác, không đầy đủ hoặc khó tìm;",
+          "runs": [
+            {
+              "text": "Địa chỉ giao hàng không chính xác, không đầy đủ hoặc khó tìm;"
+            }
+          ],
+          "style": "List Paragraph",
+          "listMarker": "•",
+          "listLevel": 0
+        },
+        {
+          "text": "Khách hàng thay đổi địa chỉ, thời gian hoặc phương thức nhận hàng;",
+          "runs": [
+            {
+              "text": "Khách hàng thay đổi địa chỉ, thời gian hoặc phương thức nhận hàng;"
+            }
+          ],
+          "style": "List Paragraph",
+          "listMarker": "•",
+          "listLevel": 0
+        },
+        {
+          "text": "Số lượng đơn hàng tăng đột biến khiến việc xử lý đơn hàng bị chậm;",
+          "runs": [
+            {
+              "text": "Số lượng đơn hàng tăng đột biến khiến việc xử lý đơn hàng bị chậm;"
+            }
+          ],
+          "style": "List Paragraph",
+          "listMarker": "•",
+          "listLevel": 0
+        },
+        {
+          "text": "Đơn vị vận chuyển giao hàng chậm hơn dự kiến;",
+          "runs": [
+            {
+              "text": "Đơn vị vận chuyển giao hàng chậm hơn dự kiến;"
+            }
+          ],
+          "style": "List Paragraph",
+          "listMarker": "•",
+          "listLevel": 0
+        },
+        {
+          "text": "Đối tác cung cấp hàng chậm hơn dự kiến khiến việc giao hàng bị chậm hơn dự kiến;",
+          "runs": [
+            {
+              "text": "Đối tác cung cấp hàng chậm hơn dự kiến khiến việc giao hàng bị chậm hơn dự kiến;"
+            }
+          ],
+          "style": "List Paragraph",
+          "listMarker": "•",
+          "listLevel": 0
+        },
+        {
+          "text": "Phát sinh sự kiện bất khả kháng hoặc nguyên nhân khách quan như thiên tai, dịch bệnh, sự cố giao thông, sự cố vận chuyển, cao điểm giao hàng hoặc các nguyên nhân ngoài khả năng kiểm soát hợp lý của chúng tôi.",
+          "runs": [
+            {
+              "text": "Phát sinh sự kiện bất khả kháng hoặc nguyên nhân khách quan như thiên tai, dịch bệnh, sự cố giao thông, sự cố vận chuyển, cao điểm giao hàng hoặc các nguyên nhân ngoài khả năng kiểm soát hợp lý của chúng tôi."
+            }
+          ],
+          "style": "List Paragraph",
+          "listMarker": "•",
+          "listLevel": 0
+        },
+        {
+          "text": "Trường hợp phát sinh chậm trễ trong việc giao hàng, chúng tôi sẽ cố gắng thông báo kịp thời cho Khách hàng. Khách hàng có thể lựa chọn tiếp tục chờ nhận hàng hoặc hủy đơn hàng nếu việc hủy đơn phù hợp với chính sách của chúng tôi và tình trạng xử lý thực tế của đơn hàng.",
+          "runs": [
+            {
+              "text": "Trường hợp phát sinh chậm trễ trong việc giao hàng, chúng tôi sẽ cố gắng thông báo kịp thời cho Khách hàng. Khách hàng có thể lựa chọn tiếp tục chờ nhận hàng hoặc hủy đơn hàng nếu việc hủy đơn phù hợp với chính sách của chúng tôi và tình trạng xử lý thực tế của đơn hàng."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Trường hợp phát sinh chậm trễ trong vấn đề giao hàng hay cung ứng dịch vụ bảo hành, bảo trì, chúng tôi sẽ tìm cách liên hệ và thông báo trước cho người nhận hàng ít nhất 24 giờ. Trong trường hợp Khách hàng không còn nhu cầu tiếp tục thực hiện giao dịch do việc chậm giao hàng, Khách hàng có quyền hủy đơn hàng. ",
+          "runs": [
+            {
+              "text": "Trường hợp phát sinh chậm trễ trong vấn đề giao hàng hay cung ứng dịch vụ bảo hành, bảo trì, "
+            },
+            {
+              "text": "chúng tôi "
+            },
+            {
+              "text": "sẽ tìm cách liên hệ và thông báo trước cho người nhận hàng ít nhất 24"
+            },
+            {
+              "text": " giờ"
+            },
+            {
+              "text": ". "
+            },
+            {
+              "text": "Trong trường hợp Khách hàng không còn nhu cầu tiếp tục thực hiện giao dịch do việc chậm giao hàng, Khách hàng có quyền hủy đơn hàng. "
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "4. Giới hạn về mặt địa lý cho việc giao hàng",
+          "runs": [
+            {
+              "text": "4. Giới hạn về mặt địa lý cho việc giao hàng",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Chúng tôi hỗ trợ giao hàng trên phạm vi toàn quốc, trừ các khu vực mà đơn vị vận chuyển không thể cung cấp dịch vụ tại thời điểm phát sinh đơn hàng.",
+          "runs": [
+            {
+              "text": "Chúng tôi hỗ trợ giao hàng trên phạm vi toàn quốc, trừ các khu vực mà đơn vị vận chuyển không thể cung cấp dịch vụ tại thời điểm phát sinh đơn hàng."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Đối với các địa chỉ thuộc vùng sâu, vùng xa, hải đảo, khu vực hạn chế giao nhận hoặc khu vực có điều kiện vận chuyển đặc biệt, thời gian giao hàng và chi phí vận chuyển có thể thay đổi theo chính sách của đơn vị vận chuyển.",
+          "runs": [
+            {
+              "text": "Đối với các địa chỉ thuộc vùng sâu, vùng xa, hải đảo, khu vực hạn chế giao nhận hoặc khu vực có điều kiện vận chuyển đặc biệt, thời gian giao hàng và chi phí vận chuyển có thể thay đổi theo chính sách của đơn vị vận chuyển."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Trong trường hợp không thể giao hàng đến địa chỉ khách hàng cung cấp, chúng tôi sẽ liên hệ với khách hàng để thỏa thuận phương án xử lý phù hợp, bao gồm thay đổi địa chỉ nhận hàng, thay đổi đơn vị vận chuyển hoặc hủy đơn hàng nếu không thể thực hiện việc giao hàng.",
+          "runs": [
+            {
+              "text": "Trong trường hợp không thể giao hàng đến địa chỉ khách hàng cung cấp, chúng tôi sẽ liên hệ với khách hàng để thỏa thuận phương án xử lý phù hợp, bao gồm thay đổi địa chỉ nhận hàng, thay đổi đơn vị vận chuyển hoặc hủy đơn hàng nếu không thể thực hiện việc giao hàng."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "5.  Trách nhiệm của tổ chức cung cấp dịch vụ logistics về cung cấp thông tin đơn hàng trong quá trình giao hàng. ",
+          "runs": [
+            {
+              "text": "5",
+              "bold": true
+            },
+            {
+              "text": ". ",
+              "bold": true
+            },
+            {
+              "text": " Trách nhiệm của tổ chức cung cấp dịch vụ logistics về cung cấp thông tin đơn hàng trong quá trình giao hàng. ",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "HỘ KINH DOANH BLANWHI - BNW có trách nhiệm cung cấp, lưu giữ hoặc xuất trình các chứng từ liên quan đến hàng hóa theo quy định pháp luật và theo chính sách bán hàng áp dụng.",
+          "runs": [
+            {
+              "text": "HỘ KINH DOANH BLANWHI - BNW"
+            },
+            {
+              "text": " có trách nhiệm cung cấp, lưu giữ hoặc xuất trình các chứng từ liên quan đến hàng hóa theo quy định pháp luật và theo chính sách bán hàng áp dụng."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Tùy từng đơn hàng, HỘ KINH DOANH BLANWHI - BNW có thể cung cấp cho Khách hàng các chứng từ liên quan như hóa đơn bán hàng, phiếu xác nhận đơn hàng, phiếu giao hàng, phiếu bảo hành, tài liệu hướng dẫn sử dụng hoặc các chứng từ liên quan khác, nếu có.",
+          "runs": [
+            {
+              "text": "Tùy từng đơn hàng, "
+            },
+            {
+              "text": "HỘ KINH DOANH BLANWHI - BNW"
+            },
+            {
+              "text": " có thể cung cấp cho Khách hàng các chứng từ liên quan như hóa đơn bán hàng, phiếu xác nhận đơn hàng, phiếu giao hàng, phiếu bảo hành, tài liệu hướng dẫn sử dụng hoặc các chứng từ liên quan khác, nếu có."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Trong quá trình giao nhận, HỘ KINH DOANH BLANWHI - BNW chịu trách nhiệm giao hoặc cung cấp hóa đơn bán hàng/chứng từ liên quan cho Khách hàng theo phương thức phù hợp, bao gồm gửi kèm trong gói hàng, gửi trực tiếp, gửi qua email hoặc hình thức khác theo thỏa thuận với Khách hàng.",
+          "runs": [
+            {
+              "text": "Trong quá trình giao nhận, "
+            },
+            {
+              "text": "HỘ KINH DOANH BLANWHI - BNW"
+            },
+            {
+              "text": " chịu trách nhiệm giao hoặc cung cấp hóa đơn bán hàng/chứng từ liên quan cho Khách hàng theo phương thức phù hợp, bao gồm gửi kèm trong gói hàng, gửi trực tiếp, gửi qua email hoặc hình thức khác theo thỏa thuận với Khách hàng."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Đơn vị vận chuyển có trách nhiệm vận chuyển hàng hóa theo thông tin đơn hàng do HỘ KINH DOANH BLANWHI - BNW cung cấp, bảo đảm giao hàng đến đúng địa chỉ, đúng người nhận theo khả năng và phạm vi dịch vụ của đơn vị vận chuyển.",
+          "runs": [
+            {
+              "text": "Đơn vị vận chuyển có trách nhiệm vận chuyển hàng hóa theo thông tin đơn hàng do "
+            },
+            {
+              "text": "HỘ KINH DOANH BLANWHI - BNW"
+            },
+            {
+              "text": " cung cấp, bảo đảm giao hàng đến đúng địa chỉ, đúng người nhận theo khả năng và phạm vi dịch vụ của đơn vị vận chuyển."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Đơn vị vận chuyển có thể cung cấp vận đơn, phiếu gửi hàng, chứng từ vận chuyển hoặc tài liệu liên quan đến quá trình giao nhận khi được yêu cầu bởi HỘ KINH DOANH BLANWHI - BNW, Khách hàng hoặc cơ quan nhà nước có thẩm quyền. Trong quá trình giao hàng, đơn vị vận chuyển có trách nhiệm cập nhật tình trạng đơn hàng (đã tiếp nhận, đang vận chuyển, giao thành công hoặc giao không thành công) để HỘ KINH DOANH BLANWHI - BNW hoặc Khách hàng có thể theo dõi khi cần thiết",
+          "runs": [
+            {
+              "text": "Đơn vị vận chuyển có thể cung cấp vận đơn, phiếu gửi hàng, chứng từ vận chuyển hoặc tài liệu liên quan đến quá trình giao nhận khi được yêu cầu bởi "
+            },
+            {
+              "text": "HỘ KINH DOANH BLANWHI - BNW"
+            },
+            {
+              "text": ", Khách hàng hoặc cơ quan nhà nước có thẩm quyền."
+            },
+            {
+              "text": " "
+            },
+            {
+              "text": "Trong quá trình giao hàng, đơn vị vận chuyển có trách nhiệm cập nhật tình trạng đơn hàng (đã tiếp nhận, đang vận chuyển, giao thành công hoặc giao không thành công) để "
+            },
+            {
+              "text": "HỘ KINH DOANH BLANWHI - BNW"
+            },
+            {
+              "text": " hoặc Khách hàng có thể theo dõi khi cần thiết"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Trường hợp cơ quan nhà nước có thẩm quyền yêu cầu kiểm tra nguồn gốc, xuất xứ hoặc chứng từ hàng hóa trong quá trình vận chuyển, HỘ KINH DOANH BLANWHI - BNW và đơn vị vận chuyển sẽ phối hợp cung cấp thông tin, tài liệu liên quan trong phạm vi trách nhiệm của mỗi bên theo quy định pháp luật.",
+          "runs": [
+            {
+              "text": "Trường hợp cơ quan nhà nước có thẩm quyền yêu cầu kiểm tra nguồn gốc, xuất xứ hoặc chứng từ hàng hóa trong quá trình vận chuyển, "
+            },
+            {
+              "text": "HỘ KINH DOANH BLANWHI - BNW"
+            },
+            {
+              "text": " và đơn vị vận chuyển sẽ phối hợp cung cấp thông tin, tài liệu liên quan trong phạm vi trách nhiệm của mỗi bên theo quy định pháp luật."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Đơn vị vận chuyển có trách nhiệm bảo quản hàng hóa trong quá trình vận chuyển và chịu trách nhiệm đối với các rủi ro mất mát, thất lạc, hư hỏng hàng hóa phát sinh do lỗi của đơn vị vận chuyển trong thời gian hàng hóa được bàn giao cho đơn vị vận chuyển đến khi giao cho Khách hàng, trừ trường hợp các bên có thỏa thuận khác hoặc pháp luật có quy định khác.",
+          "runs": [
+            {
+              "text": "Đơn vị vận chuyển có trách nhiệm bảo quản hàng hóa trong quá trình vận chuyển và chịu trách nhiệm đối với các rủi ro mất mát, thất lạc, hư hỏng hàng hóa phát sinh do lỗi của đơn vị vận chuyển trong thời gian hàng hóa được bàn giao cho đơn vị vận chuyển đến khi giao cho Khách hàng, trừ trường hợp các bên có thỏa thuận khác hoặc pháp luật có quy định khác."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Trường hợp phát sinh sự cố trong quá trình giao hàng, đơn vị vận chuyển sẽ phối hợp với HỘ KINH DOANH BLANWHI - BNW để thông báo và xử lý.",
+          "runs": [
+            {
+              "text": "Trường hợp phát sinh sự cố trong quá trình giao hàng, đơn vị vận chuyển sẽ phối hợp với "
+            },
+            {
+              "text": "HỘ KINH DOANH BLANWHI - BNW "
+            },
+            {
+              "text": "để thông báo và xử lý"
+            },
+            {
+              "text": ".",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "6. Chính sách kiểm hàng",
+          "runs": [
+            {
+              "text": "6. Chính sách kiểm hàng",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Để quyền lợi của khách hàng được bảo vệ tối đa khi tham gia mua hàng trên website  blanwhi.com, HỘ KINH DOANH BLANWHI - BNW có chính sách hỗ trợ khách hàng được kiểm tra, xem hàng, đồng kiểm với nhân viên giao hàng khi nhận hàng. Nghĩa là, khi bạn nhận được gói hàng từ nhân viên giao hàng, bạn được phép mở ra để kiểm tra ngoại quan về sản phẩm trước khi thanh toán.",
+          "runs": [
+            {
+              "text": "Để quyền lợi của khách hàng được bảo vệ tối đa khi tham gia mua hàng trên website "
+            },
+            {
+              "text": " blanwhi.com, ",
+              "bold": true
+            },
+            {
+              "text": "HỘ KINH DOANH BLANWHI - BNW có chính sách hỗ trợ khách hàng được kiểm tra, xem hàng, đồng kiểm với nhân viên giao hàng khi nhận hàng. Nghĩa là, khi "
+            },
+            {
+              "text": "bạn nhận được gói hàng từ nhân viên giao hàng, bạn được phép mở ra để kiểm tra ngoại quan về sản phẩm trước khi thanh toán."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Lưu ý: ",
+          "runs": [
+            {
+              "text": "Lưu ý: ",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "- Xem sản phẩm có đúng như bạn đã đặt hàng không? Số lượng, mẫu mã có giống với mô tả không? Sản phẩm có bị bể vỡ, móp méo trong quá trình vận chuyển không? Việc kiểm tra sẽ có thể bao gồm check seal (niêm phong) riêng của sản phẩm, tem chống hàng giả, đối chiếu sản phẩm với hóa đơn mua hàng. Tuy nhiên, bạn không được dùng thử sản phẩm. ",
+          "runs": [
+            {
+              "text": "- Xem sản phẩm có đúng như bạn đã đặt hàng không? Số lượng, mẫu mã có giống với mô tả không? Sản phẩm có bị bể vỡ, móp méo trong quá trình vận chuyển không? Việc kiểm tra sẽ có thể bao gồm check seal (niêm phong) riêng của sản phẩm, tem chống hàng giả, đối chiếu sản phẩm với hóa đơn mua hàng. Tuy nhiên, bạn không được dùng thử sản phẩm. "
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "- Trường hợp Quý khách nhờ người khác nhận hàng thì vẫn cần kiểm tra hàng kỹ trước khi nhận.",
+          "runs": [
+            {
+              "text": "- Trường hợp Quý khách nhờ người khác nhận hàng thì vẫn cần kiểm tra hàng kỹ trước khi nhận."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "- Nếu nhân viên giao hàng yêu cầu bạn ký xác nhận vào biên bản xác nhận đồng kiểm (nghĩa là xác nhận bạn đã kiểm tra và nhận đầy đủ sản phẩm): Bạn nên sử dụng hết những quyền lợi được hưởng trong chính sách đồng kiểm của website blanwhi.com trước khi ký.",
+          "runs": [
+            {
+              "text": "- Nếu nhân viên giao hàng yêu cầu bạn ký xác nhận vào biên bản xác nhận đồng kiểm (nghĩa là xác nhận bạn đã kiểm tra và nhận đầy đủ sản phẩm): Bạn nên sử dụng hết những quyền lợi được hưởng trong chính sách đồng kiểm của website "
+            },
+            {
+              "text": "blanwhi.com",
+              "bold": true
+            },
+            {
+              "text": " trước khi ký."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "- Nếu khi đồng kiểm bạn thấy sản phẩm không đúng hoặc có dấu hiệu hư hỏng, bạn có quyền từ chối nhận hàng.",
+          "runs": [
+            {
+              "text": "- Nếu khi đồng kiểm bạn thấy sản phẩm không đúng hoặc có dấu hiệu hư hỏng, bạn có quyền từ chối nhận hàng."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "- Để biết thêm thông tin chi tiết, xin vui lòng liên hệ với chúng tôi qua số điện thoại: 0866561480",
+          "runs": [
+            {
+              "text": "- Để biết thêm thông tin chi tiết, xin vui lòng liên hệ với chúng tôi qua số điện thoại: "
+            },
+            {
+              "text": "0866561480"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "7. Hỗ Trợ Khách Hàng",
+          "runs": [
+            {
+              "text": "7. Hỗ Trợ Khách Hàng",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Nếu khách hàng có bất kỳ câu hỏi hoặc thắc mắc nào về chính sách giao hàng hoặc đơn hàng của khách hàng, vui lòng liên hệ với chúng tôi qua số điện thoại: 0866561480. Chúng tôi sẽ rất vui lòng hỗ trợ giải đáp.",
+          "runs": [
+            {
+              "text": "Nếu khách hàng có bất kỳ câu hỏi hoặc thắc mắc nào về chính sách giao hàng hoặc đơn hàng của khách hàng, vui lòng liên hệ với chúng tôi qua "
+            },
+            {
+              "text": "số điện thoại:"
+            },
+            {
+              "text": " "
+            },
+            {
+              "text": "0866561480"
+            },
+            {
+              "text": ". "
+            },
+            {
+              "text": "Chúng tôi sẽ rất vui lòng hỗ trợ giải đáp."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Chúng tôi hy vọng rằng chính sách vận chuyển của chúng tôi sẽ giúp khách hàng có trải nghiệm mua sắm trực tuyến dễ dàng và tiện lợi nhất. ",
+          "runs": [
+            {
+              "text": "Chúng tôi hy vọng rằng chính sách vận chuyển của chúng tôi sẽ giúp khách hàng có trải nghiệm mua sắm trực tuyến dễ dàng và tiện lợi nhất. "
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        }
+      ]
+    },
+    {
+      "id": "doi-tra-hoan-tien",
+      "title": "Chính sách về đổi trả hàng và hoàn tiền",
+      "sourceFile": "6. CHÍNH SÁCH ĐỔI TRẢ VÀ HOÀN TIỀN.docx",
+      "blocks": [
+        {
+          "text": "CHÍNH SÁCH ĐỔI TRẢ HÀNG VÀ HOÀN TIỀN",
+          "runs": [
+            {
+              "text": "CHÍNH SÁCH ĐỔI TRẢ",
+              "bold": true
+            },
+            {
+              "text": " ",
+              "bold": true
+            },
+            {
+              "text": "HÀNG ",
+              "bold": true
+            },
+            {
+              "text": "VÀ HOÀN TIỀN",
+              "bold": true
+            }
+          ],
+          "style": "Heading 1",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "",
+          "runs": [],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "1. Phạm vi áp dụng",
+          "runs": [
+            {
+              "text": "1. Phạm vi áp dụng",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Chính sách này áp dụng đối với các sản phẩm được mua thông qua website blanwhi.com",
+          "runs": [
+            {
+              "text": "Chính sách này áp dụng đối với các sản phẩm được mua thông qua website "
+            },
+            {
+              "text": "blanwhi",
+              "bold": true
+            },
+            {
+              "text": ".com",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "",
+          "runs": [],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "2. Điều kiện về hàng hóa được đổi trả",
+          "runs": [
+            {
+              "text": "2. Điều kiện về hàng hóa được đổi trả",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "BLANWHI chỉ hỗ trợ trả lại sản phẩm trong trường hợp hàng hóa có lỗi của nhà sản xuất và khách hàng có chụp lại hình ảnh thực tế tại thời điểm nhận hàng có sự chứng kiến của nhân viên giao hàng hoặc khách cung cấp video khi bóc gói hàng nguyên vẹn.",
+          "runs": [
+            {
+              "text": "BLANWHI"
+            },
+            {
+              "text": " chỉ hỗ trợ "
+            },
+            {
+              "text": "trả lại",
+              "bold": true
+            },
+            {
+              "text": " sản phẩm trong trường hợp hàng hóa có lỗi của nhà sản xuất và khách hàng có chụp lại hình ảnh thực tế tại thời điểm nhận hàng có sự chứng kiến của nhân viên giao hàng hoặc khách cung cấp video khi bóc gói hàng nguyên vẹn."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "•",
+          "listLevel": 0
+        },
+        {
+          "text": "Chỉ đổi 1 lần cho mỗi hóa đơn trong vòng 3 ngày kể từ ngày nhận trên biên lai vận chuyển đối với đơn hàng online.",
+          "runs": [
+            {
+              "text": "Chỉ đổi 1 lần cho mỗi hóa đơn trong vòng "
+            },
+            {
+              "text": "3"
+            },
+            {
+              "text": " ngày kể từ ngày nhận trên biên lai vận chuyển đối với đơn hàng online."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "•",
+          "listLevel": 0
+        },
+        {
+          "text": "Sản phẩm chưa qua sử dụng, còn nguyên tag.",
+          "runs": [
+            {
+              "text": "Sản phẩm chưa qua sử dụng, còn nguyên tag."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "•",
+          "listLevel": 0
+        },
+        {
+          "text": "Đối với đơn hàng nguyên giá: Chỉ đổi sang sản phẩm có giá ngang bằng hoặc cao hơn giá sản phẩm đã mua trước đó, khách hàng thanh toán thêm phần chênh lệch, trong trường hợp đổi sang sản phẩm có giá cao hơn. Nếu tổng giá trị đổi trả thấp hơn hóa đơn ban đầu, BLANWHI sẽ không hoàn trả tiền thừa.",
+          "runs": [
+            {
+              "text": "Đối với đơn hàng nguyên giá: Chỉ đổi sang sản phẩm có giá ngang bằng hoặc cao hơn giá sản phẩm đã mua trước đó, khách hàng thanh toán thêm phần chênh lệch, trong trường hợp đổi sang sản phẩm có giá cao hơn. Nếu tổng giá trị đổi trả thấp hơn hóa đơn ban đầu, "
+            },
+            {
+              "text": "BLANWHI"
+            },
+            {
+              "text": " sẽ không hoàn trả tiền thừa."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "o",
+          "listLevel": 0
+        },
+        {
+          "text": "Đối với sản phẩm giảm giá: Chỉ đổi size hoặc màu cùng sản phẩm, không đổi sang sản phẩm khác ĐỐI VỚI CÁC SẢN PHẨM CÓ GIÁ GIẢM BẰNG HOẶC DƯỚI 30% (Trong trường hợp BLANWHI còn size, màu mà khách hàng muốn đổi) (CỘNG DỒN CÁC CTKM TRONG CÙNG THỜI ĐIỂM)  ",
+          "runs": [
+            {
+              "text": "Đối với sản phẩm giảm giá: Chỉ đổi size hoặc màu cùng sản phẩm, không đổi sang sản phẩm khác ĐỐI VỚI CÁC SẢN PHẨM CÓ GIÁ GIẢM BẰNG HOẶC DƯỚI 30% (Trong trường hợp "
+            },
+            {
+              "text": "BLANWHI"
+            },
+            {
+              "text": " còn size, màu mà khách hàng muốn đổi) (CỘNG DỒN CÁC CTKM TRONG CÙNG THỜI ĐIỂM)  "
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "o",
+          "listLevel": 0
+        },
+        {
+          "text": "KHÔNG ÁP DỤNG ĐỔI TRẢ VỚI CÁC SẢN PHẨM GIẢM GIÁ TỪ 31% TRỞ LÊN (CỘNG DỒN CÁC CTKM TRONG CÙNG THỜI ĐIỂM)",
+          "runs": [
+            {
+              "text": "KHÔNG ÁP DỤNG ĐỔI TRẢ VỚI CÁC SẢN PHẨM GIẢM GIÁ TỪ 31% TRỞ LÊN (CỘNG DỒN CÁC CTKM TRONG CÙNG THỜI ĐIỂM)",
+              "italic": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "o",
+          "listLevel": 0
+        },
+        {
+          "text": "",
+          "runs": [],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "3. Các trường hợp không áp dụng đổi trả",
+          "runs": [
+            {
+              "text": "3",
+              "bold": true
+            },
+            {
+              "text": ". Các trường hợp không áp dụng đổi trả",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Chúng tôi không áp dụng đổi trả hoặc hoàn tiền trong các trường hợp sau:",
+          "runs": [
+            {
+              "text": "Chúng tôi không áp dụng đổi trả hoặc hoàn tiền trong các trường hợp sau:"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Sản phẩm đã qua sử dụng",
+          "runs": [
+            {
+              "text": "Sản phẩm đã qua sử dụng"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "•",
+          "listLevel": 0
+        },
+        {
+          "text": "Sản phẩm quá thời hạn đổi hàng theo quy định.",
+          "runs": [
+            {
+              "text": "Sản phẩm quá thời hạn đổi hàng theo quy định."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "•",
+          "listLevel": 0
+        },
+        {
+          "text": "",
+          "runs": [],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "4. Chính sách hoàn tiền",
+          "runs": [
+            {
+              "text": "4. Chính sách hoàn tiền",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Khách hàng được hoàn tiền trong các trường hợp:",
+          "runs": [
+            {
+              "text": "Khách hàng được hoàn tiền trong các trường hợp:"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Sản phẩm thuộc trường hợp được đổi trả nhưng blanwhi.com không còn sản phẩm thay thế;",
+          "runs": [
+            {
+              "text": "Sản phẩm thuộc trường hợp được đổi trả nhưng "
+            },
+            {
+              "text": "blanwhi",
+              "bold": true
+            },
+            {
+              "text": ".com",
+              "bold": true
+            },
+            {
+              "text": " không còn sản phẩm thay thế;"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "-",
+          "listLevel": 0
+        },
+        {
+          "text": "Các trường hợp khác theo thỏa thuận giữa blanwhi.com và Khách hàng hoặc theo quy định của pháp luật.",
+          "runs": [
+            {
+              "text": "Các trường hợp khác theo thỏa thuận giữa "
+            },
+            {
+              "text": "blanwhi",
+              "bold": true
+            },
+            {
+              "text": ".com",
+              "bold": true
+            },
+            {
+              "text": " và Khách hàng hoặc theo quy định của pháp luật."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "-",
+          "listLevel": 0
+        },
+        {
+          "text": "Khoản tiền hoàn trả bao gồm giá trị sản phẩm mà Khách hàng đã thanh toán, không bao gồm các chi phí phát sinh khác (nếu có), trừ trường hợp pháp luật có quy định khác hoặc lỗi thuộc về blanwhi.com. ",
+          "runs": [
+            {
+              "text": "Khoản tiền hoàn trả bao gồm giá trị sản phẩm mà Khách hàng đã thanh toán, không bao gồm các chi phí phát sinh khác (nếu có), trừ trường hợp pháp luật có quy định khác hoặc lỗi thuộc về "
+            },
+            {
+              "text": "blanwhi",
+              "bold": true
+            },
+            {
+              "text": ".com",
+              "bold": true
+            },
+            {
+              "text": ".",
+              "bold": true
+            },
+            {
+              "text": " "
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "",
+          "runs": [],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "5. Chi phí hoàn trả",
+          "runs": [
+            {
+              "text": "5. Chi phí hoàn trả",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "- Trường hợp lỗi thuộc về blanwhi.com, chúng tôi chịu toàn bộ chi phí vận chuyển phát sinh liên quan đến việc đổi trả hoặc hoàn tiền.",
+          "runs": [
+            {
+              "text": "- Trường hợp lỗi thuộc về "
+            },
+            {
+              "text": "blanwhi",
+              "bold": true
+            },
+            {
+              "text": ".com",
+              "bold": true
+            },
+            {
+              "text": ", "
+            },
+            {
+              "text": "chúng tôi"
+            },
+            {
+              "text": " chịu toàn bộ chi phí vận chuyển phát sinh liên quan đến việc đổi trả hoặc hoàn tiền."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "- Trường hợp đổi trả không xuất phát từ lỗi của blanwhi.com và được blanwhi.com chấp thuận, Khách hàng chịu các chi phí vận chuyển và chi phí phát sinh liên quan.",
+          "runs": [
+            {
+              "text": "- Trường hợp đổi trả không xuất phát từ lỗi của "
+            },
+            {
+              "text": "blanwhi",
+              "bold": true
+            },
+            {
+              "text": ".com",
+              "bold": true
+            },
+            {
+              "text": " và được "
+            },
+            {
+              "text": "blanwhi.com",
+              "bold": true
+            },
+            {
+              "text": " chấp thuận, Khách hàng chịu các chi phí vận chuyển và chi phí phát sinh liên quan."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "",
+          "runs": [],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "6.  Quy trình tiếp nhận, xử lý yêu cầu đổi trả hàng và hoàn tiền. ",
+          "runs": [
+            {
+              "text": "6.  Quy trình tiếp nhận, xử lý yêu cầu đổi trả hàng và hoàn tiền. ",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Bước 1: Khách hàng gửi yêu cầu đổi trả qua các kênh hỗ trợ được công bố trên website, kèm theo thông tin đơn hàng và hình ảnh sản phẩm trong vòng 03 ngày kể từ ngày nhận trên biên lai vận chuyển.",
+          "runs": [
+            {
+              "text": "Bước 1: Khách hàng gửi yêu cầu đổi trả qua các kênh hỗ trợ được công bố trên website, kèm theo thông tin đơn hàng và hình ảnh sản phẩ"
+            },
+            {
+              "text": "m"
+            },
+            {
+              "text": " trong vòng 03 ngày kể từ ngày"
+            },
+            {
+              "text": " "
+            },
+            {
+              "text": "nhận trên biên lai vận chuyển"
+            },
+            {
+              "text": "."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Bước 2: blanwhi.com kiểm tra và phản hồi kết quả xử lý trong vòng từ 03 đến 05 ngày làm việc kể từ khi nhận được đầy đủ thông tin.",
+          "runs": [
+            {
+              "text": "Bước 2: "
+            },
+            {
+              "text": "blanwhi",
+              "bold": true
+            },
+            {
+              "text": ".com",
+              "bold": true
+            },
+            {
+              "text": " kiểm tra và phản hồi kết quả xử lý trong vòng từ 03 đến 05 ngày làm việc kể từ khi nhận được đầy đủ thông tin."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Bước 3: Sau khi yêu cầu được chấp thuận, Khách hàng thực hiện gửi sản phẩm về địa chỉ do blanwhi.com hướng dẫn.",
+          "runs": [
+            {
+              "text": "Bước 3: Sau khi yêu cầu được chấp thuận, Khách hàng thực hiện gửi sản phẩm về địa chỉ do "
+            },
+            {
+              "text": "blanwhi",
+              "bold": true
+            },
+            {
+              "text": ".com",
+              "bold": true
+            },
+            {
+              "text": " hướng dẫn."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Bước 4: blanwhi.com tiến hành đổi sản phẩm hoặc hoàn tiền theo phương án đã được xác nhận.",
+          "runs": [
+            {
+              "text": "Bước 4: "
+            },
+            {
+              "text": "blanwhi",
+              "bold": true
+            },
+            {
+              "text": ".com",
+              "bold": true
+            },
+            {
+              "text": " tiến hành đổi sản phẩm hoặc hoàn tiền theo phương án đã được xác nhận."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "",
+          "runs": [],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "7. Phương thức đổi trả và hoàn tiền ",
+          "runs": [
+            {
+              "text": "7. Phương thức đổi trả và hoàn tiền ",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": " - Sau khi yêu cầu đổi trả được chấp thuận, Khách hàng gửi hàng hóa về địa chỉ do blanwhi.com hướng dẫn.",
+          "runs": [
+            {
+              "text": " - Sau khi yêu cầu đổi trả được chấp thuận, Khách hàng gửi hàng hóa về địa chỉ do "
+            },
+            {
+              "text": "blanwhi",
+              "bold": true
+            },
+            {
+              "text": ".com",
+              "bold": true
+            },
+            {
+              "text": " hướng dẫn."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "- Đối với đổi sản phẩm: Chúng tôi sẽ gửi sản phẩm thay thế trong thời gian sớm nhất sau khi yêu cầu được chấp thuận. Trường hợp yêu cầu đổi trả không thuộc phạm vi áp dụng của chính sách này, khách hàng sẽ chịu các chi phí phát sinh (nếu có).",
+          "runs": [
+            {
+              "text": "- "
+            },
+            {
+              "text": "Đối với đổi sản phẩm:",
+              "bold": true
+            },
+            {
+              "text": " Chúng tôi sẽ gửi sản phẩm thay thế trong thời gian sớm nhất sau khi yêu cầu được chấp thuận."
+            },
+            {
+              "text": " "
+            },
+            {
+              "text": "Trường hợp yêu cầu đổi trả không thuộc phạm vi áp dụng của chính sách này, khách hàng sẽ chịu các chi phí phát sinh (nếu có)."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "- Đối với hoàn tiền: Khoản tiền hoàn sẽ được thực hiện theo phương thức thanh toán chuyển khoản từ 07 - 15 ngày làm việc kể từ ngày yêu cầu được chấp thuận.",
+          "runs": [
+            {
+              "text": "- ",
+              "bold": true
+            },
+            {
+              "text": "Đối với hoàn tiền:",
+              "bold": true
+            },
+            {
+              "text": " Khoản tiền hoàn sẽ được thực hiện theo phương thức thanh toán "
+            },
+            {
+              "text": "chuyển khoản "
+            },
+            {
+              "text": "từ "
+            },
+            {
+              "text": "0",
+              "bold": true
+            },
+            {
+              "text": "7",
+              "bold": true
+            },
+            {
+              "text": " - ",
+              "bold": true
+            },
+            {
+              "text": "15",
+              "bold": true
+            },
+            {
+              "text": " ngày làm việc",
+              "bold": true
+            },
+            {
+              "text": " kể từ ngày yêu cầu được chấp thuận."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Chúng tôi luôn trân trọng sự tin tưởng của quý khách và cam kết không ngừng nâng cao chất lượng sản phẩm cũng như dịch vụ. Mỗi phản hồi của khách hàng đều là cơ sở để chúng tôi hoàn thiện quy trình phục vụ, mang đến những trải nghiệm an tâm, chuyên nghiệp và hài lòng hơn trong mỗi lần mua sắm.",
+          "runs": [
+            {
+              "text": "Chúng tôi luôn trân trọng sự tin tưởng của quý khách và cam kết không ngừng nâng cao chất lượng sản phẩm cũng như dịch vụ. Mỗi phản hồi của khách hàng đều là cơ sở để chúng "
+            },
+            {
+              "text": "tôi hoàn thiện quy trình phục vụ, mang đến những trải nghiệm an tâm, chuyên nghiệp và hài lòng hơn trong mỗi lần mua sắm."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "",
+          "runs": [],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        }
+      ]
+    },
+    {
+      "id": "quyen-nghia-vu",
+      "title": "Quyền và nghĩa vụ của các bên",
+      "sourceFile": "7. QUYỀN VÀ NGHĨA VỤ CỦA CÁC BÊN.docx",
+      "blocks": [
+        {
+          "text": "QUYỀN VÀ NGHĨA VỤ CỦA CÁC BÊN",
+          "runs": [
+            {
+              "text": "QUYỀN VÀ NGHĨA VỤ CỦA CÁC BÊN",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "1. Quyền và nghĩa vụ của HỘ KINH DOANH BLANWHI – BNW (Chủ sở hữu website blanwhi.com)",
+          "runs": [
+            {
+              "text": "1. Quyền và nghĩa vụ của ",
+              "bold": true
+            },
+            {
+              "text": "HỘ KINH DOANH BLANWHI ",
+              "bold": true
+            },
+            {
+              "text": "–",
+              "bold": true
+            },
+            {
+              "text": " BNW",
+              "bold": true
+            },
+            {
+              "text": " (Chủ sở hữu website blanwhi.com)",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "1.1. Quyền của HỘ KINH DOANH BLANWHI - BNW",
+          "runs": [
+            {
+              "text": "1.1",
+              "bold": true
+            },
+            {
+              "text": ". Quyền của ",
+              "bold": true
+            },
+            {
+              "text": "HỘ KINH DOANH BLANWHI - BNW",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "- Ban hành, sửa đổi, công khai Điều kiện giao dịch và các chính sách của website.",
+          "runs": [
+            {
+              "text": "- "
+            },
+            {
+              "text": "Ban hành, sửa đổi, công khai Điều kiện giao dịch và các chính sách của website."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "- Đăng tải, cập nhật, chỉnh sửa thông tin về hàng hóa, dịch vụ, giá bán, chương trình khuyến mại và các chính sách áp dụng trên website theo quy định của pháp luật.",
+          "runs": [
+            {
+              "text": "- "
+            },
+            {
+              "text": "Đăng tải, cập nhật, chỉnh sửa thông tin về hàng hóa, dịch vụ, giá bán, chương trình khuyến mại và các chính sách áp dụng trên website theo quy định của pháp luật."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "- Cung cấp, sửa đổi, cập nhật hoặc tạm ngừng dịch vụ để bảo trì, nâng cấp hệ thống hoặc theo yêu cầu của cơ quan nhà nước có thẩm quyền.",
+          "runs": [
+            {
+              "text": "- "
+            },
+            {
+              "text": "C"
+            },
+            {
+              "text": "ung cấp, sửa đổi, cập nhật hoặc tạm ngừng dịch vụ để bảo trì, nâng cấp hệ thống hoặc theo yêu cầu của cơ quan nhà nước có thẩm quyền."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "- Từ chối cung cấp dịch vụ hoặc tạm ngừng xử lý giao dịch trong các trường hợp:",
+          "runs": [
+            {
+              "text": "- "
+            },
+            {
+              "text": "Từ chối cung cấp dịch vụ hoặc tạm ngừ"
+            },
+            {
+              "text": "ng xử lý giao dịch trong các trường hợp:"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "Khách hàng cung cấp thông tin không chính xác hoặc không đầy đủ;",
+          "runs": [
+            {
+              "text": "Khách hàng cung cấp thông tin không chính xác hoặc không đầy đủ;"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "•",
+          "listLevel": 0
+        },
+        {
+          "text": "Không thể liên hệ với khách hàng để xác nhận đơn hàng;",
+          "runs": [
+            {
+              "text": "Không thể liên hệ với khách hàng để xác nhận đơn hàng;"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "•",
+          "listLevel": 0
+        },
+        {
+          "text": "Có căn cứ xác định giao dịch có dấu hiệu gian lận, giả mạo hoặc vi phạm pháp luật;",
+          "runs": [
+            {
+              "text": "Có căn cứ xác định giao dịch có dấu hiệu gian lận, giả mạo hoặc vi phạm pháp luật;"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "•",
+          "listLevel": 0
+        },
+        {
+          "text": "Hàng hóa hết hàng, ngừng kinh doanh hoặc xảy ra sự kiện bất khả kháng ảnh hưởng đến việc thực hiện đơn hàng.",
+          "runs": [
+            {
+              "text": "Hàng hóa hết hàng, ngừng kinh doanh hoặc xảy ra sự kiện bất khả kháng ảnh hưởng đến việc thực hiện đơn hàng."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": "•",
+          "listLevel": 0
+        },
+        {
+          "text": "- Thu phí dịch vụ theo mức giá được công bố tại thời điểm khách hàng thực hiện giao dịch.",
+          "runs": [
+            {
+              "text": "- "
+            },
+            {
+              "text": "Thu phí dịch vụ theo mức giá được công bố "
+            },
+            {
+              "text": "tại th"
+            },
+            {
+              "text": "ời điểm khách hàng thực hiện giao dịch."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "- Yêu cầu khách hàng cung cấp các thông tin cần thiết để thực hiện giao hàng và cung cấp dịch vụ.",
+          "runs": [
+            {
+              "text": "- "
+            },
+            {
+              "text": "Y"
+            },
+            {
+              "text": "êu cầu khách hàng cung cấp các thông tin cần thiết để "
+            },
+            {
+              "text": "thực hiện giao hàng"
+            },
+            {
+              "text": " và cung cấp dịch vụ."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "- Sở hữu và bảo hộ toàn bộ nội dung, hình ảnh, thiết kế, nhãn hiệu, logo, dữ liệu và các đối tượng sở hữu trí tuệ trên website theo quy định của pháp luật. Mọi hành vi sao chép, sử dụng hoặc khai thác trái phép đều bị nghiêm cấm nếu chưa được sự đồng ý bằng văn bản của HỘ KINH DOANH BLANWHI - BNW",
+          "runs": [
+            {
+              "text": "- "
+            },
+            {
+              "text": "Sở hữu và bảo hộ toàn bộ nội dung, hình ảnh, thiết kế, nhãn hiệu, logo, dữ liệu và các đối tượng sở hữu trí tuệ trên website theo quy định của pháp luật. Mọi hành vi sao chép, sử dụng hoặc khai thác trái phép đều bị nghiêm cấm nếu chưa được sự đồng ý bằng văn bản của "
+            },
+            {
+              "text": "HỘ KINH DOANH BLANWHI - BNW"
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "1.2. Nghĩa vụ của HỘ KINH DOANH BLANWHI - BNW",
+          "runs": [
+            {
+              "text": "1.2",
+              "bold": true
+            },
+            {
+              "text": ". Nghĩa vụ của ",
+              "bold": true
+            },
+            {
+              "text": "HỘ KINH DOANH BLANWHI - BNW",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "-  Công khai đầy đủ, chính xác thông tin về hàng hóa, dịch vụ, giá bán, chương trình khuyến mại (nếu có), phương thức thanh toán, giao hàng, đổi trả, bảo hành và các điều kiện giao dịch trước khi khách hàng đặt hàng.",
+          "runs": [
+            {
+              "text": "- ",
+              "bold": true
+            },
+            {
+              "text": " Công khai đầy đủ, chính xác thông tin về hàng hóa, dịch vụ, giá bán, chương trình khuyến mại (nếu có), phương thức thanh toán, giao hàng, đổi trả, bảo hành và các điều kiện giao dịch trước khi khách hàng đặt hàng."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "-  Thiết lập và công khai quy trình đặt hàng, xác nhận đơn hàng, thanh toán, giao hàng, hủy đơn hàng, đổi trả và giải quyết khiếu nại để khách hàng thuận tiện thực hiện giao dịch.",
+          "runs": [
+            {
+              "text": "-"
+            },
+            {
+              "text": "  Thiết lập và công khai quy trình đặt hàng, xác nhận đơn hàng, thanh toán, giao hàng, hủy đơn hàng, đổi trả và giải quyết khiếu nại để khách hàng thuận tiện thực hiện giao dịch."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "-  Bảo đảm website hoạt động an toàn, ổn định; áp dụng các biện pháp kỹ thuật và quản lý cần thiết nhằm bảo đảm an toàn thông tin, bảo vệ bí mật thông tin của khách hàng và thông tin cá nhân của người tiêu dùng theo quy định của pháp luật.",
+          "runs": [
+            {
+              "text": "-"
+            },
+            {
+              "text": "  Bảo đảm website hoạt động an toàn, ổn định; áp dụng các biện pháp kỹ thuật và quản lý cần thiết nhằm bảo đảm an toàn thông tin, bảo vệ bí mật thông tin của khách hàng và thông tin cá nhân của người tiêu dùng theo quy định của pháp luật."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "- Cung cấp đầy đủ, trung thực và chính xác thông tin về hàng hóa, dịch vụ; bảo đảm chất lượng hàng hóa, dịch vụ theo nội dung đã công bố.",
+          "runs": [
+            {
+              "text": "- "
+            },
+            {
+              "text": "Cung cấp đầy đủ, trung thực và chính xác thông tin về hàng hóa, dịch vụ; bảo đảm chất lượng hàng hóa, dịch vụ theo nội dung đã công bố."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "- Thực hiện đầy đủ nghĩa vụ giao hàng, bảo hành, đổi trả, hoàn tiền theo thỏa thuận với khách hàng và theo quy định của pháp luật.",
+          "runs": [
+            {
+              "text": "-"
+            },
+            {
+              "text": " Thực hiện đầy đủ nghĩa vụ giao hàng, bảo hành, đổi trả, hoàn tiền theo thỏa thuận với khách hàng và theo quy định của pháp luật."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "-  Không kinh doanh hàng hóa, dịch vụ thuộc ngành, nghề cấm đầu tư kinh doanh; không kinh doanh hàng giả, hàng nhập lậu, hàng xâm phạm quyền sở hữu trí tuệ hoặc các hàng hóa, dịch vụ khác bị pháp luật cấm.",
+          "runs": [
+            {
+              "text": "-"
+            },
+            {
+              "text": "  Không kinh doanh hàng hóa, dịch vụ thuộc ngành, nghề cấm đầu tư kinh doanh; không kinh doanh hàng giả, hàng nhập lậu, hàng xâm phạm quyền sở hữu trí tuệ hoặc các hàng hóa, dịch vụ khác bị pháp luật cấm."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "-  Cung cấp hóa đơn, chứng từ hợp lệ (nếu có) theo quy định của pháp luật.",
+          "runs": [
+            {
+              "text": "-"
+            },
+            {
+              "text": "  Cung cấp hóa đơn, chứng từ hợp lệ (nếu có) theo quy định của pháp luật."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "-  Tiếp nhận, xử lý và giải quyết kịp thời các yêu cầu, phản ánh, khiếu nại của khách hàng theo nguyên tắc công khai, minh bạch.",
+          "runs": [
+            {
+              "text": "-"
+            },
+            {
+              "text": "  Tiếp nhận, xử lý và giải quyết kịp thời các yêu cầu, phản ánh, khiếu nại của khách hàng theo nguyên tắc công khai, minh bạch."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "- Thực hiện đầy đủ nghĩa vụ về thuế và các nghĩa vụ tài chính khác theo quy định của pháp luật.",
+          "runs": [
+            {
+              "text": "-"
+            },
+            {
+              "text": " Thực hiện đầy đủ nghĩa vụ về thuế và các nghĩa vụ tài chính khác theo quy định của pháp luật."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "-  Giám sát, ngăn chặn các hành vi lợi dụng website để thực hiện hành vi vi phạm pháp luật; phối hợp và cung cấp thông tin, tài liệu theo yêu cầu của cơ quan nhà nước có thẩm quyền theo quy định của pháp luật.",
+          "runs": [
+            {
+              "text": "- "
+            },
+            {
+              "text": " Giám sát, ngăn chặn các hành vi lợi dụng website để thực hiện hành vi vi phạm pháp luật; phối hợp và cung cấp thông tin, tài liệu theo yêu cầu của cơ quan nhà nước có thẩm quyền theo quy định của pháp luật."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "2. Quyền và nghĩa vụ của khách hàng (người mua hàng)",
+          "runs": [
+            {
+              "text": "2. Quyền và nghĩa vụ của khách hàng",
+              "bold": true
+            },
+            {
+              "text": " (người mua hàng)",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "2.1. Quyền của khách hàng",
+          "runs": [
+            {
+              "text": "2.1",
+              "bold": true
+            },
+            {
+              "text": ". Quyền của khách hàng",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "- Được cung cấp đầy đủ, chính xác thông tin về hàng hóa, giá bán, chính sách thanh toán, giao hàng, đổi trả, bảo hành và các điều kiện giao dịch trước khi đặt hàng.",
+          "runs": [
+            {
+              "text": "- "
+            },
+            {
+              "text": "Được cung cấp đầy đủ, chính xác thông tin về hàng hóa, giá bán, chính sách thanh toán, giao hàng, đổi trả, bảo hành và các điều kiện giao dịch trước khi đặt hàng."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "- Được lựa chọn hàng hóa, phương thức thanh toán và phương thức giao hàng do website cung cấp.",
+          "runs": [
+            {
+              "text": "- "
+            },
+            {
+              "text": "Được lựa chọn hàng hóa, phương thức thanh toán và phương thức giao hàng do website cung cấp."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "- Được bảo vệ thông tin cá nhân theo quy định của pháp luật.",
+          "runs": [
+            {
+              "text": "-"
+            },
+            {
+              "text": " Được bảo vệ thông tin cá nhân theo quy định của pháp luật."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "- Được yêu cầu giải đáp thắc mắc, gửi phản ánh, khiếu nại và được xem xét giải quyết theo chính sách của website và quy định của pháp luật.",
+          "runs": [
+            {
+              "text": "- "
+            },
+            {
+              "text": "Được yêu cầu giải đáp thắc mắc, gửi phản ánh, khiếu nại và được xem xét giải quyết theo chính sách của website và quy định của pháp luật."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "- Được hưởng đầy đủ các quyền lợi của người tiêu dùng theo quy định của pháp luật.",
+          "runs": [
+            {
+              "text": "- "
+            },
+            {
+              "text": "Được hưởng đầy đủ các quyền lợi của người tiêu dùng theo quy định của pháp luật."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "2.2. Nghĩa vụ của khách hàng",
+          "runs": [
+            {
+              "text": "2.2",
+              "bold": true
+            },
+            {
+              "text": ". Nghĩa vụ của khách hàng",
+              "bold": true
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "- Cung cấp đầy đủ, chính xác các thông tin cần thiết khi đặt hàng và chịu trách nhiệm về tính chính xác của các thông tin đã cung cấp.",
+          "runs": [
+            {
+              "text": "- "
+            },
+            {
+              "text": "Cung cấp đầy đủ, chính xác các thông tin cần thiết khi đặt hàng và chịu trách nhiệm về tính chính xác của các thông tin đã cung cấp."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "- Thanh toán đầy đủ, đúng thời hạn theo phương thức đã lựa chọn.",
+          "runs": [
+            {
+              "text": "- "
+            },
+            {
+              "text": "Thanh toán đầy đủ, đúng thời hạn theo phương thức đã lựa chọn."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "- Phối hợp nhận hàng đúng thời gian, địa điểm đã thỏa thuận và kiểm tra hàng hóa theo chính sách kiểm hàng của website.",
+          "runs": [
+            {
+              "text": "- "
+            },
+            {
+              "text": "Phối hợp nhận hàng đúng thời gian, địa điểm đã thỏa thuận và kiểm tra hàng hóa theo chính sách kiểm hàng của website."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "- Không sử dụng website để thực hiện các hành vi gian lận, giả mạo, xâm phạm quyền sở hữu trí tuệ, phát tán mã độc hoặc thực hiện bất kỳ hành vi nào vi phạm pháp luật.",
+          "runs": [
+            {
+              "text": "- "
+            },
+            {
+              "text": "Không sử dụng website để thực hiện các hành vi gian lận, giả mạo, xâm phạm quyền sở hữu trí tuệ, phát tán mã độc hoặc thực hiện bất kỳ hành vi nào vi phạm pháp luật."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "- Tuân thủ các điều khoản, điều kiện giao dịch, chính sách mua bán và các quy định được công bố trên website.",
+          "runs": [
+            {
+              "text": "- "
+            },
+            {
+              "text": "Tuân thủ các điều khoản, điều kiện giao dịch, chính sách mua bán và các quy định được công bố trên website."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        },
+        {
+          "text": "- Tự chịu trách nhiệm đối với các thông tin do mình cung cấp; Website không chịu trách nhiệm đối với kết quả phát sinh do khách hàng nhập sai hoặc cung cấp không đầy đủ thông tin.",
+          "runs": [
+            {
+              "text": "- "
+            },
+            {
+              "text": "Tự chịu trách nhiệm đối với các thông tin do mình cung cấp; Website không chịu trách nhiệm đối với kết quả phát sinh do khách hàng nhập sai hoặc cung "
+            },
+            {
+              "text": "cấp không đầy đủ thông tin."
+            }
+          ],
+          "style": "Normal",
+          "listMarker": null,
+          "listLevel": 0
+        }
+      ]
+    }
+  ],
   "products": [
     {
       "id": "p1783343228536",
@@ -176,7 +5293,7 @@
           "key": "product|variant-1783923310603|XS",
           "sku": "ĐEN-XS",
           "quantity": 0,
-          "publishQuantity": 5,
+          "publishQuantity": 6,
           "pancakeQuantity": 75,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
           "pancakeVariationId": "2f8d87fc-2909-4170-8862-e2b4eeb69312",
