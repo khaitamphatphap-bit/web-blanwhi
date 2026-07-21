@@ -100,6 +100,8 @@ export type ShopOrder = {
   status: OrderStatus;
   paymentMethod: PaymentMethod;
   paymentProvider: string;
+  paymentProviderOrderId?: string;
+  paymentLinkId?: string;
   customer: OrderCustomer;
   items: OrderItem[];
   subtotal: number;

@@ -241,6 +241,86 @@ export function verifyZaloPayBody(body: Record<string, unknown>, paymentConfig?:
   return { ok: expected === received, reason: expected === received ? "OK" : "Invalid signature" };
 }
 
+export function hasPayOsConfig() {
+  return Boolean(env("PAYOS_CLIENT_ID") && env("PAYOS_API_KEY") && env("PAYOS_CHECKSUM_KEY"));
+}
+
+function payOsSignatureData(data: Record<string, unknown>) {
+  return Object.keys(data).sort().map((key) => {
+    const value = data[key];
+    const normalized = value === null || value === undefined
+      ? ""
+      : typeof value === "object" ? JSON.stringify(value) : String(value);
+    return `${key}=${normalized}`;
+  }).join("&");
+}
+
+function safeSignatureEqual(expected: string, received: string) {
+  const left = Buffer.from(expected, "utf8");
+  const right = Buffer.from(received, "utf8");
+  return left.length === right.length && crypto.timingSafeEqual(left, right);
+}
+
+export async function createPayOsPayment(order: ShopOrder, request: Request) {
+  const clientId = env("PAYOS_CLIENT_ID");
+  const apiKey = env("PAYOS_API_KEY");
+  const checksumKey = env("PAYOS_CHECKSUM_KEY");
+  if (!clientId || !apiKey || !checksumKey || !order.paymentProviderOrderId) {
+    throw new Error("PAYOS_NOT_CONFIGURED");
+  }
+  const baseUrl = getBaseUrl(request);
+  const orderCode = Number(order.paymentProviderOrderId);
+  if (!Number.isSafeInteger(orderCode) || orderCode <= 0) throw new Error("PAYOS_INVALID_ORDER_CODE");
+  const signedFields = {
+    amount: Math.round(order.total),
+    cancelUrl: `${baseUrl}/payment-result?provider=payos&orderCode=${encodeURIComponent(order.code)}&cancelled=1`,
+    description: `BLANWHI ${order.code.slice(-5)}`,
+    orderCode,
+    returnUrl: `${baseUrl}/payment-result?provider=payos&orderCode=${encodeURIComponent(order.code)}`
+  };
+  const signature = hmacSha256Hex(payOsSignatureData(signedFields), checksumKey);
+  const response = await fetch(`${env("PAYOS_API_URL", "https://api-merchant.payos.vn")}/v2/payment-requests`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-client-id": clientId,
+      "x-api-key": apiKey
+    },
+    body: JSON.stringify({
+      ...signedFields,
+      buyerName: order.customer.name,
+      buyerEmail: order.customer.email || undefined,
+      buyerPhone: order.customer.phone,
+      buyerAddress: order.customer.address,
+      items: [{ name: `Don hang ${order.code}`.slice(0, 100), quantity: 1, price: Math.round(order.total) }],
+      expiredAt: Math.floor(Date.now() / 1000) + 15 * 60,
+      signature
+    })
+  });
+  const result = await response.json() as {
+    code?: string;
+    desc?: string;
+    data?: { checkoutUrl?: string; paymentLinkId?: string; qrCode?: string; status?: string };
+  };
+  if (!response.ok || result.code !== "00" || !result.data?.checkoutUrl) {
+    throw new Error(result.desc || `payOS error ${response.status}`);
+  }
+  return result.data;
+}
+
+export function verifyPayOsWebhook(body: Record<string, unknown>) {
+  const checksumKey = env("PAYOS_CHECKSUM_KEY");
+  if (!checksumKey) return { ok: false, reason: "Missing PAYOS_CHECKSUM_KEY" };
+  const data = body.data && typeof body.data === "object" ? body.data as Record<string, unknown> : {};
+  const received = String(body.signature || "").toLowerCase();
+  const expected = hmacSha256Hex(payOsSignatureData(data), checksumKey).toLowerCase();
+  return {
+    ok: Boolean(received) && safeSignatureEqual(expected, received),
+    reason: expected === received ? "OK" : "Invalid signature",
+    data
+  };
+}
+
 export function fallbackPaymentUrl(order: ShopOrder, method: PaymentMethod, request: Request) {
   const baseUrl = getBaseUrl(request);
   return `${baseUrl}/payment-result?provider=${method}&orderCode=${order.code}&demo=1`;

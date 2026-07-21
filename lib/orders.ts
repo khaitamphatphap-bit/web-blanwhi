@@ -20,6 +20,11 @@ export async function findOrderByCode(code: string) {
   return orders.find((order) => order.code === code) ?? null;
 }
 
+export async function findOrderByPaymentProviderOrderId(providerOrderId: string) {
+  const orders = await readOrders();
+  return orders.find((order) => String(order.paymentProviderOrderId || "") === String(providerOrderId)) ?? null;
+}
+
 export async function updateOrderStatus(
   code: string,
   status: OrderStatus,
