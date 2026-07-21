@@ -1,30 +1,8 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import policyData from "./policies-data.json";
+import { readSiteContent, type CmsPolicyBlock as PolicyBlock, type CmsPolicyRun as PolicyRun } from "@/lib/site-content";
 
-type PolicyRun = {
-  text: string;
-  bold?: boolean;
-  italic?: boolean;
-  underline?: boolean;
-};
-
-type PolicyBlock = {
-  text: string;
-  runs: PolicyRun[];
-  style: string | null;
-  listMarker: string | null;
-  listLevel: number;
-};
-
-type PolicyDocument = {
-  id: string;
-  title: string;
-  sourceFile: string;
-  blocks: PolicyBlock[];
-};
-
-const policies = policyData as PolicyDocument[];
+export const dynamic = "force-dynamic";
 
 function FormattedRun({ run }: { run: PolicyRun }) {
   let content: ReactNode = run.text;
@@ -76,7 +54,9 @@ function PolicyContent({ blocks }: { blocks: PolicyBlock[] }) {
   );
 }
 
-export default function PolicyPage() {
+export default async function PolicyPage() {
+  const content = await readSiteContent();
+  const policies = content.policies || [];
   return <main style={{ maxWidth: 1080, margin: "0 auto", padding: "40px 22px 80px", fontFamily: "Arial, sans-serif", color: "#111" }}>
     <Link href="/" style={{ color: "#111", textDecoration: "none", fontSize: 13 }}>← TRỞ VỀ WEBSITE</Link>
     <header style={{ borderBottom: "2px solid #111", padding: "42px 0 28px" }}>

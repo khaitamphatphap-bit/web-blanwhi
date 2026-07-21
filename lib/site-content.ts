@@ -1,5 +1,6 @@
 import { readJsonStore, readKeyedJsonStore, writeJsonStore, writeKeyedJsonRecord } from "@/lib/data-store";
 import { buildProductInventory } from "@/lib/product-inventory";
+import policyData from "@/app/chinh-sach/policies-data.json";
 
 export type CmsProductClassification = {
   id: string;
@@ -64,6 +65,27 @@ export type CmsProduct = {
   active: boolean;
 };
 
+export type CmsPolicyRun = {
+  text: string;
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
+};
+
+export type CmsPolicyBlock = {
+  text: string;
+  runs: CmsPolicyRun[];
+  style: string | null;
+  listMarker: string | null;
+  listLevel: number;
+};
+
+export type CmsPolicyDocument = {
+  id: string;
+  title: string;
+  sourceFile: string;
+  blocks: CmsPolicyBlock[];
+};
 export type SiteContent = {
   brand: {
     name: string;
@@ -122,6 +144,7 @@ export type SiteContent = {
       bankCode: string;
     };
   };
+  policies?: CmsPolicyDocument[];
   products: CmsProduct[];
 };
 
@@ -184,6 +207,7 @@ export const defaultSiteContent: SiteContent = {
       bankCode: "mb"
     }
   },
+  policies: policyData as CmsPolicyDocument[],
   products: [
     ["Essential Heavy Tee", "420.000đ", "Boxy sạch, dễ mặc", "tee", ["#111", "#f4f4f2", "#8c8c88"]],
     ["Boxy Street Tee", "460.000đ", "Boxy sạch, dễ mặc", "tee", ["#303030", "#c9c5bd", "#59614c"]],
@@ -302,6 +326,9 @@ export async function readSiteContent(): Promise<SiteContent> {
           : saved.payment.bank.receiverName
       }
     },
+    policies: Array.isArray(saved.policies) && saved.policies.length
+      ? saved.policies
+      : defaultSiteContent.policies,
     products
   };
 }

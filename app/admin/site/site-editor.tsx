@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import { buildProductInventory } from "@/lib/product-inventory";
-import type { CmsProduct, CmsProductClassification, CmsProductInventoryItem, SiteContent } from "@/lib/site-content";
+import type { CmsPolicyDocument, CmsProduct, CmsProductClassification, CmsProductInventoryItem, SiteContent } from "@/lib/site-content";
 
 const emptyProduct: CmsProduct = {
   id: "",
@@ -64,6 +64,9 @@ export function SiteEditor() {
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
   const [inventoryBusy, setInventoryBusy] = useState("");
+  const [policies, setPolicies] = useState<CmsPolicyDocument[]>([]);
+  const [policySaving, setPolicySaving] = useState(false);
+  const [policyMessage, setPolicyMessage] = useState("");
   const editorRef = useRef<HTMLDivElement | null>(null);
 
   async function loadContent() {
@@ -80,9 +83,68 @@ export function SiteEditor() {
     }
   }
 
+  async function loadPolicies() {
+    try {
+      const response = await fetch("/api/admin/policies", { cache: "no-store" });
+      if (!response.ok) throw new Error("Không tải được chính sách (lỗi " + response.status + ").");
+      const data = await response.json() as { policies?: CmsPolicyDocument[] };
+      setPolicies(Array.isArray(data.policies) ? data.policies : []);
+      setPolicyMessage("");
+    } catch (error) {
+      setPolicyMessage(error instanceof Error ? error.message : "Không tải được nội dung chính sách.");
+    }
+  }
+
   useEffect(() => {
     void loadContent();
+    void loadPolicies();
   }, []);
+
+  function policyPlainText(policy: CmsPolicyDocument) {
+    return policy.blocks.map((block) => block.text).join("\n");
+  }
+
+  function updatePolicyText(policyId: string, value: string) {
+    setPolicies((current) => current.map((policy) => {
+      if (policy.id !== policyId) return policy;
+      const lines = value.replace(/\r/g, "").split("\n");
+      return {
+        ...policy,
+        blocks: lines.map((text, index) => {
+          const existing = policy.blocks[index];
+          if (existing?.text === text) return existing;
+          return {
+            text,
+            runs: [{ text }],
+            style: existing?.style || null,
+            listMarker: existing?.listMarker || null,
+            listLevel: existing?.listLevel || 0
+          };
+        })
+      };
+    }));
+  }
+
+  async function savePolicies() {
+    if (!policies.length) return;
+    setPolicySaving(true);
+    setPolicyMessage("");
+    try {
+      const response = await fetch("/api/admin/policies", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ policies })
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Không thể lưu nội dung chính sách.");
+      setPolicies(result.policies || policies);
+      setPolicyMessage("Đã lưu nội dung chính sách. Trang khách cập nhật ngay.");
+    } catch (error) {
+      setPolicyMessage(error instanceof Error ? error.message : "Không thể lưu nội dung chính sách.");
+    } finally {
+      setPolicySaving(false);
+    }
+  }
 
   const selectedProduct = useMemo(
     () => content?.products.find((product) => product.id === selectedId) || null,
@@ -325,6 +387,33 @@ export function SiteEditor() {
         </div>
       </section>
 
+      <section className="mt-6 border border-neutral-200 p-4">
+        <details>
+          <summary className="cursor-pointer text-sm font-semibold uppercase">Nội dung chính sách</summary>
+          <p className="mt-2 text-xs leading-5 text-neutral-500">Mở từng mục để chỉnh toàn bộ nội dung. Mỗi dòng tương ứng một đoạn; tên và vị trí chính sách được giữ nguyên.</p>
+          {policyMessage && <p className="mt-3 border border-neutral-200 bg-neutral-50 p-3 text-sm">{policyMessage}</p>}
+          <div className="mt-4 grid gap-3">
+            {policies.map((policy) => (
+              <details key={policy.id} className="border border-neutral-200 p-3">
+                <summary className="cursor-pointer font-semibold">{policy.title}</summary>
+                <textarea
+                  aria-label={"Nội dung " + policy.title}
+                  value={policyPlainText(policy)}
+                  onChange={(event) => updatePolicyText(policy.id, event.target.value)}
+                  className="mt-3 min-h-[360px] w-full resize-y border border-neutral-300 p-3 text-sm leading-6"
+                  spellCheck={false}
+                />
+              </details>
+            ))}
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button type="button" onClick={() => void savePolicies()} disabled={policySaving || !policies.length} className="h-10 bg-black px-5 text-xs uppercase text-white disabled:opacity-40">
+              {policySaving ? "Đang lưu chính sách..." : "Lưu nội dung chính sách"}
+            </button>
+            <button type="button" onClick={() => void loadPolicies()} disabled={policySaving} className="h-10 border border-black px-4 text-xs uppercase disabled:opacity-40">Tải lại nội dung</button>
+          </div>
+        </details>
+      </section>
       <section className="mt-6 grid min-w-0 gap-6 lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]">
         <aside className="min-w-0 space-y-5">
           <div className="border border-neutral-200 p-4">
