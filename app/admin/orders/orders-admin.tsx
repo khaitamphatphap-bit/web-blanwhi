@@ -381,7 +381,7 @@ export function OrdersAdmin({
         <div className="lg:col-span-3">
           <button className="h-10 bg-black px-5 text-xs uppercase text-white">Lưu cấu hình tích hợp</button>
           <p className="mt-3 text-xs leading-5 text-neutral-500">
-            Webhook nhận trạng thái: /api/webhooks/shipping · /api/webhooks/misa · /api/webhooks/pancake · /api/payments/vnpay-ipn · /api/payments/momo-ipn · /api/payments/zalopay-ipn · /api/payments/payos-webhook
+            Webhook nhận trạng thái: /api/webhooks/shipping · /api/webhooks/misa · /api/webhooks/pancake · /api/payments/vnpay-ipn · /api/payments/momo-ipn · /api/payments/zalopay-ipn
           </p>
         </div>
       </form>

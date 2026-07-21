@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { jsonError } from "@/lib/api-errors";
 import { readIntegrationConfig } from "@/lib/integrations";
 import { findOrderByCode, updateOrderStatus } from "@/lib/orders";
-import { confirmVerifiedPayment } from "@/lib/services/payment-confirmation-service";
 import { verifyMomoBody } from "@/lib/payment";
 
 export async function POST(request: Request) {
@@ -22,15 +21,11 @@ export async function POST(request: Request) {
     if (!order) return NextResponse.json({ resultCode: 1, message: "Order not found" });
     if (order.total !== amount) return NextResponse.json({ resultCode: 4, message: "Invalid amount" });
 
-    if (resultCode === 0) {
-      await confirmVerifiedPayment(orderCode, {
-        transactionId: body.transId ? String(body.transId) : undefined,
-        paymentProviderOrderId: body.requestId ? String(body.requestId) : undefined,
-        providerMessage: body.message ? String(body.message) : "MoMo payment success"
-      });
-    } else {
-      await updateOrderStatus(orderCode, "failed", { providerMessage: body.message ? String(body.message) : `MoMo result ${resultCode}` });
-    }
+    await updateOrderStatus(orderCode, resultCode === 0 ? "paid" : "failed", {
+      transactionId: body.transId ? String(body.transId) : undefined,
+      providerOrderId: body.requestId ? String(body.requestId) : undefined,
+      providerMessage: body.message ? String(body.message) : undefined
+    });
 
     return NextResponse.json({ resultCode: 0, message: "Confirm Success" });
   } catch (error) {

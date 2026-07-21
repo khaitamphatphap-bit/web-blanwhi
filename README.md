@@ -152,11 +152,3 @@ Script sẽ tự backup `data/site-content.json`, upload ảnh sang R2, cập nh
 Production nên luôn khai báo `DATABASE_URL`; nếu không, hosting serverless có thể mất dữ liệu admin/đơn hàng khi server rebuild.
 
 Thanh toán production sẽ không tự chạy demo nếu thiếu key merchant. Cần đăng ký merchant thật với VNPAY/MoMo và điền key trước khi nhận tiền thật.
-
-## Chuyen khoan ngan hang tu dong qua payOS
-
-Cau hinh tren Vercel: PAYOS_CLIENT_ID, PAYOS_API_KEY, PAYOS_CHECKSUM_KEY. Webhook can dang ky tai payOS:
-
-https://www.blanwhi.com/api/payments/payos-webhook
-
-Website khong cho phep khach tu danh dau da thanh toan. Don chi duoc gui sang Pancake POS sau khi webhook payOS co chu ky hop le xac nhan dung ma don va dung so tien.

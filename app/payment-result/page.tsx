@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { findOrderByCode } from "@/lib/orders";
 import { money } from "@/lib/pricing";
+import { BankTransferConfirm } from "./BankTransferConfirm";
 import { DemoPaymentActions } from "./DemoPaymentActions";
-import { PaymentStatusWatcher } from "./PaymentStatusWatcher";
 
 type PageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -17,6 +17,7 @@ export default async function PaymentResultPage({ searchParams }: PageProps) {
   const orderCode = valueOf(params.orderCode) || valueOf(params.vnp_TxnRef) || valueOf(params.orderId) || "";
   const provider = valueOf(params.provider) || "payment";
   const demo = valueOf(params.demo) === "1";
+  const bankConfirmed = valueOf(params.bankConfirmed) === "1";
   const order = orderCode ? await findOrderByCode(orderCode) : null;
   const success = order?.status === "paid";
   const failed = order?.status === "failed" || order?.status === "cancelled";
@@ -27,7 +28,6 @@ export default async function PaymentResultPage({ searchParams }: PageProps) {
       <Link href="/" className="text-xs uppercase text-neutral-500">BLANWHI</Link>
       <section className="mt-10 border-y border-neutral-200 py-10">
         <p className="text-xs uppercase text-neutral-500">Payment result · {provider}</p>
-        {success && <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-600 text-4xl text-white" aria-label="Thanh to?n th?nh c?ng">?</div>}
         <h1 className="mt-3 text-4xl font-medium">
           {success && order?.paymentMethod === "bank_transfer" ? "Đã nhận chuyển khoản thành công" : success ? "Thanh toán thành công" : failed ? "Thanh toán thất bại" : "Đơn hàng đang chờ thanh toán"}
         </h1>
@@ -50,10 +50,10 @@ export default async function PaymentResultPage({ searchParams }: PageProps) {
             <DemoPaymentActions orderCode={order.code} />
           </div>
         )}
-        {bankTransferPending && (
-          <div className="mt-6 border border-amber-500 bg-amber-50 p-5 text-sm leading-6 text-amber-900">
-            Giao dịch chưa được ngân hàng xác nhận. Đơn chỉ được chuyển sang đã thanh toán và gửi sang POS sau khi hệ thống nhận webhook có chữ ký hợp lệ từ cổng thanh toán.
-            <PaymentStatusWatcher orderCode={order.code} />
+        {bankTransferPending && <BankTransferConfirm orderCode={order.code} />}
+        {bankConfirmed && success && (
+          <div className="mt-6 border border-emerald-600 bg-emerald-50 p-4 text-sm text-emerald-800">
+            Đơn hàng đã được cập nhật sang trạng thái đã thanh toán.
           </div>
         )}
       </section>

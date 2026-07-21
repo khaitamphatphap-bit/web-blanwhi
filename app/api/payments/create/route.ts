@@ -1,9 +1,9 @@
 import { after, NextResponse } from "next/server";
 import { jsonError } from "@/lib/api-errors";
 import { readIntegrationConfig } from "@/lib/integrations";
-import { createOrder, newOrderCode, updateOrder, updateOrderStatus } from "@/lib/orders";
+import { createOrder, newOrderCode, updateOrder } from "@/lib/orders";
 import { checkoutTotals } from "@/lib/pricing";
-import { createMomoPayment, createPayOsPayment, createVnpayUrl, createZaloPayPayment, fallbackPaymentUrl, hasPayOsConfig } from "@/lib/payment";
+import { createMomoPayment, createVnpayUrl, createZaloPayPayment, fallbackPaymentUrl } from "@/lib/payment";
 import { CartItem, PaymentMethod, ShopOrder } from "@/lib/types";
 import { InventoryService } from "@/lib/pancake/inventory-service";
 import { POSSyncService } from "@/lib/services/pos-sync-service";
@@ -66,7 +66,7 @@ type PreviewCheckoutItem = {
   customText?: string;
 };
 
-const onlineMethods = new Set<PaymentMethod>(["bank_transfer", "vnpay", "onepay", "alepay", "momo", "zalopay"]);
+const onlineMethods = new Set<PaymentMethod>(["vnpay", "onepay", "alepay", "momo", "zalopay"]);
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -92,9 +92,6 @@ function paymentConfigError(method: PaymentMethod, paymentConfig: Awaited<Return
   const hasVnpay = (paymentConfig.vnpay.enabled && paymentConfig.vnpay.tmnCode && paymentConfig.vnpay.hashSecret) || (process.env.VNPAY_TMN_CODE && process.env.VNPAY_HASH_SECRET);
   const hasMomo = (paymentConfig.momo.enabled && paymentConfig.momo.partnerCode && paymentConfig.momo.accessKey && paymentConfig.momo.secretKey) || (process.env.MOMO_PARTNER_CODE && process.env.MOMO_ACCESS_KEY && process.env.MOMO_SECRET_KEY);
   const hasZaloPay = (paymentConfig.zalopay.enabled && paymentConfig.zalopay.appId && paymentConfig.zalopay.key1 && paymentConfig.zalopay.key2) || (process.env.ZALOPAY_APP_ID && process.env.ZALOPAY_KEY1 && process.env.ZALOPAY_KEY2);
-  if (method === "bank_transfer" && !hasPayOsConfig()) {
-    return "Bank transfer is unavailable until payOS is configured. Manual payment confirmation is disabled.";
-  }
   if (method === "vnpay" && !hasVnpay) {
     return "Website chưa cấu hình merchant VNPAY thật.";
   }
@@ -214,16 +211,12 @@ export async function POST(request: Request) {
     const pancakeConfigured = inventoryService.configured();
     if (pancakeConfigured) await inventoryService.assertAvailable(orderItems);
     const now = new Date().toISOString();
-    const paymentProviderOrderId = paymentMethod === "bank_transfer"
-      ? String(Math.floor(100000000 + Math.random() * 1900000000))
-      : undefined;
     const order: ShopOrder = {
       id: crypto.randomUUID(),
       code: newOrderCode(),
       status: "pending",
       paymentMethod,
-      paymentProvider: paymentMethod === "bank_transfer" ? "payos" : paymentMethod,
-      paymentProviderOrderId,
+      paymentProvider: paymentMethod,
       customer: {
         name: customer.name,
         phone: customer.phone,
@@ -260,7 +253,7 @@ export async function POST(request: Request) {
     };
 
     await createOrder(order);
-    if (pancakeConfigured && paymentMethod === "cod") {
+    if (pancakeConfigured) {
       order.externalSync = { ...order.externalSync, pancake: "Đang gửi Pancake" };
       after(async () => {
         try {
@@ -271,22 +264,6 @@ export async function POST(request: Request) {
           });
         }
       });
-    }
-
-    if (paymentMethod === "bank_transfer") {
-      try {
-        const payos = await createPayOsPayment(order, request);
-        const updated = await updateOrder(order.code, {
-          paymentLinkId: payos.paymentLinkId,
-          providerMessage: "Waiting for verified payOS webhook"
-        }) || order;
-        return json({ order: updated, redirectUrl: payos.checkoutUrl, qrCode: payos.qrCode });
-      } catch (error) {
-        await updateOrderStatus(order.code, "failed", {
-          providerMessage: error instanceof Error ? error.message : "Unable to create payOS payment"
-        });
-        throw error;
-      }
     }
 
     if (paymentMethod === "vnpay") {
