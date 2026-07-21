@@ -137,8 +137,10 @@ export function SiteEditor() {
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Không thể lưu nội dung chính sách.");
-      setPolicies(result.policies || policies);
-      setPolicyMessage("Đã lưu nội dung chính sách. Trang khách cập nhật ngay.");
+      const savedPolicies = result.policies || policies;
+      setPolicies(savedPolicies);
+      setContent((current) => current ? { ...current, policies: savedPolicies } : current);
+      setPolicyMessage("Đã lưu và kiểm tra lại nội dung chính sách. Trang khách đã cập nhật.");
     } catch (error) {
       setPolicyMessage(error instanceof Error ? error.message : "Không thể lưu nội dung chính sách.");
     } finally {
@@ -242,10 +244,11 @@ export function SiteEditor() {
     setSaving(true);
     setMessage("");
     try {
+      const contentWithPolicies = policies.length ? { ...next, policies } : next;
       const response = await fetch("/api/site", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(next)
+        body: JSON.stringify(contentWithPolicies)
       });
       if (!response.ok) {
         const errorText = await response.text();
@@ -253,6 +256,7 @@ export function SiteEditor() {
       }
       const saved = await response.json();
       updateContent(saved);
+      if (Array.isArray(saved.policies)) setPolicies(saved.policies);
       setMessage("Đã lưu. Trang khách sẽ tự cập nhật sau vài giây.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Không thể lưu nội dung.");
@@ -411,6 +415,7 @@ export function SiteEditor() {
               {policySaving ? "Đang lưu chính sách..." : "Lưu nội dung chính sách"}
             </button>
             <button type="button" onClick={() => void loadPolicies()} disabled={policySaving} className="h-10 border border-black px-4 text-xs uppercase disabled:opacity-40">Tải lại nội dung</button>
+            <a href="/chinh-sach" target="_blank" rel="noreferrer" className="inline-flex h-10 items-center border border-black px-4 text-xs uppercase">Xem trang khách</a>
           </div>
         </details>
       </section>
