@@ -1881,6 +1881,7 @@
       let expressShippingQuote = { fee: 50000, provider: "", providerName: "Hỏa tốc", estimated: false, quotationId: "", message: "Phí giao hàng" };
       let expressQuoteTimer = 0;
       let expressRecipientCoordinates = { latitude: "", longitude: "" };
+      let addressSelectionReady = Promise.resolve();
       let selectedBank = "mb";
       let shopBankReceiverName = "HỘ KINH DOANH BLANWHI – BNW";
       let shopBankAccountNumber = "879886688";
@@ -1916,7 +1917,19 @@
       const loadSavedAddresses = () => {
         try {
           const saved = JSON.parse(localStorage.getItem("blanwhiSavedAddresses") || "[]");
-          return Array.isArray(saved) ? saved.filter((item) => item?.address).slice(0, 5) : [];
+          const orders = JSON.parse(localStorage.getItem("blanwhiOrders") || "[]");
+          const savedAddresses = Array.isArray(saved) ? saved : [];
+          const orderAddresses = Array.isArray(orders) ? orders.map((order) => order?.customer).filter(Boolean) : [];
+          const seen = new Set();
+          return [...savedAddresses, ...orderAddresses]
+            .filter((item) => item?.address)
+            .filter((item) => {
+              const key = [item.phone, item.address].map((value) => String(value || "").trim().toLowerCase()).join("|");
+              if (seen.has(key)) return false;
+              seen.add(key);
+              return true;
+            })
+            .slice(0, 5);
         } catch {
           return [];
         }
@@ -1995,8 +2008,16 @@
         const items = await fetchGeo("communes", { provinceId, districtId });
         setGeoOptions(checkoutWard, items, "Phường / Xã *", selectedId);
       }
+      function setSavedAddressMode(enabled) {
+        [checkoutProvince, checkoutDistrict, checkoutWard, checkoutAddress].forEach((field) => {
+          field.disabled = enabled;
+          field.required = !enabled;
+        });
+      }
       async function applySavedAddress(index) {
+        addressSelectionReady = Promise.resolve();
         if (index === "new") {
+          setSavedAddressMode(false);
           checkoutProvince.value = "";
           setGeoOptions(checkoutDistrict, [], "Quận / Huyện *");
           setGeoOptions(checkoutWard, [], "Phường / Xã *");
@@ -2006,12 +2027,15 @@
         }
         const selected = loadSavedAddresses()[Number(index)];
         if (!selected) return;
+        setSavedAddressMode(true);
         checkoutName.value = selected.name || "";
         checkoutPhone.value = selected.phone || "";
         await loadProvinces(selected.provinceId || "");
         await loadDistricts(selected.provinceId || "", selected.districtId || "");
         await loadWards(selected.provinceId || "", selected.districtId || "", selected.wardId || "");
         checkoutAddress.value = selected.house || (!selected.province && !selected.ward ? selected.address || "" : "");
+        setSavedAddressMode(true);
+        if (selectedShippingMethod === "express") void refreshExpressShippingQuote();
       }
       function renderSavedAddresses() {
         const addresses = loadSavedAddresses();
@@ -2027,7 +2051,7 @@
         newOption.textContent = addresses.length ? "+ Nhập địa chỉ mới" : "Nhập địa chỉ giao hàng";
         savedAddressSelect.appendChild(newOption);
         savedAddressSelect.value = addresses.length ? "0" : "new";
-        if (addresses.length) applySavedAddress("0");
+        if (addresses.length) addressSelectionReady = applySavedAddress("0");
       }
       const paymentMethodMap = { card: "vnpay", wallet: "momo", zalopay: "zalopay", transfer: "bank_transfer" };
       async function loadAvailablePaymentMethods() {
@@ -3696,7 +3720,9 @@
         renderBankList();
       });
       document.getElementById("openCustomerBankApp").addEventListener("click", openSelectedBankApp);
-      savedAddressSelect.addEventListener("change", () => void applySavedAddress(savedAddressSelect.value));
+      savedAddressSelect.addEventListener("change", () => {
+        addressSelectionReady = applySavedAddress(savedAddressSelect.value);
+      });
       checkoutAddress.addEventListener("input", () => { if (selectedShippingMethod === "express") void refreshExpressShippingQuote(); });
       checkoutProvince.addEventListener("change", () => {
         if (selectedShippingMethod === "express") void refreshExpressShippingQuote();
@@ -3719,6 +3745,20 @@
         const submitButton = checkoutForm.querySelector("button[type='submit']");
         submitButton.disabled = true;
         submitButton.textContent = "Đang tạo giao dịch...";
+        await addressSelectionReady.catch(() => undefined);
+        const savedAddressForCheckout = savedAddressSelect.value !== "new"
+          ? loadSavedAddresses()[Number(savedAddressSelect.value)]
+          : null;
+        const customerName = checkoutName.value.trim() || savedAddressForCheckout?.name || "";
+        const customerPhone = checkoutPhone.value.trim() || savedAddressForCheckout?.phone || "";
+        const customerHouse = checkoutAddress.value.trim() || savedAddressForCheckout?.house || "";
+        const customerWard = selectedGeoName(checkoutWard).trim() || savedAddressForCheckout?.ward || "";
+        const customerWardId = checkoutWard.value || savedAddressForCheckout?.wardId || "";
+        const customerDistrict = selectedGeoName(checkoutDistrict).trim() || savedAddressForCheckout?.district || "";
+        const customerDistrictId = checkoutDistrict.value || savedAddressForCheckout?.districtId || "";
+        const customerProvince = selectedGeoName(checkoutProvince).trim() || savedAddressForCheckout?.province || "";
+        const customerProvinceId = checkoutProvince.value || savedAddressForCheckout?.provinceId || "";
+        const customerAddress = [customerHouse, customerWard, customerDistrict, customerProvince].map((value) => String(value || "").trim()).filter(Boolean).join(", ") || savedAddressForCheckout?.address || "";
         const order = {
           code: `BLW-${Date.now().toString().slice(-6)}`,
           trackingCode: "",
@@ -3726,16 +3766,16 @@
           step: 0,
           paymentMethod,
           customer: {
-            name: checkoutName.value.trim(),
-            phone: checkoutPhone.value.trim(),
-            address: [checkoutAddress.value, selectedGeoName(checkoutWard), selectedGeoName(checkoutDistrict), selectedGeoName(checkoutProvince)].map((value) => value.trim()).filter(Boolean).join(", "),
-            house: checkoutAddress.value.trim(),
-            ward: selectedGeoName(checkoutWard).trim(),
-            wardId: checkoutWard.value,
-            district: selectedGeoName(checkoutDistrict).trim(),
-            districtId: checkoutDistrict.value,
-            province: selectedGeoName(checkoutProvince).trim(),
-            provinceId: checkoutProvince.value,
+            name: customerName,
+            phone: customerPhone,
+            address: customerAddress,
+            house: customerHouse,
+            ward: customerWard,
+            wardId: customerWardId,
+            district: customerDistrict,
+            districtId: customerDistrictId,
+            province: customerProvince,
+            provinceId: customerProvinceId,
             latitude: expressRecipientCoordinates.latitude,
             longitude: expressRecipientCoordinates.longitude
           },
