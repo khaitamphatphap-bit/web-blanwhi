@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { jsonError } from "@/lib/api-errors";
-import { findOrderByCode, updateOrderStatus } from "@/lib/orders";
+import { findOrderByCode } from "@/lib/orders";
 
 export async function POST(request: Request) {
   try {
@@ -19,13 +19,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Order is not a bank transfer order" }, { status: 400 });
     }
 
-    const updated = await updateOrderStatus(orderCode, "paid", {
-      transactionId: `BANK-${Date.now()}`,
-      providerOrderId: orderCode,
-      providerMessage: "Khach da xac nhan chuyen khoan tren website"
-    });
-
-    return NextResponse.json({ order: updated });
+    return NextResponse.json({
+      error: "Chưa nhận được xác nhận giao dịch từ ngân hàng. Đơn vẫn ở trạng thái chờ thanh toán để tránh ghi nhận nhầm."
+    }, { status: 409 });
   } catch (error) {
     return jsonError(error);
   }

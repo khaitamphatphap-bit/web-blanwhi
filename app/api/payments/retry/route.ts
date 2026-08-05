@@ -4,6 +4,7 @@ import { readIntegrationConfig } from "@/lib/integrations";
 import { findOrderByCode, updateOrder } from "@/lib/orders";
 import { createMomoPayment, createVnpayUrl, createZaloPayPayment, fallbackPaymentUrl } from "@/lib/payment";
 import type { PaymentMethod } from "@/lib/types";
+import { reconcileZaloPayPayment } from "@/lib/payment-confirmation";
 
 const payableMethods = new Set<PaymentMethod>(["bank_transfer", "vnpay", "momo", "zalopay", "onepay", "alepay"]);
 
@@ -15,10 +16,14 @@ export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({})) as { code?: string; phone?: string };
     const code = String(body.code || "").trim();
-    const order = code ? await findOrderByCode(code) : null;
+    let order = code ? await findOrderByCode(code) : null;
     if (!order) return NextResponse.json({ error: "Không tìm thấy đơn hàng." }, { status: 404 });
     if (!phoneKey(body.phone) || phoneKey(body.phone) !== phoneKey(order.customer.phone)) {
       return NextResponse.json({ error: "Số điện thoại không khớp với đơn hàng." }, { status: 403 });
+    }
+    if (order.status === "pending" && order.paymentMethod === "zalopay") {
+      const config = await readIntegrationConfig();
+      order = await reconcileZaloPayPayment(order, config.payment);
     }
     if (order.status === "paid") {
       return NextResponse.json({ error: "Đơn này đã thanh toán rồi." }, { status: 409 });

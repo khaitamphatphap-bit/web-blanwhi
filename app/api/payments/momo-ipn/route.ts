@@ -1,8 +1,9 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { jsonError } from "@/lib/api-errors";
 import { readIntegrationConfig } from "@/lib/integrations";
 import { findOrderByCode, updateOrderStatus } from "@/lib/orders";
 import { verifyMomoBody } from "@/lib/payment";
+import { markVerifiedPayment, syncVerifiedOrderToPos } from "@/lib/payment-confirmation";
 
 export async function POST(request: Request) {
   try {
@@ -21,11 +22,19 @@ export async function POST(request: Request) {
     if (!order) return NextResponse.json({ resultCode: 1, message: "Order not found" });
     if (order.total !== amount) return NextResponse.json({ resultCode: 4, message: "Invalid amount" });
 
-    await updateOrderStatus(orderCode, resultCode === 0 ? "paid" : "failed", {
-      transactionId: body.transId ? String(body.transId) : undefined,
-      providerOrderId: body.requestId ? String(body.requestId) : undefined,
-      providerMessage: body.message ? String(body.message) : undefined
-    });
+    if (resultCode === 0) {
+      const paid = await markVerifiedPayment(orderCode, {
+        transactionId: body.transId ? String(body.transId) : undefined,
+        providerOrderId: body.requestId ? String(body.requestId) : undefined,
+        providerMessage: body.message ? String(body.message) : undefined
+      });
+      after(() => syncVerifiedOrderToPos(paid));
+    } else {
+      await updateOrderStatus(orderCode, "failed", {
+        providerOrderId: body.requestId ? String(body.requestId) : undefined,
+        providerMessage: body.message ? String(body.message) : undefined
+      });
+    }
 
     return NextResponse.json({ resultCode: 0, message: "Confirm Success" });
   } catch (error) {

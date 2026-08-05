@@ -10,6 +10,15 @@ export class POSSyncService {
   ) {}
 
   async confirmOrder(order: ShopOrder) {
+    if (order.status !== "paid") {
+      return await updateOrder(order.code, {
+        externalSync: {
+          ...order.externalSync,
+          pancake: "Chờ thanh toán - chưa gửi Pancake",
+          lastSyncedAt: new Date().toISOString()
+        }
+      }) || order;
+    }
     const synced = await this.orderSync.create(order);
     if (this.inventory.configured() && !synced.inventoryReservationApplied) {
       await this.inventory.reserve(synced.items, "decrease");

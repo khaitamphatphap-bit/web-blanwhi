@@ -1,8 +1,9 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { jsonError } from "@/lib/api-errors";
 import { readIntegrationConfig } from "@/lib/integrations";
-import { findOrderByCode, updateOrderStatus } from "@/lib/orders";
+import { findOrderByCode } from "@/lib/orders";
 import { verifyZaloPayBody } from "@/lib/payment";
+import { markVerifiedPayment, syncVerifiedOrderToPos } from "@/lib/payment-confirmation";
 
 export async function POST(request: Request) {
   try {
@@ -28,11 +29,12 @@ export async function POST(request: Request) {
     if (!order) return NextResponse.json({ return_code: 0, return_message: "Order not found" });
     if (order.total !== amount) return NextResponse.json({ return_code: 0, return_message: "Invalid amount" });
 
-    await updateOrderStatus(orderCode, "paid", {
+    const paid = await markVerifiedPayment(orderCode, {
       transactionId: data.zp_trans_id ? String(data.zp_trans_id) : undefined,
       providerOrderId: appTransId,
       providerMessage: "ZaloPay payment success"
     });
+    after(() => syncVerifiedOrderToPos(paid));
 
     return NextResponse.json({ return_code: 1, return_message: "success" });
   } catch (error) {

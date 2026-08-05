@@ -1,4 +1,4 @@
-import { after, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { jsonError } from "@/lib/api-errors";
 import { readIntegrationConfig } from "@/lib/integrations";
 import { createOrder, newOrderCode, updateOrder } from "@/lib/orders";
@@ -6,7 +6,6 @@ import { checkoutTotals } from "@/lib/pricing";
 import { createMomoPayment, createVnpayUrl, createZaloPayPayment, fallbackPaymentUrl } from "@/lib/payment";
 import { CartItem, PaymentMethod, ShopOrder } from "@/lib/types";
 import { InventoryService } from "@/lib/pancake/inventory-service";
-import { POSSyncService } from "@/lib/services/pos-sync-service";
 import { buildProductInventory } from "@/lib/product-inventory";
 import { readSiteContent } from "@/lib/site-content";
 
@@ -249,9 +248,9 @@ export async function POST(request: Request) {
       subtotal: totals.subtotal,
       discount: totals.discount,
       shipping: totals.shipping,
-      shippingMethod: payload.shipping?.method || "Viettel Post",
+      shippingMethod: payload.shipping?.method || "Giao tiêu chuẩn",
       shippingFeeLabel: payload.shipping?.feeLabel,
-      shippingCarrier: payload.shipping?.type === "express" ? "" : "Viettel Post",
+      shippingCarrier: "",
       trackingCode: "",
       shippingStatus: payload.shipping?.type === "express" ? "awaiting_creation" : "not_created",
       shippingMessage: payload.shipping?.type === "express" ? "Chờ tạo vận đơn hỏa tốc" : "",
@@ -266,16 +265,8 @@ export async function POST(request: Request) {
 
     await createOrder(order);
     if (pancakeConfigured) {
-      order.externalSync = { ...order.externalSync, pancake: "Đang gửi Pancake" };
-      after(async () => {
-        try {
-          await new POSSyncService().confirmOrder(order);
-        } catch {
-          await updateOrder(order.code, {
-            externalSync: { ...order.externalSync, pancake: "Đang chờ hệ thống gửi lại Pancake", lastSyncedAt: new Date().toISOString() }
-          });
-        }
-      });
+      order.externalSync = { ...order.externalSync, pancake: "Chờ thanh toán - chưa gửi Pancake" };
+      await updateOrder(order.code, { externalSync: order.externalSync });
     }
 
     if (paymentMethod === "vnpay") {

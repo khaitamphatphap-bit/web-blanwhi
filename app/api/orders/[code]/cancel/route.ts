@@ -6,6 +6,7 @@ import { readIntegrationConfig } from "@/lib/integrations";
 import { cancelShippingOrder, fetchShippingStatus } from "@/lib/shipping-providers";
 import { jsonError } from "@/lib/api-errors";
 import { OrderService } from "@/lib/services/order-service";
+import { refundZaloPayPayment } from "@/lib/payment";
 
 type Params = { params: Promise<{ code: string }> };
 
@@ -14,7 +15,7 @@ function phoneKey(value: unknown) {
 }
 
 function carrierHasAccepted(order: NonNullable<Awaited<ReturnType<typeof findOrderByCode>>>) {
-  if (["ready_to_ship", "shipping", "delivered", "delivery_failed", "returning", "returned"].includes(order.shippingStatus || "")) return true;
+  if (["shipping", "delivered", "delivery_failed", "returning", "returned"].includes(order.shippingStatus || "")) return true;
   return ["shipping", "completed", "returned"].includes(order.pancakeStatus || "");
 }
 
@@ -27,8 +28,10 @@ export async function POST(request: Request, { params }: Params) {
     if (!phoneKey(body.phone) || phoneKey(body.phone) !== phoneKey(order.customer.phone)) {
       return NextResponse.json({ error: "Số điện thoại không khớp với đơn hàng." }, { status: 403 });
     }
+    if (order.status === "cancelled") return NextResponse.json({ ok: true, order });
+    const wasPaid = order.status === "paid";
     const orderSync = new OrderSyncService();
-    let current = await orderSync.reconcileExisting(order);
+    let current = order.providerOrderId || order.pancakeStatus ? await orderSync.reconcileExisting(order) : order;
     const config = await readIntegrationConfig();
     const canUseDirectVtp = config.shipping.enabled && config.shipping.provider === "viettelpost" && Boolean(config.shipping.token);
     if (current.trackingCode && canUseDirectVtp) {
@@ -51,19 +54,55 @@ export async function POST(request: Request, { params }: Params) {
     if (current.trackingCode && canUseDirectVtp && current.shippingStatus !== "cancelled") {
       await cancelShippingOrder(config.shipping, current, reason);
     }
-    if (current.providerOrderId && current.pancakeStatus !== "cancelled") current = await orderSync.cancel(current);
+    if (current.providerOrderId && current.pancakeStatus && current.pancakeStatus !== "cancelled") current = await orderSync.cancel(current);
 
     if (current.inventoryReservationApplied && !current.inventoryReservationReleased) {
       await new InventoryService().reserve(current.items, "restore");
     }
-    const cancelled = await updateOrder(code, {
+    let cancelled = await updateOrder(code, {
       status: "cancelled",
       pancakeStatus: "cancelled",
       trackingCode: "",
       shippingStatus: "cancelled",
       shippingMessage: `${reason}. Vận đơn đã được vô hiệu hóa trước khi bàn giao cho bưu tá.`,
-      inventoryReservationReleased: true
+      inventoryReservationReleased: true,
+      ...(wasPaid ? {
+        refundStatus: "pending" as const,
+        refundProvider: current.paymentMethod,
+        refundAmount: current.total,
+        refundMessage: "Đã hủy đơn, đang gửi yêu cầu hoàn tiền."
+      } : { refundStatus: "not_required" as const })
     });
+    if (wasPaid && current.paymentMethod === "zalopay" && cancelled) {
+      try {
+        const refund = await refundZaloPayPayment(current, config.payment, reason);
+        const accepted = Number(refund.return_code || 0) === 1;
+        cancelled = await updateOrder(code, {
+          refundStatus: accepted ? "pending" : "failed",
+          refundProvider: "zalopay",
+          refundId: refund.m_refund_id,
+          refundTransactionId: refund.refund_id ? String(refund.refund_id) : undefined,
+          refundAmount: refund.amount,
+          refundMessage: accepted
+            ? "ZaloPay đã nhận yêu cầu hoàn tiền, đang xử lý chuyển tiền về tài khoản khách."
+            : (refund.sub_return_message || refund.return_message || "ZaloPay chưa chấp nhận yêu cầu hoàn tiền.")
+        }) || cancelled;
+      } catch (error) {
+        cancelled = await updateOrder(code, {
+          refundStatus: "failed",
+          refundProvider: "zalopay",
+          refundAmount: current.total,
+          refundMessage: error instanceof Error ? error.message : "Không gửi được yêu cầu hoàn tiền ZaloPay."
+        }) || cancelled;
+      }
+    } else if (wasPaid && cancelled) {
+      cancelled = await updateOrder(code, {
+        refundStatus: "pending",
+        refundProvider: current.paymentMethod,
+        refundAmount: current.total,
+        refundMessage: "Cổng thanh toán này chưa hỗ trợ hoàn tự động; quản trị viên cần hoàn tiền và xác nhận giao dịch."
+      }) || cancelled;
+    }
     return NextResponse.json({ ok: true, order: cancelled });
   } catch (error) {
     return jsonError(error);

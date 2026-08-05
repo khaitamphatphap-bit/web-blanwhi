@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { readIntegrationConfig } from "@/lib/integrations";
-import { findOrderByCode, updateOrderStatus } from "@/lib/orders";
-import { queryZaloPayPayment, verifyZaloPayRedirectParams } from "@/lib/payment";
+import { findOrderByCode } from "@/lib/orders";
+import { verifyVnpayParams, verifyZaloPayRedirectParams } from "@/lib/payment";
+import { markVerifiedPayment, reconcileZaloPayPayment, syncVerifiedOrderToPos } from "@/lib/payment-confirmation";
 import { money } from "@/lib/pricing";
 import { BankTransferConfirm } from "./BankTransferConfirm";
 import { DemoPaymentActions } from "./DemoPaymentActions";
@@ -37,17 +38,26 @@ export default async function PaymentResultPage({ searchParams }: PageProps) {
   let order = orderCode ? await findOrderByCode(orderCode) : null;
 
   const isZaloPayRedirect = provider === "zalopay" || Boolean(valueOf(params.apptransid));
-  if (isZaloPayRedirect && order && order.status === "pending" && valueOf(params.status) === "1") {
+  if (isZaloPayRedirect && order && order.status === "pending") {
     const integrations = await readIntegrationConfig();
-    const verified = verifyZaloPayRedirectParams(toUrlSearchParams(params), integrations.payment);
-    const amount = Number(valueOf(params.amount) ?? 0);
-    if (verified.ok && amount === order.total) {
-      const query = await queryZaloPayPayment({ ...order, providerOrderId: zaloPayAppTransId || order.providerOrderId }, integrations.payment).catch(() => null);
-      order = await updateOrderStatus(order.code, "paid", {
-        transactionId: query?.zp_trans_id || order.transactionId,
-        providerOrderId: query?.app_trans_id || zaloPayAppTransId || order.providerOrderId,
-        providerMessage: "ZaloPay redirect payment success"
+    const hasSignedRedirect = Boolean(valueOf(params.checksum));
+    const redirectVerified = !hasSignedRedirect || verifyZaloPayRedirectParams(toUrlSearchParams(params), integrations.payment).ok;
+    if (redirectVerified) {
+      order = await reconcileZaloPayPayment({ ...order, providerOrderId: zaloPayAppTransId || order.providerOrderId }, integrations.payment).catch(() => order);
+    }
+  }
+
+  if (provider === "vnpay" && order && order.status === "pending" && valueOf(params.vnp_ResponseCode)) {
+    const integrations = await readIntegrationConfig();
+    const query = toUrlSearchParams(params);
+    const verified = verifyVnpayParams(query, integrations.payment);
+    const amount = Number(query.get("vnp_Amount") || 0) / 100;
+    if (verified.ok && query.get("vnp_ResponseCode") === "00" && amount === order.total) {
+      const paid = await markVerifiedPayment(order.code, {
+        transactionId: query.get("vnp_TransactionNo") || undefined,
+        providerMessage: "VNPAY verified return payment success"
       });
+      order = await syncVerifiedOrderToPos(paid);
     }
   }
 

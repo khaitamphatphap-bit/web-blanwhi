@@ -360,6 +360,33 @@ export async function refundZaloPayPayment(order: ShopOrder, paymentConfig?: Pay
   };
 }
 
+export async function queryZaloPayRefund(mRefundId: string, paymentConfig?: PaymentConfig) {
+  const { appId, key1 } = getZaloPayCredentials(paymentConfig);
+  if (!appId || !key1) throw new Error("Website chưa cấu hình đủ App ID hoặc Key 1 ZaloPay production để kiểm tra hoàn tiền.");
+  if (!cleanSecret(mRefundId)) throw new Error("Thiếu mã yêu cầu hoàn tiền ZaloPay.");
+  const timestamp = Date.now();
+  const data = `${appId}|${mRefundId}|${timestamp}`;
+  const response = await fetch(zaloPayProductionEndpoint("query_refund"), {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      app_id: appId,
+      m_refund_id: mRefundId,
+      timestamp: String(timestamp),
+      mac: hmacSha256Hex(data, key1)
+    })
+  });
+  const result = await response.json() as {
+    return_code?: number;
+    return_message?: string;
+    sub_return_code?: number;
+    sub_return_message?: string;
+    refund_status?: number;
+  };
+  if (!response.ok) throw new Error(result.return_message || `ZaloPay query refund HTTP ${response.status}`);
+  return result;
+}
+
 export function verifyZaloPayBody(body: Record<string, unknown>, paymentConfig?: PaymentConfig) {
   const key2 = cleanSecret(paymentConfig?.zalopay.key2) || cleanSecret(env("ZALOPAY_KEY2"));
   if (!key2) return { ok: false, reason: "Missing ZALOPAY_KEY2" };

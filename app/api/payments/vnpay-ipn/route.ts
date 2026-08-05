@@ -1,7 +1,8 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { readIntegrationConfig } from "@/lib/integrations";
 import { findOrderByCode, updateOrderStatus } from "@/lib/orders";
 import { verifyVnpayParams } from "@/lib/payment";
+import { markVerifiedPayment, syncVerifiedOrderToPos } from "@/lib/payment-confirmation";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -21,10 +22,17 @@ export async function GET(request: Request) {
   if (order.total !== amount) return NextResponse.json({ RspCode: "04", Message: "Invalid amount" });
   if (order.status === "paid") return NextResponse.json({ RspCode: "02", Message: "Order already confirmed" });
 
-  await updateOrderStatus(orderCode, responseCode === "00" ? "paid" : "failed", {
-    transactionId: transactionNo,
-    providerMessage: responseCode === "00" ? "VNPAY payment success" : `VNPAY response ${responseCode}`
-  });
+  if (responseCode === "00") {
+    const paid = await markVerifiedPayment(orderCode, {
+      transactionId: transactionNo,
+      providerMessage: "VNPAY payment success"
+    });
+    after(() => syncVerifiedOrderToPos(paid));
+  } else {
+    await updateOrderStatus(orderCode, "failed", {
+      providerMessage: `VNPAY response ${responseCode}`
+    });
+  }
 
   return NextResponse.json({ RspCode: "00", Message: "Confirm Success" });
 }
