@@ -48,10 +48,21 @@ export async function reconcileZaloPayPayment(order: ShopOrder, paymentConfig: I
   return syncVerifiedOrderToPos(paid);
 }
 
+function refundResponseIsProcessing(result: { return_code?: number; sub_return_code?: number; refund_status?: number; return_message?: string; sub_return_message?: string }) {
+  const message = `${result.return_message || ""} ${result.sub_return_message || ""}`;
+  return Number(result.refund_status || 0) === 3
+    || Number(result.return_code || 0) === 3
+    || [-1, -16].includes(Number(result.sub_return_code || 0))
+    || /đang\s*(refund|hoàn|xử lý)|refunding|refund\s*in\s*progress|processing/i.test(message);
+}
+
 export async function reconcileZaloPayRefund(order: ShopOrder, paymentConfig: IntegrationConfig["payment"]) {
-  if (order.paymentMethod !== "zalopay" || order.refundStatus !== "pending" || !order.refundId) return order;
+  const canRecheck = order.refundStatus === "pending"
+    || (order.refundStatus === "failed" && /đang\s*(refund|hoàn|xử lý)|refunding|processing/i.test(order.refundMessage || ""));
+  if (order.paymentMethod !== "zalopay" || !canRecheck || !order.refundId) return order;
   const result = await queryZaloPayRefund(order.refundId, paymentConfig);
   const refundStatus = Number(result.refund_status || 0);
+  const returnCode = Number(result.return_code || 0);
   if (refundStatus === 1) {
     return await updateOrder(order.code, {
       refundStatus: "succeeded",
@@ -59,11 +70,20 @@ export async function reconcileZaloPayRefund(order: ShopOrder, paymentConfig: In
       refundedAt: new Date().toISOString()
     }) || order;
   }
-  if (refundStatus === 2 || Number(result.return_code || 0) === 2) {
+  if (refundResponseIsProcessing(result)) {
+    return await updateOrder(order.code, {
+      refundStatus: "pending",
+      refundMessage: "ZaloPay đang xử lý hoàn tiền về tài khoản khách. Website sẽ tiếp tục tự động kiểm tra."
+    }) || order;
+  }
+  if (refundStatus === 2 || returnCode === 2) {
     return await updateOrder(order.code, {
       refundStatus: "failed",
       refundMessage: result.sub_return_message || result.return_message || "ZaloPay báo hoàn tiền thất bại."
     }) || order;
   }
-  return order;
+  return await updateOrder(order.code, {
+    refundStatus: "pending",
+    refundMessage: "Đang chờ ZaloPay cập nhật kết quả hoàn tiền."
+  }) || order;
 }

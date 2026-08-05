@@ -105,7 +105,11 @@ export async function POST(request: Request, { params }: Params) {
     if (wasPaid && current.paymentMethod === "zalopay" && cancelled) {
       try {
         const refund = await refundZaloPayPayment(current, config.payment, reason);
-        const accepted = Number(refund.return_code || 0) === 1;
+        const providerMessage = `${refund.return_message || ""} ${refund.sub_return_message || ""}`;
+        const processing = Number(refund.return_code || 0) === 3
+          || [-1, -16].includes(Number(refund.sub_return_code || 0))
+          || /đang\s*(refund|hoàn|xử lý)|refunding|refund\s*in\s*progress|processing/i.test(providerMessage);
+        const accepted = Number(refund.return_code || 0) === 1 || processing;
         cancelled = await updateOrder(code, {
           refundStatus: accepted ? "pending" : "failed",
           refundProvider: "zalopay",
