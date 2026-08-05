@@ -6,7 +6,6 @@ import { readIntegrationConfig } from "@/lib/integrations";
 import { cancelShippingOrder, fetchShippingStatus } from "@/lib/shipping-providers";
 import { jsonError } from "@/lib/api-errors";
 import { OrderService } from "@/lib/services/order-service";
-import { refundZaloPayPayment } from "@/lib/payment";
 
 type Params = { params: Promise<{ code: string }> };
 
@@ -57,58 +56,16 @@ export async function POST(request: Request, { params }: Params) {
     if (current.inventoryReservationApplied && !current.inventoryReservationReleased) {
       await new InventoryService().reserve(current.items, "restore");
     }
-    const refundPatch = await refundZaloPayIfNeeded(current, config, reason);
     const cancelled = await updateOrder(code, {
       status: "cancelled",
       pancakeStatus: "cancelled",
       trackingCode: "",
       shippingStatus: "cancelled",
       shippingMessage: `${reason}. Vận đơn đã được vô hiệu hóa trước khi bàn giao cho bưu tá.`,
-      inventoryReservationReleased: true,
-      ...refundPatch
+      inventoryReservationReleased: true
     });
     return NextResponse.json({ ok: true, order: cancelled });
   } catch (error) {
     return jsonError(error);
   }
-}
-
-async function refundZaloPayIfNeeded(
-  order: NonNullable<Awaited<ReturnType<typeof findOrderByCode>>>,
-  config: Awaited<ReturnType<typeof readIntegrationConfig>>,
-  reason: string
-) {
-  if (order.status !== "paid" || order.paymentMethod !== "zalopay") {
-    return { refundStatus: "not_required" as const };
-  }
-  if (order.refundStatus === "succeeded" || order.refundStatus === "pending") {
-    return {};
-  }
-
-  const result = await refundZaloPayPayment(order, config.payment, reason);
-  const returnCode = Number(result.return_code || 0);
-  const message = result.sub_return_message || result.return_message || "";
-
-  if (returnCode === 1 || returnCode === 3) {
-    return {
-      refundStatus: returnCode === 1 ? "succeeded" as const : "pending" as const,
-      refundProvider: "zalopay",
-      refundId: result.refund_id ? String(result.refund_id) : undefined,
-      refundTransactionId: result.m_refund_id,
-      refundAmount: result.amount,
-      refundMessage: message || (returnCode === 1 ? "ZaloPay refund success" : "ZaloPay refund processing"),
-      refundedAt: new Date().toISOString(),
-      transactionId: result.zp_trans_id,
-      providerOrderId: result.app_trans_id || order.providerOrderId
-    };
-  }
-
-  await updateOrder(order.code, {
-    refundStatus: "failed",
-    refundProvider: "zalopay",
-    refundTransactionId: result.m_refund_id,
-    refundAmount: result.amount,
-    refundMessage: message || "ZaloPay refund failed"
-  });
-  throw new Error(message || "ZaloPay chưa hoàn tiền được cho đơn này. Vui lòng kiểm tra trong ZaloPay Merchant.");
 }

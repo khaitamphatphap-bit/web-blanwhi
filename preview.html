@@ -2777,9 +2777,7 @@
       function refundNotice(order) {
         const wasPaid = order.refundStatus || order.refundAmount || order.transactionId || order.wasPaidBeforeCancel || order.statusBeforeCancel === "Đã thanh toán";
         if (!(order.status === "Đơn hủy" || order.shippingStatus === "cancelled") || !wasPaid) return "";
-        if (order.refundStatus === "succeeded") return "Đơn đã thanh toán. Shop đã gửi yêu cầu hoàn tiền, tiền sẽ về tài khoản của khách trong vòng 12h.";
-        if (order.refundStatus === "failed") return order.refundMessage || "Đơn đã thanh toán nhưng hoàn tiền đang lỗi. Shop sẽ kiểm tra và xử lý trong vòng 12h.";
-        return "Đơn đã thanh toán. Tiền sẽ được hoàn về tài khoản của khách trong vòng 12h.";
+        return "Bạn đã huỷ đơn thành công, vui lòng liên hệ Zalo 0866561480 để nhận được tiền hoàn trả của đơn hàng này.";
       }
 
       async function recoverCustomerOrder(order) {
@@ -2839,11 +2837,14 @@
           }
           const result = await response.json();
           if (!response.ok) throw new Error(result.error || "Không thể hủy đơn.");
-          const nextOrders = loadOrders().map((order) => order.code === code ? {
+          const previousOrders = loadOrders();
+          const previousOrder = previousOrders.find((order) => order.code === code);
+          const paidBeforeCancel = isPaidOrder(previousOrder || {}) || Boolean(result.order?.transactionId || result.order?.refundStatus);
+          const nextOrders = previousOrders.map((order) => order.code === code ? {
             ...order,
             ...(result.order || {}),
             rawStatus: result.order?.status || "cancelled",
-            wasPaidBeforeCancel: isPaidOrder(order) || result.order?.refundStatus,
+            wasPaidBeforeCancel: paidBeforeCancel,
             statusBeforeCancel: order.status,
             status: "Đơn hủy",
             trackingCode: "",
@@ -2853,7 +2854,7 @@
           } : order);
           saveOrders(nextOrders);
           renderOrders();
-          alert(`Đã hủy đơn ${code} thành công.`);
+          alert(paidBeforeCancel ? "Bạn đã huỷ đơn thành công, vui lòng liên hệ Zalo 0866561480 để nhận được tiền hoàn trả của đơn hàng này." : `Đã hủy đơn ${code} thành công.`);
         } catch (error) {
           alert(error.message || "Không thể hủy đơn. Vui lòng thử lại.");
           button.disabled = false;
