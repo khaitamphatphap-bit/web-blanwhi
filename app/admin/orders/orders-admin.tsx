@@ -514,15 +514,16 @@ function Metric({ active = false, label, value, onClick }: { active?: boolean; l
 
 function getOrderStage(order: ShopOrder): OrderStage {
   const shippingStatus = order.shippingStatus || "not_created";
+  const paymentMethod = String(order.paymentMethod || "cod").trim().toLowerCase();
 
   if (order.status === "cancelled" || shippingStatus === "cancelled" || order.pancakeStatus === "cancelled") return "cancelled";
-  if (order.status === "pending" && order.paymentMethod !== "cod") return "payment_pending";
+  if (order.status === "pending" && paymentMethod !== "cod") return "payment_pending";
   if (shippingStatus === "returning" || shippingStatus === "returned") return "returning";
   if (shippingStatus === "delivery_failed") return "delivery_failed";
   if (shippingStatus === "delivered") return "delivered";
   if (shippingStatus === "shipping") return "shipping";
   if (shippingStatus === "driver_assigned") return "handed_to_carrier";
-  if (order.status === "paid" || (order.status === "pending" && order.paymentMethod === "cod")) return "paid";
+  if (order.status === "paid" || (order.status === "pending" && paymentMethod === "cod")) return "paid";
   return "new";
 }
 

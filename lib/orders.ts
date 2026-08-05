@@ -1,9 +1,21 @@
 import { readJsonStore, writeJsonStore } from "@/lib/data-store";
-import { OrderStatus, ShopOrder } from "@/lib/types";
+import { OrderStatus, PaymentMethod, ShopOrder } from "@/lib/types";
 import { shortOrderCode } from "@/lib/order-code";
 
+const paymentMethods = new Set<PaymentMethod>(["cod", "bank_transfer", "vnpay", "onepay", "alepay", "momo", "zalopay"]);
+
+function normalizePaymentMethod(value: unknown): PaymentMethod {
+  const normalized = String(value || "cod").trim().toLowerCase() as PaymentMethod;
+  return paymentMethods.has(normalized) ? normalized : "cod";
+}
+
 export async function readOrders(): Promise<ShopOrder[]> {
-  return readJsonStore<ShopOrder[]>("orders.json", []);
+  const orders = await readJsonStore<ShopOrder[]>("orders.json", []);
+  return orders.map((order) => ({
+    ...order,
+    paymentMethod: normalizePaymentMethod(order.paymentMethod),
+    paymentProvider: String(order.paymentProvider || normalizePaymentMethod(order.paymentMethod)).trim().toLowerCase()
+  }));
 }
 
 export async function writeOrders(orders: ShopOrder[]) {
