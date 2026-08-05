@@ -242,6 +242,67 @@ export async function createZaloPayPayment(order: ShopOrder, request: Request, p
   return response.json() as Promise<{ order_url?: string; zp_trans_token?: string; order_token?: string; app_trans_id?: string; return_code?: number; return_message?: string; demo?: boolean }>;
 }
 
+function zaloPayProductionEndpoint(pathname: "create" | "refund" | "query_refund") {
+  return `https://openapi.zalopay.vn/v2/${pathname}`;
+}
+
+function getZaloPayCredentials(paymentConfig?: PaymentConfig) {
+  const appId = cleanSecret(paymentConfig?.zalopay.appId) || cleanSecret(env("ZALOPAY_APP_ID"));
+  const key1 = cleanSecret(paymentConfig?.zalopay.key1) || cleanSecret(env("ZALOPAY_KEY1"));
+  return { appId, key1 };
+}
+
+function zaloPayDatePrefix(date = new Date()) {
+  return `${String(date.getFullYear()).slice(-2)}${String(date.getMonth() + 1).padStart(2, "0")}${String(date.getDate()).padStart(2, "0")}`;
+}
+
+export async function refundZaloPayPayment(order: ShopOrder, paymentConfig?: PaymentConfig, reason = "Huy don hang") {
+  const { appId, key1 } = getZaloPayCredentials(paymentConfig);
+  const zpTransId = cleanSecret(order.transactionId);
+  if (!appId || !key1) throw new Error("Website chưa cấu hình đủ App ID hoặc Key 1 ZaloPay production để hoàn tiền.");
+  if (!zpTransId) throw new Error("Đơn ZaloPay này chưa có mã giao dịch zp_trans_id nên chưa thể hoàn tiền tự động. Vui lòng đợi IPN ZaloPay cập nhật hoặc hoàn tiền thủ công trên ZaloPay Merchant.");
+
+  const amount = Math.max(0, Math.floor(Number(order.total) || 0));
+  if (!amount) throw new Error("Số tiền hoàn ZaloPay không hợp lệ.");
+
+  const timestamp = Date.now();
+  const tail = `${Date.now().toString().slice(-8)}${Math.random().toString(36).slice(2, 6)}`.replace(/[^a-zA-Z0-9]/g, "").slice(0, 12);
+  const mRefundId = `${zaloPayDatePrefix()}_${appId}_${tail}`;
+  const description = reason.slice(0, 100) || `Hoan tien don ${order.code}`;
+  const data = `${appId}|${zpTransId}|${amount}|${description}|${timestamp}`;
+  const body = new URLSearchParams({
+    app_id: appId,
+    m_refund_id: mRefundId,
+    zp_trans_id: zpTransId,
+    amount: String(amount),
+    timestamp: String(timestamp),
+    description,
+    mac: hmacSha256Hex(data, key1)
+  });
+
+  const response = await fetch(zaloPayProductionEndpoint("refund"), {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body
+  });
+  const result = await response.json() as {
+    return_code?: number;
+    return_message?: string;
+    sub_return_code?: number;
+    sub_return_message?: string;
+    refund_id?: string | number;
+  };
+  if (!response.ok) {
+    throw new Error(result.return_message || `ZaloPay refund HTTP ${response.status}`);
+  }
+  return {
+    ...result,
+    m_refund_id: mRefundId,
+    amount,
+    zp_trans_id: zpTransId
+  };
+}
+
 export function verifyZaloPayBody(body: Record<string, unknown>, paymentConfig?: PaymentConfig) {
   const key2 = cleanSecret(paymentConfig?.zalopay.key2) || cleanSecret(env("ZALOPAY_KEY2"));
   if (!key2) return { ok: false, reason: "Missing ZALOPAY_KEY2" };

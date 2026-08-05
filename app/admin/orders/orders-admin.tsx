@@ -449,6 +449,14 @@ export function OrdersAdmin({
                       <p><b>Ship:</b> {order.shippingFeeLabel || money(order.shipping)}</p>
                       <p><b>Tổng:</b> {money(order.total)}</p>
                       <p><b>Mã giao dịch:</b> {order.transactionId || "Chưa có"}</p>
+                      {order.paymentMethod === "zalopay" && (
+                        <div className="border border-neutral-200 bg-white p-3">
+                          <p><b>Hoàn tiền ZaloPay:</b> {refundStatusLabel(order.refundStatus)}</p>
+                          {order.refundAmount !== undefined && <p><b>Số tiền hoàn:</b> {money(order.refundAmount)}</p>}
+                          {order.refundTransactionId && <p><b>Mã yêu cầu hoàn:</b> {order.refundTransactionId}</p>}
+                          {order.refundMessage && <p className="text-neutral-600">{order.refundMessage}</p>}
+                        </div>
+                      )}
                       <p><b>Vận chuyển:</b> {order.shippingCarrier || "Chưa chọn"} · {order.shippingMethod || "Giao nhanh"}</p>
                       <p><b>Mã vận đơn:</b> {order.trackingCode || "Chưa có"}</p>
                       <span className={`inline-flex border px-2 py-1 text-xs uppercase ${shippingStatusClass(order.shippingStatus || "not_created")}`}>
@@ -622,6 +630,14 @@ function paymentStatusClass(status: OrderStatus) {
   if (status === "pending") return "border-amber-500 bg-amber-50 text-amber-700";
   if (status === "failed") return "border-red-500 bg-red-50 text-red-700";
   return "border-neutral-400 bg-neutral-100 text-neutral-700";
+}
+
+function refundStatusLabel(status: ShopOrder["refundStatus"]) {
+  if (status === "succeeded") return "Đã hoàn tiền";
+  if (status === "pending") return "Đang xử lý hoàn tiền";
+  if (status === "failed") return "Hoàn tiền lỗi";
+  if (status === "not_required") return "Không cần hoàn";
+  return "Chưa phát sinh";
 }
 
 function shippingStatusClass(status: ShippingStatus) {

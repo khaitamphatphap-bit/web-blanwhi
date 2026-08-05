@@ -127,6 +127,13 @@ export type ShopOrder = {
   transactionId?: string;
   providerOrderId?: string;
   providerMessage?: string;
+  refundStatus?: "not_required" | "pending" | "succeeded" | "failed";
+  refundProvider?: string;
+  refundId?: string;
+  refundTransactionId?: string;
+  refundAmount?: number;
+  refundMessage?: string;
+  refundedAt?: string;
   pancakeStatus?: "pending_confirmation" | "confirmed" | "packing" | "shipping" | "completed" | "cancelled" | "returned";
   externalSync?: {
     misa?: string;
