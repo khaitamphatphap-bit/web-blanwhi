@@ -754,7 +754,7 @@
       </section>
 
       <main class="wrap">
-      <section class="grid" id="shop"><div id="productGrid" style="display:contents"></div></section>
+      <section class="grid is-preparing" id="shop"><div id="productGrid" style="display:contents"></div></section>
       <nav class="pagination" id="productPagination" aria-label="Phân trang sản phẩm"></nav>
       <div class="ticker">BLANWHI / WHITE SPACE / BLACK TYPE / 20 PRODUCTS / FAST CHECKOUT / QUIET LAYERS</div>
         <section class="custom-section" id="custom">
@@ -1704,8 +1704,9 @@
         }
       }
 
-      function applySiteContent(content) {
+      function applySiteContent(content, options = {}) {
         if (!content) return;
+        const shouldRenderProducts = options.renderProducts !== false;
         const setText = (selector, value) => {
           document.querySelectorAll(selector).forEach((node) => node.textContent = value || "");
         };
@@ -1801,7 +1802,7 @@
         if (content.shipping) {
           defaultShippingFee = Math.max(0, Math.floor(Number(content.shipping.defaultFee ?? 30000) || 0));
         }
-        if (Array.isArray(content.products)) {
+        if (shouldRenderProducts && Array.isArray(content.products)) {
           productData = content.products
             .filter((product) => product.active !== false)
             .map(normalizeCmsProduct);
@@ -1817,7 +1818,8 @@
           if (!response.ok) throw new Error(`Không tải được nội dung (${response.status})`);
           const content = await response.json();
           const signature = JSON.stringify(content);
-          if (signature === siteContentSignature) {
+          const productGridIsEmpty = productGrid.children.length === 0;
+          if (signature === siteContentSignature && !productGridIsEmpty) {
             document.body.classList.remove("cms-loading", "cms-error");
             return;
           }
@@ -1826,6 +1828,10 @@
           document.body.classList.remove("cms-loading", "cms-error");
         } catch (error) {
           console.warn("Không tải được nội dung admin", error);
+          if (productGrid.children.length === 0) {
+            if (initialSiteContent) applySiteContent(initialSiteContent);
+            else renderProducts();
+          }
           document.body.classList.remove("cms-loading");
           document.body.classList.add("cms-error");
         } finally {
@@ -1889,10 +1895,7 @@
       let shopBankCode = "mb";
 
       if (initialSiteContent) {
-        siteContentSignature = JSON.stringify(initialSiteContent);
-        applySiteContent(initialSiteContent);
-      } else {
-        renderProducts();
+        applySiteContent(initialSiteContent, { renderProducts: false });
       }
       loadSiteContent();
       const refreshContentWhenIdle = () => {
