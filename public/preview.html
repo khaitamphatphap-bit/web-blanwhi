@@ -2827,7 +2827,7 @@
       }
 
       async function cancelCustomerOrder(code, phone, button) {
-        if (!confirm("Bạn chắc chắn muốn hủy đơn này? Số lượng mở bán sẽ được hoàn lại.")) return;
+        if (!confirm("Bạn có chắc chắn muốn huỷ đơn này không? Cảm ơn bạn nhiều nha và chúc bạn một ngày tốt lành")) return;
         button.disabled = true;
         const originalLabel = button.textContent;
         button.textContent = "Đang hủy...";
