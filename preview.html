@@ -938,6 +938,9 @@
             <div class="payment-extra" id="walletPaymentFields">
               <span class="muted">Website sẽ tạo giao dịch MoMo và chuyển khách sang ứng dụng/cổng MoMo để xác nhận thanh toán.</span>
             </div>
+            <div class="payment-extra" id="zalopayPaymentFields">
+              <span class="muted">Website sẽ tạo giao dịch ZaloPay và chuyển khách sang ứng dụng/cổng ZaloPay để xác nhận thanh toán.</span>
+            </div>
             <div class="payment-extra" id="transferPaymentFields">
               <span class="muted">Tài khoản nhận tiền</span>
               <button class="bank-account-link" id="openBankTransfer" type="button">BLANWHI - 879886688</button>
@@ -3196,6 +3199,7 @@
           const selectedPay = document.querySelector("input[name='pay']:checked")?.value || "";
           document.getElementById("cardPaymentFields").classList.toggle("open", selectedPay === "card");
           document.getElementById("walletPaymentFields").classList.toggle("open", selectedPay === "wallet");
+          document.getElementById("zalopayPaymentFields").classList.toggle("open", selectedPay === "zalopay");
           document.getElementById("transferPaymentFields").classList.toggle("open", selectedPay === "transfer");
         });
       });
