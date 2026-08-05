@@ -11,11 +11,18 @@ function normalizePaymentMethod(value: unknown): PaymentMethod {
 
 export async function readOrders(): Promise<ShopOrder[]> {
   const orders = await readJsonStore<ShopOrder[]>("orders.json", []);
-  return orders.map((order) => ({
-    ...order,
-    paymentMethod: normalizePaymentMethod(order.paymentMethod),
-    paymentProvider: String(order.paymentProvider || normalizePaymentMethod(order.paymentMethod)).trim().toLowerCase()
-  }));
+  return orders.map((order) => {
+    const cancellationRecorded = order.status === "cancelled"
+      || order.shippingStatus === "cancelled"
+      || order.pancakeStatus === "cancelled"
+      || Boolean(order.refundStatus);
+    return {
+      ...order,
+      status: cancellationRecorded ? "cancelled" : order.status,
+      paymentMethod: normalizePaymentMethod(order.paymentMethod),
+      paymentProvider: String(order.paymentProvider || normalizePaymentMethod(order.paymentMethod)).trim().toLowerCase()
+    };
+  });
 }
 
 export async function writeOrders(orders: ShopOrder[]) {

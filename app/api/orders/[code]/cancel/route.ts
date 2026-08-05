@@ -62,10 +62,20 @@ export async function POST(request: Request, { params }: Params) {
     if (current.deliveryType === "express" && current.deliveryOrderId && current.shippingStatus !== "cancelled") {
       current = await new OrderService().cancelExpressDelivery(code, reason);
     }
-    if ((current.pancakeOrderId || (current.providerOrderId && current.pancakeStatus)) && current.pancakeStatus !== "cancelled") current = await orderSync.cancel(current);
+    if ((current.pancakeOrderId || (current.providerOrderId && current.pancakeStatus)) && current.pancakeStatus !== "cancelled") {
+      try {
+        current = await orderSync.cancel(current);
+      } catch {
+        // Yêu cầu hủy đã được đưa vào hàng đợi; vẫn ghi nhận hủy trên website ngay để không nằm sai mục.
+      }
+    }
 
     if (current.inventoryReservationApplied && !current.inventoryReservationReleased) {
-      await new InventoryService().reserve(current.items, "restore");
+      try {
+        await new InventoryService().reserve(current.items, "restore");
+      } catch {
+        // Không để lỗi đồng bộ tồn kho ngăn trạng thái hủy được lưu; hàng đợi POS sẽ tiếp tục xử lý.
+      }
     }
     let cancelled = await updateOrder(code, {
       status: "cancelled",
