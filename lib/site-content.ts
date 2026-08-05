@@ -144,6 +144,9 @@ export type SiteContent = {
       bankCode: string;
     };
   };
+  shipping: {
+    defaultFee: number;
+  };
   policies?: CmsPolicyDocument[];
   products: CmsProduct[];
 };
@@ -206,6 +209,9 @@ export const defaultSiteContent: SiteContent = {
       bankName: "MB Bank",
       bankCode: "mb"
     }
+  },
+  shipping: {
+    defaultFee: 30000
   },
   policies: policyData as CmsPolicyDocument[],
   products: [
@@ -325,6 +331,11 @@ export async function readSiteContent(): Promise<SiteContent> {
           ? defaultSiteContent.payment.bank.receiverName
           : saved.payment.bank.receiverName
       }
+    },
+    shipping: {
+      ...defaultSiteContent.shipping,
+      ...saved.shipping,
+      defaultFee: Math.max(0, Math.floor(Number(saved.shipping?.defaultFee ?? defaultSiteContent.shipping.defaultFee) || 0))
     },
     policies: Array.isArray(saved.policies) && saved.policies.length
       ? saved.policies

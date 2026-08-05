@@ -46,11 +46,12 @@ export function bestVoucher(items: CartItem[]) {
     .sort((a, b) => Number(b.freeship) - Number(a.freeship) || b.discount - a.discount)[0];
 }
 
-export function checkoutTotals(items: CartItem[]) {
+export function checkoutTotals(items: CartItem[], defaultShippingFee = 30000) {
   const subtotal = cartSubtotal(items);
   const voucher = bestVoucher(items);
   const discount = Math.round(subtotal * (voucher?.discount ?? 0));
-  const shipping = voucher?.freeship || subtotal === 0 ? 0 : 30000;
+  const shippingFee = Math.max(0, Math.floor(Number(defaultShippingFee) || 0));
+  const shipping = voucher?.freeship || subtotal === 0 ? 0 : shippingFee;
   return { subtotal, voucher, discount, shipping, total: Math.max(subtotal - discount + shipping, 0) };
 }
 

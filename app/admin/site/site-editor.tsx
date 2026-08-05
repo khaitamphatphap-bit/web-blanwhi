@@ -548,6 +548,23 @@ export function SiteEditor() {
             <Text label="Tên ngân hàng" value={content.payment.bank.bankName} onChange={(value) => updateContent({ ...content, payment: { ...content.payment, bank: { ...content.payment.bank, bankName: value } } })} />
             <Text label="Mã ngân hàng mở app" value={content.payment.bank.bankCode} onChange={(value) => updateContent({ ...content, payment: { ...content.payment, bank: { ...content.payment.bank, bankCode: value } } })} />
           </div>
+
+          <div className="border border-neutral-200 p-4">
+            <h2 className="text-sm font-semibold uppercase">Phí ship mặc định</h2>
+            <p className="mt-2 text-xs leading-5 text-neutral-500">Áp dụng cho giao nhanh trên trang khách. Để 0 nếu muốn miễn phí ship mặc định.</p>
+            <label className="mt-3 block text-xs uppercase text-neutral-500">Phí ship giao nhanh</label>
+            <input
+              type="number"
+              min="0"
+              step="1000"
+              value={content.shipping?.defaultFee ?? 30000}
+              onChange={(event) => updateContent({
+                ...content,
+                shipping: { ...content.shipping, defaultFee: Math.max(0, Math.floor(Number(event.target.value) || 0)) }
+              })}
+              className="mt-1 h-10 w-full border px-3"
+            />
+          </div>
         </aside>
 
         <section className="grid min-w-0 gap-5">

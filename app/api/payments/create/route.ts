@@ -144,8 +144,7 @@ function normalizeItems(items: Array<CartItem | PreviewCheckoutItem>) {
   });
 }
 
-async function hydratePancakeLinks(items: ReturnType<typeof normalizeItems>) {
-  const content = await readSiteContent();
+async function hydratePancakeLinks(items: ReturnType<typeof normalizeItems>, content: Awaited<ReturnType<typeof readSiteContent>>) {
   return items.map((item) => {
     const product = content.products.find((candidate) => candidate.id === item.productId);
     if (!product) return item;
@@ -176,6 +175,7 @@ export async function POST(request: Request) {
     const paymentMethod = payload.paymentMethod ?? "cod";
     const customer = payload.customer ?? {};
     const integrations = await readIntegrationConfig();
+    const siteContent = await readSiteContent();
 
     if (!customer.name || !customer.phone || !customer.address) {
       return json({ error: "Vui lòng nhập đủ họ tên, số điện thoại và địa chỉ." }, { status: 400 });
@@ -192,7 +192,10 @@ export async function POST(request: Request) {
     }
 
     const reactItems = items.filter(isCartItem);
-    const computedTotals = reactItems.length === items.length ? checkoutTotals(reactItems) : {
+    const defaultShippingFee = Math.max(0, Math.floor(Number(siteContent.shipping?.defaultFee ?? 30000) || 0));
+    const isExpressShipping = payload.shipping?.type === "express";
+    const standardShippingFor = (subtotal: number) => subtotal === 0 || subtotal >= 2000000 ? 0 : defaultShippingFee;
+    const computedTotals = reactItems.length === items.length ? checkoutTotals(reactItems, defaultShippingFee) : {
       subtotal: items.reduce((sum, item) => {
         if (isCartItem(item)) return sum + item.product.price * item.quantity;
         return sum + Number(item.price || 0) * Number(item.qty || 1);
@@ -204,13 +207,18 @@ export async function POST(request: Request) {
         return sum + Number(item.price || 0) * Number(item.qty || 1);
       }, 0)
     };
+    computedTotals.shipping = isExpressShipping ? 0 : standardShippingFor(computedTotals.subtotal);
+    computedTotals.total = Math.max(computedTotals.subtotal - computedTotals.discount + computedTotals.shipping, 0);
+    const subtotal = payload.totals?.subtotal ?? computedTotals.subtotal;
+    const discount = payload.totals?.discount ?? computedTotals.discount;
+    const shipping = isExpressShipping ? 0 : standardShippingFor(subtotal);
     const totals = {
-      subtotal: payload.totals?.subtotal ?? computedTotals.subtotal,
-      discount: payload.totals?.discount ?? computedTotals.discount,
-      shipping: payload.totals?.shipping ?? computedTotals.shipping,
-      total: payload.totals?.total ?? computedTotals.total
+      subtotal,
+      discount,
+      shipping,
+      total: Math.max(subtotal - discount + shipping, 0)
     };
-    const orderItems = await hydratePancakeLinks(normalizeItems(items));
+    const orderItems = await hydratePancakeLinks(normalizeItems(items), siteContent);
     const inventoryService = new InventoryService();
     const pancakeConfigured = inventoryService.configured();
     if (pancakeConfigured) await inventoryService.assertAvailable(orderItems);

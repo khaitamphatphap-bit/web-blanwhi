@@ -13,7 +13,8 @@ export function CartDrawer({
   onClose,
   onQty,
   onCheckout,
-  onAddCombo
+  onAddCombo,
+  defaultShippingFee = 30000
 }: {
   open: boolean;
   items: CartItem[];
@@ -21,9 +22,10 @@ export function CartDrawer({
   onQty: (index: number, delta: number) => void;
   onCheckout: () => void;
   onAddCombo: (combo: Combo) => void;
+  defaultShippingFee?: number;
 }) {
   if (!open) return null;
-  const totals = checkoutTotals(items);
+  const totals = checkoutTotals(items, defaultShippingFee);
   return (
     <motion.div className="fixed inset-0 z-50 bg-black/30" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <motion.aside initial={{ x: "100%" }} animate={{ x: 0 }} transition={{ type: "spring", damping: 32, stiffness: 260 }} className="ml-auto flex h-full w-full max-w-xl flex-col bg-[#f8f8f7]">

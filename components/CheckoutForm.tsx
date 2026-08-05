@@ -15,8 +15,8 @@ const paymentMethods = [
   { value: "bank_transfer", label: "Chuyển khoản" }
 ] as const;
 
-export function CheckoutForm({ items, onAddCombo }: { items: CartItem[]; onAddCombo: (combo: Combo) => void }) {
-  const totals = checkoutTotals(items);
+export function CheckoutForm({ items, onAddCombo, defaultShippingFee = 30000 }: { items: CartItem[]; onAddCombo: (combo: Combo) => void; defaultShippingFee?: number }) {
+  const totals = checkoutTotals(items, defaultShippingFee);
   const [paymentMethod, setPaymentMethod] = useState<(typeof paymentMethods)[number]["value"]>("cod");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");

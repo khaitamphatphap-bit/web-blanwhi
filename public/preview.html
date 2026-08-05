@@ -1154,6 +1154,7 @@
       let currentProductList = productData;
       let productRenderToken = 0;
       let siteContentSignature = "";
+      let defaultShippingFee = 30000;
       let siteContentLoading = false;
       const comboText = (kind) => {
         if (kind === "tee") return "Mua kèm quần hoặc 2 áo cùng tone: từ 2 sản phẩm giảm 5%, từ 3 sản phẩm giảm 10%.";
@@ -1797,6 +1798,9 @@
           const transferOption = document.querySelector('[data-payment-option="transfer"]');
           if (transferOption) transferOption.hidden = !bankReady;
         }
+        if (content.shipping) {
+          defaultShippingFee = Math.max(0, Math.floor(Number(content.shipping.defaultFee ?? 30000) || 0));
+        }
         if (Array.isArray(content.products)) {
           productData = content.products
             .filter((product) => product.active !== false)
@@ -2073,7 +2077,7 @@
         const express = selectedShippingMethod === "express";
         const shipping = express
           ? Math.max(0, Number(expressShippingQuote.fee || 50000))
-          : sub === 0 || sub >= 2000000 || voucher.freeship ? 0 : 30000;
+          : sub === 0 || sub >= 2000000 || voucher.freeship ? 0 : defaultShippingFee;
         return { sub, voucher, discount, shipping, shippingPending: false, shippingEstimated: express && expressShippingQuote.estimated, total: Math.max(sub - discount + shipping, 0) };
       };
       const bankOptions = [
