@@ -391,7 +391,11 @@
       .order-cancel { min-height: 40px; border: 1px solid #d43d32; background: #fff; color: #b42318; padding: 0 16px; font: inherit; font-size: 12px; font-weight: 700; text-transform: uppercase; cursor: pointer; }
       .order-cancel:hover { background: #fff3f2; }
       .order-cancel:disabled { cursor: wait; opacity: .55; }
+      .order-pay { min-height: 40px; border: 1px solid #111; background: #111; color: #fff; padding: 0 16px; font: inherit; font-size: 12px; font-weight: 800; text-transform: uppercase; cursor: pointer; }
+      .order-pay:hover { background: #333; }
+      .order-pay:disabled { cursor: wait; opacity: .55; }
       .order-cancelled-note { margin: 0; border: 1px solid #86b994; background: #f1faf3; color: #176b35; padding: 10px 12px; font-size: 12px; font-weight: 700; }
+      .order-payment-note { margin: 0; border: 1px solid #d9d9d9; background: #fafafa; color: #222; padding: 10px 12px; font-size: 12px; font-weight: 700; }
       .status-track { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
       .status-step { border-top: 2px solid #ddd; padding-top: 7px; font-size: 11px; color: #888; }
       .status-step.active { border-color: #000; color: #000; font-weight: 600; }
@@ -2086,6 +2090,16 @@
         unknown: "Đang cập nhật"
       };
       const customerPancakeLabels = { pending_confirmation: "Chờ xác nhận", confirmed: "Đã xác nhận", packing: "Đóng gói", shipping: "Đang giao", completed: "Hoàn thành", cancelled: "Hủy", returned: "Hoàn hàng" };
+      const onlineCustomerPayments = new Set(["bank_transfer", "vnpay", "onepay", "alepay", "momo", "zalopay"]);
+      const paymentMethodLabels = {
+        cod: "COD - thanh toán khi nhận hàng",
+        bank_transfer: "Chuyển khoản ngân hàng",
+        vnpay: "VNPAY",
+        onepay: "OnePay",
+        alepay: "AlePay",
+        momo: "MoMo",
+        zalopay: "ZaloPay"
+      };
       const customerVouchers = [
         { code: "BLANWHI5", title: "Giảm 5%", description: "Giảm 5% cho sản phẩm bán lẻ.", min: 500000, rate: .05, freeship: false, label: "-5%" },
         { code: "BLANWHI10", title: "Giảm 10%", description: "Giảm 10% cho sản phẩm bán lẻ.", min: 1000000, rate: .1, freeship: false, label: "-10%" },
@@ -2736,6 +2750,38 @@
         return !["shipping", "completed", "cancelled", "returned"].includes(order.pancakeStatus || "");
       }
 
+      function isPaidOrder(order) {
+        return order.status === "Đã thanh toán" || order.rawStatus === "paid" || Boolean(order.transactionId);
+      }
+
+      function customerPaymentStatusLabel(order) {
+        if (order.paymentMethod === "cod") return "Thanh toán COD khi nhận hàng";
+        if (isPaidOrder(order)) return "Đã thanh toán";
+        if (order.status === "Thanh toán thất bại" || order.rawStatus === "failed") return "Thanh toán thất bại";
+        if (order.status === "Đơn hủy" || order.rawStatus === "cancelled" || order.shippingStatus === "cancelled") {
+          return order.refundStatus ? "Đã huỷ - đang xử lý hoàn tiền" : "Đơn đã huỷ";
+        }
+        if (order.paymentMethod === "bank_transfer") return "Chưa thanh toán - chờ chuyển khoản";
+        if (onlineCustomerPayments.has(order.paymentMethod)) return "Chưa thanh toán";
+        return "Đang cập nhật thanh toán";
+      }
+
+      function canCustomerPay(order) {
+        if (!onlineCustomerPayments.has(order.paymentMethod)) return false;
+        if (isPaidOrder(order)) return false;
+        if (["Đơn hủy", "Thanh toán thất bại"].includes(order.status)) return false;
+        if (["cancelled"].includes(order.shippingStatus || "")) return false;
+        return true;
+      }
+
+      function refundNotice(order) {
+        const wasPaid = order.refundStatus || order.refundAmount || order.transactionId || order.wasPaidBeforeCancel || order.statusBeforeCancel === "Đã thanh toán";
+        if (!(order.status === "Đơn hủy" || order.shippingStatus === "cancelled") || !wasPaid) return "";
+        if (order.refundStatus === "succeeded") return "Đơn đã thanh toán. Shop đã gửi yêu cầu hoàn tiền, tiền sẽ về tài khoản của khách trong vòng 12h.";
+        if (order.refundStatus === "failed") return order.refundMessage || "Đơn đã thanh toán nhưng hoàn tiền đang lỗi. Shop sẽ kiểm tra và xử lý trong vòng 12h.";
+        return "Đơn đã thanh toán. Tiền sẽ được hoàn về tài khoản của khách trong vòng 12h.";
+      }
+
       async function recoverCustomerOrder(order) {
         if (!/^BLW-\d{14}-[A-Z0-9]{5}$/.test(String(order.code || ""))) return false;
         if (["Đơn hủy", "Thanh toán thất bại"].includes(order.status)) return false;
@@ -2753,6 +2799,33 @@
         body: JSON.stringify({ phone, reason: "Khách yêu cầu hủy đơn" })
       });
 
+      const requestOrderPayment = (code, phone) => fetch("/api/payments/retry", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, phone })
+      });
+
+      async function payCustomerOrder(code, phone, button) {
+        button.disabled = true;
+        const originalLabel = button.textContent;
+        button.textContent = "Đang mở thanh toán...";
+        try {
+          let response = await requestOrderPayment(code, phone);
+          if (response.status === 404) {
+            const localOrder = loadOrders().find((order) => order.code === code);
+            if (localOrder && await recoverCustomerOrder(localOrder)) response = await requestOrderPayment(code, phone);
+          }
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.error || "Không thể mở thanh toán.");
+          if (result.redirectUrl) window.location.href = result.redirectUrl;
+          else throw new Error("Cổng thanh toán chưa trả link.");
+        } catch (error) {
+          alert(error.message || "Không thể mở thanh toán. Vui lòng thử lại.");
+          button.disabled = false;
+          button.textContent = originalLabel;
+        }
+      }
+
       async function cancelCustomerOrder(code, phone, button) {
         if (!confirm("Bạn chắc chắn muốn hủy đơn này? Số lượng mở bán sẽ được hoàn lại.")) return;
         button.disabled = true;
@@ -2768,10 +2841,14 @@
           if (!response.ok) throw new Error(result.error || "Không thể hủy đơn.");
           const nextOrders = loadOrders().map((order) => order.code === code ? {
             ...order,
+            ...(result.order || {}),
+            rawStatus: result.order?.status || "cancelled",
+            wasPaidBeforeCancel: isPaidOrder(order) || result.order?.refundStatus,
+            statusBeforeCancel: order.status,
             status: "Đơn hủy",
             trackingCode: "",
             shippingStatus: "cancelled",
-            shippingMessage: "Khách yêu cầu hủy đơn",
+            shippingMessage: result.order?.shippingMessage || "Khách yêu cầu hủy đơn",
             updatedAt: new Date().toLocaleString("vi-VN")
           } : order);
           saveOrders(nextOrders);
@@ -2811,7 +2888,15 @@
             changed = true;
             const merged = {
               ...order,
+              rawStatus: serverOrder.status || order.rawStatus,
               status: serverOrder.status === "paid" ? "Đã thanh toán" : serverOrder.status === "failed" ? "Thanh toán thất bại" : serverOrder.status === "cancelled" ? "Đơn hủy" : order.status === "Đơn hủy" ? "Đơn mới đặt" : order.status,
+              paymentMethod: serverOrder.paymentMethod || order.paymentMethod,
+              paymentProvider: serverOrder.paymentProvider || order.paymentProvider,
+              transactionId: serverOrder.transactionId || order.transactionId,
+              refundStatus: serverOrder.refundStatus || order.refundStatus,
+              refundMessage: serverOrder.refundMessage || order.refundMessage,
+              refundAmount: serverOrder.refundAmount ?? order.refundAmount,
+              refundedAt: serverOrder.refundedAt || order.refundedAt,
               shippingCarrier: serverOrder.shippingCarrier || order.shippingCarrier,
               trackingCode: Object.prototype.hasOwnProperty.call(serverOrder, "trackingCode") ? serverOrder.trackingCode : order.trackingCode,
               shippingStatus: serverOrder.shippingStatus || order.shippingStatus,
@@ -2855,12 +2940,14 @@
             ${order.deliveryTrackingUrl ? `<p><a href="${escapeMarkup(order.deliveryTrackingUrl)}" target="_blank" rel="noreferrer">Theo dõi giao hỏa tốc →</a></p>` : ""}
             ${order.note ? `<p class="muted">Ghi chú: ${escapeMarkup(order.note)}</p>` : ""}
             <div class="line"><span>Tổng tiền</span><strong>${formatMoney(order.total)}</strong></div>
+            <div class="line"><span>Hình thức thanh toán</span><strong>${paymentMethodLabels[order.paymentMethod] || order.paymentMethod || "Đang cập nhật"}</strong></div>
+            <p class="order-payment-note">${customerPaymentStatusLabel(order)}</p>
             <div class="status-track">
               ${["Đã đặt", "ĐVVC nhận đơn", "Đang giao", "Hoàn tất"].map((step, index) => `<div class="status-step ${index <= customerOrderStep(order) ? "active" : ""}">${step}</div>`).join("")}
             </div>
             <p class="muted">Cập nhật gần nhất: ${order.updatedAt}</p>
-            ${order.status === "Đơn hủy" || order.shippingStatus === "cancelled" ? `<p class="order-cancelled-note">Đơn hàng đã được hủy thành công.</p>` : ""}
-            ${canCustomerCancel(order) ? `<div class="order-actions"><button class="order-cancel" type="button" data-cancel-order="${escapeMarkup(order.code)}" data-order-phone="${escapeMarkup(order.customer.phone)}">Hủy đơn</button></div>` : ""}
+            ${order.status === "Đơn hủy" || order.shippingStatus === "cancelled" ? `<p class="order-cancelled-note">${escapeMarkup(refundNotice(order) || "Đơn hàng đã được hủy thành công.")}</p>` : ""}
+            ${(canCustomerPay(order) || canCustomerCancel(order)) ? `<div class="order-actions">${canCustomerPay(order) ? `<button class="order-pay" type="button" data-pay-order="${escapeMarkup(order.code)}" data-order-phone="${escapeMarkup(order.customer.phone)}">Thanh toán</button>` : ""}${canCustomerCancel(order) ? `<button class="order-cancel" type="button" data-cancel-order="${escapeMarkup(order.code)}" data-order-phone="${escapeMarkup(order.customer.phone)}">Hủy đơn</button>` : ""}</div>` : ""}
           </article>
         `).join("");
       }
@@ -3675,6 +3762,11 @@
       cartButton.addEventListener("click", openCart);
       document.getElementById("ordersLink").addEventListener("click", openOrders);
       orderList.addEventListener("click", (event) => {
+        const payButton = event.target.closest("[data-pay-order]");
+        if (payButton) {
+          payCustomerOrder(payButton.dataset.payOrder, payButton.dataset.orderPhone, payButton);
+          return;
+        }
         const button = event.target.closest("[data-cancel-order]");
         if (!button) return;
         cancelCustomerOrder(button.dataset.cancelOrder, button.dataset.orderPhone, button);
@@ -3766,6 +3858,7 @@
           code: `BLW-${Date.now().toString().slice(-6)}`,
           trackingCode: "",
           status: paymentMethod === "cod" || paymentMethod === "bank_transfer" ? "Đã đặt" : "Chờ thanh toán",
+          rawStatus: "pending",
           step: 0,
           paymentMethod,
           customer: {

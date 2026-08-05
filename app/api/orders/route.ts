@@ -25,6 +25,13 @@ export async function GET(request: Request) {
         .map((order) => ({
           code: order.code,
           status: order.status,
+          paymentMethod: order.paymentMethod,
+          paymentProvider: order.paymentProvider,
+          transactionId: order.transactionId,
+          refundStatus: order.refundStatus,
+          refundMessage: order.refundMessage,
+          refundAmount: order.refundAmount,
+          refundedAt: order.refundedAt,
           shippingCarrier: order.shippingCarrier,
           trackingCode: order.trackingCode,
           shippingStatus: order.shippingStatus,
