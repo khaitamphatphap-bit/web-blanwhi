@@ -97,7 +97,9 @@ async function refundZaloPayIfNeeded(
       refundTransactionId: result.m_refund_id,
       refundAmount: result.amount,
       refundMessage: message || (returnCode === 1 ? "ZaloPay refund success" : "ZaloPay refund processing"),
-      refundedAt: new Date().toISOString()
+      refundedAt: new Date().toISOString(),
+      transactionId: result.zp_trans_id,
+      providerOrderId: result.app_trans_id || order.providerOrderId
     };
   }
 

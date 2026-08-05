@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { jsonError } from "@/lib/api-errors";
 import { readIntegrationConfig } from "@/lib/integrations";
-import { findOrderByCode } from "@/lib/orders";
+import { findOrderByCode, updateOrder } from "@/lib/orders";
 import { createMomoPayment, createVnpayUrl, createZaloPayPayment, fallbackPaymentUrl } from "@/lib/payment";
 import type { PaymentMethod } from "@/lib/types";
 
@@ -50,6 +50,10 @@ export async function POST(request: Request) {
       if (!zalopay.order_url) {
         return NextResponse.json({ error: zalopay.return_message || "ZaloPay chưa trả link thanh toán." }, { status: 400 });
       }
+      await updateOrder(order.code, {
+        providerOrderId: zalopay.app_trans_id,
+        providerMessage: "ZaloPay payment link created"
+      });
       return NextResponse.json({
         redirectUrl: zalopay.order_url,
         token: zalopay.zp_trans_token || zalopay.order_token

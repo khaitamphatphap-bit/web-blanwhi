@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { readIntegrationConfig } from "@/lib/integrations";
 import { findOrderByCode, updateOrderStatus } from "@/lib/orders";
-import { verifyZaloPayRedirectParams } from "@/lib/payment";
+import { queryZaloPayPayment, verifyZaloPayRedirectParams } from "@/lib/payment";
 import { money } from "@/lib/pricing";
 import { BankTransferConfirm } from "./BankTransferConfirm";
 import { DemoPaymentActions } from "./DemoPaymentActions";
@@ -42,8 +42,10 @@ export default async function PaymentResultPage({ searchParams }: PageProps) {
     const verified = verifyZaloPayRedirectParams(toUrlSearchParams(params), integrations.payment);
     const amount = Number(valueOf(params.amount) ?? 0);
     if (verified.ok && amount === order.total) {
+      const query = await queryZaloPayPayment({ ...order, providerOrderId: zaloPayAppTransId || order.providerOrderId }, integrations.payment).catch(() => null);
       order = await updateOrderStatus(order.code, "paid", {
-        providerOrderId: zaloPayAppTransId || undefined,
+        transactionId: query?.zp_trans_id || order.transactionId,
+        providerOrderId: query?.app_trans_id || zaloPayAppTransId || order.providerOrderId,
         providerMessage: "ZaloPay redirect payment success"
       });
     }

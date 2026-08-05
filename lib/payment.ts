@@ -239,10 +239,11 @@ export async function createZaloPayPayment(order: ShopOrder, request: Request, p
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body
   });
-  return response.json() as Promise<{ order_url?: string; zp_trans_token?: string; order_token?: string; app_trans_id?: string; return_code?: number; return_message?: string; demo?: boolean }>;
+  const result = await response.json() as { order_url?: string; zp_trans_token?: string; order_token?: string; app_trans_id?: string; return_code?: number; return_message?: string; demo?: boolean };
+  return { ...result, app_trans_id: result.app_trans_id || appTransId };
 }
 
-function zaloPayProductionEndpoint(pathname: "create" | "refund" | "query_refund") {
+function zaloPayProductionEndpoint(pathname: "create" | "query" | "refund" | "query_refund") {
   return `https://openapi.zalopay.vn/v2/${pathname}`;
 }
 
@@ -256,13 +257,68 @@ function zaloPayDatePrefix(date = new Date()) {
   return `${String(date.getFullYear()).slice(-2)}${String(date.getMonth() + 1).padStart(2, "0")}${String(date.getDate()).padStart(2, "0")}`;
 }
 
+function zaloPayAppTransIdForOrder(order: ShopOrder) {
+  const saved = cleanSecret(order.providerOrderId);
+  if (saved.includes("_")) return saved;
+  const date = new Date(order.createdAt || Date.now());
+  return `${zaloPayDatePrefix(date)}_${order.code}`;
+}
+
+export async function queryZaloPayPayment(order: ShopOrder, paymentConfig?: PaymentConfig) {
+  const { appId, key1 } = getZaloPayCredentials(paymentConfig);
+  const appTransId = zaloPayAppTransIdForOrder(order);
+  if (!appId || !key1) throw new Error("Website chưa cấu hình đủ App ID hoặc Key 1 ZaloPay production để kiểm tra giao dịch.");
+  if (!appTransId) throw new Error("Đơn ZaloPay này chưa có app_trans_id để kiểm tra giao dịch.");
+
+  const data = `${appId}|${appTransId}|${key1}`;
+  const response = await fetch(zaloPayProductionEndpoint("query"), {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      app_id: appId,
+      app_trans_id: appTransId,
+      mac: hmacSha256Hex(data, key1)
+    })
+  });
+  const result = await response.json() as {
+    return_code?: number;
+    return_message?: string;
+    sub_return_code?: number;
+    sub_return_message?: string;
+    is_processing?: boolean;
+    amount?: number;
+    zp_trans_id?: string | number;
+    server_time?: number;
+  };
+  if (!response.ok) {
+    throw new Error(result.return_message || `ZaloPay query HTTP ${response.status}`);
+  }
+  return {
+    ...result,
+    app_trans_id: appTransId,
+    zp_trans_id: result.zp_trans_id ? String(result.zp_trans_id) : ""
+  };
+}
+
 export async function refundZaloPayPayment(order: ShopOrder, paymentConfig?: PaymentConfig, reason = "Huy don hang") {
   const { appId, key1 } = getZaloPayCredentials(paymentConfig);
-  const zpTransId = cleanSecret(order.transactionId);
   if (!appId || !key1) throw new Error("Website chưa cấu hình đủ App ID hoặc Key 1 ZaloPay production để hoàn tiền.");
-  if (!zpTransId) throw new Error("Đơn ZaloPay này chưa có mã giao dịch zp_trans_id nên chưa thể hoàn tiền tự động. Vui lòng đợi IPN ZaloPay cập nhật hoặc hoàn tiền thủ công trên ZaloPay Merchant.");
 
-  const amount = Math.max(0, Math.floor(Number(order.total) || 0));
+  let zpTransId = cleanSecret(order.transactionId);
+  let paidAmount = Math.max(0, Math.floor(Number(order.total) || 0));
+  let appTransId = cleanSecret(order.providerOrderId);
+  if (!zpTransId) {
+    const query = await queryZaloPayPayment(order, paymentConfig);
+    const returnCode = Number(query.return_code || 0);
+    if (returnCode !== 1 || !query.zp_trans_id) {
+      throw new Error(query.sub_return_message || query.return_message || "ZaloPay chưa xác nhận giao dịch đã thanh toán nên chưa thể hoàn tiền tự động.");
+    }
+    zpTransId = query.zp_trans_id;
+    paidAmount = Math.max(0, Math.floor(Number(query.amount || order.total) || 0));
+    appTransId = query.app_trans_id;
+  }
+
+  const amount = Math.max(0, Math.min(Math.floor(Number(order.total) || 0), paidAmount || Number(order.total) || 0));
   if (!amount) throw new Error("Số tiền hoàn ZaloPay không hợp lệ.");
 
   const timestamp = Date.now();
@@ -299,6 +355,7 @@ export async function refundZaloPayPayment(order: ShopOrder, paymentConfig?: Pay
     ...result,
     m_refund_id: mRefundId,
     amount,
+    app_trans_id: appTransId,
     zp_trans_id: zpTransId
   };
 }
