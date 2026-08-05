@@ -262,7 +262,7 @@ export const defaultSiteContent: SiteContent = {
   }))
 };
 
-export async function readSiteContent(): Promise<SiteContent> {
+async function loadSiteContent(): Promise<SiteContent> {
   const [saved, pancakeLinks] = await Promise.all([
     readJsonStore<Partial<SiteContent>>("site-content.json", defaultSiteContent),
     readKeyedJsonStore<PancakeLinkSnapshot>("pancake-links", {})
@@ -344,8 +344,28 @@ export async function readSiteContent(): Promise<SiteContent> {
   };
 }
 
+let siteContentCache: { expiresAt: number; value: SiteContent } | null = null;
+let siteContentRequest: Promise<SiteContent> | null = null;
+
+export async function readSiteContent(): Promise<SiteContent> {
+  if (siteContentCache && siteContentCache.expiresAt > Date.now()) return siteContentCache.value;
+  if (siteContentRequest) return siteContentRequest;
+
+  siteContentRequest = loadSiteContent();
+  try {
+    const value = await siteContentRequest;
+    siteContentCache = { expiresAt: Date.now() + 3_000, value };
+    return value;
+  } finally {
+    siteContentRequest = null;
+  }
+}
+
 export async function writeSiteContent(content: SiteContent) {
-  return writeJsonStore("site-content.json", content);
+  siteContentCache = null;
+  const saved = await writeJsonStore("site-content.json", content);
+  siteContentCache = null;
+  return saved;
 }
 
 export async function writePancakeProductLink(productId: string, rowKey: string, link: PancakeLinkSnapshot) {

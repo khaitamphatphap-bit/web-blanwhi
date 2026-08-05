@@ -328,7 +328,7 @@ export async function ensureJsonFile<T>(filename: string, fallback: T) {
   return file;
 }
 
-export async function readJsonStore<T>(filename: string, fallback: T): Promise<T> {
+async function readJsonStoreUncached<T>(filename: string, fallback: T): Promise<T> {
   if (hasDatabase()) {
     await ensureDatabaseSchema();
     const pool = await getPool();
@@ -393,6 +393,20 @@ export async function readJsonStore<T>(filename: string, fallback: T): Promise<T
   }
 }
 
+const jsonStoreReadRequests = new Map<string, Promise<unknown>>();
+
+export async function readJsonStore<T>(filename: string, fallback: T): Promise<T> {
+  const current = jsonStoreReadRequests.get(filename) as Promise<T> | undefined;
+  if (current) return current;
+
+  const request = readJsonStoreUncached(filename, fallback);
+  jsonStoreReadRequests.set(filename, request);
+  try {
+    return await request;
+  } finally {
+    if (jsonStoreReadRequests.get(filename) === request) jsonStoreReadRequests.delete(filename);
+  }
+}
 export async function readKeyedJsonStore<T>(namespace: string, fallback: Record<string, T> = {}) {
   if (hasDatabase()) {
     await ensureDatabaseSchema();
