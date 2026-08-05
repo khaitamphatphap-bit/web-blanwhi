@@ -115,12 +115,13 @@ async function readEncryptedR2JsonStore<T>(filename: string) {
 
 async function writeEncryptedR2JsonStore<T>(filename: string, value: T) {
   const pathname = encryptedR2Path(filename);
-  const previous = await readR2Text(pathname);
+  const [previous, encrypted] = await Promise.all([readR2Text(pathname), encryptJson(value)]);
+  const writes = [writeR2Text(pathname, encrypted)];
   if (previous !== null) {
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-    await writeR2Text("blanwhi/data/private-history/" + toStoreKey(filename) + "-" + timestamp + ".enc.json", previous);
+    writes.push(writeR2Text("blanwhi/data/private-history/" + toStoreKey(filename) + "-" + timestamp + ".enc.json", previous));
   }
-  await writeR2Text(pathname, await encryptJson(value));
+  await Promise.all(writes);
   return value;
 }
 
@@ -161,23 +162,27 @@ async function writeKeyedBlobIndex<T>(namespace: string, value: Record<string, T
 async function writeEncryptedBlobJsonStore<T>(filename: string, value: T) {
   const { get, put } = await import("@vercel/blob");
   const pathname = encryptedBlobPath(filename);
-  const previous = await get(pathname, { access: "public", useCache: false });
-  if (previous?.statusCode === 200) {
-    const previousText = await new Response(previous.stream).text();
-    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-    await put(`blanwhi/private-history/${toStoreKey(filename)}-${timestamp}.enc.json`, previousText, {
-      access: "public",
-      addRandomSuffix: true,
-      contentType: "application/json"
-    });
-  }
-  await put(pathname, await encryptJson(value), {
+  const [previous, encrypted] = await Promise.all([
+    get(pathname, { access: "public", useCache: false }),
+    encryptJson(value)
+  ]);
+  const writes = [put(pathname, encrypted, {
     access: "public",
     addRandomSuffix: false,
     allowOverwrite: true,
     cacheControlMaxAge: 60,
     contentType: "application/json"
-  });
+  })];
+  if (previous?.statusCode === 200) {
+    const previousText = await new Response(previous.stream).text();
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    writes.push(put(`blanwhi/private-history/${toStoreKey(filename)}-${timestamp}.enc.json`, previousText, {
+      access: "public",
+      addRandomSuffix: true,
+      contentType: "application/json"
+    }));
+  }
+  await Promise.all(writes);
   return value;
 }
 

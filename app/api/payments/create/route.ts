@@ -255,7 +255,7 @@ export async function POST(request: Request) {
       shipping: totals.shipping,
       shippingMethod: payload.shipping?.method || "Giao tiêu chuẩn",
       shippingFeeLabel: payload.shipping?.feeLabel,
-      shippingCarrier: "",
+      shippingCarrier: payload.shipping?.type === "express" ? "" : "SPX Express",
       trackingCode: "",
       shippingStatus: payload.shipping?.type === "express" ? "awaiting_creation" : "not_created",
       shippingMessage: payload.shipping?.type === "express" ? "Chờ tạo vận đơn hỏa tốc" : "",
