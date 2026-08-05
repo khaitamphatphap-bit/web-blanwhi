@@ -84,9 +84,20 @@ export const defaultIntegrationConfig: IntegrationConfig = {
   }
 };
 
+const productionZaloPayEndpoint = "https://openapi.zalopay.vn/v2/create";
+
+function normalizeZaloPayEndpoint(endpoint?: string) {
+  const value = (endpoint || "").trim();
+  if (!value || value.includes("sb-openapi.zalopay.vn") || value.toLowerCase().includes("sandbox")) {
+    return productionZaloPayEndpoint;
+  }
+  return value;
+}
+
 export async function readIntegrationConfig(): Promise<IntegrationConfig> {
   try {
     const saved = await readJsonStore<Partial<IntegrationConfig>>("integrations.json", defaultIntegrationConfig);
+    const zalopay = { ...defaultIntegrationConfig.payment.zalopay, ...saved.payment?.zalopay };
     return {
       pancake: { ...defaultIntegrationConfig.pancake },
       misa: { ...defaultIntegrationConfig.misa, ...saved.misa },
@@ -94,7 +105,7 @@ export async function readIntegrationConfig(): Promise<IntegrationConfig> {
       payment: {
         vnpay: { ...defaultIntegrationConfig.payment.vnpay, ...saved.payment?.vnpay },
         momo: { ...defaultIntegrationConfig.payment.momo, ...saved.payment?.momo },
-        zalopay: { ...defaultIntegrationConfig.payment.zalopay, ...saved.payment?.zalopay }
+        zalopay: { ...zalopay, endpoint: normalizeZaloPayEndpoint(zalopay.endpoint) }
       }
     };
   } catch {
@@ -103,6 +114,7 @@ export async function readIntegrationConfig(): Promise<IntegrationConfig> {
 }
 
 export async function writeIntegrationConfig(config: IntegrationConfig) {
+  const zalopay = { ...defaultIntegrationConfig.payment.zalopay, ...config.payment?.zalopay };
   const normalized: IntegrationConfig = {
     pancake: { ...defaultIntegrationConfig.pancake },
     misa: { ...defaultIntegrationConfig.misa, ...config.misa },
@@ -110,7 +122,7 @@ export async function writeIntegrationConfig(config: IntegrationConfig) {
     payment: {
       vnpay: { ...defaultIntegrationConfig.payment.vnpay, ...config.payment?.vnpay },
       momo: { ...defaultIntegrationConfig.payment.momo, ...config.payment?.momo },
-      zalopay: { ...defaultIntegrationConfig.payment.zalopay, ...config.payment?.zalopay }
+      zalopay: { ...zalopay, endpoint: normalizeZaloPayEndpoint(zalopay.endpoint) }
     }
   };
   return writeJsonStore("integrations.json", normalized);
