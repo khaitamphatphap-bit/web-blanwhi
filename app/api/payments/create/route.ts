@@ -306,7 +306,7 @@ export async function POST(request: Request) {
         }, { status: 400 });
       }
       const orderWithZaloPayId = await updateOrder(order.code, {
-        providerOrderId: zalopay.app_trans_id,
+        paymentProviderOrderId: zalopay.app_trans_id,
         providerMessage: "ZaloPay payment link created"
       }) || order;
       return json({

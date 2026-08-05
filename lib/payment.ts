@@ -258,7 +258,7 @@ function zaloPayDatePrefix(date = new Date()) {
 }
 
 function zaloPayAppTransIdForOrder(order: ShopOrder) {
-  const saved = cleanSecret(order.providerOrderId);
+  const saved = cleanSecret(order.paymentProviderOrderId || order.providerOrderId);
   if (saved.includes("_")) return saved;
   const date = new Date(order.createdAt || Date.now());
   return `${zaloPayDatePrefix(date)}_${order.code}`;
@@ -306,7 +306,7 @@ export async function refundZaloPayPayment(order: ShopOrder, paymentConfig?: Pay
 
   let zpTransId = cleanSecret(order.transactionId);
   let paidAmount = Math.max(0, Math.floor(Number(order.total) || 0));
-  let appTransId = cleanSecret(order.providerOrderId);
+  let appTransId = cleanSecret(order.paymentProviderOrderId || order.providerOrderId);
   if (!zpTransId) {
     const query = await queryZaloPayPayment(order, paymentConfig);
     const returnCode = Number(query.return_code || 0);

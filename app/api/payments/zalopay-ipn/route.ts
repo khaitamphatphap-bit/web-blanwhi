@@ -31,7 +31,7 @@ export async function POST(request: Request) {
 
     const paid = await markVerifiedPayment(orderCode, {
       transactionId: data.zp_trans_id ? String(data.zp_trans_id) : undefined,
-      providerOrderId: appTransId,
+      paymentProviderOrderId: appTransId,
       providerMessage: "ZaloPay payment success"
     });
     after(() => syncVerifiedOrderToPos(paid));

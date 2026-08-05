@@ -126,6 +126,8 @@ export type ShopOrder = {
   total: number;
   transactionId?: string;
   providerOrderId?: string;
+  paymentProviderOrderId?: string;
+  pancakeOrderId?: string;
   providerMessage?: string;
   refundStatus?: "not_required" | "pending" | "succeeded" | "failed";
   refundProvider?: string;

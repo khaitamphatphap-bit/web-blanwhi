@@ -43,7 +43,7 @@ export default async function PaymentResultPage({ searchParams }: PageProps) {
     const hasSignedRedirect = Boolean(valueOf(params.checksum));
     const redirectVerified = !hasSignedRedirect || verifyZaloPayRedirectParams(toUrlSearchParams(params), integrations.payment).ok;
     if (redirectVerified) {
-      order = await reconcileZaloPayPayment({ ...order, providerOrderId: zaloPayAppTransId || order.providerOrderId }, integrations.payment).catch(() => order);
+      order = await reconcileZaloPayPayment({ ...order, paymentProviderOrderId: zaloPayAppTransId || order.paymentProviderOrderId || order.providerOrderId }, integrations.payment).catch(() => order);
     }
   }
 

@@ -56,7 +56,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: zalopay.return_message || "ZaloPay chưa trả link thanh toán." }, { status: 400 });
       }
       await updateOrder(order.code, {
-        providerOrderId: zalopay.app_trans_id,
+        paymentProviderOrderId: zalopay.app_trans_id,
         providerMessage: "ZaloPay payment link created"
       });
       return NextResponse.json({

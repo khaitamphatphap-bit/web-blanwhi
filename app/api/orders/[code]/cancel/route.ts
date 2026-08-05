@@ -31,7 +31,7 @@ export async function POST(request: Request, { params }: Params) {
     if (order.status === "cancelled") return NextResponse.json({ ok: true, order });
     const wasPaid = order.status === "paid";
     const orderSync = new OrderSyncService();
-    let current = order.providerOrderId || order.pancakeStatus ? await orderSync.reconcileExisting(order) : order;
+    let current = order.pancakeOrderId || order.pancakeStatus || order.status === "paid" ? await orderSync.reconcileExisting(order) : order;
     const config = await readIntegrationConfig();
     const canUseDirectVtp = config.shipping.enabled && config.shipping.provider === "viettelpost" && Boolean(config.shipping.token);
     if (current.trackingCode && canUseDirectVtp) {
@@ -54,7 +54,7 @@ export async function POST(request: Request, { params }: Params) {
     if (current.trackingCode && canUseDirectVtp && current.shippingStatus !== "cancelled") {
       await cancelShippingOrder(config.shipping, current, reason);
     }
-    if (current.providerOrderId && current.pancakeStatus && current.pancakeStatus !== "cancelled") current = await orderSync.cancel(current);
+    if ((current.pancakeOrderId || (current.providerOrderId && current.pancakeStatus)) && current.pancakeStatus !== "cancelled") current = await orderSync.cancel(current);
 
     if (current.inventoryReservationApplied && !current.inventoryReservationReleased) {
       await new InventoryService().reserve(current.items, "restore");

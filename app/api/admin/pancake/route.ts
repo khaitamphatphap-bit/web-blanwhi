@@ -76,7 +76,7 @@ export async function POST(request: Request) {
       if (order.status !== "cancelled") {
         return NextResponse.json({ error: "Chỉ được đối chiếu hủy đơn khách đã hủy trên website." }, { status: 409 });
       }
-      const linked = await updateOrder(order.code, { providerOrderId: String(body.providerOrderId).trim() });
+      const linked = await updateOrder(order.code, { pancakeOrderId: String(body.providerOrderId).trim() });
       if (!linked) return NextResponse.json({ error: "Không thể lưu ID đơn Pancake." }, { status: 500 });
       const result = await new OrderSyncService().cancel(linked, false);
       return NextResponse.json({ ok: true, result });

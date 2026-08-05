@@ -34,7 +34,7 @@ const paymentMethods = new Set<PaymentMethod>(["cod", "bank_transfer", "vnpay", 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => ({})) as LocalOrder;
   const code = String(body.code || "").trim().toUpperCase();
-  if (!/^BLW-\d{14}-[A-Z0-9]{5}$/.test(code)) return NextResponse.json({ error: "Mã đơn cũ không hợp lệ." }, { status: 400 });
+  if (!/^BLW-(?:\d{14}-[A-Z0-9]{5}|\d{12}-[A-Z0-9]{4})$/.test(code)) return NextResponse.json({ error: "Mã đơn cũ không hợp lệ." }, { status: 400 });
   const existing = await findOrderByCode(code);
   if (existing) return NextResponse.json({ ok: true, order: existing, recovered: false });
 

@@ -31,7 +31,7 @@ export async function GET(request: Request) {
       && order.status === "paid"
       && !["delivered", "returned", "cancelled"].includes(order.shippingStatus || ""));
     const sync = new OrderSyncService();
-    await Promise.allSettled(paidRequested.map((order) => sync.reconcileExisting(order)));
+    await Promise.allSettled(paidRequested.map((order) => sync.create(order)));
     const refreshedOrders = await readOrders();
     return NextResponse.json({
       orders: refreshedOrders
@@ -64,5 +64,14 @@ export async function GET(request: Request) {
     });
   }
 
-  return NextResponse.json({ orders });
+  const paidOrdersNeedingPos = orders
+    .filter((order) => order.status === "paid" && !order.pancakeOrderId && !order.pancakeStatus)
+    .slice(0, 20);
+  if (paidOrdersNeedingPos.length) {
+    const sync = new OrderSyncService();
+    await Promise.allSettled(paidOrdersNeedingPos.map((order) => sync.create(order)));
+    return NextResponse.json({ orders: await readOrders() }, { headers: { "Cache-Control": "no-store, max-age=0" } });
+  }
+
+  return NextResponse.json({ orders }, { headers: { "Cache-Control": "no-store, max-age=0" } });
 }

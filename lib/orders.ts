@@ -23,7 +23,7 @@ export async function findOrderByCode(code: string) {
 export async function updateOrderStatus(
   code: string,
   status: OrderStatus,
-  patch: Partial<Pick<ShopOrder, "transactionId" | "providerOrderId" | "providerMessage">> = {}
+  patch: Partial<Pick<ShopOrder, "transactionId" | "providerOrderId" | "paymentProviderOrderId" | "providerMessage">> = {}
 ): Promise<ShopOrder | null> {
   const orders = await readOrders();
   let updated: ShopOrder | null = null;
@@ -62,7 +62,7 @@ export async function updateOrder(code: string, patch: Partial<ShopOrder>): Prom
 }
 
 export function newOrderCode() {
-  const stamp = new Date().toISOString().replace(/\D/g, "").slice(0, 14);
-  const tail = Math.random().toString(36).slice(2, 7).toUpperCase();
+  const stamp = new Date().toISOString().replace(/\D/g, "").slice(2, 14);
+  const tail = Math.random().toString(36).slice(2, 6).toUpperCase().padEnd(4, "0");
   return `BLW-${stamp}-${tail}`;
 }

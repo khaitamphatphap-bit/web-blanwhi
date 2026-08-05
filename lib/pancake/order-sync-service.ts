@@ -14,6 +14,10 @@ function externalId(payload: Record<string, unknown>) {
   return String(order.id || order._id || order.order_id || order.display_id || "");
 }
 
+function pancakeOrderId(order: ShopOrder) {
+  return order.pancakeOrderId || (order.pancakeStatus ? order.providerOrderId || "" : "");
+}
+
 function remoteRecords(payload: unknown): Record<string, unknown>[] {
   if (Array.isArray(payload)) return payload.filter((item): item is Record<string, unknown> => Boolean(item && typeof item === "object"));
   if (!payload || typeof payload !== "object") return [];
@@ -86,7 +90,7 @@ export class OrderSyncService {
       await new InventoryService().reserve(order.items, "restore");
     }
     const updated = await updateOrder(order.code, {
-      providerOrderId: existingId || order.providerOrderId,
+      pancakeOrderId: existingId || pancakeOrderId(order),
       ...(mapped.status === "cancelled" && order.status !== "cancelled" ? { status: "cancelled" as const } : {}),
       ...(mapped.shippingStatus && order.deliveryType !== "express" ? { shippingStatus: mapped.shippingStatus } : {}),
       ...(mapped.pancakeStatus ? { pancakeStatus: mapped.pancakeStatus } : {}),
@@ -101,7 +105,8 @@ export class OrderSyncService {
   async create(order: ShopOrder, enqueueOnFailure = true) {
     const latest = await findOrderByCode(order.code);
     if (latest?.status === "cancelled") return latest;
-    if ((latest || order).status !== "paid" && !((latest || order).paymentMethod === "cod" && (latest || order).status === "pending")) {
+    const current = latest || order;
+    if (current.status !== "paid" && !(current.paymentMethod === "cod" && current.status === "pending")) {
       return await updateOrder(order.code, {
         externalSync: {
           ...(latest || order).externalSync,
@@ -110,38 +115,38 @@ export class OrderSyncService {
         }
       }) || latest || order;
     }
-    if (order.providerOrderId || order.externalSync?.pancake?.startsWith("Đã tạo")) return order;
+    if (pancakeOrderId(current) || current.externalSync?.pancake?.startsWith("Đã tạo")) return current;
     try {
-      const existing = enqueueOnFailure ? null : await this.pancake.findOrder(order.code, order.customer.phone);
+      const existing = await this.pancake.findOrder(current.code, current.customer.phone);
       if (existing) {
-        return this.reconcileExisting(order);
+        return this.reconcileExisting(current);
       }
-      const response = await this.pancake.createOrder(order);
-      const providerOrderId = externalId(response);
+      const response = await this.pancake.createOrder(current);
+      const createdPancakeOrderId = externalId(response);
       const updated = await updateOrder(order.code, {
-        providerOrderId: providerOrderId || order.providerOrderId,
+        pancakeOrderId: createdPancakeOrderId || pancakeOrderId(current),
         pancakeStatus: "packing",
-        ...(order.deliveryType === "express" ? { shippingStatus: "awaiting_creation" as const, shippingCarrier: "", trackingCode: "", shippingMessage: "Chờ tạo vận đơn hỏa tốc" } : shippingUpdate(response)),
+        ...(current.deliveryType === "express" ? { shippingStatus: "awaiting_creation" as const, shippingCarrier: "", trackingCode: "", shippingMessage: "Chờ tạo vận đơn hỏa tốc" } : shippingUpdate(response)),
         externalSync: {
-          ...order.externalSync,
-          pancake: `Đã tạo${providerOrderId ? ` #${providerOrderId}` : ""}`,
+          ...current.externalSync,
+          pancake: `Đã tạo${createdPancakeOrderId ? ` #${createdPancakeOrderId}` : ""}`,
           lastSyncedAt: new Date().toISOString()
         }
       });
       await PancakeLogger.write("info", "order.create", "Đã tạo đơn trên Pancake.", order.code);
-      return updated || order;
+      return updated || current;
     } catch (error) {
       const message = ExceptionHandler.message(error);
       if (/trùng|duplicate/i.test(message)) {
         try {
-          const reconciled = await this.reconcileExisting(order);
-          if (reconciled.providerOrderId) return reconciled;
+          const reconciled = await this.reconcileExisting(current);
+          if (pancakeOrderId(reconciled)) return reconciled;
         } catch {
           // Tiếp tục ghi nhận lỗi gốc và đưa vào hàng đợi.
         }
       }
       await PancakeLogger.write("error", "order.create", message, order.code);
-      await updateOrder(order.code, { externalSync: { ...order.externalSync, pancake: `Chờ gửi lại: ${message}`, lastSyncedAt: new Date().toISOString() } });
+      await updateOrder(current.code, { externalSync: { ...current.externalSync, pancake: `Chờ gửi lại: ${message}`, lastSyncedAt: new Date().toISOString() } });
       if (enqueueOnFailure) {
         try { await QueueHandler.enqueue("order.create", { orderCode: order.code }); } catch { /* Lỗi hàng đợi không che mất lỗi Pancake gốc. */ }
       }
@@ -150,9 +155,10 @@ export class OrderSyncService {
   }
 
   async cancel(order: ShopOrder, enqueueOnFailure = true) {
-    if (!order.providerOrderId) return order;
+    const remoteOrderId = pancakeOrderId(order);
+    if (!remoteOrderId) return order;
     try {
-      await this.pancake.cancelOrder(order.providerOrderId);
+      await this.pancake.cancelOrder(remoteOrderId);
       const updated = await updateOrder(order.code, {
         pancakeStatus: "cancelled",
         externalSync: { ...order.externalSync, pancake: "Đã hủy trên Pancake", lastSyncedAt: new Date().toISOString() }

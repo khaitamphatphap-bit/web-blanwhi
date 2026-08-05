@@ -4,7 +4,7 @@ import { queryZaloPayPayment, queryZaloPayRefund } from "@/lib/payment";
 import type { IntegrationConfig } from "@/lib/integrations";
 import type { ShopOrder } from "@/lib/types";
 
-type VerifiedPayment = Partial<Pick<ShopOrder, "transactionId" | "providerOrderId" | "providerMessage">>;
+type VerifiedPayment = Partial<Pick<ShopOrder, "transactionId" | "providerOrderId" | "paymentProviderOrderId" | "providerMessage">>;
 
 export async function markVerifiedPayment(orderCode: string, payment: VerifiedPayment) {
   const current = await findOrderByCode(orderCode);
@@ -42,7 +42,7 @@ export async function reconcileZaloPayPayment(order: ShopOrder, paymentConfig: I
 
   const paid = await markVerifiedPayment(order.code, {
     transactionId: result.zp_trans_id,
-    providerOrderId: result.app_trans_id,
+    paymentProviderOrderId: result.app_trans_id,
     providerMessage: "ZaloPay verified payment success"
   });
   return syncVerifiedOrderToPos(paid);

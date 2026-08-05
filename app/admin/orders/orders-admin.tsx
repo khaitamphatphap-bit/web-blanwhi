@@ -23,7 +23,7 @@ const orderStages: Array<{ value: OrderStage; label: string }> = [
   { value: "shipping", label: "Đang giao hàng" },
   { value: "delivered", label: "Đã giao cho khách" },
   { value: "payment_pending", label: "Chờ thanh toán" },
-  { value: "paid", label: "Đã thanh toán" },
+  { value: "paid", label: "Chờ giao hàng" },
   { value: "delivery_failed", label: "Giao hàng thất bại" },
   { value: "returning", label: "Đang hoàn về" },
   { value: "cancelled", label: "Đơn hủy" }
@@ -76,7 +76,7 @@ const shippingLabels: Record<ShippingStatus, string> = {
   cancelled: "Đơn hủy",
   unknown: "Không rõ"
 };
-const pancakeStatusLabels: Record<NonNullable<ShopOrder["pancakeStatus"]>, string> = { pending_confirmation: "Chờ xác nhận", confirmed: "Đã xác nhận", packing: "Đóng gói", shipping: "Đang giao", completed: "Hoàn thành", cancelled: "Hủy", returned: "Hoàn hàng" };
+const pancakeStatusLabels: Record<NonNullable<ShopOrder["pancakeStatus"]>, string> = { pending_confirmation: "Chờ xác nhận", confirmed: "Đã xác nhận", packing: "Chờ in", shipping: "Đang giao", completed: "Hoàn thành", cancelled: "Hủy", returned: "Hoàn hàng" };
 
 const stageOrder = orderStages.reduce<Record<OrderStage, number>>((map, stage, index) => {
   map[stage.value] = index;
@@ -548,7 +548,7 @@ function orderStageNote(order: ShopOrder) {
   if (stage === "delivery_failed") return "Đơn vị vận chuyển báo giao không thành công.";
   if (stage === "handed_to_carrier") return "Shop đã bàn giao đơn cho đơn vị vận chuyển.";
   if (stage === "payment_pending") return "Khách chưa hoàn tất thanh toán online.";
-  if (stage === "paid") return "Đơn đã nhận tiền, chưa giao cho vận chuyển.";
+  if (stage === "paid") return "Đơn đã nhận tiền, đang chờ in và giao hàng.";
   return "Đơn vừa được tạo, chờ shop xử lý.";
 }
 
