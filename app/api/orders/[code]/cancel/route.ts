@@ -7,6 +7,7 @@ import { cancelShippingOrder, fetchShippingStatus } from "@/lib/shipping-provide
 import { jsonError } from "@/lib/api-errors";
 import { OrderService } from "@/lib/services/order-service";
 import { refundZaloPayPayment } from "@/lib/payment";
+import { reconcileZaloPayPayment } from "@/lib/payment-confirmation";
 
 type Params = { params: Promise<{ code: string }> };
 
@@ -29,10 +30,18 @@ export async function POST(request: Request, { params }: Params) {
       return NextResponse.json({ error: "Số điện thoại không khớp với đơn hàng." }, { status: 403 });
     }
     if (order.status === "cancelled") return NextResponse.json({ ok: true, order });
-    const wasPaid = order.status === "paid";
-    const orderSync = new OrderSyncService();
-    let current = order.pancakeOrderId || order.pancakeStatus || order.status === "paid" ? await orderSync.reconcileExisting(order) : order;
     const config = await readIntegrationConfig();
+    let current = order;
+    if (current.status === "pending" && current.paymentMethod === "zalopay") {
+      try {
+        current = await reconcileZaloPayPayment(current, config.payment);
+      } catch {
+        // Không coi lỗi truy vấn hoặc giao dịch chưa thanh toán là một khoản cần hoàn tiền.
+      }
+    }
+    const wasPaid = current.status === "paid";
+    const orderSync = new OrderSyncService();
+    current = current.pancakeOrderId || current.pancakeStatus || wasPaid ? await orderSync.reconcileExisting(current) : current;
     const canUseDirectVtp = config.shipping.enabled && config.shipping.provider === "viettelpost" && Boolean(config.shipping.token);
     if (current.trackingCode && canUseDirectVtp) {
       const latestShipping = await fetchShippingStatus(config.shipping, current);
@@ -71,7 +80,14 @@ export async function POST(request: Request, { params }: Params) {
         refundProvider: current.paymentMethod,
         refundAmount: current.total,
         refundMessage: "Đã hủy đơn, đang gửi yêu cầu hoàn tiền."
-      } : { refundStatus: "not_required" as const })
+      } : {
+        refundStatus: "not_required" as const,
+        refundProvider: undefined,
+        refundId: undefined,
+        refundTransactionId: undefined,
+        refundAmount: undefined,
+        refundMessage: ""
+      })
     });
     if (wasPaid && current.paymentMethod === "zalopay" && cancelled) {
       try {

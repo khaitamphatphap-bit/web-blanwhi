@@ -2761,6 +2761,10 @@
         return order.status === "Đã thanh toán" || order.rawStatus === "paid" || Boolean(order.transactionId);
       }
 
+
+      function hasRefundProcess(order) {
+        return ["pending", "succeeded", "failed"].includes(order.refundStatus || "") || Number(order.refundAmount || 0) > 0;
+      }
       function customerPaymentStatusLabel(order) {
         if (order.paymentMethod === "cod") return "Thanh toán COD khi nhận hàng";
         if (isPaidOrder(order)) return "Đã thanh toán";
@@ -2784,7 +2788,7 @@
       }
 
       function refundNotice(order) {
-        const wasPaid = order.refundStatus || order.refundAmount || order.transactionId || order.wasPaidBeforeCancel || order.statusBeforeCancel === "Đã thanh toán";
+        const wasPaid = hasRefundProcess(order) || Boolean(order.transactionId) || order.wasPaidBeforeCancel || order.statusBeforeCancel === "Đã thanh toán";
         if (!(order.status === "Đơn hủy" || order.shippingStatus === "cancelled") || !wasPaid) return "";
         if (order.refundStatus === "succeeded") return "Đơn đã hủy và tiền đã được hoàn thành công.";
         if (order.refundStatus === "failed") return `Đơn đã hủy nhưng hoàn tiền chưa thành công. ${order.refundMessage || "Vui lòng liên hệ Zalo 0866561480 để được hỗ trợ."}`;
@@ -2850,7 +2854,7 @@
           if (!response.ok) throw new Error(result.error || "Không thể hủy đơn.");
           const previousOrders = loadOrders();
           const previousOrder = previousOrders.find((order) => order.code === code);
-          const paidBeforeCancel = isPaidOrder(previousOrder || {}) || Boolean(result.order?.transactionId || result.order?.refundStatus);
+          const paidBeforeCancel = isPaidOrder(previousOrder || {}) || Boolean(result.order?.transactionId) || hasRefundProcess(result.order || {});
           const nextOrders = previousOrders.map((order) => order.code === code ? {
             ...order,
             ...(result.order || {}),
