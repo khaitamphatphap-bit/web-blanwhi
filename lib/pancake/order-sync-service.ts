@@ -59,11 +59,11 @@ function deepValue(payload: unknown, keys: string[], depth = 0): string {
 }
 
 function shippingUpdate(payload: unknown, includeReadyStatus = true) {
-  const trackingCode = deepValue(payload, ["order_number_vtp", "extend_code", "tracking_id", "tracking_code", "ORDER_NUMBER", "order_number"]);
+  const trackingCode = deepValue(payload, ["tracking_number", "waybill_no", "label_id", "extend_code", "tracking_id", "tracking_code", "ORDER_NUMBER", "order_number", "order_number_vtp"]);
   const carrier = deepValue(payload, ["partner_name", "shipping_partner", "carrier", "carrier_name"]);
-  const carrierLabel = /spx|shopee\s*express/i.test(carrier)
+  const carrierLabel = /spx|shopee\s*x?press|vtp|viettel/i.test(carrier)
     ? "SPX Express"
-    : /vtp|viettel/i.test(carrier) ? "Viettel Post" : (carrier || "đơn vị vận chuyển");
+    : (carrier || "đơn vị vận chuyển");
   return {
     ...(trackingCode ? { trackingCode } : {}),
     shippingCarrier: carrierLabel,
@@ -75,7 +75,7 @@ function shippingUpdate(payload: unknown, includeReadyStatus = true) {
 }
 
 function hasShippingDetails(payload: unknown) {
-  return Boolean(deepValue(payload, ["partner_name", "shipping_partner", "carrier", "carrier_name", "order_number_vtp", "extend_code", "tracking_id", "tracking_code", "order_number"]));
+  return Boolean(deepValue(payload, ["partner_name", "shipping_partner", "carrier", "carrier_name", "tracking_number", "waybill_no", "label_id", "extend_code", "tracking_id", "tracking_code", "order_number", "order_number_vtp"]));
 }
 
 export class OrderSyncService {
@@ -85,6 +85,19 @@ export class OrderSyncService {
     const existing = await this.pancake.findOrder(order.code, order.customer.phone);
     if (!existing) return order;
     const existingId = externalId(existing);
+    const existingCarrier = deepValue(existing, ["partner_name", "shipping_partner", "carrier", "carrier_name"]);
+    let spxAssigned = /spx|shopee\s*x?press/i.test(existingCarrier);
+    const mayChangeCarrier = !["shipping", "delivered", "delivery_failed", "returning", "returned", "cancelled"].includes(order.shippingStatus || "");
+    if (order.deliveryType !== "express" && existingId && mayChangeCarrier && !spxAssigned) {
+      try {
+        await this.pancake.assignSpxPartner(existingId);
+        spxAssigned = true;
+        await PancakeLogger.write("info", "order.shipping", "Đã chuyển đơn Pancake sang SPX Express.", order.code);
+      } catch (error) {
+        await PancakeLogger.write("error", "order.shipping", `Chưa chuyển được đơn Pancake sang SPX Express: ${ExceptionHandler.message(error)}`, order.code);
+        throw error;
+      }
+    }
     const targetPosOrderCode = shortOrderCode(order.code);
     const remoteOrderCode = value(existing, ["custom_id", "partner_order_id", "order_code", "code"])
       .replace(/^BLANWHI:/i, "")
@@ -111,7 +124,7 @@ export class OrderSyncService {
       ...(mapped.status === "cancelled" && order.status !== "cancelled" ? { status: "cancelled" as const } : {}),
       ...(mapped.shippingStatus && order.deliveryType !== "express" ? { shippingStatus: mapped.shippingStatus } : {}),
       ...(mapped.pancakeStatus ? { pancakeStatus: mapped.pancakeStatus } : {}),
-      ...(order.deliveryType !== "express" && hasShippingDetails(existing) ? shippingUpdate(existing, false) : {}),
+      ...(order.deliveryType !== "express" && spxAssigned ? { shippingCarrier: "SPX Express", shippingMessage: "Đã chuyển sang SPX Express, đang nhận mã vận đơn." } : order.deliveryType !== "express" && hasShippingDetails(existing) ? shippingUpdate(existing, false) : {}),
       inventoryReservationReleased: Boolean(order.inventoryReservationReleased || mapped.release),
       externalSync: { ...order.externalSync, pancake: `Đã tồn tại trên Pancake${existingId ? ` #${existingId}` : ""}`, lastSyncedAt: new Date().toISOString() }
     });

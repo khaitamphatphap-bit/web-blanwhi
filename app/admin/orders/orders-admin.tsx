@@ -37,18 +37,13 @@ const shippingProviders: Array<{ value: ShippingProvider; label: string; endpoin
     endpoint: "https://online-gateway.ghn.vn/shiip/public-api/v2/shipping-order/detail"
   },
   {
-    value: "viettelpost",
-    label: "ViettelPost",
-    endpoint: "https://partner.viettelpost.vn/v2/order/getOrderStatusByOrderNumber"
-  },
-  {
     value: "ghtk",
     label: "Giao Hàng Tiết Kiệm",
     endpoint: "https://services.giaohangtietkiem.vn/services/shipment/v2"
   },
   {
     value: "shopee_express",
-    label: "Shopee Express",
+    label: "SPX Express",
     endpoint: ""
   },
   {

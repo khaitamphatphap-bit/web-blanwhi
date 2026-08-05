@@ -89,11 +89,19 @@ export async function GET(request: Request) {
   const paidOrdersNeedingPos = orders
     .filter((order) => order.status === "paid" && !order.pancakeOrderId && !order.pancakeStatus)
     .slice(0, 20);
-  if (legacyLinkedOrders.length || paidOrdersNeedingPos.length) {
+  const standardOrdersNeedingSpx = orders
+    .filter((order) => order.deliveryType !== "express"
+      && !legacyLinkedOrders.some((legacy) => legacy.code === order.code)
+      && Boolean(order.pancakeOrderId || order.pancakeStatus)
+      && !/spx|shopee\s*x?press/i.test(order.shippingCarrier || "")
+      && !["shipping", "delivered", "delivery_failed", "returning", "returned", "cancelled"].includes(order.shippingStatus || ""))
+    .slice(0, 20);
+  if (legacyLinkedOrders.length || paidOrdersNeedingPos.length || standardOrdersNeedingSpx.length) {
     const sync = new OrderSyncService();
     await Promise.allSettled([
       ...legacyLinkedOrders.map((order) => sync.reconcileExisting(order)),
-      ...paidOrdersNeedingPos.map((order) => sync.create(order))
+      ...paidOrdersNeedingPos.map((order) => sync.create(order)),
+      ...standardOrdersNeedingSpx.map((order) => sync.reconcileExisting(order))
     ]);
     return NextResponse.json({ orders: await readOrders() }, { headers: { "Cache-Control": "no-store, max-age=0" } });
   }

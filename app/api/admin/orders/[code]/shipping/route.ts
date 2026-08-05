@@ -3,6 +3,7 @@ import { jsonError } from "@/lib/api-errors";
 import { readIntegrationConfig } from "@/lib/integrations";
 import { findOrderByCode, updateOrder } from "@/lib/orders";
 import { fetchShippingStatus } from "@/lib/shipping-providers";
+import { OrderSyncService } from "@/lib/pancake/order-sync-service";
 
 type Params = { params: Promise<{ code: string }> };
 
@@ -12,6 +13,14 @@ export async function POST(_request: Request, { params }: Params) {
   if (!order) return NextResponse.json({ error: "Không tìm thấy đơn hàng." }, { status: 404 });
 
   const config = await readIntegrationConfig();
+  if (config.shipping.provider === "shopee_express") {
+    try {
+      const updated = await new OrderSyncService().reconcileExisting(order);
+      return NextResponse.json({ order: updated });
+    } catch (error) {
+      return jsonError(error);
+    }
+  }
   if (!config.shipping.enabled) {
     return NextResponse.json({ error: "Chưa bật cập nhật API vận chuyển." }, { status: 400 });
   }

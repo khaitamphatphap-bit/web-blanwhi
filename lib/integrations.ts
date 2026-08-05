@@ -53,8 +53,8 @@ export const defaultIntegrationConfig: IntegrationConfig = {
   misa: { enabled: false, endpoint: "", inventoryEndpoint: "", token: "" },
   shipping: {
     enabled: false,
-    provider: "viettelpost",
-    providerName: "Viettel Post",
+    provider: "shopee_express",
+    providerName: "SPX Express",
     statusEndpoint: "",
     token: "",
     shopId: "",
@@ -94,6 +94,13 @@ function normalizeZaloPayEndpoint(endpoint?: string) {
   return value;
 }
 
+function normalizeShippingConfig(shipping?: Partial<IntegrationConfig["shipping"]>): IntegrationConfig["shipping"] {
+  const merged = { ...defaultIntegrationConfig.shipping, ...shipping };
+  if (merged.provider === "viettelpost") {
+    return { ...merged, provider: "shopee_express", providerName: "SPX Express", statusEndpoint: "", token: "" };
+  }
+  return merged.provider === "shopee_express" ? { ...merged, providerName: "SPX Express" } : merged;
+}
 export async function readIntegrationConfig(): Promise<IntegrationConfig> {
   try {
     const saved = await readJsonStore<Partial<IntegrationConfig>>("integrations.json", defaultIntegrationConfig);
@@ -101,7 +108,7 @@ export async function readIntegrationConfig(): Promise<IntegrationConfig> {
     return {
       pancake: { ...defaultIntegrationConfig.pancake },
       misa: { ...defaultIntegrationConfig.misa, ...saved.misa },
-      shipping: { ...defaultIntegrationConfig.shipping, ...saved.shipping },
+      shipping: normalizeShippingConfig(saved.shipping),
       payment: {
         vnpay: { ...defaultIntegrationConfig.payment.vnpay, ...saved.payment?.vnpay },
         momo: { ...defaultIntegrationConfig.payment.momo, ...saved.payment?.momo },
@@ -118,7 +125,7 @@ export async function writeIntegrationConfig(config: IntegrationConfig) {
   const normalized: IntegrationConfig = {
     pancake: { ...defaultIntegrationConfig.pancake },
     misa: { ...defaultIntegrationConfig.misa, ...config.misa },
-    shipping: { ...defaultIntegrationConfig.shipping, ...config.shipping },
+    shipping: normalizeShippingConfig(config.shipping),
     payment: {
       vnpay: { ...defaultIntegrationConfig.payment.vnpay, ...config.payment?.vnpay },
       momo: { ...defaultIntegrationConfig.payment.momo, ...config.payment?.momo },

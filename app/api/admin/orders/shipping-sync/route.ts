@@ -3,6 +3,7 @@ import { readIntegrationConfig } from "@/lib/integrations";
 import { readOrders, updateOrder } from "@/lib/orders";
 import { fetchShippingStatus } from "@/lib/shipping-providers";
 import { OrderService } from "@/lib/services/order-service";
+import { OrderSyncService } from "@/lib/pancake/order-sync-service";
 
 const finalShippingStatuses = new Set(["delivered", "returning", "returned", "cancelled"]);
 
@@ -16,6 +17,11 @@ async function syncShippingOrders() {
     try {
       if (order.deliveryType === "express") {
         const updated = await new OrderService().trackExpressDelivery(order.code);
+        results.push({ code: order.code, ok: true, status: updated.shippingStatus, message: updated.shippingMessage });
+        continue;
+      }
+      if (config.shipping.provider === "shopee_express") {
+        const updated = await new OrderSyncService().reconcileExisting(order);
         results.push({ code: order.code, ok: true, status: updated.shippingStatus, message: updated.shippingMessage });
         continue;
       }
@@ -34,7 +40,7 @@ async function syncShippingOrders() {
     }
   }
 
-  if (!config.shipping.enabled && !candidates.some((order) => order.deliveryType === "express")) {
+  if (!config.shipping.enabled && config.shipping.provider !== "shopee_express" && !candidates.some((order) => order.deliveryType === "express")) {
     return NextResponse.json({ error: "Chưa bật cập nhật API vận chuyển." }, { status: 400 });
   }
   return NextResponse.json({ checked: candidates.length, success: results.filter((result) => result.ok).length, failed: results.filter((result) => !result.ok).length, results }, { headers: { "Cache-Control": "no-store, max-age=0" } });

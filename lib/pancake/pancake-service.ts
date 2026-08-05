@@ -159,11 +159,10 @@ export class PancakeService {
       }
     });
     const path = `/shops/${encodeURIComponent(this.shopId())}/orders`;
-    const shippingPartner = order.deliveryType === "express" ? null : await this.viettelPostPartner().catch(() => {
-      const id = Number(process.env.PANCAKE_VTP_PARTNER_ID || 0);
-      const shopPartnerId = Number(process.env.PANCAKE_VTP_ACCOUNT_ID || 0);
-      return id > 0 ? { id, name: "VTP", ...(shopPartnerId > 0 ? { shopPartnerId } : {}) } : null;
-    });
+    const shippingPartner = order.deliveryType === "express" ? null : await this.spxPartner();
+    if (order.deliveryType !== "express" && !shippingPartner) {
+      throw new PancakeIntegrationError("Pancake POS chưa kết nối SPX Express. Vui lòng kết nối SPX trong mục Vận chuyển của Pancake rồi thử lại.", "SPX_PARTNER_NOT_CONFIGURED", 409);
+    }
     const payload = buildPancakeOrderPayload(order, this.shopId(), shippingPartner || undefined);
     return this.client.request<Record<string, unknown>>(path, { method: "POST", body: payload });
   }
@@ -177,7 +176,7 @@ export class PancakeService {
       const accounts = Array.isArray(partner.accounts)
         ? partner.accounts.filter((item): item is Record<string, unknown> => Boolean(item && typeof item === "object"))
         : [];
-      const preferredAccountId = String(process.env.PANCAKE_VTP_ACCOUNT_ID || "").trim();
+      const preferredAccountId = String(process.env.PANCAKE_SPX_ACCOUNT_ID || "").trim();
       const account = accounts.find((item) => text(item, ["id"]) === preferredAccountId) || accounts[0];
       return {
         id: Number(text(partner, ["id", "partner_id"])) || 0,
@@ -195,11 +194,29 @@ export class PancakeService {
     }
   }
 
-  async viettelPostPartner() {
+  async spxPartner() {
     const partners = await this.shippingPartners();
-    const configuredPartnerId = Number(process.env.PANCAKE_VTP_PARTNER_ID || 0);
+    const configuredPartnerId = Number(process.env.PANCAKE_SPX_PARTNER_ID || 0);
     return partners.find((partner) => configuredPartnerId > 0 && partner.id === configuredPartnerId)
-      || partners.find((partner) => /(^|\b)(vtp|viettel\s*post)(\b|$)/i.test(partner.name));
+      || partners.find((partner) => /(^|\b)(spx|shopee\s*x?press)(\b|$)/i.test(partner.name));
+  }
+
+  async assignSpxPartner(providerOrderId: string) {
+    const id = Validator.required(providerOrderId, "Pancake Order ID");
+    const partner = await this.spxPartner();
+    if (!partner) {
+      throw new PancakeIntegrationError("Pancake POS chưa kết nối SPX Express.", "SPX_PARTNER_NOT_CONFIGURED", 409);
+    }
+    return this.client.request<Record<string, unknown>>(`/shops/${encodeURIComponent(this.shopId())}/orders/${encodeURIComponent(id)}`, {
+      method: "PUT",
+      body: {
+        shop_partner_id: partner.shopPartnerId,
+        partner: {
+          partner_id: partner.id,
+          partner_name: partner.name
+        }
+      }
+    });
   }
 
   async provinces(): Promise<PancakeGeoItem[]> {

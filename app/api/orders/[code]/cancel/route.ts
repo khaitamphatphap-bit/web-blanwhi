@@ -3,7 +3,6 @@ import { findOrderByCode, updateOrder } from "@/lib/orders";
 import { InventoryService } from "@/lib/pancake/inventory-service";
 import { OrderSyncService } from "@/lib/pancake/order-sync-service";
 import { readIntegrationConfig } from "@/lib/integrations";
-import { cancelShippingOrder, fetchShippingStatus } from "@/lib/shipping-providers";
 import { jsonError } from "@/lib/api-errors";
 import { OrderService } from "@/lib/services/order-service";
 import { refundZaloPayPayment } from "@/lib/payment";
@@ -55,16 +54,6 @@ export async function POST(request: Request, { params }: Params) {
     const wasPaid = current.status === "paid";
     const orderSync = new OrderSyncService();
     current = current.pancakeOrderId || current.pancakeStatus || wasPaid ? await orderSync.reconcileExisting(current) : current;
-    const canUseDirectVtp = config.shipping.enabled && config.shipping.provider === "viettelpost" && Boolean(config.shipping.token);
-    if (current.trackingCode && canUseDirectVtp) {
-      const latestShipping = await fetchShippingStatus(config.shipping, current);
-      current = await updateOrder(code, {
-        trackingCode: latestShipping.trackingCode,
-        shippingCarrier: latestShipping.carrier,
-        shippingStatus: latestShipping.status,
-        shippingMessage: latestShipping.message
-      }) || current;
-    }
     if (carrierHasAccepted(current)) {
       return NextResponse.json({ error: "Đơn đã giao cho đơn vị vận chuyển hoặc đang giao hàng nên không thể hủy trực tuyến." }, { status: 409 });
     }
@@ -72,9 +61,6 @@ export async function POST(request: Request, { params }: Params) {
     const reason = body.reason?.trim() || "Khách yêu cầu hủy đơn";
     if (current.deliveryType === "express" && current.deliveryOrderId && current.shippingStatus !== "cancelled") {
       current = await new OrderService().cancelExpressDelivery(code, reason);
-    }
-    if (current.trackingCode && canUseDirectVtp && current.shippingStatus !== "cancelled") {
-      await cancelShippingOrder(config.shipping, current, reason);
     }
     if ((current.pancakeOrderId || (current.providerOrderId && current.pancakeStatus)) && current.pancakeStatus !== "cancelled") current = await orderSync.cancel(current);
 
