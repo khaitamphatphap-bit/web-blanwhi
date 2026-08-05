@@ -243,12 +243,29 @@ export async function createZaloPayPayment(order: ShopOrder, request: Request, p
 }
 
 export function verifyZaloPayBody(body: Record<string, unknown>, paymentConfig?: PaymentConfig) {
-  const key2 = paymentConfig?.zalopay.key2 || env("ZALOPAY_KEY2");
+  const key2 = cleanSecret(paymentConfig?.zalopay.key2) || cleanSecret(env("ZALOPAY_KEY2"));
   if (!key2) return { ok: false, reason: "Missing ZALOPAY_KEY2" };
   const data = String(body.data ?? "");
   const received = String(body.mac ?? "");
   const expected = hmacSha256Hex(data, key2);
   return { ok: expected === received, reason: expected === received ? "OK" : "Invalid signature" };
+}
+
+export function verifyZaloPayRedirectParams(params: URLSearchParams, paymentConfig?: PaymentConfig) {
+  const key2 = cleanSecret(paymentConfig?.zalopay.key2) || cleanSecret(env("ZALOPAY_KEY2"));
+  if (!key2) return { ok: false, reason: "Missing ZALOPAY_KEY2" };
+  const checksumData = [
+    params.get("appid") ?? "",
+    params.get("apptransid") ?? "",
+    params.get("pmcid") ?? "",
+    params.get("bankcode") ?? "",
+    params.get("amount") ?? "",
+    params.get("discountamount") ?? "",
+    params.get("status") ?? ""
+  ].join("|");
+  const received = params.get("checksum") ?? "";
+  const expected = hmacSha256Hex(checksumData, key2);
+  return { ok: expected === received, reason: expected === received ? "OK" : "Invalid ZaloPay redirect checksum" };
 }
 
 export function fallbackPaymentUrl(order: ShopOrder, method: PaymentMethod, request: Request) {

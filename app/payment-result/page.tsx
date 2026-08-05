@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { findOrderByCode } from "@/lib/orders";
+import { readIntegrationConfig } from "@/lib/integrations";
+import { findOrderByCode, updateOrderStatus } from "@/lib/orders";
+import { verifyZaloPayRedirectParams } from "@/lib/payment";
 import { money } from "@/lib/pricing";
 import { BankTransferConfirm } from "./BankTransferConfirm";
 import { DemoPaymentActions } from "./DemoPaymentActions";
@@ -12,16 +14,47 @@ function valueOf(input: string | string[] | undefined) {
   return Array.isArray(input) ? input[0] : input;
 }
 
+function orderCodeFromZaloPayAppTransId(appTransId: string) {
+  return appTransId.includes("_") ? appTransId.split("_").slice(1).join("_") : "";
+}
+
+function toUrlSearchParams(params: Record<string, string | string[] | undefined>) {
+  const searchParams = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    const text = valueOf(value);
+    if (text !== undefined) searchParams.set(key, text);
+  });
+  return searchParams;
+}
+
 export default async function PaymentResultPage({ searchParams }: PageProps) {
   const params = await searchParams;
-  const orderCode = valueOf(params.orderCode) || valueOf(params.vnp_TxnRef) || valueOf(params.orderId) || "";
+  const zaloPayAppTransId = valueOf(params.apptransid) || valueOf(params.app_trans_id) || "";
+  const orderCode = valueOf(params.orderCode) || valueOf(params.vnp_TxnRef) || valueOf(params.orderId) || orderCodeFromZaloPayAppTransId(zaloPayAppTransId) || "";
   const provider = valueOf(params.provider) || "payment";
   const demo = valueOf(params.demo) === "1";
   const bankConfirmed = valueOf(params.bankConfirmed) === "1";
-  const order = orderCode ? await findOrderByCode(orderCode) : null;
+  let order = orderCode ? await findOrderByCode(orderCode) : null;
+
+  const isZaloPayRedirect = provider === "zalopay" || Boolean(valueOf(params.apptransid));
+  if (isZaloPayRedirect && order && order.status === "pending" && valueOf(params.status) === "1") {
+    const integrations = await readIntegrationConfig();
+    const verified = verifyZaloPayRedirectParams(toUrlSearchParams(params), integrations.payment);
+    const amount = Number(valueOf(params.amount) ?? 0);
+    if (verified.ok && amount === order.total) {
+      order = await updateOrderStatus(order.code, "paid", {
+        providerOrderId: zaloPayAppTransId || undefined,
+        providerMessage: "ZaloPay redirect payment success"
+      });
+    }
+  }
+
   const success = order?.status === "paid";
   const failed = order?.status === "failed" || order?.status === "cancelled";
   const bankTransferPending = order?.paymentMethod === "bank_transfer" && order.status === "pending";
+  const successTitle = order?.paymentMethod === "bank_transfer"
+    ? "Đã nhận chuyển khoản thành công"
+    : "Chúc mừng bạn đã thanh toán thành công";
 
   return (
     <main className="mx-auto min-h-screen max-w-3xl bg-white px-6 py-12 md:my-16 md:px-12">
@@ -29,7 +62,7 @@ export default async function PaymentResultPage({ searchParams }: PageProps) {
       <section className="mt-10 border-y border-neutral-200 py-10">
         <p className="text-xs uppercase text-neutral-500">Payment result · {provider}</p>
         <h1 className="mt-3 text-4xl font-medium">
-          {success && order?.paymentMethod === "bank_transfer" ? "Đã nhận chuyển khoản thành công" : success ? "Thanh toán thành công" : failed ? "Thanh toán thất bại" : "Đơn hàng đang chờ thanh toán"}
+          {success ? successTitle : failed ? "Thanh toán thất bại" : "Đơn hàng đang chờ thanh toán"}
         </h1>
         <p className="mt-4 text-sm leading-6 text-neutral-500">
           Mã đơn: <strong className="text-black">{orderCode || "Không tìm thấy"}</strong>
@@ -50,7 +83,7 @@ export default async function PaymentResultPage({ searchParams }: PageProps) {
             <DemoPaymentActions orderCode={order.code} />
           </div>
         )}
-        {bankTransferPending && <BankTransferConfirm orderCode={order.code} />}
+        {bankTransferPending && order && <BankTransferConfirm orderCode={order.code} />}
         {bankConfirmed && success && (
           <div className="mt-6 border border-emerald-600 bg-emerald-50 p-4 text-sm text-emerald-800">
             Đơn hàng đã được cập nhật sang trạng thái đã thanh toán.
@@ -60,7 +93,6 @@ export default async function PaymentResultPage({ searchParams }: PageProps) {
       <div className="mt-8 flex flex-wrap gap-3">
         <Link href="/" className="inline-flex h-11 items-center border border-black px-5 text-sm uppercase">Về trang chủ</Link>
         {orderCode && <Link href={`/?orderCode=${orderCode}#orders`} className="inline-flex h-11 items-center border border-black px-5 text-sm uppercase">Xem trạng thái đơn</Link>}
-        <Link href="/admin/orders" className="inline-flex h-11 items-center bg-black px-5 text-sm uppercase text-white">Xem quản trị đơn</Link>
       </div>
     </main>
   );
