@@ -87,11 +87,15 @@ function demoPaymentsAllowed() {
   return process.env.NODE_ENV !== "production" || process.env.ENABLE_DEMO_PAYMENTS === "true";
 }
 
+function hasText(value?: string) {
+  return Boolean(value?.trim());
+}
+
 function paymentConfigError(method: PaymentMethod, paymentConfig: Awaited<ReturnType<typeof readIntegrationConfig>>["payment"]) {
-  if (demoPaymentsAllowed()) return "";
-  const hasVnpay = Boolean((paymentConfig.vnpay.tmnCode && paymentConfig.vnpay.hashSecret) || (process.env.VNPAY_TMN_CODE && process.env.VNPAY_HASH_SECRET));
-  const hasMomo = Boolean((paymentConfig.momo.partnerCode && paymentConfig.momo.accessKey && paymentConfig.momo.secretKey) || (process.env.MOMO_PARTNER_CODE && process.env.MOMO_ACCESS_KEY && process.env.MOMO_SECRET_KEY));
-  const hasZaloPay = Boolean((paymentConfig.zalopay.appId && paymentConfig.zalopay.key1 && paymentConfig.zalopay.key2) || (process.env.ZALOPAY_APP_ID && process.env.ZALOPAY_KEY1 && process.env.ZALOPAY_KEY2));
+  const hasVnpay = Boolean((hasText(paymentConfig.vnpay.tmnCode) && hasText(paymentConfig.vnpay.hashSecret)) || (hasText(process.env.VNPAY_TMN_CODE) && hasText(process.env.VNPAY_HASH_SECRET)));
+  const hasMomo = Boolean((hasText(paymentConfig.momo.partnerCode) && hasText(paymentConfig.momo.accessKey) && hasText(paymentConfig.momo.secretKey)) || (hasText(process.env.MOMO_PARTNER_CODE) && hasText(process.env.MOMO_ACCESS_KEY) && hasText(process.env.MOMO_SECRET_KEY)));
+  const hasZaloPay = Boolean((hasText(paymentConfig.zalopay.appId) && hasText(paymentConfig.zalopay.key1) && hasText(paymentConfig.zalopay.key2)) || (hasText(process.env.ZALOPAY_APP_ID) && hasText(process.env.ZALOPAY_KEY1) && hasText(process.env.ZALOPAY_KEY2)));
+  if (method !== "zalopay" && demoPaymentsAllowed()) return "";
   if (method === "vnpay" && !hasVnpay) {
     return "Website chưa cấu hình merchant VNPAY thật.";
   }
@@ -283,9 +287,15 @@ export async function POST(request: Request) {
 
     if (paymentMethod === "zalopay") {
       const zalopay = await createZaloPayPayment(order, request, integrations.payment);
+      if (!zalopay.order_url) {
+        return json({
+          error: zalopay.return_message || "ZaloPay chưa trả link thanh toán. Vui lòng kiểm tra App ID, Key 1, Key 2 production trong trang admin.",
+          order
+        }, { status: 400 });
+      }
       return json({
         order,
-        redirectUrl: zalopay.order_url || fallbackPaymentUrl(order, paymentMethod, request),
+        redirectUrl: zalopay.order_url,
         token: zalopay.zp_trans_token || zalopay.order_token,
         demo: "demo" in zalopay ? zalopay.demo : false,
         message: zalopay.return_message

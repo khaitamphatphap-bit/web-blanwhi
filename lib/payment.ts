@@ -9,6 +9,10 @@ function env(name: string, fallback = "") {
   return process.env[name] || fallback;
 }
 
+function cleanSecret(value?: string) {
+  return (value || "").trim();
+}
+
 function formatVnpDate(date: Date) {
   const pad = (value: number) => String(value).padStart(2, "0");
   return [
@@ -182,12 +186,12 @@ export function verifyMomoBody(body: Record<string, unknown>, paymentConfig?: Pa
 }
 
 export async function createZaloPayPayment(order: ShopOrder, request: Request, paymentConfig?: PaymentConfig) {
-  const configuredEndpoint = paymentConfig?.zalopay.endpoint || env("ZALOPAY_ENDPOINT", "https://openapi.zalopay.vn/v2/create");
+  const configuredEndpoint = cleanSecret(paymentConfig?.zalopay.endpoint) || cleanSecret(env("ZALOPAY_ENDPOINT", "https://openapi.zalopay.vn/v2/create"));
   const endpoint = configuredEndpoint.includes("sb-openapi.zalopay.vn") || configuredEndpoint.toLowerCase().includes("sandbox")
     ? "https://openapi.zalopay.vn/v2/create"
     : configuredEndpoint;
-  const appId = paymentConfig?.zalopay.appId || env("ZALOPAY_APP_ID");
-  const key1 = paymentConfig?.zalopay.key1 || env("ZALOPAY_KEY1");
+  const appId = cleanSecret(paymentConfig?.zalopay.appId) || cleanSecret(env("ZALOPAY_APP_ID"));
+  const key1 = cleanSecret(paymentConfig?.zalopay.key1) || cleanSecret(env("ZALOPAY_KEY1"));
   const baseUrl = getBaseUrl(request);
   const now = Date.now();
   const date = new Date();
@@ -205,6 +209,9 @@ export async function createZaloPayPayment(order: ShopOrder, request: Request, p
   });
 
   if (!appId || !key1) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("Website chưa cấu hình đủ App ID hoặc Key 1 ZaloPay production.");
+    }
     return {
       order_url: `${baseUrl}/payment-result?provider=zalopay&orderCode=${order.code}&demo=1`,
       app_trans_id: appTransId,
