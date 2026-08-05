@@ -7632,11 +7632,11 @@
       "usageAndCare": "Có thể giặt máy được - dùng được máy sấy ( dưới 50 độ )",
       "kind": "pants",
       "swatches": [
+        "variant-1783923819355",
         "variant-1783923808739",
         "variant-1783923812083",
         "variant-1783923815179",
-        "variant-1783923823851",
-        "variant-1783923819355"
+        "variant-1783923823851"
       ],
       "sizes": [
         "S",
@@ -7651,8 +7651,7 @@
         "https://pub-8d6e80569d694803952f47fcde524750.r2.dev/blanwhi/1784366543524-ffms9s.jpeg",
         "https://pub-8d6e80569d694803952f47fcde524750.r2.dev/blanwhi/1784366556579-3toor1.jpeg",
         "https://pub-8d6e80569d694803952f47fcde524750.r2.dev/blanwhi/1784366575159-z7uybq.jpeg",
-        "https://pub-8d6e80569d694803952f47fcde524750.r2.dev/blanwhi/1784366581787-6ebmd5.jpeg",
-        "https://pub-8d6e80569d694803952f47fcde524750.r2.dev/blanwhi/1785915502693-sw1hqn.jpeg"
+        "https://pub-8d6e80569d694803952f47fcde524750.r2.dev/blanwhi/1784366581787-6ebmd5.jpeg"
       ],
       "colorNames": {
         "variant-1783923808739": "ĐEN",
@@ -7675,12 +7674,51 @@
         "variant-1783923808739": "https://pub-8d6e80569d694803952f47fcde524750.r2.dev/blanwhi/1784366543524-ffms9s.jpeg",
         "variant-1783923812083": "https://pub-8d6e80569d694803952f47fcde524750.r2.dev/blanwhi/1784366556579-3toor1.jpeg",
         "variant-1783923815179": "https://pub-8d6e80569d694803952f47fcde524750.r2.dev/blanwhi/1784366575159-z7uybq.jpeg",
-        "variant-1783923819355": "https://pub-8d6e80569d694803952f47fcde524750.r2.dev/blanwhi/1785915502693-sw1hqn.jpeg",
+        "variant-1783923819355": "",
         "variant-1783923823851": "https://pub-8d6e80569d694803952f47fcde524750.r2.dev/blanwhi/1784366581787-6ebmd5.jpeg"
       },
       "classifications": [],
       "inventoryManaged": true,
       "inventory": [
+        {
+          "key": "product|variant-1783923819355|S",
+          "sku": "XÁM-CARBON-S",
+          "quantity": 0,
+          "publishQuantity": 3,
+          "pancakeQuantity": 4,
+          "pancakeProductId": "d660f36f-a505-4ea3-bcf6-961180779241",
+          "pancakeVariationId": "fb45ac42-118c-4ac3-af65-09ebd58b8b9d",
+          "pancakeSku": "13",
+          "lastSyncedAt": "2026-07-20T05:59:34.592Z",
+          "size": "S",
+          "color": "variant-1783923819355"
+        },
+        {
+          "key": "product|variant-1783923819355|M",
+          "sku": "XÁM-CARBON-M",
+          "quantity": 0,
+          "publishQuantity": 3,
+          "pancakeQuantity": 2,
+          "pancakeProductId": "d660f36f-a505-4ea3-bcf6-961180779241",
+          "pancakeVariationId": "8ba975ee-142f-4568-a495-e570fdba2304",
+          "pancakeSku": "14",
+          "lastSyncedAt": "2026-07-20T05:59:42.214Z",
+          "size": "M",
+          "color": "variant-1783923819355"
+        },
+        {
+          "key": "product|variant-1783923819355|L",
+          "sku": "XÁM-CARBON-L",
+          "quantity": 0,
+          "publishQuantity": 3,
+          "pancakeQuantity": 13,
+          "pancakeProductId": "d660f36f-a505-4ea3-bcf6-961180779241",
+          "pancakeVariationId": "9ad349a5-819d-4914-8098-27f36a0feaf1",
+          "pancakeSku": "15",
+          "lastSyncedAt": "2026-07-20T05:59:49.000Z",
+          "size": "L",
+          "color": "variant-1783923819355"
+        },
         {
           "key": "product|variant-1783923808739|S",
           "sku": "ĐEN-S",
@@ -7836,45 +7874,6 @@
           "lastSyncedAt": "2026-07-20T06:02:15.219Z",
           "size": "L",
           "color": "variant-1783923823851"
-        },
-        {
-          "key": "product|variant-1783923819355|S",
-          "sku": "XÁM-CARBON-S",
-          "quantity": 0,
-          "publishQuantity": 3,
-          "pancakeQuantity": 4,
-          "pancakeProductId": "d660f36f-a505-4ea3-bcf6-961180779241",
-          "pancakeVariationId": "fb45ac42-118c-4ac3-af65-09ebd58b8b9d",
-          "pancakeSku": "13",
-          "lastSyncedAt": "2026-07-20T05:59:34.592Z",
-          "size": "S",
-          "color": "variant-1783923819355"
-        },
-        {
-          "key": "product|variant-1783923819355|M",
-          "sku": "XÁM-CARBON-M",
-          "quantity": 0,
-          "publishQuantity": 3,
-          "pancakeQuantity": 2,
-          "pancakeProductId": "d660f36f-a505-4ea3-bcf6-961180779241",
-          "pancakeVariationId": "8ba975ee-142f-4568-a495-e570fdba2304",
-          "pancakeSku": "14",
-          "lastSyncedAt": "2026-07-20T05:59:42.214Z",
-          "size": "M",
-          "color": "variant-1783923819355"
-        },
-        {
-          "key": "product|variant-1783923819355|L",
-          "sku": "XÁM-CARBON-L",
-          "quantity": 0,
-          "publishQuantity": 3,
-          "pancakeQuantity": 13,
-          "pancakeProductId": "d660f36f-a505-4ea3-bcf6-961180779241",
-          "pancakeVariationId": "9ad349a5-819d-4914-8098-27f36a0feaf1",
-          "pancakeSku": "15",
-          "lastSyncedAt": "2026-07-20T05:59:49.000Z",
-          "size": "L",
-          "color": "variant-1783923819355"
         }
       ]
     },
