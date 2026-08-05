@@ -29,7 +29,20 @@ export async function POST(request: Request, { params }: Params) {
     if (!phoneKey(body.phone) || phoneKey(body.phone) !== phoneKey(order.customer.phone)) {
       return NextResponse.json({ error: "Số điện thoại không khớp với đơn hàng." }, { status: 403 });
     }
-    if (order.status === "cancelled") return NextResponse.json({ ok: true, order });
+    if (order.status === "cancelled") {
+      if (order.paymentMethod === "zalopay" && !order.transactionId && order.refundStatus !== "not_required") {
+        const cleaned = await updateOrder(order.code, {
+          refundStatus: "not_required",
+          refundProvider: undefined,
+          refundId: undefined,
+          refundTransactionId: undefined,
+          refundAmount: undefined,
+          refundMessage: ""
+        });
+        return NextResponse.json({ ok: true, order: cleaned || order });
+      }
+      return NextResponse.json({ ok: true, order });
+    }
     const config = await readIntegrationConfig();
     let current = order;
     if (current.status === "pending" && current.paymentMethod === "zalopay") {

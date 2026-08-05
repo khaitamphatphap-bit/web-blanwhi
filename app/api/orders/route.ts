@@ -1,12 +1,27 @@
 import { NextResponse } from "next/server";
-import { readOrders } from "@/lib/orders";
+import { readOrders, updateOrder } from "@/lib/orders";
 import { OrderSyncService } from "@/lib/pancake/order-sync-service";
 import { readIntegrationConfig } from "@/lib/integrations";
 import { reconcileZaloPayPayment, reconcileZaloPayRefund } from "@/lib/payment-confirmation";
 import { shortOrderCode } from "@/lib/order-code";
 
 export async function GET(request: Request) {
-  const orders = await readOrders();
+  let orders = await readOrders();
+  const invalidUnpaidRefunds = orders.filter((order) => order.status === "cancelled"
+    && order.paymentMethod === "zalopay"
+    && !order.transactionId
+    && order.refundStatus !== "not_required");
+  if (invalidUnpaidRefunds.length) {
+    await Promise.all(invalidUnpaidRefunds.map((order) => updateOrder(order.code, {
+      refundStatus: "not_required",
+      refundProvider: undefined,
+      refundId: undefined,
+      refundTransactionId: undefined,
+      refundAmount: undefined,
+      refundMessage: ""
+    })));
+    orders = await readOrders();
+  }
   const url = new URL(request.url);
   const codes = (url.searchParams.get("codes") || "")
     .split(",")

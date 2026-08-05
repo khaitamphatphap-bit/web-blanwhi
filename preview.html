@@ -2693,7 +2693,7 @@
         ` : "";
         checkoutSummary.innerHTML = `
           <h3 style="margin:0 0 8px">Đơn hàng</h3>
-          ${cart.length ? cart.map((item) => `<div class="line"><span class="checkout-item-copy"><b>${item.qty}× ${escapeMarkup(item.name)}</b><small>${item.classificationName ? `${escapeMarkup(item.classificationName)} · ` : ""}${escapeMarkup(colorLabel(item.color, item, item.classificationIndex || 0))}${item.kind.startsWith("gift-") ? "" : ` · Size ${escapeMarkup(item.size)}`}</small></span><strong>${formatMoney(item.amount * item.qty)}</strong></div>`).join("") : `<p class="muted">Chưa có sản phẩm.</p>`}
+          ${cart.length ? cart.map((item) => `<div class="line"><span class="checkout-item-copy"><b>${Math.max(1, Number(item.qty ?? item.quantity) || 1)}× ${escapeMarkup(item.name)}</b><small>${item.classificationName ? `${escapeMarkup(item.classificationName)} · ` : ""}${escapeMarkup(colorLabel(item.color, item, item.classificationIndex || 0))}${item.kind.startsWith("gift-") ? "" : ` · Size ${escapeMarkup(item.size)}`}</small></span><strong>${formatMoney(item.amount * item.qty)}</strong></div>`).join("") : `<p class="muted">Chưa có sản phẩm.</p>`}
           <div class="line"><span>Giá trị đơn hàng</span><strong>${formatMoney(next.sub)}</strong></div>
           <div class="line"><span>${next.voucher.title}</span><strong>-${formatMoney(next.discount)}</strong></div>
           <div class="line"><span>Vận chuyển · ${selectedShippingMethod === "express" ? "Hỏa tốc" : "SPX Express"}</span><strong>${formatMoney(next.shipping)}</strong></div>
@@ -2765,7 +2765,7 @@
 
 
       function hasRefundProcess(order) {
-        return ["pending", "succeeded", "failed"].includes(order.refundStatus || "") || Number(order.refundAmount || 0) > 0;
+        return Boolean(order.transactionId) && (["pending", "succeeded", "failed"].includes(order.refundStatus || "") || Number(order.refundAmount || 0) > 0);
       }
       function customerPaymentStatusLabel(order) {
         if (order.paymentMethod === "cod") return "Thanh toán COD khi nhận hàng";
@@ -2790,7 +2790,7 @@
       }
 
       function refundNotice(order) {
-        const wasPaid = hasRefundProcess(order) || Boolean(order.transactionId) || order.wasPaidBeforeCancel || order.statusBeforeCancel === "Đã thanh toán";
+        const wasPaid = Boolean(order.transactionId) || order.statusBeforeCancel === "Đã thanh toán";
         if (!(order.status === "Đơn hủy" || order.shippingStatus === "cancelled") || !wasPaid) return "";
         if (order.refundStatus === "succeeded") return "Đơn đã hủy và tiền đã được hoàn thành công.";
         if (order.refundStatus === "failed") return `Đơn đã hủy nhưng hoàn tiền chưa thành công. ${order.refundMessage || "Vui lòng liên hệ Zalo 0866561480 để được hỗ trợ."}`;
@@ -2915,7 +2915,7 @@
               paymentProvider: serverOrder.paymentProvider || order.paymentProvider,
               transactionId: serverOrder.transactionId || order.transactionId,
               refundStatus: serverOrder.refundStatus || order.refundStatus,
-              refundMessage: serverOrder.refundMessage || order.refundMessage,
+              refundMessage: Object.prototype.hasOwnProperty.call(serverOrder, "refundMessage") ? serverOrder.refundMessage : order.refundMessage,
               refundAmount: serverOrder.refundAmount ?? order.refundAmount,
               refundedAt: serverOrder.refundedAt || order.refundedAt,
               shippingCarrier: serverOrder.shippingCarrier || order.shippingCarrier,
@@ -2931,6 +2931,11 @@
               pancakeStatus: serverOrder.pancakeStatus || order.pancakeStatus,
               updatedAt: serverOrder.updatedAt ? new Date(serverOrder.updatedAt).toLocaleString("vi-VN") : order.updatedAt
             };
+            if (serverOrder.refundStatus === "not_required" && !serverOrder.transactionId) {
+              merged.refundMessage = "";
+              merged.refundAmount = 0;
+              merged.wasPaidBeforeCancel = false;
+            }
             return { ...merged, step: customerOrderStep(merged) };
           });
           if (changed) saveOrders(nextOrders);
@@ -2953,7 +2958,7 @@
               <p class="muted">${order.customer.name} · ${order.customer.phone}</p>
               <p class="muted">${order.customer.address}</p>
             </div>
-            <div>${order.items.map((item) => `<div><p class="muted">${item.qty}× ${escapeMarkup(item.name)}</p><p class="order-item-meta">${[item.classificationName, item.color, item.size ? `Size ${item.size}` : ""].filter(Boolean).map(escapeMarkup).join(" · ")}${item.message ? ` · Lời nhắn: ${escapeMarkup(item.message)}` : ""}${item.customText ? ` · Chữ: ${escapeMarkup(item.customText)}` : ""}</p></div>`).join("")}</div>
+            <div>${order.items.map((item) => `<div><p class="muted">${Math.max(1, Number(item.qty ?? item.quantity) || 1)}× ${escapeMarkup(item.name)}</p><p class="order-item-meta">${[item.classificationName, item.color, item.size ? `Size ${item.size}` : ""].filter(Boolean).map(escapeMarkup).join(" · ")}${item.message ? ` · Lời nhắn: ${escapeMarkup(item.message)}` : ""}${item.customText ? ` · Chữ: ${escapeMarkup(item.customText)}` : ""}</p></div>`).join("")}</div>
             <div class="line"><span>Mã vận đơn</span><strong>${order.trackingCode || "Đang cập nhật"}</strong></div>
             <p class="muted">Đơn vị vận chuyển: ${order.shippingCarrier || "Đang cập nhật"}</p>
             ${order.shippingMessage ? `<p class="muted">Trạng thái vận chuyển: ${escapeMarkup(order.shippingMessage)}</p>` : ""}
