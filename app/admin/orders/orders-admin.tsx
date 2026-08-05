@@ -412,7 +412,7 @@ export function OrdersAdmin({
                 <div>
                   <div className="text-xs uppercase text-neutral-500">Thanh toán</div>
                   <div className="mt-1 uppercase">{order.paymentMethod}</div>
-                  <span className={`mt-2 inline-flex border px-2 py-1 text-xs uppercase ${paymentStatusClass(order.status)}`}>{paymentLabel(order.status)}</span>
+                  <span className={`mt-2 inline-flex border px-2 py-1 text-xs uppercase ${paymentStatusClass(order.status, order.paymentMethod)}`}>{paymentLabel(order.status, order.paymentMethod)}</span>
                 </div>
                 <div className="flex flex-wrap gap-2 lg:justify-end">
                   <button onClick={() => setExpandedOrderCode(isOpen ? "" : order.code)} className="h-9 border border-black px-3 text-xs uppercase">{isOpen ? "Đóng" : "Chi tiết"}</button>
@@ -521,13 +521,13 @@ function getOrderStage(order: ShopOrder): OrderStage {
   const shippingStatus = order.shippingStatus || "not_created";
 
   if (order.status === "cancelled" || shippingStatus === "cancelled" || order.pancakeStatus === "cancelled") return "cancelled";
-  if (order.status === "pending") return "payment_pending";
+  if (order.status === "pending" && order.paymentMethod !== "cod") return "payment_pending";
   if (shippingStatus === "returning" || shippingStatus === "returned") return "returning";
   if (shippingStatus === "delivery_failed") return "delivery_failed";
   if (shippingStatus === "delivered") return "delivered";
   if (shippingStatus === "shipping") return "shipping";
   if (shippingStatus === "driver_assigned") return "handed_to_carrier";
-  if (order.status === "paid") return "paid";
+  if (order.status === "paid" || (order.status === "pending" && order.paymentMethod === "cod")) return "paid";
   return "new";
 }
 
@@ -618,15 +618,17 @@ function PaymentMerchantBox({
   );
 }
 
-function paymentLabel(status: OrderStatus) {
+function paymentLabel(status: OrderStatus, paymentMethod?: ShopOrder["paymentMethod"]) {
   if (status === "paid") return "Đã thanh toán";
+  if (status === "pending" && paymentMethod === "cod") return "COD - chờ giao hàng";
   if (status === "pending") return "Chờ thanh toán";
   if (status === "failed") return "Thất bại";
   return "Đã hủy";
 }
 
-function paymentStatusClass(status: OrderStatus) {
+function paymentStatusClass(status: OrderStatus, paymentMethod?: ShopOrder["paymentMethod"]) {
   if (status === "paid") return "border-emerald-600 bg-emerald-50 text-emerald-700";
+  if (status === "pending" && paymentMethod === "cod") return "border-emerald-600 bg-emerald-50 text-emerald-700";
   if (status === "pending") return "border-amber-500 bg-amber-50 text-amber-700";
   if (status === "failed") return "border-red-500 bg-red-50 text-red-700";
   return "border-neutral-400 bg-neutral-100 text-neutral-700";

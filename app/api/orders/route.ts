@@ -38,7 +38,7 @@ export async function GET(request: Request) {
       if (current.status === "pending" && current.paymentMethod === "zalopay") {
         current = await reconcileZaloPayPayment(current, integrations.payment);
       }
-      if (["pending", "failed"].includes(current.refundStatus || "") && current.paymentMethod === "zalopay" && current.refundId) {
+      if (["pending", "failed"].includes(current.refundStatus || "") && current.paymentMethod === "zalopay" && (current.refundId || current.transactionId)) {
         await reconcileZaloPayRefund(current, integrations.payment);
       }
     }));
@@ -54,6 +54,7 @@ export async function GET(request: Request) {
         .filter((order) => allowed.has(order.code))
         .map((order) => ({
           code: order.code,
+          createdAt: order.createdAt,
           status: order.status,
           paymentMethod: order.paymentMethod,
           paymentProvider: order.paymentProvider,

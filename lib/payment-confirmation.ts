@@ -57,9 +57,23 @@ function refundResponseIsProcessing(result: { return_code?: number; sub_return_c
 }
 
 export async function reconcileZaloPayRefund(order: ShopOrder, paymentConfig: IntegrationConfig["payment"]) {
-  const canRecheck = order.refundStatus === "pending"
-    || (order.refundStatus === "failed" && /đang\s*(refund|hoàn|xử lý)|refunding|processing/i.test(order.refundMessage || ""));
-  if (order.paymentMethod !== "zalopay" || !canRecheck || !order.refundId) return order;
+  const canRecheck = order.refundStatus === "pending" || order.refundStatus === "failed";
+  if (order.paymentMethod !== "zalopay" || !canRecheck) return order;
+
+  try {
+    const payment = await queryZaloPayPayment(order, paymentConfig);
+    if (Number(payment.refund_status || 0) === 1) {
+      return await updateOrder(order.code, {
+        refundStatus: "succeeded",
+        refundMessage: "ĐÃ HOÀN TIỀN",
+        refundedAt: new Date().toISOString()
+      }) || order;
+    }
+  } catch {
+    // Tiếp tục kiểm tra bằng mã hoàn tiền nếu truy vấn giao dịch gốc tạm thời chưa phản hồi.
+  }
+
+  if (!order.refundId) return order;
   const result = await queryZaloPayRefund(order.refundId, paymentConfig);
   const refundStatus = Number(result.refund_status || 0);
   const returnCode = Number(result.return_code || 0);
@@ -72,18 +86,6 @@ export async function reconcileZaloPayRefund(order: ShopOrder, paymentConfig: In
     }) || order;
   }
   if (processing) {
-    try {
-      const payment = await queryZaloPayPayment(order, paymentConfig);
-      if (Number(payment.refund_status || 0) === 1) {
-        return await updateOrder(order.code, {
-          refundStatus: "succeeded",
-          refundMessage: "ĐÃ HOÀN TIỀN",
-          refundedAt: new Date().toISOString()
-        }) || order;
-      }
-    } catch {
-      // API giao dịch gốc là lớp đối chiếu bổ sung; vẫn giữ kết quả truy vấn hoàn tiền chính.
-    }
     return await updateOrder(order.code, {
       refundStatus: "pending",
       refundMessage: "ZaloPay đang xử lý hoàn tiền về tài khoản khách. Website sẽ tiếp tục tự động kiểm tra."

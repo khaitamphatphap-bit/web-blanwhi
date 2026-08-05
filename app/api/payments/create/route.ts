@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { jsonError } from "@/lib/api-errors";
 import { readIntegrationConfig } from "@/lib/integrations";
 import { createOrder, newOrderCode, updateOrder } from "@/lib/orders";
@@ -175,8 +175,7 @@ export async function POST(request: Request) {
     const items = payload.items ?? [];
     const paymentMethod = payload.paymentMethod ?? "cod";
     const customer = payload.customer ?? {};
-    const integrations = await readIntegrationConfig();
-    const siteContent = await readSiteContent();
+    const [integrations, siteContent] = await Promise.all([readIntegrationConfig(), readSiteContent()]);
 
     if (!enabledCheckoutMethods.has(paymentMethod)) {
       return json({ error: "Phương thức thanh toán này không còn được hỗ trợ. Vui lòng chọn COD hoặc Zalopay." }, { status: 400 });
@@ -269,13 +268,30 @@ export async function POST(request: Request) {
       updatedAt: now
     };
 
+    if (pancakeConfigured && paymentMethod === "cod") {
+      order.externalSync = {
+        ...order.externalSync,
+        pancake: "Đang đồng bộ Pancake",
+        lastSyncedAt: now
+      };
+    }
     await createOrder(order);
     if (pancakeConfigured && paymentMethod === "cod") {
-      const syncedCodOrder = await new POSSyncService().confirmOrder(order);
-      return json({
-        order: syncedCodOrder,
-        redirectUrl: fallbackPaymentUrl(syncedCodOrder, paymentMethod, request)
+      after(async () => {
+        try {
+          await new POSSyncService().confirmOrder(order);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Không thể đồng bộ đơn sang Pancake.";
+          await updateOrder(order.code, {
+            externalSync: {
+              ...order.externalSync,
+              pancake: `Lỗi đồng bộ: ${message}`,
+              lastSyncedAt: new Date().toISOString()
+            }
+          });
+        }
       });
+      return json({ order, syncQueued: true });
     }
     if (pancakeConfigured) {
       order.externalSync = { ...order.externalSync, pancake: "Chờ ZaloPay xác nhận - chưa gửi Pancake" };
