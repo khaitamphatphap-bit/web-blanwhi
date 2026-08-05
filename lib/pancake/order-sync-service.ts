@@ -101,7 +101,7 @@ export class OrderSyncService {
   async create(order: ShopOrder, enqueueOnFailure = true) {
     const latest = await findOrderByCode(order.code);
     if (latest?.status === "cancelled") return latest;
-    if ((latest || order).status !== "paid") {
+    if ((latest || order).status !== "paid" && !((latest || order).paymentMethod === "cod" && (latest || order).status === "pending")) {
       return await updateOrder(order.code, {
         externalSync: {
           ...(latest || order).externalSync,

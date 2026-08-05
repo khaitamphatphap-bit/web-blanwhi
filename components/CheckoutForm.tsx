@@ -8,11 +8,7 @@ import { FormEvent, useState } from "react";
 
 const paymentMethods = [
   { value: "cod", label: "COD" },
-  { value: "vnpay", label: "Thẻ VNPAY" },
-  { value: "onepay", label: "OnePay" },
-  { value: "alepay", label: "AlePay" },
-  { value: "momo", label: "MoMo" },
-  { value: "bank_transfer", label: "Chuyển khoản" }
+  { value: "zalopay", label: "Zalopay" }
 ] as const;
 
 export function CheckoutForm({ items, onAddCombo, defaultShippingFee = 30000 }: { items: CartItem[]; onAddCombo: (combo: Combo) => void; defaultShippingFee?: number }) {

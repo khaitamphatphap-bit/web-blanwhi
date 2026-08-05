@@ -8,6 +8,7 @@ import { CartItem, PaymentMethod, ShopOrder } from "@/lib/types";
 import { InventoryService } from "@/lib/pancake/inventory-service";
 import { buildProductInventory } from "@/lib/product-inventory";
 import { readSiteContent } from "@/lib/site-content";
+import { POSSyncService } from "@/lib/services/pos-sync-service";
 
 type CheckoutPayload = {
   customer?: {
@@ -66,6 +67,7 @@ type PreviewCheckoutItem = {
 };
 
 const onlineMethods = new Set<PaymentMethod>(["vnpay", "onepay", "alepay", "momo", "zalopay"]);
+const enabledCheckoutMethods = new Set<PaymentMethod>(["cod", "zalopay"]);
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -176,6 +178,10 @@ export async function POST(request: Request) {
     const integrations = await readIntegrationConfig();
     const siteContent = await readSiteContent();
 
+    if (!enabledCheckoutMethods.has(paymentMethod)) {
+      return json({ error: "Phương thức thanh toán này không còn được hỗ trợ. Vui lòng chọn COD hoặc Zalopay." }, { status: 400 });
+    }
+
     if (!customer.name || !customer.phone || !customer.address) {
       return json({ error: "Vui lòng nhập đủ họ tên, số điện thoại và địa chỉ." }, { status: 400 });
     }
@@ -264,8 +270,15 @@ export async function POST(request: Request) {
     };
 
     await createOrder(order);
+    if (pancakeConfigured && paymentMethod === "cod") {
+      const syncedCodOrder = await new POSSyncService().confirmOrder(order);
+      return json({
+        order: syncedCodOrder,
+        redirectUrl: fallbackPaymentUrl(syncedCodOrder, paymentMethod, request)
+      });
+    }
     if (pancakeConfigured) {
-      order.externalSync = { ...order.externalSync, pancake: "Chờ thanh toán - chưa gửi Pancake" };
+      order.externalSync = { ...order.externalSync, pancake: "Chờ ZaloPay xác nhận - chưa gửi Pancake" };
       await updateOrder(order.code, { externalSync: order.externalSync });
     }
 
