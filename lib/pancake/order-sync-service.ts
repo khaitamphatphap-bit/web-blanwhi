@@ -149,7 +149,8 @@ export class OrderSyncService {
     try {
       const existing = await this.pancake.findOrder(current.code, current.customer.phone);
       if (existing) {
-        return this.reconcileExisting(current);
+        const existingStatus = mapPancakeStatus(value(existing, ["status", "order_status", "state"]));
+        if (existingStatus.pancakeStatus !== "cancelled") return this.reconcileExisting(current);
       }
       const response = await this.pancake.createOrder(current);
       const createdPancakeOrderId = externalId(response);
@@ -185,6 +186,35 @@ export class OrderSyncService {
     }
   }
 
+  async removeUnpaidFromPos(order: ShopOrder) {
+    const paymentMethod = String(order.paymentMethod || "").trim().toLowerCase();
+    if (order.status === "paid" || paymentMethod === "cod") return order;
+    const remoteOrderId = String(order.pancakeOrderId || "").trim();
+    if (!remoteOrderId) return order;
+
+    try {
+      await this.pancake.cancelOrder(remoteOrderId);
+      const updated = await updateOrder(order.code, {
+        pancakeOrderId: undefined,
+        pancakeStatus: undefined,
+        posOrderCode: undefined,
+        trackingCode: "",
+        shippingStatus: "not_created",
+        shippingMessage: "Chưa thanh toán - chưa gửi POS/SPX.",
+        externalSync: {
+          ...order.externalSync,
+          pancake: "Đã gỡ đơn chưa thanh toán khỏi Pancake POS",
+          lastSyncedAt: new Date().toISOString()
+        }
+      });
+      await PancakeLogger.write("info", "order.unpaid_cleanup", "Đã hủy đơn chưa thanh toán trên Pancake POS.", order.code);
+      return updated || order;
+    } catch (error) {
+      const message = ExceptionHandler.message(error);
+      await PancakeLogger.write("error", "order.unpaid_cleanup", message, order.code);
+      throw error;
+    }
+  }
   async cancel(order: ShopOrder, enqueueOnFailure = true) {
     const remoteOrderId = pancakeOrderId(order);
     if (!remoteOrderId) return order;
