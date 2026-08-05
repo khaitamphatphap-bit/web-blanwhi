@@ -10,7 +10,7 @@ export class POSSyncService {
   ) {}
 
   async confirmOrder(order: ShopOrder) {
-    if (order.status !== "paid" && !(order.paymentMethod === "cod" && order.status === "pending")) {
+    if (order.status !== "paid" && !(String(order.paymentMethod || "").trim().toLowerCase() === "cod" && order.status === "pending")) {
       return await updateOrder(order.code, {
         externalSync: {
           ...order.externalSync,

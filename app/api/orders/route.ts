@@ -87,7 +87,7 @@ export async function GET(request: Request) {
       && order.posOrderCode !== shortOrderCode(order.code))
     .slice(0, 10);
   const paidOrdersNeedingPos = orders
-    .filter((order) => (order.status === "paid" || (order.status === "pending" && order.paymentMethod === "cod")) && !order.pancakeOrderId && !order.pancakeStatus)
+    .filter((order) => (order.status === "paid" || (order.status === "pending" && String(order.paymentMethod || "").trim().toLowerCase() === "cod")) && !order.pancakeOrderId && !order.pancakeStatus)
     .slice(0, 20);
   const standardOrdersNeedingSpx = orders
     .filter((order) => order.deliveryType !== "express"

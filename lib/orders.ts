@@ -5,8 +5,9 @@ import { shortOrderCode } from "@/lib/order-code";
 const paymentMethods = new Set<PaymentMethod>(["cod", "bank_transfer", "vnpay", "onepay", "alepay", "momo", "zalopay"]);
 
 function normalizePaymentMethod(value: unknown): PaymentMethod {
-  const normalized = String(value || "cod").trim().toLowerCase() as PaymentMethod;
-  return paymentMethods.has(normalized) ? normalized : "cod";
+  const normalized = String(value || "").trim().toLowerCase();
+  if (["cod", "cash", "cash_on_delivery", "cash-on-delivery"].includes(normalized)) return "cod";
+  return paymentMethods.has(normalized as PaymentMethod) ? normalized as PaymentMethod : "zalopay";
 }
 
 export async function readOrders(): Promise<ShopOrder[]> {
@@ -19,8 +20,8 @@ export async function readOrders(): Promise<ShopOrder[]> {
     return {
       ...order,
       status: cancellationRecorded ? "cancelled" : order.status,
-      paymentMethod: normalizePaymentMethod(order.paymentMethod),
-      paymentProvider: String(order.paymentProvider || normalizePaymentMethod(order.paymentMethod)).trim().toLowerCase()
+      paymentMethod: normalizePaymentMethod(order.paymentMethod || order.paymentProvider),
+      paymentProvider: String(order.paymentProvider || normalizePaymentMethod(order.paymentMethod || order.paymentProvider)).trim().toLowerCase()
     };
   });
 }

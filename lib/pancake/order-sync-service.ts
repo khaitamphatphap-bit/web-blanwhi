@@ -136,7 +136,7 @@ export class OrderSyncService {
     const latest = await findOrderByCode(order.code);
     if (latest?.status === "cancelled") return latest;
     const current = latest || order;
-    if (current.status !== "paid" && !(current.paymentMethod === "cod" && current.status === "pending")) {
+    if (current.status !== "paid" && !(String(current.paymentMethod || "").trim().toLowerCase() === "cod" && current.status === "pending")) {
       return await updateOrder(order.code, {
         externalSync: {
           ...(latest || order).externalSync,
