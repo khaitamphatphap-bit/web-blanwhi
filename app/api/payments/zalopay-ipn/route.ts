@@ -22,7 +22,8 @@ export async function POST(request: Request) {
     }
 
     const appTransId = String(data.app_trans_id ?? "");
-    const orderCode = appTransId.split("_").slice(1).join("_");
+    const transIdParts = appTransId.split("_");
+    const orderCode = transIdParts[1]?.startsWith("R") ? transIdParts.slice(2).join("_") : transIdParts.slice(1).join("_");
     const amount = Number(data.amount ?? 0);
     const order = await findOrderByCode(orderCode);
 

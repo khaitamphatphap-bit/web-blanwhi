@@ -185,7 +185,7 @@ export function verifyMomoBody(body: Record<string, unknown>, paymentConfig?: Pa
   return { ok: expected === received, reason: expected === received ? "OK" : "Invalid signature" };
 }
 
-export async function createZaloPayPayment(order: ShopOrder, request: Request, paymentConfig?: PaymentConfig) {
+export async function createZaloPayPayment(order: ShopOrder, request: Request, paymentConfig?: PaymentConfig, options: { retry?: boolean } = {}) {
   const configuredEndpoint = cleanSecret(paymentConfig?.zalopay.endpoint) || cleanSecret(env("ZALOPAY_ENDPOINT", "https://openapi.zalopay.vn/v2/create"));
   const endpoint = configuredEndpoint.includes("sb-openapi.zalopay.vn") || configuredEndpoint.toLowerCase().includes("sandbox")
     ? "https://openapi.zalopay.vn/v2/create"
@@ -196,7 +196,8 @@ export async function createZaloPayPayment(order: ShopOrder, request: Request, p
   const now = Date.now();
   const date = new Date();
   const yymmdd = `${String(date.getFullYear()).slice(-2)}${String(date.getMonth() + 1).padStart(2, "0")}${String(date.getDate()).padStart(2, "0")}`;
-  const appTransId = `${yymmdd}_${order.code}`;
+  const retryToken = `R${now.toString(36).slice(-6).toUpperCase()}`;
+  const appTransId = options.retry ? `${yymmdd}_${retryToken}_${order.code}` : `${yymmdd}_${order.code}`;
   const appUser = order.customer.phone || order.customer.name || "blanwhi";
   const item = JSON.stringify(order.items.map((line) => ({
     itemid: line.productId,
@@ -239,7 +240,7 @@ export async function createZaloPayPayment(order: ShopOrder, request: Request, p
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body
   });
-  const result = await response.json() as { order_url?: string; zp_trans_token?: string; order_token?: string; app_trans_id?: string; return_code?: number; return_message?: string; demo?: boolean };
+  const result = await response.json() as { order_url?: string; zp_trans_token?: string; order_token?: string; app_trans_id?: string; return_code?: number; return_message?: string; sub_return_message?: string; demo?: boolean };
   return { ...result, app_trans_id: result.app_trans_id || appTransId };
 }
 

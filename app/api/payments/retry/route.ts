@@ -6,7 +6,7 @@ import { createMomoPayment, createVnpayUrl, createZaloPayPayment, fallbackPaymen
 import type { PaymentMethod } from "@/lib/types";
 import { reconcileZaloPayPayment } from "@/lib/payment-confirmation";
 
-const payableMethods = new Set<PaymentMethod>(["bank_transfer", "vnpay", "momo", "zalopay", "onepay", "alepay"]);
+const payableMethods = new Set<PaymentMethod>(["zalopay"]);
 
 function phoneKey(value: unknown) {
   return String(value || "").replace(/\D/g, "");
@@ -51,9 +51,9 @@ export async function POST(request: Request) {
       });
     }
     if (order.paymentMethod === "zalopay") {
-      const zalopay = await createZaloPayPayment(order, request, integrations.payment);
+      const zalopay = await createZaloPayPayment(order, request, integrations.payment, { retry: true });
       if (!zalopay.order_url) {
-        return NextResponse.json({ error: zalopay.return_message || "ZaloPay chưa trả link thanh toán." }, { status: 400 });
+        return NextResponse.json({ error: zalopay.sub_return_message || zalopay.return_message || "ZaloPay chưa trả link thanh toán." }, { status: 400 });
       }
       await updateOrder(order.code, {
         paymentProviderOrderId: zalopay.app_trans_id,
