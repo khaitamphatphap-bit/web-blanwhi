@@ -79,7 +79,7 @@ export const defaultIntegrationConfig: IntegrationConfig = {
       appId: "",
       key1: "",
       key2: "",
-      endpoint: "https://sb-openapi.zalopay.vn/v2/create"
+      endpoint: "https://openapi.zalopay.vn/v2/create"
     }
   }
 };

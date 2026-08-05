@@ -182,7 +182,7 @@ export function verifyMomoBody(body: Record<string, unknown>, paymentConfig?: Pa
 }
 
 export async function createZaloPayPayment(order: ShopOrder, request: Request, paymentConfig?: PaymentConfig) {
-  const endpoint = paymentConfig?.zalopay.endpoint || env("ZALOPAY_ENDPOINT", "https://sb-openapi.zalopay.vn/v2/create");
+  const endpoint = paymentConfig?.zalopay.endpoint || env("ZALOPAY_ENDPOINT", "https://openapi.zalopay.vn/v2/create");
   const appId = paymentConfig?.zalopay.appId || env("ZALOPAY_APP_ID");
   const key1 = paymentConfig?.zalopay.key1 || env("ZALOPAY_KEY1");
   const baseUrl = getBaseUrl(request);
