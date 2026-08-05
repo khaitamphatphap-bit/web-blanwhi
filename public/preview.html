@@ -1189,16 +1189,28 @@
       const colorLabel = (color, product, classificationIndex = product.classificationIndex || 0) =>
         activeVariant(product, classificationIndex)?.colorNames?.[color] || product?.colorNames?.[color] || defaultColorLabel(color);
       const stockKey = (classificationId = "", color = "", size = "") => [classificationId || "product", color || "default", size || "one-size"].join("|");
+      const inventoryRowIsLinked = (row) => Boolean(row?.pancakeProductId || row?.pancakeVariationId || row?.pancakeSku);
+      const stockFromInventoryRow = (row) => {
+        if (!row) return 0;
+        if (row.availableQuantity !== undefined && row.availableQuantity !== null) {
+          return Math.max(0, Math.floor(Number(row.availableQuantity) || 0));
+        }
+        const quantity = Math.max(0, Math.floor(Number(row.quantity) || 0));
+        const publish = Math.max(0, Math.floor(Number(row.publishQuantity) || 0));
+        const pancake = Math.max(0, Math.floor(Number(row.pancakeQuantity) || 0));
+        if (!inventoryRowIsLinked(row)) return quantity || publish || pancake;
+        if (publish > 0 && pancake > 0) return Math.min(publish, pancake);
+        return publish || pancake || quantity;
+      };
       const inventoryIsManaged = (product) =>
-        Boolean(product.inventoryManaged) || (Array.isArray(product.inventory) && product.inventory.some((item) => Number(item.quantity) > 0));
+        Boolean(product.inventoryManaged) || (Array.isArray(product.inventory) && product.inventory.some((item) => stockFromInventoryRow(item) > 0));
       const classificationIdAt = (product, classificationIndex = product.classificationIndex || 0) =>
         activeClassification(product, classificationIndex)?.id || "";
       const stockFor = (product, { classificationIndex = product.classificationIndex || 0, color = product.color, size = product.size } = {}) => {
         if (!inventoryIsManaged(product)) return Infinity;
         const key = stockKey(classificationIdAt(product, classificationIndex), color, size);
         const item = Array.isArray(product.inventory) ? product.inventory.find((entry) => entry.key === key) : null;
-        const quantity = item?.availableQuantity ?? item?.quantity ?? item?.pancakeQuantity ?? 0;
-        return Math.max(0, Math.floor(Number(quantity) || 0));
+        return stockFromInventoryRow(item);
       };
       const hasStock = (product, options = {}) => stockFor(product, options) > 0;
       const colorHasStock = (product, color, classificationIndex = product.classificationIndex || 0) =>
@@ -1428,7 +1440,7 @@
       const productCardMarkup = (product) => {
         const swatches = variantSwatches(product);
         const linkedRows = (product.inventory || []).filter((row) => row.pancakeProductId || row.pancakeVariationId || row.pancakeSku);
-        const productAvailable = linkedRows.reduce((sum, row) => sum + Number(row.availableQuantity ?? Math.min(Number(row.publishQuantity || 0), Number(row.pancakeQuantity || 0))), 0);
+        const productAvailable = linkedRows.reduce((sum, row) => sum + stockFromInventoryRow(row), 0);
         const soldOut = linkedRows.length > 0 && productAvailable <= 0;
         if (!swatches.includes(product.color)) {
           product.colorIndex = 0;
@@ -1650,7 +1662,7 @@
         const row = inventoryRowFor(product, classificationId, color, size);
         if (!row) return product.inventoryConfigured ? 0 : null;
         if (!(row.pancakeProductId || row.pancakeVariationId || row.pancakeSku)) return product.inventoryConfigured ? 0 : null;
-        return Number(row.availableQuantity ?? Math.min(Number(row.publishQuantity || 0), Number(row.pancakeQuantity || 0)));
+        return stockFromInventoryRow(row);
       }
 
       async function refreshProductAvailability(productId, force = false) {
@@ -1664,7 +1676,7 @@
             if (!response.ok) return;
             const result = await response.json();
             product.inventoryConfigured = Boolean(result.configured);
-            if (Array.isArray(result.items)) product.inventory = result.items;
+            if (Array.isArray(result.items) && result.items.length) product.inventory = result.items;
           } catch (error) {
             console.warn("Không cập nhật được tồn kho", error);
           } finally {
@@ -1682,7 +1694,8 @@
           const result = await response.json();
           productData.forEach((product) => {
             product.inventoryConfigured = Boolean(result.configured);
-            product.inventory = Array.isArray(result.items) ? result.items.filter((item) => item.productId === product.id) : product.inventory;
+            const nextInventory = Array.isArray(result.items) ? result.items.filter((item) => item.productId === product.id) : [];
+            if (nextInventory.length) product.inventory = nextInventory;
           });
           renderProducts(currentProductList, false);
         } catch (error) {
