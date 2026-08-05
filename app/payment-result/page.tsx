@@ -5,6 +5,7 @@ import { verifyVnpayParams, verifyZaloPayRedirectParams } from "@/lib/payment";
 import { markVerifiedPayment, reconcileZaloPayPayment, syncVerifiedOrderToPos } from "@/lib/payment-confirmation";
 import { money } from "@/lib/pricing";
 import { BankTransferConfirm } from "./BankTransferConfirm";
+import { shortOrderCode } from "@/lib/order-code";
 import { DemoPaymentActions } from "./DemoPaymentActions";
 
 type PageProps = {
@@ -77,7 +78,7 @@ export default async function PaymentResultPage({ searchParams }: PageProps) {
           {success ? successTitle : failed ? "Thanh toán thất bại" : "Đơn hàng đang chờ thanh toán"}
         </h1>
         <p className="mt-4 text-sm leading-6 text-neutral-500">
-          Mã đơn: <strong className="text-black">{orderCode || "Không tìm thấy"}</strong>
+          Mã đơn: <strong className="text-black">{shortOrderCode(order?.code || orderCode) || "Không tìm thấy"}</strong>
         </p>
         {order && (
           <div className="mt-6 grid gap-3 bg-neutral-50 p-5 text-sm">

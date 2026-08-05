@@ -2738,6 +2738,11 @@
         return Math.max(order.step || 0, order.status === "Đã thanh toán" ? 1 : 0);
       }
 
+      function displayOrderCode(code) {
+        const normalized = String(code || "").trim().toUpperCase();
+        const legacy = normalized.match(/^BLW-\d{2}(\d{12})-([A-Z0-9]{5})$/i);
+        return legacy ? `BLW-${legacy[1]}-${legacy[2]}` : normalized;
+      }
       function customerOrderStatus(order) {
         if (order.status === "Đơn hủy" || order.shippingStatus === "cancelled") return "Đơn hủy";
         if (order.rawStatus === "pending") return "Chờ thanh toán";
@@ -2937,7 +2942,7 @@
         }
         orderList.innerHTML = orders.map((order) => `
           <article class="order-card">
-            <div class="line"><h3>${order.code}</h3><strong>${customerOrderStatus(order)}</strong></div>
+            <div class="line"><h3>${displayOrderCode(order.code)}</h3><strong>${customerOrderStatus(order)}</strong></div>
             <div>
               <p class="muted">${order.customer.name} · ${order.customer.phone}</p>
               <p class="muted">${order.customer.address}</p>

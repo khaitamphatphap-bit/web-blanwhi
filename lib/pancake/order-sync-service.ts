@@ -7,6 +7,7 @@ import { PancakeService } from "@/lib/pancake/pancake-service";
 import { QueueHandler } from "@/lib/pancake/queue-handler";
 import type { ShopOrder } from "@/lib/types";
 import { mapPancakeStatus } from "@/lib/pancake/domain";
+import { shortOrderCode } from "@/lib/order-code";
 
 function externalId(payload: Record<string, unknown>) {
   const record = (payload.data && typeof payload.data === "object" ? payload.data : payload) as Record<string, unknown>;
@@ -84,6 +85,21 @@ export class OrderSyncService {
     const existing = await this.pancake.findOrder(order.code, order.customer.phone);
     if (!existing) return order;
     const existingId = externalId(existing);
+    const targetPosOrderCode = shortOrderCode(order.code);
+    const remoteOrderCode = value(existing, ["custom_id", "partner_order_id", "order_code", "code"])
+      .replace(/^BLANWHI:/i, "")
+      .trim()
+      .toUpperCase();
+    let posOrderCodeUpdated = remoteOrderCode === targetPosOrderCode;
+    if (existingId && !posOrderCodeUpdated) {
+      try {
+        await this.pancake.updateOrderCode(existingId, targetPosOrderCode);
+        posOrderCodeUpdated = true;
+        await PancakeLogger.write("info", "order.code", `Đã đổi mã đơn Pancake thành ${targetPosOrderCode}.`, order.code);
+      } catch (error) {
+        await PancakeLogger.write("error", "order.code", `Chưa đổi được mã đơn Pancake: ${ExceptionHandler.message(error)}`, order.code);
+      }
+    }
     const remoteStatus = value(existing, ["status", "order_status", "state"]);
     const mapped = mapPancakeStatus(remoteStatus);
     if (mapped.release && order.inventoryReservationApplied && !order.inventoryReservationReleased) {
@@ -91,6 +107,7 @@ export class OrderSyncService {
     }
     const updated = await updateOrder(order.code, {
       pancakeOrderId: existingId || pancakeOrderId(order),
+      ...(posOrderCodeUpdated ? { posOrderCode: targetPosOrderCode } : {}),
       ...(mapped.status === "cancelled" && order.status !== "cancelled" ? { status: "cancelled" as const } : {}),
       ...(mapped.shippingStatus && order.deliveryType !== "express" ? { shippingStatus: mapped.shippingStatus } : {}),
       ...(mapped.pancakeStatus ? { pancakeStatus: mapped.pancakeStatus } : {}),
@@ -125,6 +142,7 @@ export class OrderSyncService {
       const createdPancakeOrderId = externalId(response);
       const updated = await updateOrder(order.code, {
         pancakeOrderId: createdPancakeOrderId || pancakeOrderId(current),
+        posOrderCode: shortOrderCode(current.code),
         pancakeStatus: "packing",
         ...(current.deliveryType === "express" ? { shippingStatus: "awaiting_creation" as const, shippingCarrier: "", trackingCode: "", shippingMessage: "Chờ tạo vận đơn hỏa tốc" } : shippingUpdate(response)),
         externalSync: {
@@ -193,7 +211,7 @@ export class OrderSyncService {
     if (mapped.release && order.inventoryReservationApplied && !order.inventoryReservationReleased) {
       await new InventoryService().reserve(order.items, "restore");
     }
-    const updated = await updateOrder(code, {
+    const updated = await updateOrder(order.code, {
       ...(mapped.status === "cancelled" && order.status !== "cancelled" ? { status: "cancelled" as const } : {}),
       ...(mapped.shippingStatus && !preserveCancellation && order.deliveryType !== "express" ? { shippingStatus: mapped.shippingStatus } : {}),
       ...(mapped.pancakeStatus && !preserveCancellation ? { pancakeStatus: mapped.pancakeStatus } : {}),

@@ -1,5 +1,6 @@
 import { readJsonStore, writeJsonStore } from "@/lib/data-store";
 import { OrderStatus, ShopOrder } from "@/lib/types";
+import { shortOrderCode } from "@/lib/order-code";
 
 export async function readOrders(): Promise<ShopOrder[]> {
   return readJsonStore<ShopOrder[]>("orders.json", []);
@@ -17,7 +18,8 @@ export async function createOrder(order: ShopOrder) {
 
 export async function findOrderByCode(code: string) {
   const orders = await readOrders();
-  return orders.find((order) => order.code === code) ?? null;
+  const normalized = String(code || "").trim().toUpperCase();
+  return orders.find((order) => order.code.toUpperCase() === normalized || shortOrderCode(order.code) === normalized) ?? null;
 }
 
 export async function updateOrderStatus(

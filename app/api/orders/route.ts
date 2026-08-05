@@ -3,6 +3,7 @@ import { readOrders } from "@/lib/orders";
 import { OrderSyncService } from "@/lib/pancake/order-sync-service";
 import { readIntegrationConfig } from "@/lib/integrations";
 import { reconcileZaloPayPayment, reconcileZaloPayRefund } from "@/lib/payment-confirmation";
+import { shortOrderCode } from "@/lib/order-code";
 
 export async function GET(request: Request) {
   const orders = await readOrders();
@@ -64,12 +65,20 @@ export async function GET(request: Request) {
     });
   }
 
+  const legacyLinkedOrders = orders
+    .filter((order) => shortOrderCode(order.code) !== order.code
+      && Boolean(order.pancakeOrderId || order.pancakeStatus)
+      && order.posOrderCode !== shortOrderCode(order.code))
+    .slice(0, 10);
   const paidOrdersNeedingPos = orders
     .filter((order) => order.status === "paid" && !order.pancakeOrderId && !order.pancakeStatus)
     .slice(0, 20);
-  if (paidOrdersNeedingPos.length) {
+  if (legacyLinkedOrders.length || paidOrdersNeedingPos.length) {
     const sync = new OrderSyncService();
-    await Promise.allSettled(paidOrdersNeedingPos.map((order) => sync.create(order)));
+    await Promise.allSettled([
+      ...legacyLinkedOrders.map((order) => sync.reconcileExisting(order)),
+      ...paidOrdersNeedingPos.map((order) => sync.create(order))
+    ]);
     return NextResponse.json({ orders: await readOrders() }, { headers: { "Cache-Control": "no-store, max-age=0" } });
   }
 

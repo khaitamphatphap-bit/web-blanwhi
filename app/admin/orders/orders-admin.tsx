@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { shortOrderCode } from "@/lib/order-code";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import type { IntegrationConfig, ShippingProvider } from "@/lib/integrations";
 import { money } from "@/lib/pricing";
@@ -393,7 +394,7 @@ export function OrdersAdmin({
             <article key={order.id} className="border border-neutral-200 bg-white">
               <div className="grid gap-4 p-4 lg:grid-cols-[1.15fr_1fr_1fr_.8fr_auto] lg:items-center">
                 <div>
-                  <Link href={`/payment-result?orderCode=${order.code}`} className="border-b border-black text-sm font-semibold">{order.code}</Link>
+                  <Link href={`/payment-result?orderCode=${order.code}`} className="border-b border-black text-sm font-semibold">{shortOrderCode(order.code)}</Link>
                   <div className="mt-1 text-xs text-neutral-500">{new Date(order.createdAt).toLocaleString("vi-VN")}</div>
                   <span className={`mt-3 inline-flex border px-2 py-1 text-xs uppercase ${orderStageClass(getOrderStage(order))}`}>{orderStageLabel(getOrderStage(order))}</span>
                 </div>

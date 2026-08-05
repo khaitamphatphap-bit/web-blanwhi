@@ -128,6 +128,7 @@ export type ShopOrder = {
   providerOrderId?: string;
   paymentProviderOrderId?: string;
   pancakeOrderId?: string;
+  posOrderCode?: string;
   providerMessage?: string;
   refundStatus?: "not_required" | "pending" | "succeeded" | "failed";
   refundProvider?: string;

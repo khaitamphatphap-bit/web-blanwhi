@@ -1,3 +1,5 @@
+import { shortOrderCode } from "@/lib/order-code";
+
 export type PancakeMappedStatus = {
   pancakeStatus?: "pending_confirmation" | "confirmed" | "packing" | "shipping" | "completed" | "cancelled" | "returned";
   status?: "pending" | "paid" | "failed" | "cancelled";
@@ -39,7 +41,7 @@ export function mapPancakeStatus(status: string): PancakeMappedStatus {
 }
 
 export function pancakeOrderKey(orderCode: string) {
-  return `BLANWHI:${orderCode.trim().toUpperCase()}`;
+  return `BLANWHI:${shortOrderCode(orderCode)}`;
 }
 
 export function buildPancakeOrderPayload(order: {
@@ -54,7 +56,7 @@ export function buildPancakeOrderPayload(order: {
   const cod = order.paymentMethod === "cod" ? order.total : 0;
   return {
     ...(shopId ? { shop_id: Number(shopId) || shopId } : {}),
-    custom_id: order.code,
+    custom_id: shortOrderCode(order.code),
     bill_full_name: order.customer.name,
     bill_phone_number: order.customer.phone,
     bill_email: order.customer.email || "",

@@ -4,6 +4,7 @@ import { PancakeIntegrationError } from "@/lib/pancake/exception-handler";
 import type { PancakeVariation } from "@/lib/pancake/types";
 import { Validator } from "@/lib/pancake/validator";
 import { buildPancakeOrderPayload } from "@/lib/pancake/domain";
+import { shortOrderCode } from "@/lib/order-code";
 
 function records(payload: unknown): Record<string, unknown>[] {
   if (Array.isArray(payload)) return payload.filter((item): item is Record<string, unknown> => Boolean(item && typeof item === "object"));
@@ -241,6 +242,14 @@ export class PancakeService {
     });
   }
 
+  async updateOrderCode(providerOrderId: string, orderCode: string) {
+    const id = Validator.required(providerOrderId, "Pancake Order ID");
+    return this.client.request<Record<string, unknown>>(`/shops/${encodeURIComponent(this.shopId())}/orders/${encodeURIComponent(id)}`, {
+      method: "PUT",
+      body: { custom_id: shortOrderCode(orderCode) }
+    });
+  }
+
   async orders(search = "") {
     return this.client.request<unknown>(`/shops/${encodeURIComponent(this.shopId())}/orders`, {
       query: { page_number: 1, page_size: 100, search: search || undefined }
@@ -248,13 +257,13 @@ export class PancakeService {
   }
 
   async findOrder(orderCode: string, customerPhone = "") {
-    const expected = orderCode.trim().toUpperCase();
-    const searches = [...new Set([orderCode.trim(), customerPhone.trim(), ""].filter((value, index) => value || index === 2))];
+    const expectedCodes = new Set([orderCode.trim().toUpperCase(), shortOrderCode(orderCode)]);
+    const searches = [...new Set([orderCode.trim(), shortOrderCode(orderCode), customerPhone.trim(), ""].filter((value, index) => value || index === 3))];
     for (const search of searches) {
       const match = records(await this.orders(search)).find((item) => {
         const partnerCode = deepText(item, ["custom_id", "partner_order_id", "order_code", "code"]).toUpperCase();
         const externalCode = deepText(item, ["external_order_id"]).replace(/^BLANWHI:/i, "").toUpperCase();
-        return partnerCode === expected || externalCode === expected || deepContainsValue(item, expected);
+        return [...expectedCodes].some((expected) => partnerCode === expected || externalCode === expected || deepContainsValue(item, expected));
       });
       if (match) return match;
     }
