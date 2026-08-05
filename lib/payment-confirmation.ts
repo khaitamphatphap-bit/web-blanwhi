@@ -63,14 +63,27 @@ export async function reconcileZaloPayRefund(order: ShopOrder, paymentConfig: In
   const result = await queryZaloPayRefund(order.refundId, paymentConfig);
   const refundStatus = Number(result.refund_status || 0);
   const returnCode = Number(result.return_code || 0);
-  if (refundStatus === 1) {
+  const processing = refundResponseIsProcessing(result);
+  if (refundStatus === 1 || (refundStatus === 0 && returnCode === 1 && !processing)) {
     return await updateOrder(order.code, {
       refundStatus: "succeeded",
-      refundMessage: "ZaloPay xác nhận đã hoàn tiền thành công về tài khoản khách.",
+      refundMessage: "ĐÃ HOÀN TIỀN",
       refundedAt: new Date().toISOString()
     }) || order;
   }
-  if (refundResponseIsProcessing(result)) {
+  if (processing) {
+    try {
+      const payment = await queryZaloPayPayment(order, paymentConfig);
+      if (Number(payment.refund_status || 0) === 1) {
+        return await updateOrder(order.code, {
+          refundStatus: "succeeded",
+          refundMessage: "ĐÃ HOÀN TIỀN",
+          refundedAt: new Date().toISOString()
+        }) || order;
+      }
+    } catch {
+      // API giao dịch gốc là lớp đối chiếu bổ sung; vẫn giữ kết quả truy vấn hoàn tiền chính.
+    }
     return await updateOrder(order.code, {
       refundStatus: "pending",
       refundMessage: "ZaloPay đang xử lý hoàn tiền về tài khoản khách. Website sẽ tiếp tục tự động kiểm tra."

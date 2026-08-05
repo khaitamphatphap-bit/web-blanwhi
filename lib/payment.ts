@@ -290,6 +290,7 @@ export async function queryZaloPayPayment(order: ShopOrder, paymentConfig?: Paym
     amount?: number;
     zp_trans_id?: string | number;
     server_time?: number;
+    refund_status?: number;
   };
   if (!response.ok) {
     throw new Error(result.return_message || `ZaloPay query HTTP ${response.status}`);
