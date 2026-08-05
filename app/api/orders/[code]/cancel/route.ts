@@ -14,7 +14,7 @@ function phoneKey(value: unknown) {
 }
 
 function carrierHasAccepted(order: NonNullable<Awaited<ReturnType<typeof findOrderByCode>>>) {
-  if (["shipping", "delivered", "delivery_failed", "returning", "returned"].includes(order.shippingStatus || "")) return true;
+  if (["ready_to_ship", "shipping", "delivered", "delivery_failed", "returning", "returned"].includes(order.shippingStatus || "")) return true;
   return ["shipping", "completed", "returned"].includes(order.pancakeStatus || "");
 }
 
@@ -41,7 +41,7 @@ export async function POST(request: Request, { params }: Params) {
       }) || current;
     }
     if (carrierHasAccepted(current)) {
-      return NextResponse.json({ error: "Viettel Post đã quét nhận bưu gửi nên đơn không thể hủy trực tuyến." }, { status: 409 });
+      return NextResponse.json({ error: "Đơn đã giao cho đơn vị vận chuyển hoặc đang giao hàng nên không thể hủy trực tuyến." }, { status: 409 });
     }
 
     const reason = body.reason?.trim() || "Khách yêu cầu hủy đơn";
