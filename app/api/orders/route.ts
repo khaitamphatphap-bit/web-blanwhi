@@ -84,7 +84,7 @@ export async function GET(request: Request) {
   const unpaidOnlineOrdersOnPos = orders
     .filter((order) => order.status === "pending"
       && String(order.paymentMethod || "").trim().toLowerCase() !== "cod"
-      && Boolean(order.pancakeOrderId)
+      && Boolean(order.pancakeOrderId || (order.pancakeStatus && order.providerOrderId))
       && order.pancakeStatus !== "cancelled"
       && !["shipping", "delivered", "delivery_failed", "returning", "returned", "cancelled"].includes(order.shippingStatus || ""))
     .slice(0, 10);

@@ -189,7 +189,7 @@ export class OrderSyncService {
   async removeUnpaidFromPos(order: ShopOrder) {
     const paymentMethod = String(order.paymentMethod || "").trim().toLowerCase();
     if (order.status === "paid" || paymentMethod === "cod") return order;
-    const remoteOrderId = String(order.pancakeOrderId || "").trim();
+    const remoteOrderId = String(order.pancakeOrderId || (order.pancakeStatus ? order.providerOrderId : "") || "").trim();
     if (!remoteOrderId) return order;
 
     try {
