@@ -216,12 +216,16 @@
       .detail-price + .discount-percent { font-size: 12px; }
       .muted { color: var(--muted); font-size: 12px; margin-top: 4px; }
       .swatches { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
-      .swatches button { width: 22px; height: 22px; padding: 0; border: 1px solid #aaa; display: grid; place-items: center; cursor: pointer; overflow: hidden; background-size: cover; background-position: center; color: #111; font-size: 9px; font-weight: 800; text-transform: uppercase; }
-      .swatches button img { width: 100%; height: 100%; object-fit: cover; display: block; }
+      .swatches button { position: relative; width: 22px; height: 22px; padding: 0; border: 1px solid #aaa; display: grid; place-items: center; cursor: pointer; overflow: hidden; background: #f1f1f1; background-size: cover; background-position: center; color: #111; font-size: 9px; font-weight: 800; text-transform: uppercase; }
+      .swatches button.swatch-loading::before, .selection-loading .sizes button::before, .selection-loading .swatches button::before, .grid.inventory-checking .sizes button::before, .grid.inventory-checking .swatches button::before { content: ""; position: absolute; inset: 0; z-index: 0; background: linear-gradient(110deg, #eeeeee 8%, #fafafa 18%, #e8e8e8 33%); background-size: 200% 100%; animation: placeholderShimmer 1.15s linear infinite; }
+      .swatches button img { position: relative; z-index: 1; width: 100%; height: 100%; object-fit: cover; display: block; opacity: 0; transition: opacity .18s ease; }
+      .swatches button.swatch-loaded img { opacity: 1; }
       .swatches button.active { outline: 2px solid #111; outline-offset: 2px; }
       .sizes { display: flex; gap: 4px; margin-top: 10px; }
-      .sizes button { border: 1px solid var(--line); background: #fff; min-width: 27px; height: 27px; display: grid; place-items: center; font-size: 11px; }
+      .sizes button { position: relative; border: 1px solid var(--line); background: #fff; min-width: 27px; height: 27px; display: grid; place-items: center; overflow: hidden; font-size: 11px; }
+      .selection-loading .sizes button, .selection-loading .swatches button, .grid.inventory-checking .sizes button, .grid.inventory-checking .swatches button { color: transparent; pointer-events: none; }
       .sizes button.active { border-color: #000; background: #000; color: #fff; }
+      .selection-loading .sizes button.active, .selection-loading .swatches button.active, .grid.inventory-checking .sizes button.active, .grid.inventory-checking .swatches button.active { outline: 0; border-color: var(--line); background: #fff; color: transparent; }
       .sizes button.out-of-stock, .swatches button.out-of-stock { color: #aaa; border-color: #ddd; background: #f4f4f4; opacity: .55; cursor: not-allowed; filter: grayscale(1); }
       .sizes button.out-of-stock.active { border-color: #bbb; background: #eee; color: #888; }
       .stock-note { margin-top: 10px; color: #777; font-size: 12px; font-weight: 700; text-transform: uppercase; }
@@ -1077,6 +1081,8 @@
         const swatch = image.closest(".swatches button");
         if (swatch) {
           image.hidden = true;
+          swatch.classList.remove("swatch-loading");
+          swatch.classList.add("swatch-loaded");
           swatch.textContent = (image.alt || "?").trim().slice(0, 1);
         }
       }, true);
@@ -1085,6 +1091,9 @@
         const image = event.target;
         if (image instanceof HTMLImageElement && image.classList.contains("product-photo")) {
           markProductImageLoaded(image);
+        }
+        if (image instanceof HTMLImageElement && image.classList.contains("swatch-photo")) {
+          markSwatchImageLoaded(image);
         }
       }, true);
 
@@ -1224,12 +1233,22 @@
         image.classList.add("is-loaded");
         image.closest(".product-visual")?.classList.add("image-loaded");
       }
+      function markSwatchImageLoaded(image) {
+        const swatch = image?.closest?.(".swatches button");
+        if (!swatch) return;
+        image.classList.add("is-loaded");
+        swatch.classList.remove("swatch-loading");
+        swatch.classList.add("swatch-loaded");
+      }
       function markVisibleProductImages(root = productGrid) {
         root.querySelectorAll(".product-visual").forEach((visual) => {
           if (!visual.querySelector(".product-photo")) visual.classList.add("image-loaded");
         });
         root.querySelectorAll("img.product-photo").forEach((image) => {
           if (image.complete && image.naturalWidth > 0) markProductImageLoaded(image);
+        });
+        root.querySelectorAll("img.swatch-photo").forEach((image) => {
+          if (image.complete && image.naturalWidth > 0) markSwatchImageLoaded(image);
         });
       }
       const comboText = (kind) => {
@@ -1420,9 +1439,9 @@
           }
         })();
         const label = colorLabel(color, product, classificationIndex);
-        const content = image ? `<img src="${escapeMarkup(image)}" alt="${escapeMarkup(label)}" loading="eager" decoding="async" fetchpriority="low" />` : escapeMarkup(label.slice(0, 1));
+        const content = image ? `<img class="swatch-photo" src="${escapeMarkup(image)}" alt="${escapeMarkup(label)}" loading="eager" decoding="async" fetchpriority="low" />` : escapeMarkup(label.slice(0, 1));
         const out = !colorHasStock(product, color, classificationIndex);
-        return `<button type="button" class="${index === product.colorIndex ? "active" : ""}${out ? " out-of-stock" : ""}" ${attribute} data-stock-state="${out ? "out" : "in"}" aria-label="Chọn màu ${escapeMarkup(label)} cho ${escapeMarkup(product.name)}${out ? " - hết hàng" : ""}" title="${escapeMarkup(label)}${out ? " - hết hàng" : ""}">${content}</button>`;
+        return `<button type="button" class="${index === product.colorIndex ? "active" : ""}${out ? " out-of-stock" : ""}${image ? " swatch-loading" : " swatch-loaded"}" ${attribute} data-stock-state="${out ? "out" : "in"}" aria-label="Chọn màu ${escapeMarkup(label)} cho ${escapeMarkup(product.name)}${out ? " - hết hàng" : ""}" title="${escapeMarkup(label)}${out ? " - hết hàng" : ""}">${content}</button>`;
       };
       const productVisualMedia = (product, color = product.color, classificationIndex = product.classificationIndex || 0) => {
         const image = productImageUrl(product, color, classificationIndex);
@@ -1768,6 +1787,7 @@
         if (!force && allAvailabilityUpdatedAt && Date.now() - allAvailabilityUpdatedAt < 15000) return;
         if (allAvailabilityPromise) return allAvailabilityPromise;
 
+        productGridShell.classList.add("inventory-checking");
         allAvailabilityPromise = (async () => {
           try {
             const response = await fetch(`${paymentApiBase}/api/inventory/availability?t=${Date.now()}`, { cache: "no-store" });
@@ -1785,6 +1805,7 @@
           } finally {
             allAvailabilityUpdatedAt = Date.now();
             allAvailabilityPromise = null;
+            productGridShell.classList.remove("inventory-checking");
           }
         })();
         return allAvailabilityPromise;
@@ -2535,6 +2556,7 @@
           </div>
         `;
         detailModal.classList.add("open");
+        requestAnimationFrame(() => markVisibleProductImages(detailContent));
       }
 
       function renderVariantModal() {
@@ -2610,6 +2632,7 @@
             </div>
           </div>
         `;
+        requestAnimationFrame(() => markVisibleProductImages(variantContent));
       }
 
       function preferredVariantSelection(product) {
@@ -2634,6 +2657,7 @@
         variantState = { productId: id, mode, ...preferredVariantSelection(product), qty: Math.max(1, Number(product.orderQty) || 1), colorTouched: false };
         renderVariantModal();
         variantModal.classList.add("open");
+        variantContent.classList.add("selection-loading");
         refreshProductAvailability(id).then(() => {
           if (!variantModal.classList.contains("open") || variantState.productId !== id) return;
           const selectedColor = variantSwatches(product, variantState.classificationIndex)[variantState.colorIndex];
@@ -2646,6 +2670,9 @@
             }));
           }
           renderVariantModal();
+        }).finally(() => {
+          variantContent.classList.remove("selection-loading");
+          requestAnimationFrame(() => markVisibleProductImages(variantContent));
         });
       }
 
