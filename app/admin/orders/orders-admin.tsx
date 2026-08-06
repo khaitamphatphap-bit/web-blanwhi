@@ -18,6 +18,36 @@ type OrderStage =
   | "returning"
   | "cancelled";
 
+type StorageHealthReport = {
+  primaryStore: "database" | "r2" | "vercel_blob" | "local_file";
+  database: {
+    configured: boolean;
+    ok: boolean;
+    sizeBytes?: number;
+    limitBytes?: number;
+    usedPercent?: number;
+    warning?: string;
+    error?: string;
+  };
+  r2: {
+    configured: boolean;
+    ok: boolean;
+    warning?: string;
+    error?: string;
+  };
+  local: {
+    dataDir: string;
+    ok: boolean;
+    sizeBytes?: number;
+    error?: string;
+  };
+  orders?: {
+    count: number;
+    lastCreatedAt?: string;
+    lastUpdatedAt?: string;
+  };
+};
+
 const orderStages: Array<{ value: OrderStage; label: string }> = [
   { value: "new", label: "Đơn mới đặt" },
   { value: "handed_to_carrier", label: "Đã giao cho ĐVVC" },
@@ -74,10 +104,48 @@ const shippingLabels: Record<ShippingStatus, string> = {
 };
 const pancakeStatusLabels: Record<NonNullable<ShopOrder["pancakeStatus"]>, string> = { pending_confirmation: "Chờ xác nhận", confirmed: "Đã xác nhận", packing: "Chờ in", shipping: "Đang giao", completed: "Hoàn thành", cancelled: "Hủy", returned: "Hoàn hàng" };
 
+const primaryStoreLabels: Record<StorageHealthReport["primaryStore"], string> = {
+  database: "Postgres database",
+  r2: "Cloudflare R2 mã hóa",
+  vercel_blob: "Vercel Blob mã hóa",
+  local_file: "File local tạm"
+};
+
 const stageOrder = orderStages.reduce<Record<OrderStage, number>>((map, stage, index) => {
   map[stage.value] = index;
   return map;
 }, {} as Record<OrderStage, number>);
+
+function formatBytes(value?: number) {
+  if (!value || value <= 0) return "Chưa có dữ liệu";
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  let size = value;
+  let index = 0;
+  while (size >= 1024 && index < units.length - 1) {
+    size /= 1024;
+    index += 1;
+  }
+  return `${size >= 10 || index === 0 ? Math.round(size) : size.toFixed(1)} ${units[index]}`;
+}
+
+function formatHealthTime(value?: string) {
+  if (!value) return "Chưa có";
+  return new Date(value).toLocaleString("vi-VN");
+}
+
+function storageHealthLevel(health: StorageHealthReport | null) {
+  if (!health) return "checking";
+  if (health.primaryStore === "local_file" || !health.database.configured || health.database.error || health.r2.error) return "danger";
+  if (health.database.warning || health.r2.warning || (health.database.usedPercent || 0) >= 70) return "warning";
+  return "ok";
+}
+
+function storageHealthClass(level: string) {
+  if (level === "ok") return "border-emerald-300 bg-emerald-50 text-emerald-900";
+  if (level === "warning") return "border-amber-300 bg-amber-50 text-amber-900";
+  if (level === "danger") return "border-red-300 bg-red-50 text-red-900";
+  return "border-neutral-200 bg-neutral-50 text-neutral-800";
+}
 
 export function OrdersAdmin({
   initialOrders,
@@ -97,6 +165,8 @@ export function OrdersAdmin({
   const [lastBackgroundRefresh, setLastBackgroundRefresh] = useState<Date | null>(null);
   const [stageFilter, setStageFilter] = useState<OrderStage | "all">("all");
   const [expandedOrderCode, setExpandedOrderCode] = useState("");
+  const [storageHealth, setStorageHealth] = useState<StorageHealthReport | null>(null);
+  const [storageHealthBusy, setStorageHealthBusy] = useState(false);
   const orderListRef = useRef<HTMLElement | null>(null);
   const filteredOrders = useMemo(() => stageFilter === "all" ? orders : orders.filter((order) => getOrderStage(order) === stageFilter), [orders, stageFilter]);
   const sortedOrders = useMemo(() => [...filteredOrders].sort((left, right) => {
@@ -107,6 +177,7 @@ export function OrdersAdmin({
   const totals = useMemo(() => ({
     revenue: orders.filter((order) => order.status === "paid").reduce((sum, order) => sum + order.total, 0)
   }), [orders]);
+  const storageLevel = storageHealthLevel(storageHealth);
 
   async function refreshOrders({ silent = false }: { silent?: boolean } = {}) {
     if (silent) setIsBackgroundRefreshing(true);
@@ -117,6 +188,47 @@ export function OrdersAdmin({
       if (silent) setLastBackgroundRefresh(new Date());
     } finally {
       if (silent) setIsBackgroundRefreshing(false);
+    }
+  }
+
+  async function refreshStorageHealth() {
+    setStorageHealthBusy(true);
+    try {
+      const response = await fetch("/api/admin/storage-health", { cache: "no-store" });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Không kiểm tra được lưu trữ.");
+      setStorageHealth(data);
+    } catch (error) {
+      setStorageHealth((current) => ({
+        ...(current || {}),
+        primaryStore: current?.primaryStore || "local_file",
+        database: {
+          ...(current?.database || { configured: false, ok: false }),
+          ok: false,
+          error: error instanceof Error ? error.message : "Không kiểm tra được lưu trữ."
+        },
+        r2: current?.r2 || { configured: false, ok: false },
+        local: current?.local || { dataDir: "", ok: false },
+        orders: current?.orders
+      }));
+    } finally {
+      setStorageHealthBusy(false);
+    }
+  }
+
+  async function backupOrdersNow() {
+    setStorageHealthBusy(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/admin/storage-health", { method: "POST" });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Không tạo được backup đơn hàng.");
+      setMessage(`Đã tạo backup ${data.orders?.count || 0} đơn hàng vào ${data.backup?.location || "kho lưu trữ"}.`);
+      await refreshStorageHealth();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Không tạo được backup đơn hàng.");
+    } finally {
+      setStorageHealthBusy(false);
     }
   }
 
@@ -238,6 +350,15 @@ export function OrdersAdmin({
     };
   }, [integrations.shipping.enabled]);
 
+  useEffect(() => {
+    refreshStorageHealth().catch(() => undefined);
+    const healthTimer = window.setInterval(() => {
+      if (document.visibilityState === "hidden") return;
+      refreshStorageHealth().catch(() => undefined);
+    }, 60000);
+    return () => window.clearInterval(healthTimer);
+  }, []);
+
   return (
     <main className="mx-auto min-h-screen max-w-7xl bg-white px-6 py-10 md:my-12 md:px-10">
       <header className="flex flex-wrap items-end justify-between gap-4 border-b border-neutral-200 pb-6">
@@ -258,6 +379,51 @@ export function OrdersAdmin({
         {lastBackgroundRefresh && <span> Lần cập nhật gần nhất: {lastBackgroundRefresh.toLocaleTimeString("vi-VN")}.</span>}
         {isBackgroundRefreshing && <span> Đang kiểm tra dữ liệu mới...</span>}
       </p>
+
+      <section className={`mt-4 border p-4 ${storageHealthClass(storageLevel)}`}>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase">An toàn dữ liệu đơn hàng</p>
+            <h2 className="mt-1 text-2xl font-medium">
+              {storageLevel === "ok" ? "Đang an toàn" : storageLevel === "danger" ? "Cần xử lý trước khi bán mạnh" : storageLevel === "warning" ? "Cần theo dõi" : "Đang kiểm tra"}
+            </h2>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button onClick={refreshStorageHealth} disabled={storageHealthBusy} className="h-10 border border-current px-4 text-xs uppercase disabled:opacity-50">Kiểm tra lại</button>
+            <button onClick={backupOrdersNow} disabled={storageHealthBusy} className="h-10 border border-black bg-black px-4 text-xs uppercase text-white disabled:opacity-50">Backup đơn ngay</button>
+          </div>
+        </div>
+        <div className="mt-4 grid gap-3 text-sm md:grid-cols-4">
+          <div className="border border-current/20 bg-white/55 p-3">
+            <p className="text-xs uppercase opacity-70">Kho chính</p>
+            <strong className="mt-1 block">{storageHealth ? primaryStoreLabels[storageHealth.primaryStore] : "Đang kiểm tra"}</strong>
+          </div>
+          <div className="border border-current/20 bg-white/55 p-3">
+            <p className="text-xs uppercase opacity-70">Database</p>
+            <strong className="mt-1 block">{storageHealth?.database.ok ? "Kết nối OK" : storageHealth?.database.configured ? "Có cấu hình nhưng lỗi" : "Chưa có DATABASE_URL"}</strong>
+            <span className="mt-1 block text-xs opacity-80">{storageHealth?.database.usedPercent !== undefined ? `Đã dùng ${storageHealth.database.usedPercent}% · ${formatBytes(storageHealth.database.sizeBytes)}` : formatBytes(storageHealth?.database.sizeBytes)}</span>
+          </div>
+          <div className="border border-current/20 bg-white/55 p-3">
+            <p className="text-xs uppercase opacity-70">R2 backup/ảnh</p>
+            <strong className="mt-1 block">{storageHealth?.r2.ok ? "Ghi được" : storageHealth?.r2.configured ? "Có cấu hình nhưng lỗi" : "Chưa cấu hình"}</strong>
+            <span className="mt-1 block text-xs opacity-80">{storageHealth?.r2.error || storageHealth?.r2.warning || "Dùng làm kho dự phòng và kho ảnh."}</span>
+          </div>
+          <div className="border border-current/20 bg-white/55 p-3">
+            <p className="text-xs uppercase opacity-70">Đơn hàng</p>
+            <strong className="mt-1 block">{storageHealth?.orders?.count ?? orders.length} đơn</strong>
+            <span className="mt-1 block text-xs opacity-80">Mới nhất: {formatHealthTime(storageHealth?.orders?.lastCreatedAt || orders[0]?.createdAt)}</span>
+          </div>
+        </div>
+        {(storageHealth?.database.warning || storageHealth?.database.error || storageHealth?.r2.warning || storageHealth?.r2.error || storageHealth?.primaryStore === "local_file") && (
+          <div className="mt-3 space-y-1 text-sm">
+            {storageHealth.primaryStore === "local_file" && <p>Đang dùng file local tạm. Khi chạy production phải cấu hình DATABASE_URL để đơn không phụ thuộc server tạm.</p>}
+            {storageHealth.database.warning && <p>{storageHealth.database.warning}</p>}
+            {storageHealth.database.error && <p>{storageHealth.database.error}</p>}
+            {storageHealth.r2.warning && <p>{storageHealth.r2.warning}</p>}
+            {storageHealth.r2.error && <p>{storageHealth.r2.error}</p>}
+          </div>
+        )}
+      </section>
 
       <section className="mt-6 grid gap-3 md:grid-cols-3 lg:grid-cols-9">
         {orderStages.map((stage) => (

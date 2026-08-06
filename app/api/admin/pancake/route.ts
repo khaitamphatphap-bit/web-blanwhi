@@ -9,7 +9,7 @@ import { QueueHandler } from "@/lib/pancake/queue-handler";
 import { buildProductInventory } from "@/lib/product-inventory";
 import { findOrderByCode, updateOrder } from "@/lib/orders";
 import { readSiteContent, seedPancakeProductLinks } from "@/lib/site-content";
-import { hasBlobStore, hasDatabase } from "@/lib/data-store";
+import { hasBlobStore, hasDatabase, hasR2Store } from "@/lib/data-store";
 
 async function dashboard() {
   const content = await readSiteContent();
@@ -39,8 +39,9 @@ async function dashboard() {
     },
     storage: {
       database: hasDatabase(),
+      r2: hasR2Store(),
       blob: hasBlobStore(),
-      persistent: hasDatabase() || hasBlobStore()
+      persistent: hasDatabase() || hasR2Store() || hasBlobStore()
     },
     webhookUrl: "/api/webhooks/pancake",
     products,

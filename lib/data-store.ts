@@ -1,9 +1,34 @@
-import { mkdir, readFile, readdir, writeFile } from "fs/promises";
+import { mkdir, readFile, readdir, stat, writeFile } from "fs/promises";
 import path from "path";
 import { hasR2ImageStorage, readR2Text, writeR2Text } from "@/lib/image-storage";
 
 type PgPool = {
   query: (text: string, params?: unknown[]) => Promise<{ rows: Array<Record<string, unknown>> }>;
+};
+
+export type StoreHealthReport = {
+  primaryStore: "database" | "r2" | "vercel_blob" | "local_file";
+  database: {
+    configured: boolean;
+    ok: boolean;
+    sizeBytes?: number;
+    limitBytes?: number;
+    usedPercent?: number;
+    warning?: string;
+    error?: string;
+  };
+  r2: {
+    configured: boolean;
+    ok: boolean;
+    warning?: string;
+    error?: string;
+  };
+  local: {
+    dataDir: string;
+    ok: boolean;
+    sizeBytes?: number;
+    error?: string;
+  };
 };
 
 let poolPromise: Promise<PgPool> | null = null;
@@ -276,6 +301,24 @@ function toStoreKey(filename: string) {
   return filename.replace(/\.json$/, "");
 }
 
+async function directorySize(dir: string): Promise<number> {
+  let total = 0;
+  try {
+    const entries = await readdir(dir, { withFileTypes: true });
+    await Promise.all(entries.map(async (entry) => {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        total += await directorySize(fullPath);
+        return;
+      }
+      if (entry.isFile()) total += (await stat(fullPath)).size;
+    }));
+  } catch {
+    return total;
+  }
+  return total;
+}
+
 function isStorageLimitError(error: unknown) {
   const candidate = error as { code?: string; message?: string; detail?: string };
   const text = `${candidate.code || ""} ${candidate.message || ""} ${candidate.detail || ""}`.toLowerCase();
@@ -308,6 +351,122 @@ async function backupJsonFile<T>(file: string, key: string) {
   } catch {
     // If the first write has no previous file, there is nothing to back up.
   }
+}
+
+export async function createJsonStoreBackup<T>(filename: string, value: T, reason = "manual-backup") {
+  const key = toStoreKey(filename);
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+
+  if (hasDatabase()) {
+    await ensureDatabaseSchema();
+    const pool = await getPool();
+    if (pool) {
+      await pool.query(
+        `insert into blanwhi_store_history (store_key, store_value, reason, created_at)
+         values ($1, $2::jsonb, $3, now())`,
+        [key, JSON.stringify(value), reason]
+      );
+      return { location: "database", key, createdAt: new Date().toISOString() };
+    }
+  }
+
+  if (hasR2Store()) {
+    const isPrivate = ["orders.json", "integrations.json", "pancake-logs.json", "pancake-queue.json", "pancake-links.json"].includes(filename);
+    const pathname = isPrivate
+      ? `blanwhi/data/manual-backups/private/${key}-${timestamp}.enc.json`
+      : `blanwhi/data/manual-backups/${key}-${timestamp}.json`;
+    await writeR2Text(pathname, isPrivate ? await encryptJson(value) : JSON.stringify(value), "application/json");
+    return { location: "r2", key: pathname, createdAt: new Date().toISOString() };
+  }
+
+  if (hasBlobStore()) {
+    const { put } = await import("@vercel/blob");
+    const isPrivate = ["orders.json", "integrations.json", "pancake-logs.json", "pancake-queue.json", "pancake-links.json"].includes(filename);
+    const pathname = isPrivate
+      ? `blanwhi/manual-backups/private/${key}-${timestamp}.enc.json`
+      : `blanwhi/manual-backups/${key}-${timestamp}.json`;
+    await put(pathname, isPrivate ? await encryptJson(value) : JSON.stringify(value), {
+      access: "public",
+      addRandomSuffix: false,
+      allowOverwrite: true,
+      contentType: "application/json"
+    });
+    return { location: "vercel_blob", key: pathname, createdAt: new Date().toISOString() };
+  }
+
+  const dir = path.join(writableDataDir(), "manual-backups", key);
+  await mkdir(dir, { recursive: true });
+  const file = path.join(dir, `${timestamp}.json`);
+  await writeFile(file, JSON.stringify(value, null, 2), "utf8");
+  return { location: "local_file", key: file, createdAt: new Date().toISOString() };
+}
+
+export async function getStoreHealthReport(): Promise<StoreHealthReport> {
+  const primaryStore: StoreHealthReport["primaryStore"] = hasDatabase()
+    ? "database"
+    : hasR2Store()
+      ? "r2"
+      : hasBlobStore()
+        ? "vercel_blob"
+        : "local_file";
+  const report: StoreHealthReport = {
+    primaryStore,
+    database: { configured: hasDatabase(), ok: false },
+    r2: { configured: false, ok: false },
+    local: { dataDir: writableDataDir(), ok: false }
+  };
+
+  if (hasDatabase()) {
+    try {
+      await ensureDatabaseSchema();
+      const pool = await getPool();
+      if (pool) {
+        const [ping, size] = await Promise.all([
+          pool.query("select 1 as ok"),
+          pool.query("select pg_database_size(current_database()) as size_bytes").catch(() => ({ rows: [] }))
+        ]);
+        report.database.ok = Number(ping.rows[0]?.ok) === 1;
+        const rawSize = size.rows[0]?.size_bytes;
+        const sizeBytes = typeof rawSize === "bigint" ? Number(rawSize) : Number(rawSize || 0);
+        if (Number.isFinite(sizeBytes) && sizeBytes > 0) report.database.sizeBytes = sizeBytes;
+        const limitMb = Number(process.env.DATABASE_STORAGE_LIMIT_MB || 0);
+        if (limitMb > 0) {
+          report.database.limitBytes = limitMb * 1024 * 1024;
+          report.database.usedPercent = Math.round((sizeBytes / report.database.limitBytes) * 1000) / 10;
+          if (report.database.usedPercent >= 80) report.database.warning = "Database sắp đầy. Nên nâng cấp dung lượng hoặc dọn dữ liệu không cần thiết.";
+        } else {
+          report.database.warning = "Chưa cấu hình DATABASE_STORAGE_LIMIT_MB nên chưa tính được cảnh báo sắp đầy chính xác.";
+        }
+      }
+    } catch (error) {
+      report.database.error = error instanceof Error ? error.message : String(error);
+    }
+  } else {
+    report.database.warning = "Chưa có DATABASE_URL. Production nên dùng database thật để đơn hàng không phụ thuộc server tạm.";
+  }
+
+  try {
+    report.r2.configured = hasR2Store();
+    if (report.r2.configured) {
+      await writeR2Text("blanwhi/health/last-check.json", JSON.stringify({ checkedAt: new Date().toISOString() }));
+      report.r2.ok = true;
+      report.r2.warning = "R2 đang kết nối được. Muốn báo sắp hết dung lượng chính xác cần thêm Cloudflare API token có quyền đọc usage/quota.";
+    } else {
+      report.r2.warning = "Chưa cấu hình R2. Ảnh production nên lưu ở R2 hoặc kho object storage tương đương.";
+    }
+  } catch (error) {
+    report.r2.error = error instanceof Error ? error.message : String(error);
+  }
+
+  try {
+    await mkdir(writableDataDir(), { recursive: true });
+    report.local.sizeBytes = await directorySize(writableDataDir());
+    report.local.ok = true;
+  } catch (error) {
+    report.local.error = error instanceof Error ? error.message : String(error);
+  }
+
+  return report;
 }
 
 export async function ensureJsonFile<T>(filename: string, fallback: T) {
