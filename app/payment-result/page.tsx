@@ -34,6 +34,7 @@ export default async function PaymentResultPage({ searchParams }: PageProps) {
   const zaloPayAppTransId = valueOf(params.apptransid) || valueOf(params.app_trans_id) || "";
   const orderCode = valueOf(params.orderCode) || valueOf(params.vnp_TxnRef) || valueOf(params.orderId) || orderCodeFromZaloPayAppTransId(zaloPayAppTransId) || "";
   const provider = valueOf(params.provider) || "payment";
+  const fromAdmin = valueOf(params.from) === "admin";
   const demo = valueOf(params.demo) === "1";
   const bankConfirmed = valueOf(params.bankConfirmed) === "1";
   let order = orderCode ? await findOrderByCode(orderCode) : null;
@@ -104,8 +105,14 @@ export default async function PaymentResultPage({ searchParams }: PageProps) {
         )}
       </section>
       <div className="mt-8 flex flex-wrap gap-3">
-        <Link href="/" className="inline-flex h-11 items-center border border-black px-5 text-sm uppercase">Về trang chủ</Link>
-        {orderCode && <Link href={`/?orderCode=${orderCode}#orders`} className="inline-flex h-11 items-center border border-black px-5 text-sm uppercase">Xem trạng thái đơn</Link>}
+        {fromAdmin ? (
+          <Link href="/admin/orders" className="inline-flex h-11 items-center border border-black px-5 text-sm uppercase">Danh sách đơn hàng</Link>
+        ) : (
+          <>
+            <Link href="/" className="inline-flex h-11 items-center border border-black px-5 text-sm uppercase">Về trang chủ</Link>
+            {orderCode && <Link href={`/?orderCode=${orderCode}#orders`} className="inline-flex h-11 items-center border border-black px-5 text-sm uppercase">Xem trạng thái đơn</Link>}
+          </>
+        )}
       </div>
     </main>
   );

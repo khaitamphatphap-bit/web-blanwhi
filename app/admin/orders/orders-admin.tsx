@@ -648,7 +648,7 @@ export function OrdersAdmin({
                     <input type="checkbox" checked={selectedOrderCodes.includes(order.code)} onChange={() => toggleOrderSelection(order.code)} />
                     Chọn đơn
                   </label>
-                  <Link href={`/payment-result?orderCode=${order.code}`} className="border-b border-black text-sm font-semibold">{shortOrderCode(order.code)}</Link>
+                  <Link href={`/payment-result?orderCode=${order.code}&from=admin`} className="border-b border-black text-sm font-semibold">{shortOrderCode(order.code)}</Link>
                   <div className="mt-1 text-xs text-neutral-500">{new Date(order.createdAt).toLocaleString("vi-VN")}</div>
                   <span className={`mt-3 inline-flex border px-2 py-1 text-xs uppercase ${orderStageClass(getOrderStage(order))}`}>{orderStageLabel(getOrderStage(order))}</span>
                 </div>
