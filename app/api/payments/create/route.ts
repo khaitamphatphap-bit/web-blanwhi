@@ -2,12 +2,11 @@ import { after, NextResponse } from "next/server";
 import { jsonError } from "@/lib/api-errors";
 import { readIntegrationConfig } from "@/lib/integrations";
 import { createOrder, newOrderCode, updateOrder } from "@/lib/orders";
-import { checkoutTotals } from "@/lib/pricing";
 import { createMomoPayment, createVnpayUrl, createZaloPayPayment, fallbackPaymentUrl } from "@/lib/payment";
 import { CartItem, PaymentMethod, ShopOrder } from "@/lib/types";
 import { InventoryService } from "@/lib/pancake/inventory-service";
 import { buildProductInventory } from "@/lib/product-inventory";
-import { readSiteContent } from "@/lib/site-content";
+import { readSiteContent, type SiteContent } from "@/lib/site-content";
 import { POSSyncService } from "@/lib/services/pos-sync-service";
 
 type CheckoutPayload = {
@@ -145,23 +144,41 @@ function normalizeItems(items: Array<CartItem | PreviewCheckoutItem>) {
   });
 }
 
+function parseMoneyValue(value: unknown) {
+  const digits = String(value || "").replace(/[^\d]/g, "");
+  return digits ? Number(digits) : 0;
+}
+
+function productUnitPrice(product: SiteContent["products"][number]) {
+  const value = Math.max(0, Math.floor(parseMoneyValue(product.price)));
+  if (value <= 0) throw new Error(`${product.name} chưa có giá bán hợp lệ. Vui lòng tải lại trang hoặc báo shop kiểm tra giá sản phẩm.`);
+  return value;
+}
+
 async function hydratePancakeLinks(items: ReturnType<typeof normalizeItems>, content: Awaited<ReturnType<typeof readSiteContent>>) {
   return items.map((item) => {
     const product = content.products.find((candidate) => candidate.id === item.productId);
-    if (!product) return item;
+    if (!product || product.active === false) {
+      throw new Error(`${item.name || "Sản phẩm"} không còn bán trên website. Vui lòng tải lại trang và đặt lại.`);
+    }
     const rows = buildProductInventory(product);
     const row = rows.find((candidate) =>
       (item.inventoryKey && candidate.key === item.inventoryKey)
       || (item.sku && candidate.sku.toUpperCase() === item.sku.toUpperCase())
     );
-    return row ? {
+    const authoritativeItem = {
       ...item,
+      name: item.name.includes(" - ") ? `${product.name} - ${item.name.split(" - ").slice(1).join(" - ")}` : product.name,
+      unitPrice: productUnitPrice(product)
+    };
+    return row ? {
+      ...authoritativeItem,
       inventoryKey: row.key,
       sku: row.sku,
       pancakeSku: row.pancakeSku,
       pancakeProductId: row.pancakeProductId,
       pancakeVariationId: row.pancakeVariationId
-    } : item;
+    } : authoritativeItem;
   });
 }
 
@@ -195,26 +212,12 @@ export async function POST(request: Request) {
       if (configError) return json({ error: configError }, { status: 400 });
     }
 
-    const reactItems = items.filter(isCartItem);
     const defaultShippingFee = Math.max(0, Math.floor(Number(siteContent.shipping?.defaultFee ?? 30000) || 0));
     const isExpressShipping = payload.shipping?.type === "express";
     const standardShippingFor = (subtotal: number) => subtotal === 0 || subtotal >= 2000000 ? 0 : defaultShippingFee;
-    const computedTotals = reactItems.length === items.length ? checkoutTotals(reactItems, defaultShippingFee) : {
-      subtotal: items.reduce((sum, item) => {
-        if (isCartItem(item)) return sum + item.product.price * item.quantity;
-        return sum + Number(item.price || 0) * Number(item.qty || 1);
-      }, 0),
-      discount: 0,
-      shipping: 0,
-      total: items.reduce((sum, item) => {
-        if (isCartItem(item)) return sum + item.product.price * item.quantity;
-        return sum + Number(item.price || 0) * Number(item.qty || 1);
-      }, 0)
-    };
-    computedTotals.shipping = isExpressShipping ? 0 : standardShippingFor(computedTotals.subtotal);
-    computedTotals.total = Math.max(computedTotals.subtotal - computedTotals.discount + computedTotals.shipping, 0);
-    const subtotal = payload.totals?.subtotal ?? computedTotals.subtotal;
-    const discount = payload.totals?.discount ?? computedTotals.discount;
+    const orderItems = await hydratePancakeLinks(normalizeItems(items), siteContent);
+    const subtotal = orderItems.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
+    const discount = Math.max(0, Math.min(subtotal, Math.floor(Number(payload.totals?.discount) || 0)));
     const shipping = isExpressShipping ? 0 : standardShippingFor(subtotal);
     const totals = {
       subtotal,
@@ -222,7 +225,6 @@ export async function POST(request: Request) {
       shipping,
       total: Math.max(subtotal - discount + shipping, 0)
     };
-    const orderItems = await hydratePancakeLinks(normalizeItems(items), siteContent);
     const inventoryService = new InventoryService();
     const pancakeConfigured = inventoryService.configured();
     if (pancakeConfigured) await inventoryService.assertAvailable(orderItems);

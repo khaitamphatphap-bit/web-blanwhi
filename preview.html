@@ -4157,6 +4157,31 @@
           if (!response.ok) throw new Error(result.error || "Không thể tạo giao dịch thanh toán.");
           order.code = result.order?.code || order.code;
           order.trackingCode = result.order?.trackingCode || "";
+          if (Array.isArray(result.order?.items)) {
+            order.items = result.order.items.map((item) => ({
+              productId: item.productId || "",
+              inventoryKey: item.inventoryKey || "",
+              sku: item.sku || "",
+              pancakeSku: item.pancakeSku || "",
+              pancakeProductId: item.pancakeProductId || "",
+              pancakeVariationId: item.pancakeVariationId || "",
+              name: item.name || "",
+              qty: Number(item.quantity || 1),
+              price: Number(item.unitPrice || 0),
+              color: item.color || "",
+              size: item.size || "",
+              classificationName: "",
+              message: "",
+              designName: "",
+              customText: ""
+            }));
+          }
+          if (result.order) {
+            order.shippingFee = Number(result.order.shipping || order.shippingFee || 0);
+            order.total = Number(result.order.total || order.total || 0);
+            order.subtotal = Number(result.order.subtotal || 0);
+            order.discount = Number(result.order.discount || 0);
+          }
           order.shippingCarrier = result.order?.shippingCarrier || (selectedShippingMethod === "express" ? (expressShippingQuote.providerName || "Hỏa tốc") : "SPX Express");
           order.rawStatus = result.order?.status || "pending";
           order.createdAt = result.order?.createdAt || order.createdAt || new Date().toISOString();

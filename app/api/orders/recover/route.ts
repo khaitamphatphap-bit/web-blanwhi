@@ -31,6 +31,11 @@ type LocalOrder = {
 
 const paymentMethods = new Set<PaymentMethod>(["cod", "bank_transfer", "vnpay", "onepay", "alepay", "momo", "zalopay"]);
 
+function parseMoneyValue(value: unknown) {
+  const digits = String(value || "").replace(/[^\d]/g, "");
+  return digits ? Number(digits) : 0;
+}
+
 export async function POST(request: Request) {
   const body = await request.json().catch(() => ({})) as LocalOrder;
   const code = String(body.code || "").trim().toUpperCase();
@@ -58,6 +63,8 @@ export async function POST(request: Request) {
       if (!product || !row || !(row.pancakeVariationId || row.pancakeProductId || row.pancakeSku)) {
         throw new Error(`${item.name || "Sản phẩm"} chưa liên kết đúng biến thể Pancake.`);
       }
+      const unitPrice = Math.max(0, Math.floor(parseMoneyValue(product.price)));
+      if (unitPrice <= 0) throw new Error(`${product.name} chưa có giá bán hợp lệ.`);
       return {
         productId: product.id,
         inventoryKey: row.key,
@@ -69,7 +76,7 @@ export async function POST(request: Request) {
         color: String(item.color || ""),
         size: String(item.size || row.size || ""),
         quantity: Math.max(1, Math.min(100, Math.floor(Number(item.qty) || 1))),
-        unitPrice: Math.max(0, Math.floor(Number(item.price) || 0))
+        unitPrice
       };
     });
   } catch (error) {
@@ -77,7 +84,8 @@ export async function POST(request: Request) {
   }
 
   const subtotal = items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
-  const total = Math.max(0, Math.floor(Number(body.total) || subtotal));
+  const shipping = Math.max(0, Math.floor(Number(body.shippingFee) || 0));
+  const total = subtotal + shipping;
   const paymentMethod = paymentMethods.has(body.paymentMethod || "cod") ? body.paymentMethod || "cod" : "cod";
   const now = new Date().toISOString();
   const order: ShopOrder = {
@@ -95,8 +103,8 @@ export async function POST(request: Request) {
     },
     items,
     subtotal,
-    discount: Math.max(0, subtotal - total),
-    shipping: Math.max(0, total - subtotal),
+    discount: 0,
+    shipping,
     shippingMethod: body.shippingMethod || "SPX Express",
     shippingCarrier: "SPX Express",
     trackingCode: body.trackingCode,
