@@ -2052,8 +2052,51 @@
       const subtotal = () => cart.reduce((sum, item) => sum + item.amount * item.qty, 0);
       let variantState = { productId: null, mode: "cart", classificationIndex: 0, colorIndex: 0, size: "M", qty: 1, colorTouched: false };
       let wholesaleState = { productId: null, qty: 10 };
-      const loadOrders = () => JSON.parse(localStorage.getItem("blanwhiOrders") || "[]");
-      const saveOrders = (orders) => localStorage.setItem("blanwhiOrders", JSON.stringify(orders));
+      const orderStorageKey = "blanwhiOrders";
+      const orderBackupStorageKey = "blanwhiOrdersBackup";
+      const deletedOrderStorageKey = "blanwhiDeletedOrders";
+      const parseStoredOrders = (key) => {
+        try {
+          const parsed = JSON.parse(localStorage.getItem(key) || "[]");
+          return Array.isArray(parsed) ? parsed.filter((order) => order?.code) : [];
+        } catch {
+          return [];
+        }
+      };
+      const loadDeletedOrderCodes = () => {
+        try {
+          const parsed = JSON.parse(localStorage.getItem(deletedOrderStorageKey) || "[]");
+          return new Set((Array.isArray(parsed) ? parsed : []).map((code) => String(code || "").trim().toUpperCase()).filter(Boolean));
+        } catch {
+          return new Set();
+        }
+      };
+      const mergeOrderLists = (...lists) => {
+        const deletedCodes = loadDeletedOrderCodes();
+        const byCode = new Map();
+        lists.flat().forEach((order) => {
+          const code = String(order?.code || "").trim();
+          if (!code || deletedCodes.has(code.toUpperCase()) || byCode.has(code)) return;
+          byCode.set(code, order);
+        });
+        return Array.from(byCode.values()).slice(0, 100);
+      };
+      const loadOrders = () => mergeOrderLists(parseStoredOrders(orderStorageKey), parseStoredOrders(orderBackupStorageKey));
+      const saveOrders = (orders) => {
+        const merged = mergeOrderLists(Array.isArray(orders) ? orders : [], parseStoredOrders(orderBackupStorageKey), parseStoredOrders(orderStorageKey));
+        localStorage.setItem(orderStorageKey, JSON.stringify(merged));
+        if (merged.length) localStorage.setItem(orderBackupStorageKey, JSON.stringify(merged));
+      };
+      const forgetLocalOrder = (code) => {
+        const normalized = String(code || "").trim().toUpperCase();
+        if (!normalized) return;
+        const deleted = Array.from(loadDeletedOrderCodes()).filter(Boolean);
+        if (!deleted.includes(normalized)) deleted.unshift(normalized);
+        localStorage.setItem(deletedOrderStorageKey, JSON.stringify(deleted.slice(0, 500)));
+        const remaining = loadOrders().filter((order) => String(order.code || "").trim().toUpperCase() !== normalized);
+        localStorage.setItem(orderStorageKey, JSON.stringify(remaining));
+        localStorage.setItem(orderBackupStorageKey, JSON.stringify(remaining));
+      };
       const loadSavedAddresses = () => {
         try {
           const saved = JSON.parse(localStorage.getItem("blanwhiSavedAddresses") || "[]");
@@ -2988,7 +3031,7 @@
           body: JSON.stringify(order)
         });
         if (response.status === 410) {
-          saveOrders(loadOrders().filter((savedOrder) => savedOrder.code !== order.code));
+          forgetLocalOrder(order.code);
           return false;
         }
         return response.ok;
