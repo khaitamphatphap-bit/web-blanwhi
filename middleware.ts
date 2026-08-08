@@ -15,6 +15,7 @@ const fallbackAdmin = {
 };
 
 export function middleware(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
   const host = request.headers.get("host")?.split(":")[0];
   if (host === "blanwhi.com") {
     const url = request.nextUrl.clone();
@@ -23,22 +24,37 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(url, 308);
   }
 
-  if (request.nextUrl.pathname === "/preview.html") {
+  if (pathname === "/preview.html") {
     const url = request.nextUrl.clone();
     url.pathname = "/";
     return NextResponse.redirect(url, 308);
   }
 
-  if (request.nextUrl.pathname === "/") {
+  if (pathname === "/") {
     const url = request.nextUrl.clone();
     url.pathname = "/preview.html";
     return NextResponse.rewrite(url);
   }
 
+  const publicPath =
+    pathname === "/payment-result" ||
+    pathname === "/chinh-sach" ||
+    pathname.startsWith("/api/orders") ||
+    pathname.startsWith("/api/payments") ||
+    pathname.startsWith("/api/inventory") ||
+    pathname.startsWith("/api/delivery") ||
+    pathname.startsWith("/api/geo") ||
+    (pathname === "/api/site" && request.method === "GET") ||
+    pathname.startsWith("/uploads/") ||
+    pathname.startsWith("/product-placeholder") ||
+    pathname.startsWith("/umbrella-logo") ||
+    pathname.startsWith("/blanwhi-fabric-stack");
+  if (publicPath) return NextResponse.next();
+
   const protectedPath =
-    request.nextUrl.pathname.startsWith("/admin") ||
-    request.nextUrl.pathname.startsWith("/api/admin") ||
-    (request.nextUrl.pathname === "/api/site" && request.method !== "GET");
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/api/admin") ||
+    (pathname === "/api/site" && request.method !== "GET");
   if (!protectedPath) return NextResponse.next();
 
   const username = process.env.ADMIN_USERNAME;
