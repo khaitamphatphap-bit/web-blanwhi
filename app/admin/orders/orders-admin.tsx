@@ -111,11 +111,6 @@ const primaryStoreLabels: Record<StorageHealthReport["primaryStore"], string> = 
   local_file: "File local tạm"
 };
 
-const stageOrder = orderStages.reduce<Record<OrderStage, number>>((map, stage, index) => {
-  map[stage.value] = index;
-  return map;
-}, {} as Record<OrderStage, number>);
-
 function formatBytes(value?: number) {
   if (!value || value <= 0) return "Chưa có dữ liệu";
   const units = ["B", "KB", "MB", "GB", "TB"];
@@ -164,14 +159,25 @@ export function OrdersAdmin({
   const [isBackgroundRefreshing, setIsBackgroundRefreshing] = useState(false);
   const [lastBackgroundRefresh, setLastBackgroundRefresh] = useState<Date | null>(null);
   const [stageFilter, setStageFilter] = useState<OrderStage | "all">("all");
+  const [orderSearch, setOrderSearch] = useState("");
   const [expandedOrderCode, setExpandedOrderCode] = useState("");
   const [storageHealth, setStorageHealth] = useState<StorageHealthReport | null>(null);
   const [storageHealthBusy, setStorageHealthBusy] = useState(false);
   const orderListRef = useRef<HTMLElement | null>(null);
-  const filteredOrders = useMemo(() => stageFilter === "all" ? orders : orders.filter((order) => getOrderStage(order) === stageFilter), [orders, stageFilter]);
+  const filteredOrders = useMemo(() => {
+    const search = normalizeSearch(orderSearch);
+    return orders.filter((order) => {
+      if (stageFilter !== "all" && getOrderStage(order) !== stageFilter) return false;
+      if (!search) return true;
+      return normalizeSearch([
+        order.code,
+        shortOrderCode(order.code),
+        order.customer.name,
+        order.customer.phone
+      ].join(" ")).includes(search);
+    });
+  }, [orders, stageFilter, orderSearch]);
   const sortedOrders = useMemo(() => [...filteredOrders].sort((left, right) => {
-    const stageDiff = stageOrder[getOrderStage(left)] - stageOrder[getOrderStage(right)];
-    if (stageDiff) return stageDiff;
     return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
   }), [filteredOrders]);
   const totals = useMemo(() => ({
@@ -335,6 +341,27 @@ export function OrdersAdmin({
     }
   }
 
+  async function cancelOrder(order: ShopOrder) {
+    if (!window.confirm(`Bạn có chắc chắn muốn hủy đơn ${shortOrderCode(order.code)} không?`)) return;
+    setBusyCode(`${order.code}-cancel`);
+    setMessage("");
+    try {
+      const response = await fetch(`/api/admin/orders/${encodeURIComponent(order.code)}/cancel`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: "Admin hủy đơn" })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Không hủy được đơn.");
+      setOrders((current) => current.map((item) => item.code === order.code ? data.order : item));
+      setMessage(`Đã hủy đơn ${shortOrderCode(order.code)}.`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Không hủy được đơn.");
+    } finally {
+      setBusyCode("");
+    }
+  }
+
   useEffect(() => {
     const refreshTimer = window.setInterval(() => {
       if (document.visibilityState === "hidden") return;
@@ -440,8 +467,17 @@ export function OrdersAdmin({
         <span className="text-sm text-neutral-600">
           Đang xem: {stageFilter === "all" ? "Tất cả đơn" : orderStageLabel(stageFilter)} · {sortedOrders.length} đơn
         </span>
+        <input
+          value={orderSearch}
+          onChange={(event) => setOrderSearch(event.target.value)}
+          placeholder="Tìm theo tên khách hoặc mã đơn"
+          className="h-10 min-w-72 flex-1 border border-neutral-300 px-3 text-sm"
+        />
         {stageFilter !== "all" && (
           <button onClick={() => selectStage("all")} className="h-9 border border-black px-4 text-xs uppercase">Tất cả đơn</button>
+        )}
+        {orderSearch && (
+          <button onClick={() => setOrderSearch("")} className="h-9 border border-neutral-300 px-4 text-xs uppercase">Xóa tìm kiếm</button>
         )}
       </div>
       <section className="mt-3 border border-neutral-200 p-4">
@@ -578,6 +614,7 @@ export function OrdersAdmin({
                 <div className="flex flex-wrap gap-2 lg:justify-end">
                   <button onClick={() => setExpandedOrderCode(isOpen ? "" : order.code)} className="h-9 border border-black px-3 text-xs uppercase">{isOpen ? "Đóng" : "Chi tiết"}</button>
                   <button onClick={() => updateShipping(order)} disabled={busyCode.startsWith(order.code)} className="h-9 border border-neutral-300 px-3 text-xs uppercase disabled:opacity-50">Cập nhật VC</button>
+                  <button onClick={() => cancelOrder(order)} disabled={!canCancelOrder(order) || busyCode.startsWith(order.code)} className="h-9 border border-red-500 px-3 text-xs uppercase text-red-600 disabled:cursor-not-allowed disabled:opacity-40">Hủy đơn</button>
                 </div>
               </div>
               {isOpen && (
@@ -662,11 +699,26 @@ export function OrdersAdmin({
           );
         })}
         {!sortedOrders.length && (
-          <div className="border border-neutral-200 py-10 text-center text-neutral-500">Không có đơn trong trạng thái này.</div>
+          <div className="border border-neutral-200 py-10 text-center text-neutral-500">Không có đơn phù hợp.</div>
         )}
       </section>
     </main>
   );
+}
+
+function normalizeSearch(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+function canCancelOrder(order: ShopOrder) {
+  if (order.status === "cancelled") return false;
+  if (["ready_to_ship", "driver_assigned", "shipping", "delivered", "delivery_failed", "returning", "returned", "cancelled"].includes(order.shippingStatus || "")) return false;
+  if (["shipping", "completed", "returned", "cancelled"].includes(order.pancakeStatus || "")) return false;
+  return true;
 }
 
 function Metric({ active = false, label, value, onClick }: { active?: boolean; label: string; value: number; onClick: () => void }) {
