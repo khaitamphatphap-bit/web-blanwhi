@@ -160,6 +160,7 @@ export function OrdersAdmin({
   const [lastBackgroundRefresh, setLastBackgroundRefresh] = useState<Date | null>(null);
   const [stageFilter, setStageFilter] = useState<OrderStage | "all">("all");
   const [orderSearch, setOrderSearch] = useState("");
+  const [selectedOrderCodes, setSelectedOrderCodes] = useState<string[]>([]);
   const [expandedOrderCode, setExpandedOrderCode] = useState("");
   const [storageHealth, setStorageHealth] = useState<StorageHealthReport | null>(null);
   const [storageHealthBusy, setStorageHealthBusy] = useState(false);
@@ -183,6 +184,8 @@ export function OrdersAdmin({
   const totals = useMemo(() => ({
     revenue: orders.filter((order) => order.status === "paid").reduce((sum, order) => sum + order.total, 0)
   }), [orders]);
+  const selectedVisibleCount = sortedOrders.filter((order) => selectedOrderCodes.includes(order.code)).length;
+  const allVisibleSelected = sortedOrders.length > 0 && selectedVisibleCount === sortedOrders.length;
   const storageLevel = storageHealthLevel(storageHealth);
 
   async function refreshOrders({ silent = false }: { silent?: boolean } = {}) {
@@ -190,7 +193,9 @@ export function OrdersAdmin({
     try {
       const response = await fetch("/api/orders", { cache: "no-store" });
       const data = await response.json();
-      setOrders(data.orders || []);
+      const nextOrders = data.orders || [];
+      setOrders(nextOrders);
+      setSelectedOrderCodes((current) => current.filter((code) => nextOrders.some((order: ShopOrder) => order.code === code)));
       if (silent) setLastBackgroundRefresh(new Date());
     } finally {
       if (silent) setIsBackgroundRefreshing(false);
@@ -243,6 +248,18 @@ export function OrdersAdmin({
     setExpandedOrderCode("");
     window.requestAnimationFrame(() => {
       orderListRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
+  function toggleOrderSelection(code: string) {
+    setSelectedOrderCodes((current) => current.includes(code) ? current.filter((item) => item !== code) : [...current, code]);
+  }
+
+  function toggleVisibleSelection() {
+    const visibleCodes = sortedOrders.map((order) => order.code);
+    setSelectedOrderCodes((current) => {
+      if (allVisibleSelected) return current.filter((code) => !visibleCodes.includes(code));
+      return Array.from(new Set([...current, ...visibleCodes]));
     });
   }
 
@@ -357,6 +374,34 @@ export function OrdersAdmin({
       setMessage(`Đã hủy đơn ${shortOrderCode(order.code)}.`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Không hủy được đơn.");
+    } finally {
+      setBusyCode("");
+    }
+  }
+
+  async function deleteOrders(codes: string[]) {
+    const uniqueCodes = Array.from(new Set(codes)).filter(Boolean);
+    if (!uniqueCodes.length) return;
+    const label = uniqueCodes.length === 1 ? `đơn ${shortOrderCode(uniqueCodes[0])}` : `${uniqueCodes.length} đơn đã chọn`;
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa mất ${label} khỏi trang admin không?`)) return;
+    if (uniqueCodes.length > 1 && !window.confirm("Xóa hàng loạt sẽ làm danh sách gọn lại nhưng đơn sẽ biến mất khỏi trang admin. Bạn xác nhận lần nữa nhé?")) return;
+
+    setBusyCode(uniqueCodes.length === 1 ? `${uniqueCodes[0]}-delete` : "bulk-delete");
+    setMessage("");
+    try {
+      const response = await fetch("/api/admin/orders/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ codes: uniqueCodes })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Không xóa được đơn.");
+      setOrders(data.orders || []);
+      setSelectedOrderCodes((current) => current.filter((code) => !uniqueCodes.includes(code)));
+      if (uniqueCodes.includes(expandedOrderCode)) setExpandedOrderCode("");
+      setMessage(`Đã xóa ${data.deletedCount || uniqueCodes.length} đơn khỏi trang admin.`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Không xóa được đơn.");
     } finally {
       setBusyCode("");
     }
@@ -480,6 +525,14 @@ export function OrdersAdmin({
           <button onClick={() => setOrderSearch("")} className="h-9 border border-neutral-300 px-4 text-xs uppercase">Xóa tìm kiếm</button>
         )}
       </div>
+      <div className="mt-3 flex flex-wrap items-center gap-3 border border-neutral-200 bg-neutral-50 p-4">
+        <button onClick={toggleVisibleSelection} disabled={!sortedOrders.length} className="h-9 border border-black px-4 text-xs uppercase disabled:opacity-40">
+          {allVisibleSelected ? "Bỏ chọn đang xem" : "Chọn tất cả đang xem"}
+        </button>
+        <button onClick={() => setSelectedOrderCodes([])} disabled={!selectedOrderCodes.length} className="h-9 border border-neutral-300 px-4 text-xs uppercase disabled:opacity-40">Bỏ chọn tất cả</button>
+        <button onClick={() => deleteOrders(selectedOrderCodes)} disabled={!selectedOrderCodes.length || busyCode === "bulk-delete"} className="h-9 border border-red-600 bg-red-600 px-4 text-xs uppercase text-white disabled:opacity-40">Xóa đơn đã chọn</button>
+        <span className="text-sm text-neutral-600">Đã chọn {selectedOrderCodes.length} đơn</span>
+      </div>
       <section className="mt-3 border border-neutral-200 p-4">
         <p className="text-xs uppercase text-neutral-500">Doanh thu đã thanh toán</p>
         <strong className="mt-1 block text-3xl font-medium">{money(totals.revenue)}</strong>
@@ -591,6 +644,10 @@ export function OrdersAdmin({
             <article key={order.id} className="border border-neutral-200 bg-white">
               <div className="grid gap-4 p-4 lg:grid-cols-[1.15fr_1fr_1fr_.8fr_auto] lg:items-center">
                 <div>
+                  <label className="mb-2 flex items-center gap-2 text-xs uppercase text-neutral-500">
+                    <input type="checkbox" checked={selectedOrderCodes.includes(order.code)} onChange={() => toggleOrderSelection(order.code)} />
+                    Chọn đơn
+                  </label>
                   <Link href={`/payment-result?orderCode=${order.code}`} className="border-b border-black text-sm font-semibold">{shortOrderCode(order.code)}</Link>
                   <div className="mt-1 text-xs text-neutral-500">{new Date(order.createdAt).toLocaleString("vi-VN")}</div>
                   <span className={`mt-3 inline-flex border px-2 py-1 text-xs uppercase ${orderStageClass(getOrderStage(order))}`}>{orderStageLabel(getOrderStage(order))}</span>
@@ -615,6 +672,7 @@ export function OrdersAdmin({
                   <button onClick={() => setExpandedOrderCode(isOpen ? "" : order.code)} className="h-9 border border-black px-3 text-xs uppercase">{isOpen ? "Đóng" : "Chi tiết"}</button>
                   <button onClick={() => updateShipping(order)} disabled={busyCode.startsWith(order.code)} className="h-9 border border-neutral-300 px-3 text-xs uppercase disabled:opacity-50">Cập nhật VC</button>
                   <button onClick={() => cancelOrder(order)} disabled={!canCancelOrder(order) || busyCode.startsWith(order.code)} className="h-9 border border-red-500 px-3 text-xs uppercase text-red-600 disabled:cursor-not-allowed disabled:opacity-40">Hủy đơn</button>
+                  <button onClick={() => deleteOrders([order.code])} disabled={busyCode.startsWith(order.code)} className="h-9 border border-red-700 bg-red-700 px-3 text-xs uppercase text-white disabled:opacity-40">Xóa</button>
                 </div>
               </div>
               {isOpen && (

@@ -83,6 +83,21 @@ export async function updateOrder(code: string, patch: Partial<ShopOrder>): Prom
   return updated;
 }
 
+export async function deleteOrdersByCodes(codes: string[]) {
+  const normalized = new Set(codes.map((code) => String(code || "").trim().toUpperCase()).filter(Boolean));
+  if (!normalized.size) return { deletedCount: 0, orders: await readOrders() };
+
+  const orders = await readOrders();
+  const next = orders.filter((order) => {
+    const fullCode = order.code.toUpperCase();
+    const shortCode = shortOrderCode(order.code).toUpperCase();
+    return !normalized.has(fullCode) && !normalized.has(shortCode);
+  });
+  const deletedCount = orders.length - next.length;
+  if (deletedCount > 0) await writeOrders(next);
+  return { deletedCount, orders: next };
+}
+
 export function newOrderCode() {
   const stamp = new Date().toISOString().replace(/\D/g, "").slice(2, 14);
   const tail = Math.random().toString(36).slice(2, 6).toUpperCase().padEnd(4, "0");
