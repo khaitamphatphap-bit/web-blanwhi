@@ -1564,8 +1564,8 @@
           ${classificationMarkup(product, "data-card-classification")}
           <div class="swatches" data-swatches="${product.id}">${swatches.map((color, index) => swatchMarkup(product, color, index, `data-card-color="${product.id}:${index}"`)).join("")}</div>
           <div class="card-actions">
-            <button class="quick" data-buy="${product.id}" ${soldOut ? "disabled" : ""}>Mua ngay</button>
-            <button class="quick" data-add="${product.id}" ${soldOut ? "disabled" : ""}>Thêm giỏ</button>
+            <button class="quick" data-buy="${product.id}">Mua ngay</button>
+            <button class="quick" data-add="${product.id}">Thêm giỏ</button>
           </div>
         </article>
       `;
@@ -1798,6 +1798,13 @@
           }
         })();
         return product.availabilityPromise;
+      }
+
+      async function refreshProductStockNow(productId) {
+        await refreshProductAvailability(productId, true);
+        const product = productData.find((item) => item.id === productId);
+        if (product) renderProductCard(product);
+        return product;
       }
 
       let allAvailabilityUpdatedAt = 0;
@@ -2752,9 +2759,7 @@
       async function confirmVariant() {
         const product = productData.find((item) => item.id === variantState.productId);
         if (!product) return;
-        // Modal đã tải tồn kho ở nền khi vừa mở. Không khóa nút mua để chờ lại
-        // cùng một request; bước đặt hàng vẫn kiểm tra Pancake lần cuối ở server.
-        void refreshProductAvailability(product.id);
+        await refreshProductAvailability(product.id, true);
         const currentColor = variantSwatches(product, variantState.classificationIndex)[variantState.colorIndex];
         if (!hasStock(product, { classificationIndex: variantState.classificationIndex, color: currentColor, size: variantState.size })) {
           Object.assign(variantState, preferredVariantSelection({
@@ -3210,9 +3215,15 @@
         const classificationId = options.classificationId || "";
         const classificationName = options.classificationName || "";
         const classificationIndex = product.classifications?.findIndex((item) => item.id === classificationId);
-        const row = inventoryRowFor(product, classificationId, color, size);
-        const available = availableFor(product, classificationId, color, size);
-        const stock = available === null ? stockFor(product, { classificationIndex: classificationIndex >= 0 ? classificationIndex : (product.classificationIndex || 0), color, size }) : available;
+        let row = inventoryRowFor(product, classificationId, color, size);
+        let available = availableFor(product, classificationId, color, size);
+        let stock = available === null ? stockFor(product, { classificationIndex: classificationIndex >= 0 ? classificationIndex : (product.classificationIndex || 0), color, size }) : available;
+        if (stock <= 0) {
+          await refreshProductAvailability(id, true);
+          row = inventoryRowFor(product, classificationId, color, size);
+          available = availableFor(product, classificationId, color, size);
+          stock = available === null ? stockFor(product, { classificationIndex: classificationIndex >= 0 ? classificationIndex : (product.classificationIndex || 0), color, size }) : available;
+        }
         if (stock <= 0) {
           showSoldOut();
           return false;
@@ -3274,17 +3285,20 @@
         });
       }
 
-      document.getElementById("productGrid").addEventListener("click", (event) => {
+      document.getElementById("productGrid").addEventListener("click", async (event) => {
         const cardClassification = event.target.closest("[data-card-classification]");
         if (cardClassification) {
           event.preventDefault();
           event.stopPropagation();
-          if (cardClassification.dataset.stockState === "out") {
-            showSoldOut();
-            return;
-          }
           const [id, index] = cardClassification.dataset.cardClassification.split(":");
-          const product = productData.find((item) => item.id === id);
+          let product = productData.find((item) => item.id === id);
+          if (cardClassification.dataset.stockState === "out") {
+            product = await refreshProductStockNow(id);
+            if (!product || !classificationHasStock(product, Number(index))) {
+              showSoldOut();
+              return;
+            }
+          }
           if (product) {
             product.classificationIndex = Number(index);
             product.colorIndex = 0;
@@ -3298,12 +3312,16 @@
         if (cardColor) {
           event.preventDefault();
           event.stopPropagation();
-          if (cardColor.dataset.stockState === "out") {
-            showSoldOut();
-            return;
-          }
           const [id, index] = cardColor.dataset.cardColor.split(":");
-          const product = productData.find((item) => item.id === id);
+          let product = productData.find((item) => item.id === id);
+          if (cardColor.dataset.stockState === "out") {
+            product = await refreshProductStockNow(id);
+            const nextColor = product ? variantSwatches(product)[Number(index)] : "";
+            if (!product || !colorHasStock(product, nextColor, product.classificationIndex || 0)) {
+              showSoldOut();
+              return;
+            }
+          }
           if (product) {
             product.colorIndex = Number(index);
             product.color = variantSwatches(product)[product.colorIndex];
@@ -3328,12 +3346,15 @@
         }
         const sizeButton = event.target.closest("[data-size]");
         if (sizeButton) {
-          if (sizeButton.dataset.stockState === "out") {
-            showSoldOut();
-            return;
-          }
           const [id, size] = sizeButton.dataset.size.split(":");
-          const product = productData.find((item) => item.id === id);
+          let product = productData.find((item) => item.id === id);
+          if (sizeButton.dataset.stockState === "out") {
+            product = await refreshProductStockNow(id);
+            if (!product || !hasStock(product, { classificationIndex: product.classificationIndex || 0, color: product.color, size })) {
+              showSoldOut();
+              return;
+            }
+          }
           if (product) product.size = size;
           document.querySelectorAll(`[data-size-group="${id}"] button`).forEach((button) => button.classList.remove("active"));
           sizeButton.classList.add("active");
@@ -3422,15 +3443,18 @@
         }
       });
 
-      detailContent.addEventListener("click", (event) => {
+      detailContent.addEventListener("click", async (event) => {
         const detailClassification = event.target.closest("[data-detail-classification]");
         if (detailClassification) {
-          if (detailClassification.dataset.stockState === "out") {
-            showSoldOut();
-            return;
-          }
           const [id, index] = detailClassification.dataset.detailClassification.split(":");
-          const product = productData.find((item) => item.id === id);
+          let product = productData.find((item) => item.id === id);
+          if (detailClassification.dataset.stockState === "out") {
+            product = await refreshProductStockNow(id);
+            if (!product || !classificationHasStock(product, Number(index))) {
+              showSoldOut();
+              return;
+            }
+          }
           if (product) {
             product.classificationIndex = Number(index);
             product.colorIndex = 0;
@@ -3442,12 +3466,16 @@
         }
         const detailColor = event.target.closest("[data-detail-color]");
         if (detailColor) {
-          if (detailColor.dataset.stockState === "out") {
-            showSoldOut();
-            return;
-          }
           const [id, index] = detailColor.dataset.detailColor.split(":");
-          const product = productData.find((item) => item.id === id);
+          let product = productData.find((item) => item.id === id);
+          if (detailColor.dataset.stockState === "out") {
+            product = await refreshProductStockNow(id);
+            const nextColor = product ? variantSwatches(product)[Number(index)] : "";
+            if (!product || !colorHasStock(product, nextColor, product.classificationIndex || 0)) {
+              showSoldOut();
+              return;
+            }
+          }
           if (product) {
             product.colorIndex = Number(index);
             product.color = variantSwatches(product)[product.colorIndex];
@@ -3464,12 +3492,15 @@
         }
         const sizeButton = event.target.closest("[data-size]");
         if (sizeButton) {
-          if (sizeButton.dataset.stockState === "out") {
-            showSoldOut();
-            return;
-          }
           const [id, size] = sizeButton.dataset.size.split(":");
-          const product = productData.find((item) => item.id === id);
+          let product = productData.find((item) => item.id === id);
+          if (sizeButton.dataset.stockState === "out") {
+            product = await refreshProductStockNow(id);
+            if (!product || !hasStock(product, { classificationIndex: product.classificationIndex || 0, color: product.color, size })) {
+              showSoldOut();
+              return;
+            }
+          }
           if (product) product.size = size;
           detailContent.querySelectorAll(`[data-size-group="${id}"] button`).forEach((button) => button.classList.remove("active"));
           sizeButton.classList.add("active");
@@ -3528,7 +3559,7 @@
         if (product) product.message = event.target.value;
       });
 
-      variantContent.addEventListener("click", (event) => {
+      variantContent.addEventListener("click", async (event) => {
         const zoomVariant = event.target.closest("[data-zoom-variant]");
         if (zoomVariant) {
           const product = productData.find((item) => item.id === zoomVariant.dataset.zoomVariant);
@@ -3537,11 +3568,15 @@
         }
         const classification = event.target.closest("[data-variant-classification]");
         if (classification) {
-          if (classification.dataset.stockState === "out") {
-            showSoldOut();
-            return;
-          }
           const [, index] = classification.dataset.variantClassification.split(":");
+          if (classification.dataset.stockState === "out") {
+            const product = await refreshProductStockNow(variantState.productId);
+            if (!product || !classificationHasStock(product, Number(index))) {
+              showSoldOut();
+              return;
+            }
+            renderVariantModal();
+          }
           variantState.classificationIndex = Number(index);
           variantState.colorIndex = 0;
           renderVariantModal();
@@ -3549,11 +3584,17 @@
         }
         const color = event.target.closest("[data-variant-color]");
         if (color) {
+          const nextColorIndex = Number(color.dataset.variantColor);
           if (color.dataset.stockState === "out") {
-            showSoldOut();
-            return;
+            const product = await refreshProductStockNow(variantState.productId);
+            const nextColor = product ? variantSwatches(product, variantState.classificationIndex)[nextColorIndex] : "";
+            if (!product || !colorHasStock(product, nextColor, variantState.classificationIndex)) {
+              showSoldOut();
+              return;
+            }
+            renderVariantModal();
           }
-          variantState.colorIndex = Number(color.dataset.variantColor);
+          variantState.colorIndex = nextColorIndex;
           variantState.colorTouched = true;
           const product = productData.find((item) => item.id === variantState.productId);
           if (product) product.useColorImage = true;
@@ -3562,11 +3603,18 @@
         }
         const size = event.target.closest("[data-variant-size]");
         if (size) {
+          const nextSize = size.dataset.variantSize;
           if (size.dataset.stockState === "out") {
-            showSoldOut();
-            return;
+            const product = await refreshProductStockNow(variantState.productId);
+            const swatches = product ? variantSwatches(product, variantState.classificationIndex) : [];
+            const nextColor = swatches[variantState.colorIndex] || swatches[0];
+            if (!product || !hasStock(product, { classificationIndex: variantState.classificationIndex, color: nextColor, size: nextSize })) {
+              showSoldOut();
+              return;
+            }
+            renderVariantModal();
           }
-          variantState.size = size.dataset.variantSize;
+          variantState.size = nextSize;
           renderVariantModal();
           return;
         }
