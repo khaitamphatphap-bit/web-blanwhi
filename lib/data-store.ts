@@ -57,7 +57,7 @@ function shouldUseBlobStore(filename: string) {
 }
 
 function shouldUseEncryptedBlobStore(filename: string) {
-  return ["orders.json", "integrations.json", "pancake-logs.json", "pancake-queue.json", "pancake-links.json"].includes(filename)
+  return ["orders.json", "deleted-orders.json", "integrations.json", "pancake-logs.json", "pancake-queue.json", "pancake-links.json"].includes(filename)
     && hasBlobStore()
     && Boolean(process.env.DATA_ENCRYPTION_KEY || process.env.PANCAKE_WEBHOOK_SECRET || process.env.BLOB_READ_WRITE_TOKEN);
 }
@@ -371,7 +371,7 @@ export async function createJsonStoreBackup<T>(filename: string, value: T, reaso
   }
 
   if (hasR2Store()) {
-    const isPrivate = ["orders.json", "integrations.json", "pancake-logs.json", "pancake-queue.json", "pancake-links.json"].includes(filename);
+    const isPrivate = ["orders.json", "deleted-orders.json", "integrations.json", "pancake-logs.json", "pancake-queue.json", "pancake-links.json"].includes(filename);
     const pathname = isPrivate
       ? `blanwhi/data/manual-backups/private/${key}-${timestamp}.enc.json`
       : `blanwhi/data/manual-backups/${key}-${timestamp}.json`;
@@ -381,7 +381,7 @@ export async function createJsonStoreBackup<T>(filename: string, value: T, reaso
 
   if (hasBlobStore()) {
     const { put } = await import("@vercel/blob");
-    const isPrivate = ["orders.json", "integrations.json", "pancake-logs.json", "pancake-queue.json", "pancake-links.json"].includes(filename);
+    const isPrivate = ["orders.json", "deleted-orders.json", "integrations.json", "pancake-logs.json", "pancake-queue.json", "pancake-links.json"].includes(filename);
     const pathname = isPrivate
       ? `blanwhi/manual-backups/private/${key}-${timestamp}.enc.json`
       : `blanwhi/manual-backups/${key}-${timestamp}.json`;
@@ -517,7 +517,7 @@ async function readJsonStoreUncached<T>(filename: string, fallback: T): Promise<
     }
   }
 
-  if (hasR2Store() && ["orders.json", "integrations.json", "pancake-logs.json", "pancake-queue.json", "pancake-links.json"].includes(filename)) {
+  if (hasR2Store() && ["orders.json", "deleted-orders.json", "integrations.json", "pancake-logs.json", "pancake-queue.json", "pancake-links.json"].includes(filename)) {
     try {
       const saved = await readEncryptedR2JsonStore<T>(filename);
       if (saved !== null) return saved;
@@ -773,7 +773,7 @@ export async function writeJsonStore<T>(filename: string, value: T) {
     return writeR2JsonStore(value);
   }
 
-  if (hasR2Store() && ["orders.json", "integrations.json", "pancake-logs.json", "pancake-queue.json", "pancake-links.json"].includes(filename)) {
+  if (hasR2Store() && ["orders.json", "deleted-orders.json", "integrations.json", "pancake-logs.json", "pancake-queue.json", "pancake-links.json"].includes(filename)) {
     return writeEncryptedR2JsonStore(filename, value);
   }
 

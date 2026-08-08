@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createOrder, findOrderByCode } from "@/lib/orders";
+import { createOrder, findOrderByCode, isDeletedOrderCode } from "@/lib/orders";
 import { OrderSyncService } from "@/lib/pancake/order-sync-service";
 import { buildProductInventory } from "@/lib/product-inventory";
 import { readSiteContent } from "@/lib/site-content";
@@ -39,7 +39,10 @@ function parseMoneyValue(value: unknown) {
 export async function POST(request: Request) {
   const body = await request.json().catch(() => ({})) as LocalOrder;
   const code = String(body.code || "").trim().toUpperCase();
-  if (!/^BLW-(?:\d{14}-[A-Z0-9]{5}|\d{12}-[A-Z0-9]{4})$/.test(code)) return NextResponse.json({ error: "Mã đơn cũ không hợp lệ." }, { status: 400 });
+  if (!/^BLW-\d{12,14}-[A-Z0-9]{4,5}$/.test(code)) return NextResponse.json({ error: "Mã đơn cũ không hợp lệ." }, { status: 400 });
+  if (await isDeletedOrderCode(code)) {
+    return NextResponse.json({ error: "Đơn này đã được xóa trong admin nên không tự khôi phục lại.", deleted: true }, { status: 410 });
+  }
   const existing = await findOrderByCode(code);
   if (existing) return NextResponse.json({ ok: true, order: existing, recovered: false });
 

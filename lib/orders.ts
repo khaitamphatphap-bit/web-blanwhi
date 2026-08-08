@@ -3,6 +3,13 @@ import { OrderStatus, PaymentMethod, ShopOrder } from "@/lib/types";
 import { shortOrderCode } from "@/lib/order-code";
 
 const paymentMethods = new Set<PaymentMethod>(["cod", "bank_transfer", "vnpay", "onepay", "alepay", "momo", "zalopay"]);
+const deletedOrdersStore = "deleted-orders.json";
+
+type DeletedOrderRecord = {
+  code: string;
+  shortCode: string;
+  deletedAt: string;
+};
 
 function normalizePaymentMethod(value: unknown): PaymentMethod {
   const normalized = String(value || "").trim().toLowerCase();
@@ -88,14 +95,45 @@ export async function deleteOrdersByCodes(codes: string[]) {
   if (!normalized.size) return { deletedCount: 0, orders: await readOrders() };
 
   const orders = await readOrders();
+  const deletedAt = new Date().toISOString();
+  const matchedDeleted = orders
+    .filter((order) => normalized.has(order.code.toUpperCase()) || normalized.has(shortOrderCode(order.code).toUpperCase()))
+    .map((order) => ({
+      code: order.code.toUpperCase(),
+      shortCode: shortOrderCode(order.code).toUpperCase(),
+      deletedAt
+    }));
   const next = orders.filter((order) => {
     const fullCode = order.code.toUpperCase();
     const shortCode = shortOrderCode(order.code).toUpperCase();
     return !normalized.has(fullCode) && !normalized.has(shortCode);
   });
   const deletedCount = orders.length - next.length;
-  if (deletedCount > 0) await writeOrders(next);
+  if (deletedCount > 0) {
+    await Promise.all([
+      writeOrders(next),
+      rememberDeletedOrders(matchedDeleted)
+    ]);
+  }
   return { deletedCount, orders: next };
+}
+
+export async function isDeletedOrderCode(code: string) {
+  const normalized = String(code || "").trim().toUpperCase();
+  if (!normalized) return false;
+  const deleted = await readJsonStore<DeletedOrderRecord[]>(deletedOrdersStore, []);
+  return deleted.some((record) => record.code === normalized || record.shortCode === normalized);
+}
+
+async function rememberDeletedOrders(records: DeletedOrderRecord[]) {
+  if (!records.length) return;
+  const current = await readJsonStore<DeletedOrderRecord[]>(deletedOrdersStore, []);
+  const byCode = new Map<string, DeletedOrderRecord>();
+  [...current, ...records].forEach((record) => {
+    if (!record.code) return;
+    byCode.set(record.code, record);
+  });
+  await writeJsonStore(deletedOrdersStore, Array.from(byCode.values()).slice(-5000));
 }
 
 export function newOrderCode() {

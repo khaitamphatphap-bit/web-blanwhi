@@ -2980,13 +2980,17 @@
       }
 
       async function recoverCustomerOrder(order) {
-        if (!/^BLW-\d{14}-[A-Z0-9]{5}$/.test(String(order.code || ""))) return false;
+        if (!/^BLW-\d{12,14}-[A-Z0-9]{4,5}$/.test(String(order.code || ""))) return false;
         if (["Đơn hủy", "Thanh toán thất bại"].includes(order.status)) return false;
         const response = await fetch("/api/orders/recover", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(order)
         });
+        if (response.status === 410) {
+          saveOrders(loadOrders().filter((savedOrder) => savedOrder.code !== order.code));
+          return false;
+        }
         return response.ok;
       }
 
