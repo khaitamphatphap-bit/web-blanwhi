@@ -1202,6 +1202,7 @@
       let siteContentSignature = "";
       let defaultShippingFee = 30000;
       let siteContentLoading = false;
+      let siteContentReady = false;
       function productSkeletonMarkup(count = productsPerPage) {
         return Array.from({ length: count }, () => `
           <article class="product-skeleton" aria-hidden="true">
@@ -1227,6 +1228,21 @@
       }
       function productGridHasOnlyPlaceholders() {
         return productGrid.children.length > 0 && Boolean(productGrid.querySelector(".product-skeleton"));
+      }
+      function renderFreshContentError() {
+        productGridShell.classList.remove("is-preparing", "is-ready");
+        productGridShell.removeAttribute("aria-busy");
+        productGrid.innerHTML = `
+          <div class="empty-search">
+            <div>
+              <strong>Chưa tải được giá mới nhất</strong>
+              <span>Vui lòng tải lại trang. Website không hiển thị giá cũ khi chưa lấy được dữ liệu mới từ admin.</span>
+            </div>
+          </div>
+        `;
+        searchCount.textContent = "Đang chờ dữ liệu mới nhất từ admin";
+        productPagination.classList.remove("visible");
+        productPagination.innerHTML = "";
       }
       function markProductImageLoaded(image) {
         if (!image?.classList?.contains("product-photo")) return;
@@ -1574,6 +1590,10 @@
         `;
       }
       function renderProducts(list = productData, resetPage = true) {
+        if (!siteContentReady) {
+          if (!productGrid.children.length) renderProductSkeletons();
+          return;
+        }
         const renderToken = ++productRenderToken;
         currentProductList = list;
         if (resetPage) currentProductPage = 1;
@@ -1927,17 +1947,18 @@
           const signature = JSON.stringify(content);
           const productGridHasContent = productGrid.children.length > 0 && !productGridHasOnlyPlaceholders();
           if (signature === siteContentSignature && productGridHasContent) {
+            siteContentReady = true;
             document.body.classList.remove("cms-loading", "cms-error");
             return;
           }
           siteContentSignature = signature;
+          siteContentReady = true;
           applySiteContent(content);
           document.body.classList.remove("cms-loading", "cms-error");
         } catch (error) {
           console.warn("Không tải được nội dung admin", error);
           if (productGrid.children.length === 0 || productGridHasOnlyPlaceholders()) {
-            if (initialSiteContent) applySiteContent(initialSiteContent);
-            else renderProducts();
+            renderFreshContentError();
           }
           document.body.classList.remove("cms-loading");
           document.body.classList.add("cms-error");
