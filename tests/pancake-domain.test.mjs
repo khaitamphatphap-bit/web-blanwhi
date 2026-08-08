@@ -2,10 +2,11 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { availableQuantity, buildPancakeOrderPayload, changePublishQuantity, mapPancakeStatus, pancakeOrderKey } from "../lib/pancake/domain.ts";
 
-test("available_quantity lấy giá trị nhỏ hơn giữa publish_quantity và kho Pancake", () => {
+test("available_quantity ưu tiên số lượng admin mở bán trên website", () => {
   assert.equal(availableQuantity(20, 100), 20);
-  assert.equal(availableQuantity(20, 7), 7);
+  assert.equal(availableQuantity(20, 7), 20);
   assert.equal(availableQuantity(0, 100), 0);
+  assert.equal(availableQuantity(undefined, 7), 7);
 });
 
 test("giữ đơn chỉ giảm publish_quantity, không cho âm", () => {
@@ -41,6 +42,30 @@ test("payload tạo đơn gửi đủ khách hàng, SKU, số lượng, giá và
   assert.equal(payload.status, 12);
   assert.equal(payload.partner.partner_id, 3);
   assert.equal(payload.shop_partner_id, 10932);
+});
+
+test("payload đơn đã thanh toán online gửi Pancake không thu COD", () => {
+  const payload = buildPancakeOrderPayload({
+    code: "BLW-PAID-123",
+    customer: { name: "Khách đã trả tiền", phone: "0900000001", address: "12 Đường A, TP.HCM" },
+    items: [{ name: "Áo", pancakeVariationId: "variation-1", pancakeProductId: "product-1", pancakeSku: "AO-DEN-M", quantity: 1, unitPrice: 300000 }],
+    discount: 0,
+    shipping: 30000,
+    total: 330000,
+    paymentMethod: "zalopay"
+  }, "1546106", { id: 3, name: "SPX Express", shopPartnerId: 10932 });
+
+  assert.equal(payload.cod, 0);
+  assert.equal(payload.partner.cod, 0);
+  assert.equal(payload.is_paid, true);
+  assert.equal(payload.paid, true);
+  assert.equal(payload.payment_status, "paid");
+  assert.equal(payload.payment_method, "zalopay");
+  assert.equal(payload.cash, 330000);
+  assert.equal(payload.prepaid, 330000);
+  assert.equal(payload.prepaid_amount, 330000);
+  assert.equal(payload.money_transfer, 330000);
+  assert.match(payload.note, /Đã thanh toán online ZALOPAY/);
 });
 
 test("đồng bộ trạng thái hoàn tất, hủy và hoàn hàng", () => {

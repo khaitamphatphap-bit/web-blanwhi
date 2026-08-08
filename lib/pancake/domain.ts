@@ -1,4 +1,4 @@
-import { shortOrderCode } from "@/lib/order-code";
+import { shortOrderCode } from "../order-code";
 
 export type PancakeMappedStatus = {
   pancakeStatus?: "pending_confirmation" | "confirmed" | "packing" | "shipping" | "completed" | "cancelled" | "returned";
