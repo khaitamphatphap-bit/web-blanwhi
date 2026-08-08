@@ -73,7 +73,7 @@ export class InventoryService {
         pancakeSku: item.pancakeSku || variation?.sku || "",
         publishQuantity: Validator.quantity(item.publishQuantity),
         pancakeQuantity,
-        availableQuantity: linked ? InventoryService.available(item.publishQuantity, pancakeQuantity) : 0,
+        availableQuantity: InventoryService.available(item.publishQuantity, pancakeQuantity),
         linked,
         lastSyncedAt: variation ? new Date().toISOString() : item.lastSyncedAt
       };
@@ -81,17 +81,15 @@ export class InventoryService {
   }
 
   async assertAvailable(items: OrderItem[]) {
-    const linkedItems = items;
-    if (!linkedItems.length) return;
-    if (!this.configured()) throw new PancakeIntegrationError("Website chưa cấu hình API Pancake nên chưa thể kiểm tra tồn kho.", "PANCAKE_NOT_CONFIGURED", 503);
-    const availability = await this.availability(undefined, true);
-    for (const item of linkedItems) {
+    if (!items.length) return;
+    const availability = await this.availability(undefined, this.configured());
+    for (const item of items) {
       const row = availability.find((candidate) =>
         (item.inventoryKey && candidate.key === item.inventoryKey)
         || (item.pancakeVariationId && candidate.pancakeVariationId === item.pancakeVariationId)
         || (item.pancakeSku && candidate.pancakeSku.toUpperCase() === item.pancakeSku.toUpperCase())
       );
-      if (!row?.linked) throw new PancakeIntegrationError(`${item.name} chưa liên kết với Pancake.`, "PRODUCT_NOT_LINKED", 409);
+      if (!row) throw new PancakeIntegrationError(`${item.name} chưa có dòng tồn kho trên website.`, "PRODUCT_NOT_LINKED", 409);
       if (row.availableQuantity < item.quantity) {
         throw new PancakeIntegrationError(`${item.name} chỉ còn có thể bán ${row.availableQuantity} sản phẩm.`, "OUT_OF_STOCK", 409);
       }

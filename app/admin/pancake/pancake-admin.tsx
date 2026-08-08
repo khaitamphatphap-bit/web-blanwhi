@@ -140,7 +140,7 @@ export function PancakeAdmin() {
             pancakeSku: saved.pancakeSku,
             pancakeQuantity: saved.pancakeQuantity,
             lastSyncedAt: saved.lastSyncedAt,
-            availableQuantity: saved.linked ? Math.min(row.publishQuantity || 0, saved.pancakeQuantity) : 0
+            availableQuantity: row.publishQuantity || 0
           } : row)
         } : product)
       } : current);
