@@ -10,7 +10,11 @@ const finalShippingStatuses = new Set(["delivered", "returning", "returned", "ca
 async function syncShippingOrders() {
   const config = await readIntegrationConfig();
   const orders = await readOrders();
-  const candidates = orders.filter((order) => !finalShippingStatuses.has(order.shippingStatus || "") && order.status !== "cancelled" && (order.deliveryType === "express" ? Boolean(order.deliveryOrderId) : Boolean(order.trackingCode)));
+  const candidates = orders.filter((order) => !finalShippingStatuses.has(order.shippingStatus || "") && order.status !== "cancelled" && (order.deliveryType === "express"
+    ? Boolean(order.deliveryOrderId)
+    : config.shipping.provider === "shopee_express"
+      ? Boolean(order.pancakeOrderId || order.pancakeStatus || order.providerOrderId)
+      : Boolean(order.trackingCode)));
 
   const results = [];
   for (const order of candidates) {

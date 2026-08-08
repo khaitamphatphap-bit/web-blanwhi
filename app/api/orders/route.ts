@@ -5,6 +5,8 @@ import { readIntegrationConfig } from "@/lib/integrations";
 import { reconcileZaloPayPayment, reconcileZaloPayRefund } from "@/lib/payment-confirmation";
 import { shortOrderCode } from "@/lib/order-code";
 
+const finalCustomerShippingStatuses = new Set(["delivered", "returned", "cancelled"]);
+
 export async function GET(request: Request) {
   let orders = await readOrders();
   const invalidUnpaidRefunds = orders.filter((order) => order.status === "cancelled"
@@ -43,11 +45,16 @@ export async function GET(request: Request) {
       }
     }));
     const paymentRefreshed = await readOrders();
-    const paidRequested = paymentRefreshed.filter((order) => allowed.has(order.code)
-      && order.status === "paid"
-      && !["delivered", "returned", "cancelled"].includes(order.shippingStatus || ""));
     const sync = new OrderSyncService();
-    await Promise.allSettled(paidRequested.map((order) => sync.create(order)));
+    const syncTargets = paymentRefreshed.filter((order) => allowed.has(order.code)
+      && !finalCustomerShippingStatuses.has(order.shippingStatus || "")
+      && order.status !== "cancelled"
+      && (order.status === "paid" || (String(order.paymentMethod || "").trim().toLowerCase() === "cod" && order.status === "pending")));
+    await Promise.allSettled(syncTargets.map((order) => (
+      order.pancakeOrderId || order.pancakeStatus || order.providerOrderId
+        ? sync.reconcileExisting(order)
+        : sync.create(order)
+    )));
     const refreshedOrders = await readOrders();
     return NextResponse.json({
       orders: refreshedOrders

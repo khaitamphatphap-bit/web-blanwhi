@@ -124,7 +124,11 @@ export class OrderSyncService {
       ...(mapped.status === "cancelled" && order.status !== "cancelled" ? { status: "cancelled" as const } : {}),
       ...(mapped.shippingStatus && order.deliveryType !== "express" ? { shippingStatus: mapped.shippingStatus } : {}),
       ...(mapped.pancakeStatus ? { pancakeStatus: mapped.pancakeStatus } : {}),
-      ...(order.deliveryType !== "express" && spxAssigned ? { shippingCarrier: "SPX Express", shippingMessage: "Đã chuyển sang SPX Express, đang nhận mã vận đơn." } : order.deliveryType !== "express" && hasShippingDetails(existing) ? shippingUpdate(existing, false) : {}),
+      ...(order.deliveryType !== "express" && hasShippingDetails(existing)
+        ? shippingUpdate(existing)
+        : order.deliveryType !== "express" && spxAssigned
+          ? { shippingCarrier: "SPX Express", shippingMessage: "Đã chuyển sang SPX Express, đang nhận mã vận đơn." }
+          : {}),
       inventoryReservationReleased: Boolean(order.inventoryReservationReleased || mapped.release),
       externalSync: { ...order.externalSync, pancake: `Đã tồn tại trên Pancake${existingId ? ` #${existingId}` : ""}`, lastSyncedAt: new Date().toISOString() }
     });
