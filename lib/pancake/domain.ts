@@ -44,6 +44,14 @@ export function pancakeOrderKey(orderCode: string) {
   return `BLANWHI:${shortOrderCode(orderCode)}`;
 }
 
+function normalizedPaymentMethod(value: string) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function isCashOnDeliveryOrder(order: { paymentMethod: string }) {
+  return normalizedPaymentMethod(order.paymentMethod) === "cod";
+}
+
 export function buildPancakeOrderPayload(order: {
   code: string;
   customer: { name: string; phone: string; email?: string; address: string; house?: string; ward?: string; wardId?: string; district?: string; districtId?: string; province?: string; provinceId?: string; note?: string };
@@ -53,7 +61,13 @@ export function buildPancakeOrderPayload(order: {
   total: number;
   paymentMethod: string;
 }, shopId?: string, shippingPartner?: { id: number; name: string; shopPartnerId?: number }) {
-  const cod = order.paymentMethod === "cod" ? order.total : 0;
+  const cashOnDelivery = isCashOnDeliveryOrder(order);
+  const cod = cashOnDelivery ? order.total : 0;
+  const prepaidAmount = cashOnDelivery ? 0 : order.total;
+  const paymentLabel = cashOnDelivery
+    ? "COD - thu tiền khi giao hàng"
+    : `Đã thanh toán online ${normalizedPaymentMethod(order.paymentMethod).toUpperCase()}`;
+  const customerNote = order.customer.note || "";
   return {
     ...(shopId ? { shop_id: Number(shopId) || shopId } : {}),
     custom_id: shortOrderCode(order.code),
@@ -72,8 +86,8 @@ export function buildPancakeOrderPayload(order: {
       ...(order.customer.district ? { district_name: order.customer.district } : {}),
       ...(order.customer.province ? { province_name: order.customer.province } : {})
     },
-    note: order.customer.note || "",
-    note_print: order.customer.note || "",
+    note: [customerNote, paymentLabel].filter(Boolean).join(" · "),
+    note_print: [customerNote, paymentLabel].filter(Boolean).join(" · "),
     merge_order: false,
     received_at_shop: false,
     is_free_shipping: order.shipping === 0,
@@ -98,7 +112,14 @@ export function buildPancakeOrderPayload(order: {
     total_discount: order.discount,
     total_price: order.total,
     cod,
-    cash: 0,
+    cash: prepaidAmount,
+    is_paid: !cashOnDelivery,
+    paid: !cashOnDelivery,
+    payment_status: cashOnDelivery ? "unpaid" : "paid",
+    payment_method: normalizedPaymentMethod(order.paymentMethod),
+    prepaid: prepaidAmount,
+    prepaid_amount: prepaidAmount,
+    money_transfer: prepaidAmount,
     status: 12,
     ...(shippingPartner ? {
       shop_partner_id: shippingPartner.shopPartnerId,
@@ -106,6 +127,9 @@ export function buildPancakeOrderPayload(order: {
         partner_id: shippingPartner.id,
         partner_name: shippingPartner.name,
         cod,
+        cash: prepaidAmount,
+        prepaid: prepaidAmount,
+        prepaid_amount: prepaidAmount,
         total_fee: order.shipping
       }
     } : {})
