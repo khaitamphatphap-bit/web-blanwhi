@@ -12,7 +12,8 @@ export function availableQuantity(publishQuantity: unknown, pancakeQuantity: unk
     const number = Number(value);
     return Math.max(0, Math.floor(Number.isFinite(number) ? number : 0));
   };
-  return Math.min(safe(publishQuantity), safe(pancakeQuantity));
+  const hasWebsiteQuantity = publishQuantity !== undefined && publishQuantity !== null && String(publishQuantity).trim() !== "";
+  return hasWebsiteQuantity ? safe(publishQuantity) : safe(pancakeQuantity);
 }
 
 export function changePublishQuantity(current: unknown, quantity: unknown, direction: "decrease" | "restore") {

@@ -699,7 +699,7 @@ function ProductForm({
   const [bulkPublishQuantity, setBulkPublishQuantity] = useState("0");
   const [bulkInventoryScope, setBulkInventoryScope] = useState<"all" | "linked">("all");
   const inventoryRows = buildProductInventory(product);
-  const totalInventory = inventoryRows.reduce((sum, item) => sum + Math.min(Number(item.publishQuantity || 0), Number(item.pancakeQuantity || 0)), 0);
+  const totalInventory = inventoryRows.reduce((sum, item) => sum + Math.max(0, Math.floor(Number(item.publishQuantity || 0))), 0);
   const updateInventoryItem = (key: string, patch: Partial<CmsProductInventoryItem>) => {
     const nextInventory = inventoryRows.map((item) => item.key === key ? { ...item, ...patch } : item);
     onChange({ ...product, inventory: nextInventory, inventoryManaged: true });
@@ -1034,7 +1034,7 @@ function ProductForm({
             <div key={item.key} className="border border-neutral-300 bg-white p-4 text-sm">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-200 pb-3">
                 <strong>{inventoryClassificationName(item)} · {inventoryColorName(item)} · Size {item.size}</strong>
-                <span className={`text-xs font-bold uppercase ${(item.publishQuantity || 0) > 0 && (item.pancakeQuantity || 0) > 0 ? "text-green-700" : "text-red-600"}`}>Có thể bán {Math.min(item.publishQuantity || 0, item.pancakeQuantity || 0)}</span>
+                <span className={`text-xs font-bold uppercase ${(item.publishQuantity || 0) > 0 ? "text-green-700" : "text-red-600"}`}>Có thể bán {Math.max(0, Math.floor(Number(item.publishQuantity || 0)))}</span>
               </div>
               <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                 <label className="text-[10px] uppercase text-neutral-500">SKU website<input value={item.sku} onChange={(event) => updateInventoryItem(item.key, { sku: event.target.value.trim().toUpperCase() })} className="mt-1 h-11 w-full border px-3 font-mono text-xs normal-case" /></label>

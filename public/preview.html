@@ -1307,12 +1307,13 @@
         if (row.availableQuantity !== undefined && row.availableQuantity !== null) {
           return Math.max(0, Math.floor(Number(row.availableQuantity) || 0));
         }
+        const hasWebsiteQuantity = row.publishQuantity !== undefined && row.publishQuantity !== null && String(row.publishQuantity).trim() !== "";
         const quantity = Math.max(0, Math.floor(Number(row.quantity) || 0));
         const publish = Math.max(0, Math.floor(Number(row.publishQuantity) || 0));
         const pancake = Math.max(0, Math.floor(Number(row.pancakeQuantity) || 0));
+        if (hasWebsiteQuantity) return publish;
         if (!inventoryRowIsLinked(row)) return quantity || publish || pancake;
-        if (publish > 0 && pancake > 0) return Math.min(publish, pancake);
-        return publish || pancake || quantity;
+        return pancake || quantity;
       };
       const inventoryIsManaged = (product) =>
         Boolean(product.inventoryManaged) || (Array.isArray(product.inventory) && product.inventory.some((item) => stockFromInventoryRow(item) > 0));
