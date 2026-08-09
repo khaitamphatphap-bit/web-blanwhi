@@ -974,7 +974,7 @@
         <div class="checkout-grid">
           <form class="checkout-form" id="checkoutForm">
             <input id="checkoutName" name="customerName" required autocomplete="name" placeholder="Họ tên" />
-            <input id="checkoutPhone" name="customerPhone" required autocomplete="tel" inputmode="tel" minlength="10" pattern="(?:\D*\d){10,}.*" title="Số điện thoại phải có ít nhất 10 chữ số" placeholder="Số điện thoại" />
+            <input id="checkoutPhone" name="customerPhone" required autocomplete="tel" inputmode="tel" minlength="10" pattern="(?:\D*\d){10,}.*" title="Số điện thoại bạn nhập chưa đủ số" placeholder="Số điện thoại" />
             <div class="saved-address-box">
               <span>Địa chỉ giao hàng</span>
               <select id="savedAddressSelect" aria-label="Chọn địa chỉ đã lưu"></select>
@@ -2043,6 +2043,11 @@
 
       function validCustomerPhone(value) {
         return phoneDigitCount(value) >= 10;
+      }
+
+      function syncCheckoutPhoneValidity() {
+        const hasValue = Boolean(checkoutPhone.value.trim());
+        checkoutPhone.setCustomValidity(hasValue && !validCustomerPhone(checkoutPhone.value) ? "Số điện thoại bạn nhập chưa đủ số" : "");
       }
 
       if (initialSiteContent) {
@@ -4230,7 +4235,8 @@
         const customerProvinceId = checkoutProvince.value || savedAddressForCheckout?.provinceId || "";
         const customerAddress = [customerHouse, customerWard, customerDistrict, customerProvince].map((value) => String(value || "").trim()).filter(Boolean).join(", ") || savedAddressForCheckout?.address || "";
         if (!validCustomerPhone(customerPhone)) {
-          alert("Số điện thoại phải có ít nhất 10 chữ số. Bạn kiểm tra lại số điện thoại giúp shop nha.");
+          alert("Số điện thoại bạn nhập chưa đủ số. Bạn nhập đủ số rồi thanh toán lại bình thường nha.");
+          syncCheckoutPhoneValidity();
           checkoutPhone.focus();
           submitButton.disabled = !document.getElementById("policyAgreement").checked;
           submitButton.textContent = "Đặt hàng";
@@ -4380,6 +4386,7 @@
       });
       const policyAgreement = document.getElementById("policyAgreement");
       const placeOrderButton = document.getElementById("placeOrderButton");
+      checkoutPhone.addEventListener("input", syncCheckoutPhoneValidity);
       policyAgreement.addEventListener("change", () => {
         placeOrderButton.disabled = !policyAgreement.checked;
       });

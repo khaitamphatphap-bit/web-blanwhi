@@ -206,7 +206,7 @@ export async function POST(request: Request) {
       return json({ error: "Vui lòng nhập đủ họ tên, số điện thoại và địa chỉ." }, { status: 400 });
     }
     if (phoneDigitCount(customer.phone) < 10) {
-      return json({ error: "Số điện thoại phải có ít nhất 10 chữ số. Vui lòng kiểm tra lại số điện thoại." }, { status: 400 });
+      return json({ error: "Số điện thoại bạn nhập chưa đủ số. Vui lòng nhập đủ số điện thoại để thanh toán bình thường." }, { status: 400 });
     }
     if (!customer.provinceId || !customer.districtId || !customer.wardId || !customer.house) {
       return json({ error: "Vui lòng chọn đủ Tỉnh/Thành, Quận/Huyện, Phường/Xã và nhập số nhà để đồng bộ địa chỉ sang POS." }, { status: 400 });
