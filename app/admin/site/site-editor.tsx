@@ -12,6 +12,8 @@ const emptyProduct: CmsProduct = {
   originalPrice: "390.000đ",
   salePrice: "",
   fit: "Boxy sạch, dễ mặc",
+  materialDetails: "",
+  sizeChartImage: "",
   kind: "tee",
   swatches: ["#111", "#f4f4f2"],
   sizes: ["S", "M", "L", "XL"],
@@ -889,6 +891,43 @@ function ProductForm({
         </label>
         <NumberField label="Đã bán" value={product.sold} onChange={(value) => set("sold", value)} />
         <NumberField label="% sale" value={product.salePercent} onChange={(value) => set("salePercent", value)} />
+      </div>
+
+      <div className="mt-5 border-t pt-4">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h4 className="text-sm font-semibold uppercase">Bảng size & chất liệu trên trang khách</h4>
+            <p className="mt-1 text-xs text-neutral-500">Ảnh bảng size và nội dung chất liệu này sẽ hiện khi khách bấm vào sản phẩm.</p>
+          </div>
+          <label className="text-xs uppercase text-neutral-500">
+            Upload ảnh bảng size
+            <input type="file" accept="image/*" onChange={(event) => onUpload(event, (url) => set("sizeChartImage", url))} className="mt-2 block text-xs normal-case" />
+          </label>
+        </div>
+        <div className="mt-3 grid gap-4 md:grid-cols-2">
+          <label className="text-sm">
+            URL ảnh bảng size
+            <input value={product.sizeChartImage || ""} onChange={(event) => set("sizeChartImage", event.target.value)} placeholder="https://..." className="mt-1 h-10 w-full border px-3" />
+          </label>
+          <label className="text-sm">
+            Nội dung chất liệu chi tiết
+            <textarea
+              value={product.materialDetails || product.material || ""}
+              onChange={(event) => set("materialDetails", event.target.value)}
+              placeholder="Ví dụ: 95% cotton, 5% spandex. Vải mềm, co giãn..."
+              className="mt-1 min-h-28 w-full resize-y border p-3"
+            />
+          </label>
+        </div>
+        {product.sizeChartImage && (
+          <div className="mt-3 border border-neutral-200 p-3">
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <strong className="text-sm uppercase">Preview bảng size</strong>
+              <button type="button" onClick={() => set("sizeChartImage", "")} className="border border-red-500 px-3 py-2 text-[10px] uppercase text-red-600">Xóa ảnh bảng size</button>
+            </div>
+            <img src={product.sizeChartImage} alt={`Bảng size ${product.name}`} className="max-h-80 w-full object-contain" />
+          </div>
+        )}
       </div>
 
       <div className="mt-5 border-t pt-4">

@@ -456,6 +456,7 @@
       .product-visual.sold-out .color-arrow, .product-visual.sold-out .color-name { display: none; }
       .size-chart { width: 100%; border: 1px solid #111; border-collapse: collapse; background: #fff; color: #111; }
       .size-chart th, .size-chart td { border: 1px solid #111; padding: 8px; text-align: center; font-size: 12px; }
+      .size-chart-image { display: block; width: 100%; max-height: 520px; object-fit: contain; background: #fff; border: 1px solid var(--line); }
       .payment-extra { display: none; gap: 8px; padding: 12px; border: 1px solid var(--line); background: #fafafa; }
       .payment-extra.open { display: grid; }
       .bank-account-link { min-height: 44px; border: 1px solid #111; background: #111; color: #fff; font-size: 13px; font-weight: 800; cursor: pointer; text-align: left; padding: 0 12px; }
@@ -1736,6 +1737,12 @@
           colorImages,
           classifications,
           classificationIndex: 0,
+          origin: product.origin || "",
+          material: product.material || "",
+          materialDetails: product.materialDetails || "",
+          colorDescription: product.colorDescription || "",
+          usageAndCare: product.usageAndCare || "",
+          sizeChartImage: product.sizeChartImage || "",
           sizes: Array.isArray(product.sizes) && product.sizes.length ? product.sizes : ["S", "M", "L", "XL"],
           size: (Array.isArray(product.sizes) && product.sizes[0]) || "M",
           inventory: Array.isArray(product.inventory) ? product.inventory.map((item) => ({
@@ -2508,6 +2515,40 @@
         return `${product.name} là áo thun trơn tối giản, form boxy sạch, dễ mặc riêng hoặc layer. Phù hợp khách muốn một item basic cao cấp, ít chi tiết.`;
       }
 
+      function defaultSizeChartMarkup() {
+        return `
+          <table class="size-chart" aria-label="Bảng size BLANWHI">
+            <thead><tr><th>Size</th><th>Chiều cao</th><th>Cân nặng</th><th>Ngực</th></tr></thead>
+            <tbody>
+              <tr><td>S</td><td>155-164cm</td><td>45-55kg</td><td>88-94cm</td></tr>
+              <tr><td>M</td><td>160-170cm</td><td>52-63kg</td><td>94-100cm</td></tr>
+              <tr><td>L</td><td>168-176cm</td><td>60-72kg</td><td>100-106cm</td></tr>
+              <tr><td>XL</td><td>174-184cm</td><td>70-85kg</td><td>106-114cm</td></tr>
+            </tbody>
+          </table>
+        `;
+      }
+
+      function sizeChartMarkup(product) {
+        return product.sizeChartImage
+          ? `<img class="size-chart-image" src="${escapeMarkup(product.sizeChartImage)}" alt="Bảng size ${escapeMarkup(product.name)}" loading="lazy" />`
+          : defaultSizeChartMarkup();
+      }
+
+      function multilineMarkup(value) {
+        return escapeMarkup(value).replace(/\n/g, "<br />");
+      }
+
+      function materialDetailsMarkup(product) {
+        const materialText = product.materialDetails || product.material || product.fit || "Đang cập nhật";
+        return `
+          <p><strong>Xuất xứ:</strong> ${escapeMarkup(product.origin || "Đang cập nhật")}</p>
+          <p><strong>Thành phần/Chất liệu:</strong> ${multilineMarkup(materialText)}</p>
+          <p><strong>Màu sắc:</strong> ${escapeMarkup(product.colorDescription || variantSwatches(product).map((color) => colorLabel(color, product)).join(", ") || "Đang cập nhật")}</p>
+          <p><strong>Hướng dẫn sử dụng, hướng dẫn bảo quản:</strong> ${escapeMarkup(product.usageAndCare || "Giặt cùng màu, lộn trái sản phẩm trước khi giặt, không dùng chất tẩy mạnh và bảo quản nơi khô thoáng.")}</p>
+        `;
+      }
+
       function toneAdvice(product) {
         const dark = ["#111", "#303030", "#050505", "#1f2937"].includes(product.color);
         return dark
@@ -2604,24 +2645,13 @@
               ${isGift ? "" : `<div class="detail-section">
                 <button data-detail-toggle="size">Bảng size <span>+</span></button>
                 <div class="detail-panel" id="detail-size">
-                  <table class="size-chart" aria-label="Bảng size BLANWHI">
-                    <thead><tr><th>Size</th><th>Chiều cao</th><th>Cân nặng</th><th>Ngực</th></tr></thead>
-                    <tbody>
-                      <tr><td>S</td><td>155-164cm</td><td>45-55kg</td><td>88-94cm</td></tr>
-                      <tr><td>M</td><td>160-170cm</td><td>52-63kg</td><td>94-100cm</td></tr>
-                      <tr><td>L</td><td>168-176cm</td><td>60-72kg</td><td>100-106cm</td></tr>
-                      <tr><td>XL</td><td>174-184cm</td><td>70-85kg</td><td>106-114cm</td></tr>
-                    </tbody>
-                  </table>
+                  ${sizeChartMarkup(product)}
                 </div>
               </div>
               <div class="detail-section">
                 <button data-detail-toggle="material">Thông tin sản phẩm <span>+</span></button>
                 <div class="detail-panel" id="detail-material">
-                  <p><strong>Xuất xứ:</strong> ${escapeMarkup(product.origin || "Đang cập nhật")}</p>
-                  <p><strong>Thành phần/Chất liệu:</strong> ${escapeMarkup(product.material || product.fit || "Đang cập nhật")}</p>
-                  <p><strong>Màu sắc:</strong> ${escapeMarkup(product.colorDescription || variantSwatches(product).map((color) => colorLabel(color, product)).join(", ") || "Đang cập nhật")}</p>
-                  <p><strong>Hướng dẫn sử dụng, hướng dẫn bảo quản:</strong> ${escapeMarkup(product.usageAndCare || "Giặt cùng màu, lộn trái sản phẩm trước khi giặt, không dùng chất tẩy mạnh và bảo quản nơi khô thoáng.")}</p>
+                  ${materialDetailsMarkup(product)}
                 </div>
               </div>`}
             </div>
@@ -2671,21 +2701,13 @@
               <div class="detail-section">
                 <button data-variant-toggle="size">Bảng size <span>+</span></button>
                 <div class="detail-panel" id="variant-detail-size">
-                  <table class="size-chart" aria-label="Bảng size BLANWHI">
-                    <thead><tr><th>Size</th><th>Chiều cao</th><th>Cân nặng</th><th>Ngực</th></tr></thead>
-                    <tbody>
-                      <tr><td>S</td><td>155-164cm</td><td>45-55kg</td><td>88-94cm</td></tr>
-                      <tr><td>M</td><td>160-170cm</td><td>52-63kg</td><td>94-100cm</td></tr>
-                      <tr><td>L</td><td>168-176cm</td><td>60-72kg</td><td>100-106cm</td></tr>
-                      <tr><td>XL</td><td>174-184cm</td><td>70-85kg</td><td>106-114cm</td></tr>
-                    </tbody>
-                  </table>
+                  ${sizeChartMarkup(product)}
                 </div>
               </div>
               <div class="detail-section">
                 <button data-variant-toggle="material">Chất liệu <span>+</span></button>
                 <div class="detail-panel" id="variant-detail-material">
-                  <p>${escapeMarkup(product.fit || productDescription(product))}</p>
+                  ${materialDetailsMarkup(product)}
                 </div>
               </div>`}
               <div>

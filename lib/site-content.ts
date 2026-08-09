@@ -44,6 +44,8 @@ export type CmsProduct = {
   fit: string;
   origin?: string;
   material?: string;
+  materialDetails?: string;
+  sizeChartImage?: string;
   colorDescription?: string;
   usageAndCare?: string;
   kind: string;
@@ -244,6 +246,8 @@ export const defaultSiteContent: SiteContent = {
     fit: String(fit),
     origin: "",
     material: "",
+    materialDetails: "",
+    sizeChartImage: "",
     colorDescription: "",
     usageAndCare: "",
     kind: String(kind),
