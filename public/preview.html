@@ -974,7 +974,7 @@
         <div class="checkout-grid">
           <form class="checkout-form" id="checkoutForm">
             <input id="checkoutName" name="customerName" required autocomplete="name" placeholder="Họ tên" />
-            <input id="checkoutPhone" name="customerPhone" required autocomplete="tel" inputmode="tel" placeholder="Số điện thoại" />
+            <input id="checkoutPhone" name="customerPhone" required autocomplete="tel" inputmode="tel" minlength="10" pattern="(?:\D*\d){10,}.*" title="Số điện thoại phải có ít nhất 10 chữ số" placeholder="Số điện thoại" />
             <div class="saved-address-box">
               <span>Địa chỉ giao hàng</span>
               <select id="savedAddressSelect" aria-label="Chọn địa chỉ đã lưu"></select>
@@ -2036,6 +2036,14 @@
       let shopBankAccountNumber = "879886688";
       let shopBankName = "MB Bank";
       let shopBankCode = "mb";
+
+      function phoneDigitCount(value) {
+        return String(value || "").replace(/\D/g, "").length;
+      }
+
+      function validCustomerPhone(value) {
+        return phoneDigitCount(value) >= 10;
+      }
 
       if (initialSiteContent) {
         applySiteContent(initialSiteContent, { renderProducts: false });
@@ -4221,6 +4229,13 @@
         const customerProvince = selectedGeoName(checkoutProvince).trim() || savedAddressForCheckout?.province || "";
         const customerProvinceId = checkoutProvince.value || savedAddressForCheckout?.provinceId || "";
         const customerAddress = [customerHouse, customerWard, customerDistrict, customerProvince].map((value) => String(value || "").trim()).filter(Boolean).join(", ") || savedAddressForCheckout?.address || "";
+        if (!validCustomerPhone(customerPhone)) {
+          alert("Số điện thoại phải có ít nhất 10 chữ số. Bạn kiểm tra lại số điện thoại giúp shop nha.");
+          checkoutPhone.focus();
+          submitButton.disabled = !document.getElementById("policyAgreement").checked;
+          submitButton.textContent = "Đặt hàng";
+          return;
+        }
         const order = {
           code: `BLW-${Date.now().toString().slice(-6)}`,
           trackingCode: "",

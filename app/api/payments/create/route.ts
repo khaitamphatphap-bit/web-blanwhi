@@ -83,6 +83,10 @@ function json(body: unknown, init?: ResponseInit) {
   });
 }
 
+function phoneDigitCount(value: unknown) {
+  return String(value || "").replace(/\D/g, "").length;
+}
+
 function demoPaymentsAllowed() {
   return process.env.NODE_ENV !== "production" || process.env.ENABLE_DEMO_PAYMENTS === "true";
 }
@@ -200,6 +204,9 @@ export async function POST(request: Request) {
 
     if (!customer.name || !customer.phone || !customer.address) {
       return json({ error: "Vui lòng nhập đủ họ tên, số điện thoại và địa chỉ." }, { status: 400 });
+    }
+    if (phoneDigitCount(customer.phone) < 10) {
+      return json({ error: "Số điện thoại phải có ít nhất 10 chữ số. Vui lòng kiểm tra lại số điện thoại." }, { status: 400 });
     }
     if (!customer.provinceId || !customer.districtId || !customer.wardId || !customer.house) {
       return json({ error: "Vui lòng chọn đủ Tỉnh/Thành, Quận/Huyện, Phường/Xã và nhập số nhà để đồng bộ địa chỉ sang POS." }, { status: 400 });
