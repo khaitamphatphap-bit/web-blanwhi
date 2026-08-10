@@ -301,7 +301,17 @@ export class PancakeService {
 
   async order(providerOrderId: string) {
     const id = Validator.required(providerOrderId, "Pancake Order ID");
-    return this.client.request<Record<string, unknown>>(`/shops/${encodeURIComponent(this.shopId())}/orders/${encodeURIComponent(id)}`);
+    let lastError: unknown;
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      try {
+        return await this.client.request<Record<string, unknown>>(`/shops/${encodeURIComponent(this.shopId())}/orders/${encodeURIComponent(id)}`);
+      } catch (error) {
+        lastError = error;
+        if (!(error instanceof PancakeIntegrationError) || !error.retryable || attempt === 1) throw error;
+        await new Promise((resolve) => setTimeout(resolve, 250));
+      }
+    }
+    throw lastError;
   }
 
   async findOrder(orderCode: string, customerPhone = "") {

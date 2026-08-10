@@ -339,7 +339,7 @@ export function OrdersAdmin({
     }
   }
 
-  async function updateAllShipping(silent = false) {
+  async function updateAllShipping(silent = false, full = false) {
     if (shippingSyncInFlight.current) {
       if (!silent) setMessage("Đồng bộ vận chuyển đang chạy, vui lòng chờ hoàn tất.");
       return;
@@ -350,7 +350,7 @@ export function OrdersAdmin({
       setMessage("");
     }
     try {
-      const response = await fetch(`/api/admin/orders/shipping-sync${silent ? "" : "?full=1"}`, { method: "POST" });
+      const response = await fetch(`/api/admin/orders/shipping-sync${!silent || full ? "?full=1" : ""}`, { method: "POST" });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Không cập nhật được vận chuyển.");
       await refreshOrders({ silent });
@@ -417,7 +417,7 @@ export function OrdersAdmin({
   }
 
   useEffect(() => {
-    updateAllShipping(true).catch(() => undefined);
+    updateAllShipping(true, true).catch(() => undefined);
     const refreshTimer = window.setInterval(() => {
       if (document.visibilityState === "hidden") return;
       refreshOrders({ silent: true }).catch(() => undefined);

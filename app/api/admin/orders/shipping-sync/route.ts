@@ -9,7 +9,7 @@ import { createJsonStoreBackup } from "@/lib/data-store";
 const finalShippingStatuses = new Set(["delivered", "returning", "returned", "cancelled"]);
 
 async function syncShippingOrders(request: Request) {
-  const fullSync = new URL(request.url).searchParams.get("full") === "1";
+  const fullSync = new URL(request.url).searchParams.get("full") === "1" || request.headers.get("x-vercel-cron") === "1";
   const config = await readIntegrationConfig();
   const orders = await readOrders();
   if (fullSync) {
@@ -20,8 +20,30 @@ async function syncShippingOrders(request: Request) {
     : Boolean(order.pancakeOrderId || order.pancakeStatus || order.providerOrderId || order.trackingCode)));
 
   const results = [];
+  const eligibleUnlinked = fullSync ? orders.filter((order) => {
+    const paymentMethod = String(order.paymentMethod || "").trim().toLowerCase();
+    const eligiblePayment = order.status === "paid" || (paymentMethod === "cod" && order.status === "pending");
+    return eligiblePayment
+      && order.status !== "cancelled"
+      && order.deliveryType !== "express"
+      && !order.pancakeOrderId
+      && !order.pancakeStatus
+      && !order.providerOrderId;
+  }) : [];
+  if (eligibleUnlinked.length) {
+    const sync = new OrderSyncService();
+    let restored = 0;
+    let restoreErrors = 0;
+    for (let index = 0; index < eligibleUnlinked.length; index += 4) {
+      const batch = eligibleUnlinked.slice(index, index + 4);
+      const settled = await Promise.allSettled(batch.map((order) => sync.create(order)));
+      restored += settled.filter((result) => result.status === "fulfilled").length;
+      restoreErrors += settled.filter((result) => result.status === "rejected").length;
+    }
+    results.push({ code: "pancake-missing-orders", ok: restoreErrors === 0, restored, restoreErrors, message: `Đã gửi lại ${restored} đơn hợp lệ còn thiếu sang Pancake, ${restoreErrors} lỗi.` });
+  }
   const pancakeCandidates = candidates.filter((order) => order.deliveryType !== "express" && Boolean(order.pancakeOrderId || order.pancakeStatus || order.providerOrderId));
-  if (pancakeCandidates.length) {
+  if (pancakeCandidates.length || eligibleUnlinked.length) {
     try {
       const synced = await new OrderSyncService().pollStatuses({ detailLimit: fullSync ? 200 : 20 });
       results.push({ code: "pancake-pos", ok: true, status: "synced", received: synced.received, detailed: synced.detailed, detailErrors: synced.detailErrors, updated: synced.updated, posStatusesUpdated: synced.posStatusesUpdated, posStatusErrors: synced.posStatusErrors, message: `Đã nhận ${synced.received} đơn từ POS, đọc chi tiết ${synced.detailed} đơn, cập nhật ${synced.updated} đơn và tự chuyển ${synced.posStatusesUpdated} trạng thái POS.` });
@@ -66,6 +88,8 @@ async function syncShippingOrders(request: Request) {
     detailErrors: results.reduce((sum, result) => sum + ("detailErrors" in result ? Number(result.detailErrors || 0) : 0), 0),
     posStatusesUpdated: results.reduce((sum, result) => sum + ("posStatusesUpdated" in result ? Number(result.posStatusesUpdated || 0) : 0), 0),
     posStatusErrors: results.reduce((sum, result) => sum + ("posStatusErrors" in result ? Number(result.posStatusErrors || 0) : 0), 0),
+    restoredOrders: results.reduce((sum, result) => sum + ("restored" in result ? Number(result.restored || 0) : 0), 0),
+    restoreErrors: results.reduce((sum, result) => sum + ("restoreErrors" in result ? Number(result.restoreErrors || 0) : 0), 0),
     results
   }, { headers: { "Cache-Control": "no-store, max-age=0" } });
 }
