@@ -280,10 +280,10 @@ export class OrderSyncService {
     return this.create(order, false);
   }
 
-  async applyRemoteUpdate(payload: Record<string, unknown>) {
+  async applyRemoteUpdate(payload: Record<string, unknown>, matchedOrder?: ShopOrder) {
     const code = value(payload, ["custom_id", "partner_order_id", "external_order_id", "order_code", "code"]).replace(/^BLANWHI:/i, "");
-    if (!code) throw new PancakeIntegrationError("Dữ liệu Pancake thiếu mã đơn website.", "REMOTE_ORDER_CODE_MISSING", 400);
-    const order = await findOrderByCode(code);
+    if (!code && !matchedOrder) throw new PancakeIntegrationError("Dữ liệu Pancake thiếu mã đơn website.", "REMOTE_ORDER_CODE_MISSING", 400);
+    const order = matchedOrder || await findOrderByCode(code);
     if (!order) throw new PancakeIntegrationError(`Không tìm thấy đơn ${code}.`, "ORDER_NOT_FOUND", 404);
     const pancakeStatus = value(payload, ["status", "order_status", "state"]);
     const mapped = mapPancakeStatus(pancakeStatus);
@@ -301,7 +301,7 @@ export class OrderSyncService {
       inventoryReservationReleased: Boolean(order.inventoryReservationReleased || mapped.release),
       externalSync: { ...order.externalSync, pancake: `Pancake: ${pancakeStatus || "đã cập nhật"}`, lastSyncedAt: new Date().toISOString() }
     });
-    await PancakeLogger.write("info", "order.status", `Đã nhận trạng thái ${pancakeStatus || "không rõ"}.`, code);
+    await PancakeLogger.write("info", "order.status", `Đã nhận trạng thái ${pancakeStatus || "không rõ"}.`, order.code);
     return updated;
   }
 
@@ -309,16 +309,20 @@ export class OrderSyncService {
     const remote = remoteRecords(await this.pancake.orders());
     const localOrders = await readOrders();
     const localByCode = new Map<string, ShopOrder>();
+    const localByPancakeId = new Map<string, ShopOrder>();
     for (const order of localOrders) {
       localByCode.set(order.code.trim().toUpperCase(), order);
       localByCode.set(shortOrderCode(order.code), order);
       if (order.posOrderCode) localByCode.set(order.posOrderCode.trim().toUpperCase(), order);
+      const providerId = pancakeOrderId(order).trim().toUpperCase();
+      if (providerId) localByPancakeId.set(providerId, order);
     }
     let updated = 0;
     for (const payload of remote) {
       const code = value(payload, ["custom_id", "partner_order_id", "external_order_id", "order_code", "code"]).replace(/^BLANWHI:/i, "").trim().toUpperCase();
-      const order = localByCode.get(code);
-      if (!code || !order) continue;
+      const remoteId = externalId(payload).trim().toUpperCase();
+      const order = localByCode.get(code) || localByPancakeId.get(remoteId);
+      if (!order) continue;
       const mapped = mapPancakeStatus(value(payload, ["status", "order_status", "state"]));
       const remoteShipping = hasShippingDetails(payload) ? shippingUpdate(payload, false) : {};
       const changed = Boolean(
@@ -329,7 +333,7 @@ export class OrderSyncService {
         || ("shippingCarrier" in remoteShipping && remoteShipping.shippingCarrier && remoteShipping.shippingCarrier !== order.shippingCarrier)
       );
       if (!changed) continue;
-      await this.applyRemoteUpdate(payload);
+      await this.applyRemoteUpdate(payload, order);
       updated += 1;
     }
     return { received: remote.length, updated };
