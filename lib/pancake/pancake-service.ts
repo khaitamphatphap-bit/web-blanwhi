@@ -273,6 +273,11 @@ export class PancakeService {
     });
   }
 
+  async order(providerOrderId: string) {
+    const id = Validator.required(providerOrderId, "Pancake Order ID");
+    return this.client.request<Record<string, unknown>>(`/shops/${encodeURIComponent(this.shopId())}/orders/${encodeURIComponent(id)}`);
+  }
+
   async findOrder(orderCode: string, customerPhone = "") {
     const expectedCodes = new Set([orderCode.trim().toUpperCase(), shortOrderCode(orderCode)]);
     const searches = [...new Set([orderCode.trim(), shortOrderCode(orderCode), customerPhone.trim(), ""].filter((value, index) => value || index === 3))];

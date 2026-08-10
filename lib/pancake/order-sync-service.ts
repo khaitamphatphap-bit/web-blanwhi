@@ -58,8 +58,28 @@ function deepValue(payload: unknown, keys: string[], depth = 0): string {
   return "";
 }
 
+function logisticsShippingStatus(payload: unknown) {
+  const raw = deepValue(payload, [
+    "shipping_status",
+    "delivery_status",
+    "shipment_status",
+    "logistics_status",
+    "partner_status",
+    "shipping_state",
+    "delivery_state"
+  ]).toLowerCase().replace(/\s+/g, "_");
+  if (!raw) return undefined;
+  if (/delivered|delivery_success|giao_thành_công|giao_hàng_thành_công|đã_giao/.test(raw)) return "delivered" as const;
+  if (/returning|returned|hoàn_hàng|đang_hoàn/.test(raw)) return "returned" as const;
+  if (/cancelled|canceled|đã_hủy|hủy_đơn/.test(raw)) return "cancelled" as const;
+  if (/delivery_failed|failed_delivery|giao_thất_bại|giao_không_thành_công/.test(raw)) return "delivery_failed" as const;
+  if (/shipping|delivering|in_transit|picked_up|handed_over|đang_giao|đã_lấy_hàng|đã_bàn_giao/.test(raw)) return "shipping" as const;
+  if (/ready_to_ship|ready_for_pickup|awaiting_pickup|chờ_lấy_hàng|chờ_bàn_giao/.test(raw)) return "ready_to_ship" as const;
+  return undefined;
+}
+
 function shippingUpdate(payload: unknown, includeReadyStatus = true) {
-  const trackingCode = deepValue(payload, [
+  let trackingCode = deepValue(payload, [
     "tracking_number",
     "tracking_no",
     "tracking_code",
@@ -76,6 +96,13 @@ function shippingUpdate(payload: unknown, includeReadyStatus = true) {
     "order_number_vtp"
   ]);
   const carrier = deepValue(payload, ["partner_name", "shipping_partner", "carrier", "carrier_name"]);
+  if (!trackingCode) {
+    const partnerTrackingCode = deepValue(payload, ["partner_order_code", "shipping_order_id", "logistics_order_id", "partner_order_id"]);
+    const normalizedPartnerCode = partnerTrackingCode.trim();
+    const looksLikeWebsiteCode = /^(BLW-|BLANWHI:)/i.test(normalizedPartnerCode);
+    const looksLikeInternalUuid = /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(normalizedPartnerCode);
+    if (normalizedPartnerCode && !looksLikeWebsiteCode && !looksLikeInternalUuid) trackingCode = normalizedPartnerCode;
+  }
   const carrierLabel = /spx|shopee\s*x?press|vtp|viettel/i.test(carrier)
     ? "SPX Express"
     : (carrier || "SPX Express");
@@ -106,6 +133,10 @@ function hasShippingDetails(payload: unknown) {
     "label_id",
     "extend_code",
     "tracking_id",
+    "partner_order_code",
+    "shipping_order_id",
+    "logistics_order_id",
+    "partner_order_id",
     "order_number",
     "order_number_vtp"
   ]));
@@ -118,7 +149,15 @@ export class OrderSyncService {
     const existing = await this.pancake.findOrder(order.code, order.customer.phone);
     if (!existing) return order;
     const existingId = externalId(existing);
-    const existingCarrier = deepValue(existing, ["partner_name", "shipping_partner", "carrier", "carrier_name"]);
+    let remotePayload = existing;
+    if (existingId) {
+      try {
+        remotePayload = await this.pancake.order(existingId);
+      } catch (error) {
+        await PancakeLogger.write("error", "order.detail", `Chưa đọc được chi tiết đơn Pancake: ${ExceptionHandler.message(error)}`, order.code);
+      }
+    }
+    const existingCarrier = deepValue(remotePayload, ["partner_name", "shipping_partner", "carrier", "carrier_name"]);
     let spxAssigned = /spx|shopee\s*x?press/i.test(existingCarrier);
     const mayChangeCarrier = !["shipping", "delivered", "delivery_failed", "returning", "returned", "cancelled"].includes(order.shippingStatus || "");
     if (order.deliveryType !== "express" && existingId && mayChangeCarrier && !spxAssigned) {
@@ -146,8 +185,9 @@ export class OrderSyncService {
         await PancakeLogger.write("error", "order.code", `Chưa đổi được mã đơn Pancake: ${ExceptionHandler.message(error)}`, order.code);
       }
     }
-    const remoteStatus = value(existing, ["status", "order_status", "state"]);
+    const remoteStatus = value(remotePayload, ["status", "order_status", "state"]) || value(existing, ["status", "order_status", "state"]);
     const mapped = mapPancakeStatus(remoteStatus);
+    const logisticsStatus = logisticsShippingStatus(remotePayload);
     if (mapped.release && order.inventoryReservationApplied && !order.inventoryReservationReleased) {
       await new InventoryService().reserve(order.items, "restore");
     }
@@ -155,10 +195,10 @@ export class OrderSyncService {
       pancakeOrderId: existingId || pancakeOrderId(order),
       ...(posOrderCodeUpdated ? { posOrderCode: targetPosOrderCode } : {}),
       ...(mapped.status === "cancelled" && order.status !== "cancelled" ? { status: "cancelled" as const } : {}),
-      ...(mapped.shippingStatus && order.deliveryType !== "express" ? { shippingStatus: mapped.shippingStatus } : {}),
+      ...((logisticsStatus || mapped.shippingStatus) && order.deliveryType !== "express" ? { shippingStatus: logisticsStatus || mapped.shippingStatus } : {}),
       ...(mapped.pancakeStatus ? { pancakeStatus: mapped.pancakeStatus } : {}),
-      ...(order.deliveryType !== "express" && hasShippingDetails(existing)
-        ? shippingUpdate(existing, !mapped.shippingStatus || ["unknown", "not_created"].includes(mapped.shippingStatus))
+      ...(order.deliveryType !== "express" && hasShippingDetails(remotePayload)
+        ? shippingUpdate(remotePayload, !logisticsStatus && (!mapped.shippingStatus || ["unknown", "not_created"].includes(mapped.shippingStatus)))
         : order.deliveryType !== "express" && spxAssigned
           ? { shippingCarrier: "SPX Express", shippingMessage: "Đã chuyển sang SPX Express, đang nhận mã vận đơn." }
           : {}),
@@ -287,13 +327,14 @@ export class OrderSyncService {
     if (!order) throw new PancakeIntegrationError(`Không tìm thấy đơn ${code}.`, "ORDER_NOT_FOUND", 404);
     const pancakeStatus = value(payload, ["status", "order_status", "state"]);
     const mapped = mapPancakeStatus(pancakeStatus);
+    const logisticsStatus = logisticsShippingStatus(payload);
     const preserveCancellation = order.status === "cancelled" && mapped.pancakeStatus !== "cancelled";
     if (mapped.release && order.inventoryReservationApplied && !order.inventoryReservationReleased) {
       await new InventoryService().reserve(order.items, "restore");
     }
     const updated = await updateOrder(order.code, {
       ...(mapped.status === "cancelled" && order.status !== "cancelled" ? { status: "cancelled" as const } : {}),
-      ...(mapped.shippingStatus && !preserveCancellation && order.deliveryType !== "express" ? { shippingStatus: mapped.shippingStatus } : {}),
+      ...((logisticsStatus || mapped.shippingStatus) && !preserveCancellation && order.deliveryType !== "express" ? { shippingStatus: logisticsStatus || mapped.shippingStatus } : {}),
       ...(mapped.pancakeStatus && !preserveCancellation ? { pancakeStatus: mapped.pancakeStatus } : {}),
       ...(order.deliveryType !== "express" && hasShippingDetails(payload) && !preserveCancellation
         ? shippingUpdate(payload, false)
@@ -318,17 +359,33 @@ export class OrderSyncService {
       if (providerId) localByPancakeId.set(providerId, order);
     }
     let updated = 0;
-    for (const payload of remote) {
+    let detailLookups = 0;
+    const detailLimit = 20;
+    const detailStart = remote.length ? (Math.floor(Date.now() / 30000) * detailLimit) % remote.length : 0;
+    const orderedRemote = [...remote.slice(detailStart), ...remote.slice(0, detailStart)];
+    for (const summaryPayload of orderedRemote) {
+      let payload = summaryPayload;
       const code = value(payload, ["custom_id", "partner_order_id", "external_order_id", "order_code", "code"]).replace(/^BLANWHI:/i, "").trim().toUpperCase();
       const remoteId = externalId(payload).trim().toUpperCase();
       const order = localByCode.get(code) || localByPancakeId.get(remoteId);
       if (!order) continue;
+      if (remoteId && detailLookups < detailLimit && (!order.trackingCode || !["delivered", "returned", "cancelled"].includes(order.shippingStatus || ""))) {
+        try {
+          payload = await this.pancake.order(remoteId);
+          detailLookups += 1;
+        } catch (error) {
+          detailLookups += 1;
+          await PancakeLogger.write("error", "order.detail", `Chưa đọc được chi tiết đơn Pancake: ${ExceptionHandler.message(error)}`, order.code);
+        }
+      }
       const mapped = mapPancakeStatus(value(payload, ["status", "order_status", "state"]));
+      const logisticsStatus = logisticsShippingStatus(payload);
       const remoteShipping = hasShippingDetails(payload) ? shippingUpdate(payload, false) : {};
       const changed = Boolean(
         (mapped.status === "cancelled" && order.status !== "cancelled")
         || (mapped.pancakeStatus && mapped.pancakeStatus !== order.pancakeStatus)
-        || (mapped.shippingStatus && mapped.shippingStatus !== "unknown" && mapped.shippingStatus !== order.shippingStatus)
+        || (logisticsStatus && logisticsStatus !== order.shippingStatus)
+        || (!logisticsStatus && mapped.shippingStatus && mapped.shippingStatus !== "unknown" && mapped.shippingStatus !== order.shippingStatus)
         || ("trackingCode" in remoteShipping && remoteShipping.trackingCode && remoteShipping.trackingCode !== order.trackingCode)
         || ("shippingCarrier" in remoteShipping && remoteShipping.shippingCarrier && remoteShipping.shippingCarrier !== order.shippingCarrier)
       );

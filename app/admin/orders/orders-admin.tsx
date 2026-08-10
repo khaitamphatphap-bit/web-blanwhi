@@ -51,7 +51,7 @@ type StorageHealthReport = {
 const orderStages: Array<{ value: OrderStage; label: string }> = [
   { value: "new", label: "Đơn mới đặt" },
   { value: "handed_to_carrier", label: "Đã giao cho ĐVVC" },
-  { value: "shipping", label: "Đang giao hàng" },
+  { value: "shipping", label: "Đang vận chuyển" },
   { value: "delivered", label: "Đã giao cho khách" },
   { value: "payment_pending", label: "Chờ thanh toán" },
   { value: "paid", label: "Chờ giao hàng" },
@@ -94,7 +94,7 @@ const shippingLabels: Record<ShippingStatus, string> = {
   finding_driver: "Đang tìm tài xế",
   driver_assigned: "Đã có tài xế",
   ready_to_ship: "Đã tạo vận đơn, chờ bàn giao",
-  shipping: "Đang giao hàng",
+  shipping: "Đang vận chuyển",
   delivered: "Đã giao cho khách",
   delivery_failed: "Giao hàng thất bại",
   returning: "Đang hoàn về",
