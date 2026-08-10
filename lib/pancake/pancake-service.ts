@@ -273,6 +273,14 @@ export class PancakeService {
     });
   }
 
+  async tracking(systemId: string) {
+    const id = Validator.required(systemId, "Pancake System ID");
+    return this.client.request<Record<string, unknown>>(`/shops/${encodeURIComponent(this.shopId())}/orders/get_tracking_url`, {
+      method: "POST",
+      body: { system_id: Number(id) || id }
+    });
+  }
+
   async order(providerOrderId: string) {
     const id = Validator.required(providerOrderId, "Pancake Order ID");
     return this.client.request<Record<string, unknown>>(`/shops/${encodeURIComponent(this.shopId())}/orders/${encodeURIComponent(id)}`);

@@ -130,7 +130,9 @@ function formatHealthTime(value?: string) {
 
 function storageHealthLevel(health: StorageHealthReport | null) {
   if (!health) return "checking";
-  if (health.primaryStore === "local_file" || !health.database.configured || health.database.error || health.r2.error) return "danger";
+  if (health.primaryStore === "local_file") return "danger";
+  if (health.primaryStore === "database" && health.database.error) return "danger";
+  if (health.primaryStore === "r2" && (!health.r2.configured || !health.r2.ok || health.r2.error)) return "danger";
   if (health.database.warning || health.r2.warning || (health.database.usedPercent || 0) >= 70) return "warning";
   return "ok";
 }

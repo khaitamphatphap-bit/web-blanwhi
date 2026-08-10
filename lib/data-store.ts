@@ -442,7 +442,9 @@ export async function getStoreHealthReport(): Promise<StoreHealthReport> {
       report.database.error = error instanceof Error ? error.message : String(error);
     }
   } else {
-    report.database.warning = "Chưa có DATABASE_URL. Production nên dùng database thật để đơn hàng không phụ thuộc server tạm.";
+    report.database.warning = hasR2Store()
+      ? "Đơn hàng đang được lưu bền vững trong Cloudflare R2 mã hóa; DATABASE_URL hiện là tùy chọn."
+      : "Chưa có DATABASE_URL. Production nên dùng database thật để đơn hàng không phụ thuộc server tạm.";
   }
 
   try {

@@ -93,8 +93,15 @@ function shippingUpdate(payload: unknown, includeReadyStatus = true) {
     "tracking_id",
     "ORDER_NUMBER",
     "order_number",
-    "order_number_vtp"
+    "order_number_vtp",
+    "partner_order_number",
+    "shipping_order_code",
+    "logistics_code",
+    "waybill"
   ]);
+  const payloadRecord = payload && typeof payload === "object" ? payload as Record<string, unknown> : {};
+  const trackingUrl = deepValue(payload, ["tracking_url", "trackingUrl", "tracking_link", "trackingLink"])
+    || deepValue(payloadRecord.tracking_lookup, ["url"]);
   const carrier = deepValue(payload, ["partner_name", "shipping_partner", "carrier", "carrier_name"]);
   if (!trackingCode) {
     const partnerTrackingCode = deepValue(payload, ["partner_order_code", "shipping_order_id", "logistics_order_id", "partner_order_id"]);
@@ -108,6 +115,7 @@ function shippingUpdate(payload: unknown, includeReadyStatus = true) {
     : (carrier || "SPX Express");
   return {
     ...(trackingCode ? { trackingCode } : {}),
+    ...(trackingUrl ? { deliveryTrackingUrl: trackingUrl } : {}),
     shippingCarrier: carrierLabel,
     ...(includeReadyStatus ? { shippingStatus: "ready_to_ship" as const } : {}),
     shippingMessage: trackingCode
@@ -138,7 +146,24 @@ function hasShippingDetails(payload: unknown) {
     "logistics_order_id",
     "partner_order_id",
     "order_number",
-    "order_number_vtp"
+    "order_number_vtp",
+    "partner_order_number",
+    "shipping_order_code",
+    "logistics_code",
+    "waybill",
+    "tracking_url",
+    "trackingUrl",
+    "tracking_link",
+    "trackingLink"
+  ]));
+}
+
+function hasTrackingCode(payload: unknown) {
+  return Boolean(deepValue(payload, [
+    "tracking_number", "tracking_no", "tracking_code", "waybill_no", "waybill_code",
+    "shipment_code", "shipping_code", "bill_code", "label_id", "extend_code",
+    "tracking_id", "ORDER_NUMBER", "order_number", "order_number_vtp",
+    "partner_order_number", "shipping_order_code", "logistics_code", "waybill"
   ]));
 }
 
@@ -146,15 +171,33 @@ export class OrderSyncService {
   constructor(private readonly pancake = new PancakeService()) {}
 
   async reconcileExisting(order: ShopOrder) {
-    const existing = await this.pancake.findOrder(order.code, order.customer.phone);
+    const knownId = pancakeOrderId(order);
+    let existing: Record<string, unknown> | null = null;
+    if (knownId) {
+      try {
+        existing = await this.pancake.order(knownId);
+      } catch (error) {
+        await PancakeLogger.write("error", "order.detail", `Chưa đọc được chi tiết đơn Pancake bằng ID: ${ExceptionHandler.message(error)}`, order.code);
+      }
+    }
+    if (!existing) existing = await this.pancake.findOrder(order.code, order.customer.phone);
     if (!existing) return order;
-    const existingId = externalId(existing);
+    const existingId = externalId(existing) || knownId;
     let remotePayload = existing;
-    if (existingId) {
+    if (existingId && !knownId) {
       try {
         remotePayload = await this.pancake.order(existingId);
       } catch (error) {
         await PancakeLogger.write("error", "order.detail", `Chưa đọc được chi tiết đơn Pancake: ${ExceptionHandler.message(error)}`, order.code);
+      }
+    }
+    const systemId = deepValue(remotePayload, ["system_id"]);
+    if (systemId && !hasTrackingCode(remotePayload)) {
+      try {
+        const trackingPayload = await this.pancake.tracking(systemId);
+        remotePayload = { order_details: remotePayload, tracking_lookup: trackingPayload };
+      } catch (error) {
+        await PancakeLogger.write("error", "order.tracking", `Chưa đọc được mã vận đơn Pancake/SPX: ${ExceptionHandler.message(error)}`, order.code);
       }
     }
     const existingCarrier = deepValue(remotePayload, ["partner_name", "shipping_partner", "carrier", "carrier_name"]);

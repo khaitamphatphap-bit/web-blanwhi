@@ -28,7 +28,7 @@ export async function GET(request: Request) {
     .split(",")
     .map((code) => code.trim())
     .filter(Boolean)
-    .slice(0, 20);
+    .slice(0, 100);
 
   if (codes.length) {
     const allowed = new Set(codes);

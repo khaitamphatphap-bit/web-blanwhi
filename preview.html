@@ -2099,7 +2099,7 @@
           if (!code || deletedCodes.has(code.toUpperCase()) || byCode.has(code)) return;
           byCode.set(code, order);
         });
-        return Array.from(byCode.values()).slice(0, 100);
+        return Array.from(byCode.values()).slice(0, 500);
       };
       const loadOrders = () => mergeOrderLists(parseStoredOrders(orderStorageKey), parseStoredOrders(orderBackupStorageKey));
       const saveOrders = (orders) => {
