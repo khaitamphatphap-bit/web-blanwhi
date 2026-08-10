@@ -424,6 +424,13 @@ export function OrdersAdmin({
   }, []);
 
   useEffect(() => {
+    if (!expandedOrderCode) return;
+    const order = orders.find((item) => item.code === expandedOrderCode);
+    if (!order || order.deliveryType === "express" || order.status === "cancelled") return;
+    updateShipping(order).catch(() => undefined);
+  }, [expandedOrderCode]);
+
+  useEffect(() => {
     refreshStorageHealth().catch(() => undefined);
     const healthTimer = window.setInterval(() => {
       if (document.visibilityState === "hidden") return;
