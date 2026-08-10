@@ -408,19 +408,20 @@ export function OrdersAdmin({
   }
 
   useEffect(() => {
+    updateAllShipping(true).catch(() => undefined);
     const refreshTimer = window.setInterval(() => {
       if (document.visibilityState === "hidden") return;
       refreshOrders({ silent: true }).catch(() => undefined);
     }, 10000);
     const shippingTimer = window.setInterval(() => {
-      if (!integrations.shipping.enabled) return;
+      if (document.visibilityState === "hidden") return;
       updateAllShipping(true).catch(() => undefined);
-    }, 60000);
+    }, 30000);
     return () => {
       window.clearInterval(refreshTimer);
       window.clearInterval(shippingTimer);
     };
-  }, [integrations.shipping.enabled]);
+  }, []);
 
   useEffect(() => {
     refreshStorageHealth().catch(() => undefined);

@@ -1,4 +1,4 @@
-import { findOrderByCode, updateOrder } from "@/lib/orders";
+import { findOrderByCode, readOrders, updateOrder } from "@/lib/orders";
 import { ExceptionHandler } from "@/lib/pancake/exception-handler";
 import { PancakeIntegrationError } from "@/lib/pancake/exception-handler";
 import { InventoryService } from "@/lib/pancake/inventory-service";
@@ -59,11 +59,26 @@ function deepValue(payload: unknown, keys: string[], depth = 0): string {
 }
 
 function shippingUpdate(payload: unknown, includeReadyStatus = true) {
-  const trackingCode = deepValue(payload, ["tracking_number", "waybill_no", "label_id", "extend_code", "tracking_id", "tracking_code", "ORDER_NUMBER", "order_number", "order_number_vtp"]);
+  const trackingCode = deepValue(payload, [
+    "tracking_number",
+    "tracking_no",
+    "tracking_code",
+    "waybill_no",
+    "waybill_code",
+    "shipment_code",
+    "shipping_code",
+    "bill_code",
+    "label_id",
+    "extend_code",
+    "tracking_id",
+    "ORDER_NUMBER",
+    "order_number",
+    "order_number_vtp"
+  ]);
   const carrier = deepValue(payload, ["partner_name", "shipping_partner", "carrier", "carrier_name"]);
   const carrierLabel = /spx|shopee\s*x?press|vtp|viettel/i.test(carrier)
     ? "SPX Express"
-    : (carrier || "đơn vị vận chuyển");
+    : (carrier || "SPX Express");
   return {
     ...(trackingCode ? { trackingCode } : {}),
     shippingCarrier: carrierLabel,
@@ -75,7 +90,25 @@ function shippingUpdate(payload: unknown, includeReadyStatus = true) {
 }
 
 function hasShippingDetails(payload: unknown) {
-  return Boolean(deepValue(payload, ["partner_name", "shipping_partner", "carrier", "carrier_name", "tracking_number", "waybill_no", "label_id", "extend_code", "tracking_id", "tracking_code", "order_number", "order_number_vtp"]));
+  return Boolean(deepValue(payload, [
+    "partner_name",
+    "shipping_partner",
+    "carrier",
+    "carrier_name",
+    "tracking_number",
+    "tracking_no",
+    "tracking_code",
+    "waybill_no",
+    "waybill_code",
+    "shipment_code",
+    "shipping_code",
+    "bill_code",
+    "label_id",
+    "extend_code",
+    "tracking_id",
+    "order_number",
+    "order_number_vtp"
+  ]));
 }
 
 export class OrderSyncService {
@@ -125,7 +158,7 @@ export class OrderSyncService {
       ...(mapped.shippingStatus && order.deliveryType !== "express" ? { shippingStatus: mapped.shippingStatus } : {}),
       ...(mapped.pancakeStatus ? { pancakeStatus: mapped.pancakeStatus } : {}),
       ...(order.deliveryType !== "express" && hasShippingDetails(existing)
-        ? shippingUpdate(existing)
+        ? shippingUpdate(existing, !mapped.shippingStatus || ["unknown", "not_created"].includes(mapped.shippingStatus))
         : order.deliveryType !== "express" && spxAssigned
           ? { shippingCarrier: "SPX Express", shippingMessage: "Đã chuyển sang SPX Express, đang nhận mã vận đơn." }
           : {}),
@@ -274,10 +307,28 @@ export class OrderSyncService {
 
   async pollStatuses() {
     const remote = remoteRecords(await this.pancake.orders());
+    const localOrders = await readOrders();
+    const localByCode = new Map<string, ShopOrder>();
+    for (const order of localOrders) {
+      localByCode.set(order.code.trim().toUpperCase(), order);
+      localByCode.set(shortOrderCode(order.code), order);
+      if (order.posOrderCode) localByCode.set(order.posOrderCode.trim().toUpperCase(), order);
+    }
     let updated = 0;
     for (const payload of remote) {
-      const code = value(payload, ["custom_id", "partner_order_id", "external_order_id", "order_code", "code"]).replace(/^BLANWHI:/i, "");
-      if (!code || !await findOrderByCode(code)) continue;
+      const code = value(payload, ["custom_id", "partner_order_id", "external_order_id", "order_code", "code"]).replace(/^BLANWHI:/i, "").trim().toUpperCase();
+      const order = localByCode.get(code);
+      if (!code || !order) continue;
+      const mapped = mapPancakeStatus(value(payload, ["status", "order_status", "state"]));
+      const remoteShipping = hasShippingDetails(payload) ? shippingUpdate(payload, false) : {};
+      const changed = Boolean(
+        (mapped.status === "cancelled" && order.status !== "cancelled")
+        || (mapped.pancakeStatus && mapped.pancakeStatus !== order.pancakeStatus)
+        || (mapped.shippingStatus && mapped.shippingStatus !== "unknown" && mapped.shippingStatus !== order.shippingStatus)
+        || ("trackingCode" in remoteShipping && remoteShipping.trackingCode && remoteShipping.trackingCode !== order.trackingCode)
+        || ("shippingCarrier" in remoteShipping && remoteShipping.shippingCarrier && remoteShipping.shippingCarrier !== order.shippingCarrier)
+      );
+      if (!changed) continue;
       await this.applyRemoteUpdate(payload);
       updated += 1;
     }

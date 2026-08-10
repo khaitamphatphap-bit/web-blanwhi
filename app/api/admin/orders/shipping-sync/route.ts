@@ -12,11 +12,18 @@ async function syncShippingOrders() {
   const orders = await readOrders();
   const candidates = orders.filter((order) => !finalShippingStatuses.has(order.shippingStatus || "") && order.status !== "cancelled" && (order.deliveryType === "express"
     ? Boolean(order.deliveryOrderId)
-    : config.shipping.provider === "shopee_express"
-      ? Boolean(order.pancakeOrderId || order.pancakeStatus || order.providerOrderId)
-      : Boolean(order.trackingCode)));
+    : Boolean(order.pancakeOrderId || order.pancakeStatus || order.providerOrderId || order.trackingCode)));
 
   const results = [];
+  const pancakeCandidates = candidates.filter((order) => order.deliveryType !== "express" && Boolean(order.pancakeOrderId || order.pancakeStatus || order.providerOrderId));
+  if (pancakeCandidates.length) {
+    try {
+      const synced = await new OrderSyncService().pollStatuses();
+      results.push({ code: "pancake-pos", ok: true, status: "synced", message: `Đã nhận ${synced.received} đơn từ POS, cập nhật ${synced.updated} đơn thay đổi.` });
+    } catch (error) {
+      results.push({ code: "pancake-pos", ok: false, error: error instanceof Error ? error.message : "Không cập nhật được trạng thái Pancake POS." });
+    }
+  }
   for (const order of candidates) {
     try {
       if (order.deliveryType === "express") {
@@ -24,9 +31,7 @@ async function syncShippingOrders() {
         results.push({ code: order.code, ok: true, status: updated.shippingStatus, message: updated.shippingMessage });
         continue;
       }
-      if (config.shipping.provider === "shopee_express") {
-        const updated = await new OrderSyncService().reconcileExisting(order);
-        results.push({ code: order.code, ok: true, status: updated.shippingStatus, message: updated.shippingMessage });
+      if (order.pancakeOrderId || order.pancakeStatus || order.providerOrderId) {
         continue;
       }
       if (!config.shipping.enabled) throw new Error("Chưa bật cập nhật API vận chuyển tiêu chuẩn.");
@@ -44,7 +49,7 @@ async function syncShippingOrders() {
     }
   }
 
-  if (!config.shipping.enabled && config.shipping.provider !== "shopee_express" && !candidates.some((order) => order.deliveryType === "express")) {
+  if (!config.shipping.enabled && config.shipping.provider !== "shopee_express" && pancakeCandidates.length === 0 && !candidates.some((order) => order.deliveryType === "express")) {
     return NextResponse.json({ error: "Chưa bật cập nhật API vận chuyển." }, { status: 400 });
   }
   return NextResponse.json({ checked: candidates.length, success: results.filter((result) => result.ok).length, failed: results.filter((result) => !result.ok).length, results }, { headers: { "Cache-Control": "no-store, max-age=0" } });
