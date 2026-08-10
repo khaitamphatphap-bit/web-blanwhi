@@ -3027,7 +3027,7 @@
         const status = order.shippingStatus || "";
         if (status === "delivered") return 3;
         if (["shipping", "delivery_failed", "returning", "returned"].includes(status)) return 2;
-        if (status === "driver_assigned") return 1;
+        if (["ready_to_ship", "driver_assigned"].includes(status) || order.trackingCode) return 1;
         return Math.max(order.step || 0, order.status === "Đã thanh toán" ? 1 : 0);
       }
 
@@ -3038,9 +3038,10 @@
       }
       function customerOrderStatus(order) {
         if (order.status === "Đơn hủy" || order.shippingStatus === "cancelled") return "Đơn hủy";
+        if (order.shippingStatus && !["not_created", "unknown"].includes(order.shippingStatus) && customerShippingLabels[order.shippingStatus]) return customerShippingLabels[order.shippingStatus];
+        if (order.pancakeStatus && customerPancakeLabels[order.pancakeStatus]) return customerPancakeLabels[order.pancakeStatus];
         if (order.rawStatus === "pending" && order.paymentMethod === "cod") return "Chờ vận chuyển";
         if (order.rawStatus === "pending") return "Chờ thanh toán";
-        if (order.pancakeStatus && customerPancakeLabels[order.pancakeStatus]) return customerPancakeLabels[order.pancakeStatus];
         if (order.shippingStatus && customerShippingLabels[order.shippingStatus]) return customerShippingLabels[order.shippingStatus];
         return order.status || "Đã đặt";
       }
