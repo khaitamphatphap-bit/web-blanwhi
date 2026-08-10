@@ -24,7 +24,7 @@ async function syncShippingOrders(request: Request) {
   if (pancakeCandidates.length) {
     try {
       const synced = await new OrderSyncService().pollStatuses({ detailLimit: fullSync ? 200 : 20 });
-      results.push({ code: "pancake-pos", ok: true, status: "synced", received: synced.received, detailed: synced.detailed, detailErrors: synced.detailErrors, updated: synced.updated, message: `Đã nhận ${synced.received} đơn từ POS, đọc chi tiết ${synced.detailed} đơn, ${synced.detailErrors} lỗi chi tiết và cập nhật ${synced.updated} đơn thay đổi.` });
+      results.push({ code: "pancake-pos", ok: true, status: "synced", received: synced.received, detailed: synced.detailed, detailErrors: synced.detailErrors, updated: synced.updated, posStatusesUpdated: synced.posStatusesUpdated, posStatusErrors: synced.posStatusErrors, message: `Đã nhận ${synced.received} đơn từ POS, đọc chi tiết ${synced.detailed} đơn, cập nhật ${synced.updated} đơn và tự chuyển ${synced.posStatusesUpdated} trạng thái POS.` });
     } catch (error) {
       results.push({ code: "pancake-pos", ok: false, error: error instanceof Error ? error.message : "Không cập nhật được trạng thái Pancake POS." });
     }
@@ -64,6 +64,8 @@ async function syncShippingOrders(request: Request) {
     ordersUpdated: results.reduce((sum, result) => sum + ("updated" in result ? Number(result.updated || 0) : 0), 0),
     ordersDetailed: results.reduce((sum, result) => sum + ("detailed" in result ? Number(result.detailed || 0) : 0), 0),
     detailErrors: results.reduce((sum, result) => sum + ("detailErrors" in result ? Number(result.detailErrors || 0) : 0), 0),
+    posStatusesUpdated: results.reduce((sum, result) => sum + ("posStatusesUpdated" in result ? Number(result.posStatusesUpdated || 0) : 0), 0),
+    posStatusErrors: results.reduce((sum, result) => sum + ("posStatusErrors" in result ? Number(result.posStatusErrors || 0) : 0), 0),
     results
   }, { headers: { "Cache-Control": "no-store, max-age=0" } });
 }

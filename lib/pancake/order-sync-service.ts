@@ -1,4 +1,4 @@
-import { findOrderByCode, readOrders, updateOrder } from "@/lib/orders";
+import { findOrderByCode, readOrders, updateOrder, writeOrders } from "@/lib/orders";
 import { ExceptionHandler } from "@/lib/pancake/exception-handler";
 import { PancakeIntegrationError } from "@/lib/pancake/exception-handler";
 import { InventoryService } from "@/lib/pancake/inventory-service";
@@ -402,8 +402,10 @@ export class OrderSyncService {
       if (providerId) localByPancakeId.set(providerId, order);
     }
     let updated = 0;
+    let posStatusesUpdated = 0;
+    const patches = new Map<string, Partial<ShopOrder>>();
     const detailLimit = Math.max(0, Math.min(remote.length, Math.floor(options.detailLimit ?? 20)));
-    const detailStart = remote.length ? (Math.floor(Date.now() / 30000) * detailLimit) % remote.length : 0;
+    const detailStart = remote.length ? (Math.floor(Date.now() / 15000) * detailLimit) % remote.length : 0;
     const orderedRemote = [...remote.slice(detailStart), ...remote.slice(0, detailStart)];
     const detailTargets = orderedRemote.flatMap((payload) => {
       const code = value(payload, ["custom_id", "partner_order_id", "external_order_id", "order_code", "code"]).replace(/^BLANWHI:/i, "").trim().toUpperCase();
@@ -414,14 +416,16 @@ export class OrderSyncService {
       return [{ remoteId, remoteKey, order }];
     }).slice(0, detailLimit);
     const detailByRemoteId = new Map<string, Record<string, unknown>>();
-    const detailBatchSize = 8;
+    const detailFailures: string[] = [];
+    const posStatusFailures: string[] = [];
+    const detailBatchSize = 16;
     for (let index = 0; index < detailTargets.length; index += detailBatchSize) {
       const batch = detailTargets.slice(index, index + detailBatchSize);
       const responses = await Promise.all(batch.map(async ({ remoteId, remoteKey, order }) => {
         try {
           return { remoteKey, payload: await this.pancake.order(remoteId) };
         } catch (error) {
-          await PancakeLogger.write("error", "order.detail", `Chưa đọc được chi tiết đơn Pancake: ${ExceptionHandler.message(error)}`, order.code);
+          detailFailures.push(`${shortOrderCode(order.code)}: ${ExceptionHandler.message(error)}`);
           return null;
         }
       }));
@@ -439,6 +443,10 @@ export class OrderSyncService {
       const mapped = mapPancakeStatus(value(payload, ["status", "order_status", "state"]));
       const logisticsStatus = logisticsShippingStatus(payload);
       const remoteShipping = hasShippingDetails(payload) ? shippingUpdate(payload, false) : {};
+      const targetPosStatus = logisticsStatus === "delivered" ? 3 : logisticsStatus === "shipping" ? 2 : 0;
+      const needsPosTransition = Boolean(targetPosStatus && remoteId
+        && order.status !== "cancelled"
+        && !["shipping", "completed"].includes(mapped.pancakeStatus || ""));
       const changed = Boolean(
         (mapped.status === "cancelled" && order.status !== "cancelled")
         || (mapped.pancakeStatus && mapped.pancakeStatus !== order.pancakeStatus)
@@ -446,11 +454,76 @@ export class OrderSyncService {
         || (!logisticsStatus && mapped.shippingStatus && mapped.shippingStatus !== "unknown" && mapped.shippingStatus !== order.shippingStatus)
         || ("trackingCode" in remoteShipping && remoteShipping.trackingCode && remoteShipping.trackingCode !== order.trackingCode)
         || ("shippingCarrier" in remoteShipping && remoteShipping.shippingCarrier && remoteShipping.shippingCarrier !== order.shippingCarrier)
+        || needsPosTransition
       );
       if (!changed) continue;
-      await this.applyRemoteUpdate(payload, order);
+      const preserveCancellation = order.status === "cancelled" && mapped.pancakeStatus !== "cancelled";
+      if (mapped.release && order.inventoryReservationApplied && !order.inventoryReservationReleased) {
+        await new InventoryService().reserve(order.items, "restore");
+      }
+      patches.set(order.code, {
+        ...(mapped.status === "cancelled" && order.status !== "cancelled" ? { status: "cancelled" as const } : {}),
+        ...((logisticsStatus || mapped.shippingStatus) && !preserveCancellation && order.deliveryType !== "express"
+          ? { shippingStatus: logisticsStatus || mapped.shippingStatus }
+          : {}),
+        ...(mapped.pancakeStatus && !preserveCancellation ? { pancakeStatus: mapped.pancakeStatus } : {}),
+        ...(order.deliveryType !== "express" && hasShippingDetails(payload) && !preserveCancellation
+          ? shippingUpdate(payload, false)
+          : {}),
+        inventoryReservationReleased: Boolean(order.inventoryReservationReleased || mapped.release),
+        externalSync: {
+          pancake: `Pancake: ${value(payload, ["status", "order_status", "state"]) || "đã cập nhật"}`,
+          lastSyncedAt: new Date().toISOString()
+        }
+      });
+
+      if (needsPosTransition && !preserveCancellation) {
+        try {
+          await this.pancake.updateOrderStatus(remoteId, targetPosStatus);
+          posStatusesUpdated += 1;
+          const currentPatch = patches.get(order.code) || {};
+          patches.set(order.code, {
+            ...currentPatch,
+            pancakeStatus: targetPosStatus === 3 ? "completed" : "shipping"
+          });
+        } catch (error) {
+          posStatusFailures.push(`${shortOrderCode(order.code)}: ${ExceptionHandler.message(error)}`);
+        }
+      }
       updated += 1;
     }
-    return { received: remote.length, detailed: detailByRemoteId.size, detailErrors: detailTargets.length - detailByRemoteId.size, updated };
+    if (patches.size) {
+      const latestOrders = await readOrders();
+      const updatedAt = new Date().toISOString();
+      await writeOrders(latestOrders.map((order) => {
+        const patch = patches.get(order.code);
+        if (!patch) return order;
+        return {
+          ...order,
+          ...patch,
+          externalSync: { ...order.externalSync, ...patch.externalSync },
+          updatedAt
+        };
+      }));
+      await PancakeLogger.write("info", "order.poll", `Đã cập nhật nhanh ${patches.size} đơn và tự chuyển ${posStatusesUpdated} trạng thái POS.`);
+    }
+    if (detailFailures.length || posStatusFailures.length) {
+      await PancakeLogger.write(
+        "error",
+        "order.poll",
+        [
+          detailFailures.length ? `${detailFailures.length} lỗi đọc chi tiết (${detailFailures.slice(0, 3).join("; ")})` : "",
+          posStatusFailures.length ? `${posStatusFailures.length} lỗi chuyển POS (${posStatusFailures.slice(0, 3).join("; ")})` : ""
+        ].filter(Boolean).join(" | ")
+      );
+    }
+    return {
+      received: remote.length,
+      detailed: detailByRemoteId.size,
+      detailErrors: detailTargets.length - detailByRemoteId.size,
+      updated,
+      posStatusesUpdated,
+      posStatusErrors: posStatusFailures.length
+    };
   }
 }

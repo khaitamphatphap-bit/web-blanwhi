@@ -267,6 +267,14 @@ export class PancakeService {
     });
   }
 
+  async updateOrderStatus(providerOrderId: string, status: number) {
+    const id = Validator.required(providerOrderId, "Pancake Order ID");
+    return this.client.request<Record<string, unknown>>(`/shops/${encodeURIComponent(this.shopId())}/orders/${encodeURIComponent(id)}`, {
+      method: "PUT",
+      body: { status }
+    });
+  }
+
   async orders(search = "", pageNumber = 1) {
     return this.client.request<unknown>(`/shops/${encodeURIComponent(this.shopId())}/orders`, {
       query: { page_number: pageNumber, page_size: 100, search: search || undefined }

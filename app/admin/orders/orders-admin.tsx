@@ -354,7 +354,7 @@ export function OrdersAdmin({
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Không cập nhật được vận chuyển.");
       await refreshOrders({ silent });
-      const text = `Đã kiểm tra ${data.checked || 0} đơn, đọc chi tiết ${data.ordersDetailed || 0} đơn: ${data.ordersUpdated || 0} đơn có thay đổi, ${(data.failed || 0) + (data.detailErrors || 0)} lỗi.`;
+      const text = `Đã kiểm tra ${data.checked || 0} đơn, đọc chi tiết ${data.ordersDetailed || 0} đơn: ${data.ordersUpdated || 0} đơn có thay đổi, tự chuyển ${data.posStatusesUpdated || 0} trạng thái POS, ${(data.failed || 0) + (data.detailErrors || 0) + (data.posStatusErrors || 0)} lỗi.`;
       setAutoSyncText(`Tự động cập nhật nền: ${text}`);
       if (!silent) setMessage(text);
     } catch (error) {
@@ -425,7 +425,7 @@ export function OrdersAdmin({
     const shippingTimer = window.setInterval(() => {
       if (document.visibilityState === "hidden") return;
       updateAllShipping(true).catch(() => undefined);
-    }, 30000);
+    }, 15000);
     return () => {
       window.clearInterval(refreshTimer);
       window.clearInterval(shippingTimer);
