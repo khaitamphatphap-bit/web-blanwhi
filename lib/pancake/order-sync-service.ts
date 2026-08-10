@@ -9,14 +9,20 @@ import type { ShopOrder } from "@/lib/types";
 import { mapPancakeStatus } from "@/lib/pancake/domain";
 import { shortOrderCode } from "@/lib/order-code";
 
+function validPancakeOrderId(value: unknown) {
+  const candidate = typeof value === "string" || typeof value === "number" ? String(value).trim() : "";
+  if (!candidate || /^(BLW-|BLANWHI:|\[object Object\]$)/i.test(candidate)) return "";
+  return candidate;
+}
+
 function externalId(payload: Record<string, unknown>) {
   const record = (payload.data && typeof payload.data === "object" ? payload.data : payload) as Record<string, unknown>;
   const order = (record.order && typeof record.order === "object" ? record.order : record) as Record<string, unknown>;
-  return String(order.id || order._id || order.order_id || order.display_id || "");
+  return validPancakeOrderId(order.id || order._id || order.order_id || order.display_id);
 }
 
 function pancakeOrderId(order: ShopOrder) {
-  return order.pancakeOrderId || (order.pancakeStatus ? order.providerOrderId || "" : "");
+  return validPancakeOrderId(order.pancakeOrderId || (order.pancakeStatus ? order.providerOrderId || "" : ""));
 }
 
 function remoteRecords(payload: unknown): Record<string, unknown>[] {
@@ -42,7 +48,16 @@ function deepValue(payload: unknown, keys: string[], depth = 0): string {
   const record = payload as Record<string, unknown>;
   for (const key of keys) {
     const candidate = record[key];
-    if (candidate !== undefined && candidate !== null && String(candidate).trim()) return String(candidate).trim();
+    if ((typeof candidate === "string" || typeof candidate === "number") && String(candidate).trim()) return String(candidate).trim();
+    if (candidate && typeof candidate === "object") {
+      const nested = candidate as Record<string, unknown>;
+      for (const nestedKey of ["value", "code", "tracking_code", "trackingCode", "extend_code", "tracking_number", "tracking_no"]) {
+        const nestedCandidate = nested[nestedKey];
+        if ((typeof nestedCandidate === "string" || typeof nestedCandidate === "number") && String(nestedCandidate).trim()) {
+          return String(nestedCandidate).trim();
+        }
+      }
+    }
   }
   for (const candidate of Object.values(record)) {
     if (Array.isArray(candidate)) {
@@ -52,6 +67,27 @@ function deepValue(payload: unknown, keys: string[], depth = 0): string {
       }
     } else {
       const found = deepValue(candidate, keys, depth + 1);
+      if (found) return found;
+    }
+  }
+  return "";
+}
+
+function findSpxTrackingCode(payload: unknown, depth = 0): string {
+  if (payload === null || payload === undefined || depth > 7) return "";
+  if (typeof payload === "string" || typeof payload === "number") {
+    return String(payload).match(/\bSPXVN\d{10,}\b/i)?.[0]?.toUpperCase() || "";
+  }
+  if (Array.isArray(payload)) {
+    for (const item of payload) {
+      const found = findSpxTrackingCode(item, depth + 1);
+      if (found) return found;
+    }
+    return "";
+  }
+  if (typeof payload === "object") {
+    for (const item of Object.values(payload as Record<string, unknown>)) {
+      const found = findSpxTrackingCode(item, depth + 1);
       if (found) return found;
     }
   }
@@ -79,7 +115,7 @@ function logisticsShippingStatus(payload: unknown) {
 }
 
 function shippingUpdate(payload: unknown, includeReadyStatus = true) {
-  let trackingCode = deepValue(payload, [
+  let trackingCode = findSpxTrackingCode(payload) || deepValue(payload, [
     "tracking_number",
     "tracking_no",
     "tracking_code",
@@ -99,6 +135,7 @@ function shippingUpdate(payload: unknown, includeReadyStatus = true) {
     "logistics_code",
     "waybill"
   ]);
+  if (/^(\[object Object\]|BLW-|BLANWHI:)/i.test(trackingCode) || /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(trackingCode)) trackingCode = "";
   const payloadRecord = payload && typeof payload === "object" ? payload as Record<string, unknown> : {};
   const trackingUrl = deepValue(payload, ["tracking_url", "trackingUrl", "tracking_link", "trackingLink"])
     || deepValue(payloadRecord.tracking_lookup, ["url"]);

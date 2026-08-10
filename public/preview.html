@@ -2075,6 +2075,7 @@
       const orderStorageKey = "blanwhiOrders";
       const orderBackupStorageKey = "blanwhiOrdersBackup";
       const deletedOrderStorageKey = "blanwhiDeletedOrders";
+      const customerIdentityStorageKey = "blanwhiCustomerIdentities";
       const parseStoredOrders = (key) => {
         try {
           const parsed = JSON.parse(localStorage.getItem(key) || "[]");
@@ -2106,6 +2107,36 @@
         const merged = mergeOrderLists(Array.isArray(orders) ? orders : [], parseStoredOrders(orderBackupStorageKey), parseStoredOrders(orderStorageKey));
         localStorage.setItem(orderStorageKey, JSON.stringify(merged));
         if (merged.length) localStorage.setItem(orderBackupStorageKey, JSON.stringify(merged));
+      };
+      const loadCustomerIdentities = () => {
+        try {
+          const saved = JSON.parse(localStorage.getItem(customerIdentityStorageKey) || "[]");
+          const addresses = JSON.parse(localStorage.getItem("blanwhiSavedAddresses") || "[]");
+          const orders = [...parseStoredOrders(orderStorageKey), ...parseStoredOrders(orderBackupStorageKey)];
+          const seen = new Set();
+          return [...(Array.isArray(saved) ? saved : []), ...(Array.isArray(addresses) ? addresses : []), ...orders.map((order) => order.customer)]
+            .filter((identity) => identity?.phone && identity?.address)
+            .filter((identity) => {
+              const key = `${String(identity.phone).replace(/\D/g, "")}|${String(identity.address).trim().toLowerCase()}`;
+              if (seen.has(key)) return false;
+              seen.add(key);
+              return true;
+            })
+            .slice(0, 5);
+        } catch {
+          return [];
+        }
+      };
+      const rememberCustomerIdentity = (customer) => {
+        if (!customer?.phone || !customer?.address) return;
+        const identities = loadCustomerIdentities();
+        localStorage.setItem(customerIdentityStorageKey, JSON.stringify([customer, ...identities].slice(0, 5)));
+      };
+      const restoreLocalOrderCodes = (codes) => {
+        const restored = new Set((Array.isArray(codes) ? codes : []).map((code) => String(code || "").trim().toUpperCase()).filter(Boolean));
+        if (!restored.size) return;
+        const remaining = Array.from(loadDeletedOrderCodes()).filter((code) => !restored.has(code));
+        localStorage.setItem(deletedOrderStorageKey, JSON.stringify(remaining.slice(0, 500)));
       };
       const forgetLocalOrder = (code) => {
         const normalized = String(code || "").trim().toUpperCase();
@@ -3160,7 +3191,35 @@
       }
 
       async function syncCustomerOrderStatuses() {
-        const orders = loadOrders();
+        let orders = loadOrders();
+        const identities = loadCustomerIdentities();
+        if (identities.length) {
+          try {
+            const discoveredResponse = await fetch("/api/orders/customer", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ identities })
+            });
+            if (discoveredResponse.ok) {
+              const discoveredData = await discoveredResponse.json();
+              const discoveredOrders = (discoveredData.orders || []).map((serverOrder) => ({
+                ...serverOrder,
+                rawStatus: serverOrder.status,
+                status: serverOrder.status === "paid" ? "Đã thanh toán" : serverOrder.status === "failed" ? "Thanh toán thất bại" : serverOrder.status === "cancelled" ? "Đơn hủy" : serverOrder.paymentMethod === "cod" ? "Chờ vận chuyển" : "Chờ thanh toán",
+                shippingFee: Number(serverOrder.shipping || 0),
+                items: (serverOrder.items || []).map((item) => ({ ...item, qty: Number(item.quantity || item.qty || 1), price: Number(item.unitPrice || item.price || 0) })),
+                updatedAt: serverOrder.updatedAt ? new Date(serverOrder.updatedAt).toLocaleString("vi-VN") : ""
+              }));
+              if (discoveredOrders.length) {
+                restoreLocalOrderCodes(discoveredOrders.map((order) => order.code));
+                saveOrders([...discoveredOrders, ...orders]);
+                orders = loadOrders();
+              }
+            }
+          } catch {
+            // Giữ lịch sử cục bộ nếu mạng tạm thời chưa sẵn sàng.
+          }
+        }
         const codes = orders.map((order) => order.code).filter(Boolean);
         if (!codes.length) return orders;
         try {
@@ -4350,6 +4409,7 @@
             ...order.customer,
             house: checkoutAddress.value
           });
+          rememberCustomerIdentity(order.customer);
           saveOrders([order, ...loadOrders()]);
           cart.length = 0;
           orderNote = "";
