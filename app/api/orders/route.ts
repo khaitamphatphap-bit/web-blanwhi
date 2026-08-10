@@ -3,7 +3,6 @@ import { readOrders, updateOrder } from "@/lib/orders";
 import { OrderSyncService } from "@/lib/pancake/order-sync-service";
 import { readIntegrationConfig } from "@/lib/integrations";
 import { reconcileZaloPayPayment, reconcileZaloPayRefund } from "@/lib/payment-confirmation";
-import { shortOrderCode } from "@/lib/order-code";
 
 const finalCustomerShippingStatuses = new Set(["delivered", "returned", "cancelled"]);
 
@@ -86,41 +85,6 @@ export async function GET(request: Request) {
     }, {
       headers: { "Cache-Control": "no-store, max-age=0" }
     });
-  }
-
-  const unpaidOnlineOrdersOnPos = orders
-    .filter((order) => order.status === "pending"
-      && String(order.paymentMethod || "").trim().toLowerCase() !== "cod"
-      && Boolean(order.pancakeOrderId || (order.pancakeStatus && order.providerOrderId))
-      && order.pancakeStatus !== "cancelled"
-      && !["shipping", "delivered", "delivery_failed", "returning", "returned", "cancelled"].includes(order.shippingStatus || ""))
-    .slice(0, 10);
-  const legacyLinkedOrders = orders
-    .filter((order) => !unpaidOnlineOrdersOnPos.some((unpaid) => unpaid.code === order.code)
-      && shortOrderCode(order.code) !== order.code
-      && Boolean(order.pancakeOrderId || order.pancakeStatus)
-      && order.posOrderCode !== shortOrderCode(order.code))
-    .slice(0, 10);
-  const paidOrdersNeedingPos = orders
-    .filter((order) => (order.status === "paid" || (order.status === "pending" && String(order.paymentMethod || "").trim().toLowerCase() === "cod")) && !order.pancakeOrderId && !order.pancakeStatus)
-    .slice(0, 20);
-  const standardOrdersNeedingSpx = orders
-    .filter((order) => order.deliveryType !== "express"
-      && !unpaidOnlineOrdersOnPos.some((unpaid) => unpaid.code === order.code)
-      && !legacyLinkedOrders.some((legacy) => legacy.code === order.code)
-      && Boolean(order.pancakeOrderId || order.pancakeStatus)
-      && !/spx|shopee\s*x?press/i.test(order.shippingCarrier || "")
-      && !["shipping", "delivered", "delivery_failed", "returning", "returned", "cancelled"].includes(order.shippingStatus || ""))
-    .slice(0, 20);
-  if (unpaidOnlineOrdersOnPos.length || legacyLinkedOrders.length || paidOrdersNeedingPos.length || standardOrdersNeedingSpx.length) {
-    const sync = new OrderSyncService();
-    await Promise.allSettled([
-      ...unpaidOnlineOrdersOnPos.map((order) => sync.removeUnpaidFromPos(order)),
-      ...legacyLinkedOrders.map((order) => sync.reconcileExisting(order)),
-      ...paidOrdersNeedingPos.map((order) => sync.create(order)),
-      ...standardOrdersNeedingSpx.map((order) => sync.reconcileExisting(order))
-    ]);
-    return NextResponse.json({ orders: await readOrders() }, { headers: { "Cache-Control": "no-store, max-age=0" } });
   }
 
   return NextResponse.json({ orders }, { headers: { "Cache-Control": "no-store, max-age=0" } });
