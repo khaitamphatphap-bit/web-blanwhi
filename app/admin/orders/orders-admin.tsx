@@ -167,6 +167,7 @@ export function OrdersAdmin({
   const [storageHealth, setStorageHealth] = useState<StorageHealthReport | null>(null);
   const [storageHealthBusy, setStorageHealthBusy] = useState(false);
   const orderListRef = useRef<HTMLElement | null>(null);
+  const shippingSyncInFlight = useRef(false);
   const filteredOrders = useMemo(() => {
     const search = normalizeSearch(orderSearch);
     return orders.filter((order) => {
@@ -339,16 +340,21 @@ export function OrdersAdmin({
   }
 
   async function updateAllShipping(silent = false) {
+    if (shippingSyncInFlight.current) {
+      if (!silent) setMessage("Đồng bộ vận chuyển đang chạy, vui lòng chờ hoàn tất.");
+      return;
+    }
+    shippingSyncInFlight.current = true;
     if (!silent) {
       setBusyCode("all-shipping");
       setMessage("");
     }
     try {
-      const response = await fetch("/api/admin/orders/shipping-sync", { method: "POST" });
+      const response = await fetch(`/api/admin/orders/shipping-sync${silent ? "" : "?full=1"}`, { method: "POST" });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Không cập nhật được vận chuyển.");
       await refreshOrders({ silent });
-      const text = `Đã kiểm tra ${data.checked || 0} đơn: ${data.success || 0} cập nhật thành công, ${data.failed || 0} lỗi.`;
+      const text = `Đã kiểm tra ${data.checked || 0} đơn, đọc chi tiết ${data.ordersDetailed || 0} đơn: ${data.ordersUpdated || 0} đơn có thay đổi, ${(data.failed || 0) + (data.detailErrors || 0)} lỗi.`;
       setAutoSyncText(`Tự động cập nhật nền: ${text}`);
       if (!silent) setMessage(text);
     } catch (error) {
@@ -356,6 +362,7 @@ export function OrdersAdmin({
       setAutoSyncText(`Tự động cập nhật nền: ${text}`);
       if (!silent) setMessage(text);
     } finally {
+      shippingSyncInFlight.current = false;
       if (!silent) setBusyCode("");
     }
   }

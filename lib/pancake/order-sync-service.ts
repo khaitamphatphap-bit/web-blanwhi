@@ -389,8 +389,8 @@ export class OrderSyncService {
     return updated;
   }
 
-  async pollStatuses() {
-    const remote = remoteRecords(await this.pancake.orders());
+  async pollStatuses(options: { detailLimit?: number } = {}) {
+    const remote = remoteRecords(await this.pancake.allOrders());
     const localOrders = await readOrders();
     const localByCode = new Map<string, ShopOrder>();
     const localByPancakeId = new Map<string, ShopOrder>();
@@ -402,25 +402,40 @@ export class OrderSyncService {
       if (providerId) localByPancakeId.set(providerId, order);
     }
     let updated = 0;
-    let detailLookups = 0;
-    const detailLimit = 20;
+    const detailLimit = Math.max(0, Math.min(remote.length, Math.floor(options.detailLimit ?? 20)));
     const detailStart = remote.length ? (Math.floor(Date.now() / 30000) * detailLimit) % remote.length : 0;
     const orderedRemote = [...remote.slice(detailStart), ...remote.slice(0, detailStart)];
+    const detailTargets = orderedRemote.flatMap((payload) => {
+      const code = value(payload, ["custom_id", "partner_order_id", "external_order_id", "order_code", "code"]).replace(/^BLANWHI:/i, "").trim().toUpperCase();
+      const remoteId = externalId(payload).trim();
+      const remoteKey = remoteId.toUpperCase();
+      const order = localByCode.get(code) || localByPancakeId.get(remoteKey);
+      if (!order || !remoteId || (order.trackingCode && ["delivered", "returned", "cancelled"].includes(order.shippingStatus || ""))) return [];
+      return [{ remoteId, remoteKey, order }];
+    }).slice(0, detailLimit);
+    const detailByRemoteId = new Map<string, Record<string, unknown>>();
+    const detailBatchSize = 8;
+    for (let index = 0; index < detailTargets.length; index += detailBatchSize) {
+      const batch = detailTargets.slice(index, index + detailBatchSize);
+      const responses = await Promise.all(batch.map(async ({ remoteId, remoteKey, order }) => {
+        try {
+          return { remoteKey, payload: await this.pancake.order(remoteId) };
+        } catch (error) {
+          await PancakeLogger.write("error", "order.detail", `Chưa đọc được chi tiết đơn Pancake: ${ExceptionHandler.message(error)}`, order.code);
+          return null;
+        }
+      }));
+      responses.forEach((response) => {
+        if (response) detailByRemoteId.set(response.remoteKey, response.payload);
+      });
+    }
     for (const summaryPayload of orderedRemote) {
       let payload = summaryPayload;
       const code = value(payload, ["custom_id", "partner_order_id", "external_order_id", "order_code", "code"]).replace(/^BLANWHI:/i, "").trim().toUpperCase();
       const remoteId = externalId(payload).trim().toUpperCase();
       const order = localByCode.get(code) || localByPancakeId.get(remoteId);
       if (!order) continue;
-      if (remoteId && detailLookups < detailLimit && (!order.trackingCode || !["delivered", "returned", "cancelled"].includes(order.shippingStatus || ""))) {
-        try {
-          payload = await this.pancake.order(remoteId);
-          detailLookups += 1;
-        } catch (error) {
-          detailLookups += 1;
-          await PancakeLogger.write("error", "order.detail", `Chưa đọc được chi tiết đơn Pancake: ${ExceptionHandler.message(error)}`, order.code);
-        }
-      }
+      payload = detailByRemoteId.get(remoteId) || payload;
       const mapped = mapPancakeStatus(value(payload, ["status", "order_status", "state"]));
       const logisticsStatus = logisticsShippingStatus(payload);
       const remoteShipping = hasShippingDetails(payload) ? shippingUpdate(payload, false) : {};
@@ -436,6 +451,6 @@ export class OrderSyncService {
       await this.applyRemoteUpdate(payload, order);
       updated += 1;
     }
-    return { received: remote.length, updated };
+    return { received: remote.length, detailed: detailByRemoteId.size, detailErrors: detailTargets.length - detailByRemoteId.size, updated };
   }
 }

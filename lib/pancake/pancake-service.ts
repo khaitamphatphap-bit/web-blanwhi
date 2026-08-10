@@ -267,10 +267,20 @@ export class PancakeService {
     });
   }
 
-  async orders(search = "") {
+  async orders(search = "", pageNumber = 1) {
     return this.client.request<unknown>(`/shops/${encodeURIComponent(this.shopId())}/orders`, {
-      query: { page_number: 1, page_size: 100, search: search || undefined }
+      query: { page_number: pageNumber, page_size: 100, search: search || undefined }
     });
+  }
+
+  async allOrders() {
+    const combined: Record<string, unknown>[] = [];
+    for (let pageNumber = 1; pageNumber <= 10; pageNumber += 1) {
+      const page = records(await this.orders("", pageNumber));
+      combined.push(...page);
+      if (page.length < 100) break;
+    }
+    return combined;
   }
 
   async tracking(systemId: string) {
