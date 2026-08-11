@@ -502,17 +502,31 @@ export class OrderSyncService {
     let updated = 0;
     let posStatusesUpdated = 0;
     const patches = new Map<string, Partial<ShopOrder>>();
-    const detailLimit = Math.max(0, Math.min(remote.length, Math.floor(options.detailLimit ?? 20)));
-    const detailStart = remote.length ? (Math.floor(Date.now() / 15000) * detailLimit) % remote.length : 0;
+    const finalDetailStatuses = new Set<ShippingStatus>(["delivered", "returned", "cancelled"]);
+    const detailLimit = Math.max(0, Math.floor(options.detailLimit ?? 20));
+    const rotatingDetailLimit = remote.length ? Math.min(remote.length, detailLimit) : 0;
+    const detailStart = remote.length && rotatingDetailLimit ? (Math.floor(Date.now() / 15000) * rotatingDetailLimit) % remote.length : 0;
     const orderedRemote = [...remote.slice(detailStart), ...remote.slice(0, detailStart)];
-    const detailTargets = orderedRemote.flatMap((payload) => {
+    const priorityDetailTargets = localOrders.flatMap((order) => {
+      const remoteId = pancakeOrderId(order).trim();
+      if (!remoteId || order.deliveryType === "express" || order.status === "cancelled") return [];
+      if (order.trackingCode && finalDetailStatuses.has(order.shippingStatus || "unknown")) return [];
+      return [{ remoteId, remoteKey: remoteId.toUpperCase(), order }];
+    });
+    const rotatingDetailTargets = orderedRemote.flatMap((payload) => {
       const code = value(payload, ["custom_id", "partner_order_id", "external_order_id", "order_code", "code"]).replace(/^BLANWHI:/i, "").trim().toUpperCase();
       const remoteId = externalId(payload).trim();
       const remoteKey = remoteId.toUpperCase();
       const order = localByCode.get(code) || localByPancakeId.get(remoteKey);
-      if (!order || !remoteId || (order.trackingCode && ["delivered", "returned", "cancelled"].includes(order.shippingStatus || ""))) return [];
+      if (!order || !remoteId || (order.trackingCode && finalDetailStatuses.has(order.shippingStatus || "unknown"))) return [];
       return [{ remoteId, remoteKey, order }];
-    }).slice(0, detailLimit);
+    });
+    const detailTargetsByKey = new Map<string, { remoteId: string; remoteKey: string; order: ShopOrder }>();
+    for (const target of [...priorityDetailTargets, ...rotatingDetailTargets]) {
+      if (detailTargetsByKey.size >= detailLimit) break;
+      if (!detailTargetsByKey.has(target.remoteKey)) detailTargetsByKey.set(target.remoteKey, target);
+    }
+    const detailTargets = Array.from(detailTargetsByKey.values());
     const detailByRemoteId = new Map<string, Record<string, unknown>>();
     const detailFailures: string[] = [];
     const posStatusFailures: string[] = [];
@@ -531,14 +545,9 @@ export class OrderSyncService {
         if (response) detailByRemoteId.set(response.remoteKey, response.payload);
       });
     }
-    for (const summaryPayload of orderedRemote) {
-      let payload = summaryPayload;
-      const code = value(payload, ["custom_id", "partner_order_id", "external_order_id", "order_code", "code"]).replace(/^BLANWHI:/i, "").trim().toUpperCase();
-      const remoteOrderId = externalId(payload).trim();
+    const applyPayload = async (payload: Record<string, unknown>, order: ShopOrder, fallbackRemoteOrderId = "") => {
+      const remoteOrderId = (externalId(payload) || fallbackRemoteOrderId).trim();
       const remoteId = remoteOrderId.toUpperCase();
-      const order = localByCode.get(code) || localByPancakeId.get(remoteId);
-      if (!order) continue;
-      payload = detailByRemoteId.get(remoteId) || payload;
       const mapped = mapPancakeStatus(value(payload, ["status", "order_status", "state"]));
       const logisticsStatus = logisticsShippingStatus(payload);
       const synchronizedShippingStatus = latestShippingStatus(order.shippingStatus, logisticsStatus || mapped.shippingStatus);
@@ -556,7 +565,7 @@ export class OrderSyncService {
         || ("shippingCarrier" in remoteShipping && remoteShipping.shippingCarrier && remoteShipping.shippingCarrier !== order.shippingCarrier)
         || needsPosTransition
       );
-      if (!changed) continue;
+      if (!changed) return;
       const preserveCancellation = order.status === "cancelled" && mapped.pancakeStatus !== "cancelled";
       if (mapped.release && order.inventoryReservationApplied && !order.inventoryReservationReleased) {
         await new InventoryService().reserve(order.items, "restore");
@@ -592,6 +601,24 @@ export class OrderSyncService {
         }
       }
       updated += 1;
+    };
+    const processedCodes = new Set<string>();
+    for (const summaryPayload of orderedRemote) {
+      let payload = summaryPayload;
+      const code = value(payload, ["custom_id", "partner_order_id", "external_order_id", "order_code", "code"]).replace(/^BLANWHI:/i, "").trim().toUpperCase();
+      const remoteOrderId = externalId(payload).trim();
+      const remoteId = remoteOrderId.toUpperCase();
+      const order = localByCode.get(code) || localByPancakeId.get(remoteId);
+      if (!order) continue;
+      payload = detailByRemoteId.get(remoteId) || payload;
+      await applyPayload(payload, order, remoteOrderId);
+      processedCodes.add(order.code);
+    }
+    for (const target of detailTargets) {
+      if (processedCodes.has(target.order.code)) continue;
+      const payload = detailByRemoteId.get(target.remoteKey);
+      if (!payload) continue;
+      await applyPayload(payload, target.order, target.remoteId);
     }
     if (patches.size) {
       const latestOrders = await readOrders();
