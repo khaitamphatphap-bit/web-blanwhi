@@ -414,21 +414,40 @@ export class OrderSyncService {
     }
   }
   async cancel(order: ShopOrder, enqueueOnFailure = true) {
-    const remoteOrderId = pancakeOrderId(order);
-    if (!remoteOrderId) return order;
+    const candidateIds: string[] = [];
+    const knownId = pancakeOrderId(order);
+    if (knownId) candidateIds.push(knownId);
     try {
-      await this.pancake.cancelOrder(remoteOrderId);
-      const updated = await updateOrder(order.code, {
-        pancakeStatus: "cancelled",
-        externalSync: { ...order.externalSync, pancake: "Đã hủy trên Pancake", lastSyncedAt: new Date().toISOString() }
-      });
-      await PancakeLogger.write("info", "order.cancel", "Đã hủy đơn trên Pancake.", order.code);
-      return updated || order;
+      const discovered = await this.pancake.findOrder(order.code, order.customer.phone);
+      const discoveredId = discovered ? externalId(discovered) : "";
+      if (discoveredId && !candidateIds.includes(discoveredId)) candidateIds.push(discoveredId);
+    } catch {
+      // Vẫn thử ID đã lưu nếu bước tìm lại đơn tạm thời không phản hồi.
+    }
+    if (!candidateIds.length) return order;
+    let lastError: unknown;
+    try {
+      for (const remoteOrderId of candidateIds) {
+        try {
+          await this.pancake.cancelOrder(remoteOrderId);
+          const updated = await updateOrder(order.code, {
+            pancakeOrderId: remoteOrderId,
+            pancakeStatus: "cancelled",
+            externalSync: { ...order.externalSync, pancake: "Đã hủy trên Pancake", lastSyncedAt: new Date().toISOString() }
+          });
+          await PancakeLogger.write("info", "order.cancel", `Đã hủy đơn trên Pancake #${remoteOrderId}.`, order.code);
+          return updated || order;
+        } catch (error) {
+          lastError = error;
+        }
+      }
+      throw lastError || new Error("Pancake không xác nhận hủy đơn.");
     } catch (error) {
-      const message = ExceptionHandler.message(error);
+      const normalized = ExceptionHandler.normalize(error);
+      const message = normalized.message;
       await PancakeLogger.write("error", "order.cancel", message, order.code);
       await updateOrder(order.code, { externalSync: { ...order.externalSync, pancake: `Chờ gửi yêu cầu hủy: ${message}`, lastSyncedAt: new Date().toISOString() } });
-      if (enqueueOnFailure) {
+      if (enqueueOnFailure && normalized.retryable) {
         try { await QueueHandler.enqueue("order.cancel", { orderCode: order.code }); } catch { /* Lỗi hàng đợi không che mất lỗi Pancake gốc. */ }
       }
       throw error;

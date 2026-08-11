@@ -10,6 +10,7 @@ import { readSiteContent, type SiteContent } from "@/lib/site-content";
 import { POSSyncService } from "@/lib/services/pos-sync-service";
 
 type CheckoutPayload = {
+  customerDeviceId?: string;
   customer?: {
     name?: string;
     phone?: string;
@@ -242,6 +243,7 @@ export async function POST(request: Request) {
     const order: ShopOrder = {
       id: crypto.randomUUID(),
       code: newOrderCode(),
+      customerDeviceId: String(payload.customerDeviceId || "").trim().slice(0, 100) || undefined,
       status: "pending",
       paymentMethod,
       paymentProvider: paymentMethod,

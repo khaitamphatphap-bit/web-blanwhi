@@ -4,6 +4,7 @@ import { InventoryService } from "@/lib/pancake/inventory-service";
 import { OrderSyncService } from "@/lib/pancake/order-sync-service";
 import { readIntegrationConfig } from "@/lib/integrations";
 import { jsonError } from "@/lib/api-errors";
+import { ExceptionHandler } from "@/lib/pancake/exception-handler";
 import { OrderService } from "@/lib/services/order-service";
 import { refundZaloPayPayment } from "@/lib/payment";
 import { reconcileZaloPayPayment } from "@/lib/payment-confirmation";
@@ -15,8 +16,7 @@ function phoneKey(value: unknown) {
 }
 
 function carrierHasAccepted(order: NonNullable<Awaited<ReturnType<typeof findOrderByCode>>>) {
-  if (["shipping", "delivered", "delivery_failed", "returning", "returned"].includes(order.shippingStatus || "")) return true;
-  return ["shipping", "completed", "returned"].includes(order.pancakeStatus || "");
+  return ["delivered", "returning", "returned"].includes(order.shippingStatus || "");
 }
 
 export async function POST(request: Request, { params }: Params) {
@@ -51,22 +51,35 @@ export async function POST(request: Request, { params }: Params) {
         // Không coi lỗi truy vấn hoặc giao dịch chưa thanh toán là một khoản cần hoàn tiền.
       }
     }
-    const wasPaid = current.status === "paid";
     const orderSync = new OrderSyncService();
-    current = current.pancakeOrderId || current.pancakeStatus || wasPaid ? await orderSync.reconcileExisting(current) : current;
+    if (current.pancakeOrderId || current.pancakeStatus || current.status === "paid") {
+      try {
+        current = await orderSync.reconcileExisting(current);
+      } catch {
+        // Không để lỗi đọc POS tạm thời chặn yêu cầu hủy; bước hủy bên dưới sẽ tự tìm lại đúng ID đơn.
+      }
+    }
     if (carrierHasAccepted(current)) {
       return NextResponse.json({ error: "Đơn đã giao cho đơn vị vận chuyển hoặc đang giao hàng nên không thể hủy trực tuyến." }, { status: 409 });
     }
+    const wasPaid = current.status === "paid";
 
     const reason = body.reason?.trim() || "Khách yêu cầu hủy đơn";
     if (current.deliveryType === "express" && current.deliveryOrderId && current.shippingStatus !== "cancelled") {
       current = await new OrderService().cancelExpressDelivery(code, reason);
     }
-    if ((current.pancakeOrderId || (current.providerOrderId && current.pancakeStatus)) && current.pancakeStatus !== "cancelled") {
+    let pancakeCancellationPending = false;
+    const mayExistOnPancake = Boolean(current.pancakeOrderId
+      || (current.providerOrderId && current.pancakeStatus)
+      || current.paymentMethod === "cod"
+      || wasPaid);
+    if (mayExistOnPancake && current.pancakeStatus !== "cancelled") {
       try {
         current = await orderSync.cancel(current);
-      } catch {
-        // Yêu cầu hủy đã được đưa vào hàng đợi; vẫn ghi nhận hủy trên website ngay để không nằm sai mục.
+      } catch (error) {
+        const normalized = ExceptionHandler.normalize(error);
+        if (!normalized.retryable) throw error;
+        pancakeCancellationPending = true;
       }
     }
 
@@ -79,10 +92,12 @@ export async function POST(request: Request, { params }: Params) {
     }
     let cancelled = await updateOrder(code, {
       status: "cancelled",
-      pancakeStatus: "cancelled",
+      pancakeStatus: pancakeCancellationPending ? current.pancakeStatus : "cancelled",
       trackingCode: "",
       shippingStatus: "cancelled",
-      shippingMessage: `${reason}. Vận đơn đã được vô hiệu hóa trước khi bàn giao cho bưu tá.`,
+      shippingMessage: pancakeCancellationPending
+        ? `${reason}. Website đã ghi nhận; yêu cầu hủy POS đang được tự động thử lại.`
+        : `${reason}. Vận đơn đã được vô hiệu hóa trước khi bàn giao cho bưu tá.`,
       inventoryReservationReleased: true,
       ...(wasPaid ? {
         refundStatus: "pending" as const,

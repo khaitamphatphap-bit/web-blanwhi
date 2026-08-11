@@ -97,6 +97,7 @@ export type OrderItem = {
 export type ShopOrder = {
   id: string;
   code: string;
+  customerDeviceId?: string;
   status: OrderStatus;
   paymentMethod: PaymentMethod;
   paymentProvider: string;

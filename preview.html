@@ -2081,6 +2081,20 @@
       const orderBackupStorageKey = "blanwhiOrdersBackup";
       const deletedOrderStorageKey = "blanwhiDeletedOrders";
       const customerIdentityStorageKey = "blanwhiCustomerIdentities";
+      const customerDeviceStorageKey = "blanwhiCustomerDeviceId";
+      const ensureCustomerDeviceId = () => {
+        let deviceId = "";
+        try { deviceId = String(localStorage.getItem(customerDeviceStorageKey) || "").trim(); } catch { /* Dùng cookie dự phòng. */ }
+        if (!deviceId) {
+          const cookie = document.cookie.split(";").map((part) => part.trim()).find((part) => part.startsWith(`${customerDeviceStorageKey}=`));
+          if (cookie) deviceId = decodeURIComponent(cookie.slice(customerDeviceStorageKey.length + 1));
+        }
+        if (!deviceId) deviceId = globalThis.crypto?.randomUUID?.() || `device-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
+        try { localStorage.setItem(customerDeviceStorageKey, deviceId); } catch { /* Cookie vẫn giữ mã thiết bị. */ }
+        document.cookie = `${customerDeviceStorageKey}=${encodeURIComponent(deviceId)}; Max-Age=31536000; Path=/; SameSite=Lax`;
+        return deviceId;
+      };
+      const customerDeviceId = ensureCustomerDeviceId();
       const parseStoredOrders = (key) => {
         try {
           const parsed = JSON.parse(localStorage.getItem(key) || "[]");
@@ -2110,8 +2124,9 @@
       const loadOrders = () => mergeOrderLists(parseStoredOrders(orderStorageKey), parseStoredOrders(orderBackupStorageKey));
       const saveOrders = (orders) => {
         const merged = mergeOrderLists(Array.isArray(orders) ? orders : [], parseStoredOrders(orderBackupStorageKey), parseStoredOrders(orderStorageKey));
-        localStorage.setItem(orderStorageKey, JSON.stringify(merged));
-        if (merged.length) localStorage.setItem(orderBackupStorageKey, JSON.stringify(merged));
+        try { localStorage.setItem(orderStorageKey, JSON.stringify(merged)); } catch { /* Máy chủ vẫn giữ đơn theo mã thiết bị. */ }
+        try { if (merged.length) localStorage.setItem(orderBackupStorageKey, JSON.stringify(merged)); } catch { /* Không làm lỗi đặt hàng nếu bộ nhớ trình duyệt đầy. */ }
+        return merged;
       };
       const loadCustomerIdentities = () => {
         try {
@@ -2135,7 +2150,7 @@
       const rememberCustomerIdentity = (customer) => {
         if (!customer?.phone || !customer?.address) return;
         const identities = loadCustomerIdentities();
-        localStorage.setItem(customerIdentityStorageKey, JSON.stringify([customer, ...identities].slice(0, 5)));
+        try { localStorage.setItem(customerIdentityStorageKey, JSON.stringify([customer, ...identities].slice(0, 5))); } catch { /* Đơn vẫn được tìm bằng mã thiết bị. */ }
       };
       const restoreLocalOrderCodes = (codes) => {
         const restored = new Set((Array.isArray(codes) ? codes : []).map((code) => String(code || "").trim().toUpperCase()).filter(Boolean));
@@ -3058,7 +3073,7 @@
       function canCustomerCancel(order) {
         if (["Đơn hủy", "Thanh toán thất bại"].includes(order.status)) return false;
         if (["shipping", "delivered", "delivery_failed", "returning", "returned", "cancelled"].includes(order.shippingStatus || "")) return false;
-        return !["shipping", "completed", "cancelled", "returned"].includes(order.pancakeStatus || "");
+        return !["cancelled", "returned"].includes(order.pancakeStatus || "");
       }
 
       function isPaidOrder(order) {
@@ -3104,7 +3119,7 @@
         const response = await fetch("/api/orders/recover", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(order)
+          body: JSON.stringify({ ...order, customerDeviceId })
         });
         if (response.status === 410) {
           forgetLocalOrder(order.code);
@@ -3203,12 +3218,12 @@
       async function syncCustomerOrderStatuses() {
         let orders = loadOrders();
         const identities = loadCustomerIdentities();
-        if (identities.length) {
+        if (identities.length || customerDeviceId) {
           try {
             const discoveredResponse = await fetch("/api/orders/customer", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ identities })
+              body: JSON.stringify({ identities, deviceId: customerDeviceId })
             });
             if (discoveredResponse.ok) {
               const discoveredData = await discoveredResponse.json();
@@ -4314,6 +4329,7 @@
         }
         const order = {
           code: `BLW-${Date.now().toString().slice(-6)}`,
+          customerDeviceId,
           trackingCode: "",
           status: paymentMethod === "cod" || paymentMethod === "bank_transfer" ? "Đã đặt" : "Chờ thanh toán",
           rawStatus: "pending",
@@ -4363,6 +4379,7 @@
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
+              customerDeviceId,
               paymentMethod,
               customer: order.customer,
               items: order.items,
