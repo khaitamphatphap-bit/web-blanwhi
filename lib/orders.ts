@@ -11,6 +11,24 @@ type DeletedOrderRecord = {
   deletedAt: string;
 };
 
+async function readDeletedOrderRecords() {
+  return readJsonStore<DeletedOrderRecord[]>(deletedOrdersStore, []);
+}
+
+function deletedOrderKeys(records: DeletedOrderRecord[]) {
+  const keys = new Set<string>();
+  records.forEach((record) => {
+    if (record.code) keys.add(record.code.trim().toUpperCase());
+    if (record.shortCode) keys.add(record.shortCode.trim().toUpperCase());
+  });
+  return keys;
+}
+
+function orderWasDeleted(order: Pick<ShopOrder, "code">, deletedKeys: Set<string>) {
+  const code = String(order.code || "").trim().toUpperCase();
+  return deletedKeys.has(code) || deletedKeys.has(shortOrderCode(code));
+}
+
 function normalizePaymentMethod(value: unknown): PaymentMethod {
   const normalized = String(value || "").trim().toLowerCase();
   if (["cod", "cash", "cash_on_delivery", "cash-on-delivery"].includes(normalized)) return "cod";
@@ -18,8 +36,12 @@ function normalizePaymentMethod(value: unknown): PaymentMethod {
 }
 
 export async function readOrders(): Promise<ShopOrder[]> {
-  const orders = await readJsonStore<ShopOrder[]>("orders.json", []);
-  return orders.map((order) => {
+  const [orders, deleted] = await Promise.all([
+    readJsonStore<ShopOrder[]>("orders.json", []),
+    readDeletedOrderRecords()
+  ]);
+  const deletedKeys = deletedOrderKeys(deleted);
+  return orders.filter((order) => !orderWasDeleted(order, deletedKeys)).map((order) => {
     const cancellationRecorded = order.status === "cancelled"
       || order.shippingStatus === "cancelled"
       || order.pancakeStatus === "cancelled"
@@ -34,10 +56,14 @@ export async function readOrders(): Promise<ShopOrder[]> {
 }
 
 export async function writeOrders(orders: ShopOrder[]) {
-  await writeJsonStore("orders.json", orders);
+  const deletedKeys = deletedOrderKeys(await readDeletedOrderRecords());
+  await writeJsonStore("orders.json", orders.filter((order) => !orderWasDeleted(order, deletedKeys)));
 }
 
 export async function createOrder(order: ShopOrder) {
+  if (await isDeletedOrderCode(order.code)) {
+    throw new Error("Đơn này đã được xóa trong admin nên không tự tạo lại.");
+  }
   const orders = await readOrders();
   const existing = order.checkoutRequestId
     ? orders.find((candidate) => candidate.checkoutRequestId === order.checkoutRequestId
@@ -59,6 +85,7 @@ export async function updateOrderStatus(
   status: OrderStatus,
   patch: Partial<Pick<ShopOrder, "transactionId" | "providerOrderId" | "paymentProviderOrderId" | "providerMessage">> = {}
 ): Promise<ShopOrder | null> {
+  if (await isDeletedOrderCode(code)) return null;
   const orders = await readOrders();
   let updated: ShopOrder | null = null;
   const next = orders.map((order) => {
@@ -76,6 +103,7 @@ export async function updateOrderStatus(
 }
 
 export async function updateOrder(code: string, patch: Partial<ShopOrder>): Promise<ShopOrder | null> {
+  if (await isDeletedOrderCode(code)) return null;
   const orders = await readOrders();
   let updated: ShopOrder | null = null;
   const next = orders.map((order) => {
@@ -101,6 +129,11 @@ export async function deleteOrdersByCodes(codes: string[]) {
 
   const orders = await readOrders();
   const deletedAt = new Date().toISOString();
+  const requestedDeleted = Array.from(normalized).map((code) => ({
+    code,
+    shortCode: shortOrderCode(code).toUpperCase(),
+    deletedAt
+  }));
   const matchedDeleted = orders
     .filter((order) => normalized.has(order.code.toUpperCase()) || normalized.has(shortOrderCode(order.code).toUpperCase()))
     .map((order) => ({
@@ -114,20 +147,18 @@ export async function deleteOrdersByCodes(codes: string[]) {
     return !normalized.has(fullCode) && !normalized.has(shortCode);
   });
   const deletedCount = orders.length - next.length;
-  if (deletedCount > 0) {
-    await Promise.all([
-      writeOrders(next),
-      rememberDeletedOrders(matchedDeleted)
-    ]);
-  }
+  await Promise.all([
+    writeOrders(next),
+    rememberDeletedOrders([...requestedDeleted, ...matchedDeleted])
+  ]);
   return { deletedCount, orders: next };
 }
 
 export async function isDeletedOrderCode(code: string) {
   const normalized = String(code || "").trim().toUpperCase();
   if (!normalized) return false;
-  const deleted = await readJsonStore<DeletedOrderRecord[]>(deletedOrdersStore, []);
-  return deleted.some((record) => record.code === normalized || record.shortCode === normalized);
+  const keys = deletedOrderKeys(await readDeletedOrderRecords());
+  return keys.has(normalized) || keys.has(shortOrderCode(normalized));
 }
 
 async function rememberDeletedOrders(records: DeletedOrderRecord[]) {
