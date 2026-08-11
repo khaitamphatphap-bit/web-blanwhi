@@ -1947,7 +1947,6 @@
           const expressOption = document.querySelector('[data-shipping-method="express"]');
           if (expressOption) expressOption.hidden = !expressShippingEnabled;
           if (!expressShippingEnabled && selectedShippingMethod === "express") selectedShippingMethod = "fast";
-          renderShippingMethod();
         }
         if (shouldRenderProducts && Array.isArray(content.products)) {
           productData = content.products
@@ -2521,6 +2520,9 @@
       }
 
       function renderShippingMethod() {
+        if (!expressShippingEnabled && selectedShippingMethod === "express") selectedShippingMethod = "fast";
+        const expressOption = document.querySelector('[data-shipping-method="express"]');
+        if (expressOption) expressOption.hidden = !expressShippingEnabled;
         const express = selectedShippingMethod === "express";
         shippingLogo.textContent = express ? (expressShippingQuote.provider === "ahamove" ? "AHA" : expressShippingQuote.provider === "lalamove" ? "LALA" : "HT") : "SPX";
         shippingSelectedText.textContent = express ? `Hỏa tốc · ${formatMoney(expressShippingQuote.fee || 50000)}` : "SPX Express · Toàn quốc";
