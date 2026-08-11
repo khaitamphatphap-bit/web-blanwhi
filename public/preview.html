@@ -2095,6 +2095,8 @@
         return deviceId;
       };
       const customerDeviceId = ensureCustomerDeviceId();
+      let checkoutSubmissionPending = false;
+      let checkoutRequestState = { fingerprint: "", id: "" };
       const parseStoredOrders = (key) => {
         try {
           const parsed = JSON.parse(localStorage.getItem(key) || "[]");
@@ -3223,7 +3225,7 @@
             const discoveredResponse = await fetch("/api/orders/customer", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ identities, deviceId: customerDeviceId })
+              body: JSON.stringify({ identities, deviceId: customerDeviceId, knownCodes: orders.map((order) => order.code).filter(Boolean) })
             });
             if (discoveredResponse.ok) {
               const discoveredData = await discoveredResponse.json();
@@ -4300,6 +4302,8 @@
           alert("Vui lòng đồng ý với Chính sách hoạt động của website trước khi đặt hàng.");
           return;
         }
+        if (checkoutSubmissionPending) return;
+        checkoutSubmissionPending = true;
         const selectedPay = document.querySelector("input[name='pay']:checked")?.value || "cod";
         const paymentMethod = paymentMethodMap[selectedPay] || "cod";
         const submitButton = checkoutForm.querySelector("button[type='submit']");
@@ -4325,6 +4329,7 @@
           checkoutPhone.focus();
           submitButton.disabled = !document.getElementById("policyAgreement").checked;
           submitButton.textContent = "Đặt hàng";
+          checkoutSubmissionPending = false;
           return;
         }
         const order = {
@@ -4374,12 +4379,28 @@
           total: next.total,
           updatedAt: new Date().toLocaleString("vi-VN")
         };
+        const checkoutFingerprint = JSON.stringify({
+          customerDeviceId,
+          paymentMethod,
+          phone: order.customer.phone,
+          address: order.customer.address,
+          items: order.items.map((item) => [item.inventoryKey, item.sku, item.qty, item.price]),
+          total: order.total
+        });
+        if (checkoutRequestState.fingerprint !== checkoutFingerprint || !checkoutRequestState.id) {
+          checkoutRequestState = {
+            fingerprint: checkoutFingerprint,
+            id: globalThis.crypto?.randomUUID?.() || `checkout-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`
+          };
+        }
+        order.checkoutRequestId = checkoutRequestState.id;
         try {
           const response = await fetch(`${paymentApiBase}/api/payments/create`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               customerDeviceId,
+              checkoutRequestId: checkoutRequestState.id,
               paymentMethod,
               customer: order.customer,
               items: order.items,
@@ -4439,6 +4460,7 @@
           });
           rememberCustomerIdentity(order.customer);
           saveOrders([order, ...loadOrders()]);
+          checkoutRequestState = { fingerprint: "", id: "" };
           cart.length = 0;
           orderNote = "";
           orderVoucherCode = "";
@@ -4459,6 +4481,7 @@
         } catch (error) {
           alert(error.message || "Không thể tạo giao dịch thanh toán.");
         } finally {
+          checkoutSubmissionPending = false;
           submitButton.disabled = !document.getElementById("policyAgreement").checked;
           submitButton.textContent = "Đặt hàng";
         }

@@ -39,7 +39,12 @@ export async function writeOrders(orders: ShopOrder[]) {
 
 export async function createOrder(order: ShopOrder) {
   const orders = await readOrders();
-  await writeOrders([order, ...orders]);
+  const existing = order.checkoutRequestId
+    ? orders.find((candidate) => candidate.checkoutRequestId === order.checkoutRequestId
+      && (!order.customerDeviceId || candidate.customerDeviceId === order.customerDeviceId))
+    : null;
+  if (existing) return existing;
+  await writeOrders([order, ...orders.filter((candidate) => candidate.code !== order.code)]);
   return order;
 }
 

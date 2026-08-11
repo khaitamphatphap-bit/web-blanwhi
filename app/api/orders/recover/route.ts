@@ -20,6 +20,7 @@ type LocalItem = {
 type LocalOrder = {
   code?: string;
   customerDeviceId?: string;
+  checkoutRequestId?: string;
   trackingCode?: string;
   paymentMethod?: PaymentMethod;
   customer?: { name?: string; phone?: string; address?: string; email?: string };
@@ -96,6 +97,8 @@ export async function POST(request: Request) {
     id: crypto.randomUUID(),
     code,
     customerDeviceId: String(body.customerDeviceId || "").trim().slice(0, 100) || undefined,
+    customerDeviceBoundAt: String(body.customerDeviceId || "").trim() ? now : undefined,
+    checkoutRequestId: String(body.checkoutRequestId || "").trim().slice(0, 120) || undefined,
     status: "pending",
     paymentMethod,
     paymentProvider: paymentMethod,

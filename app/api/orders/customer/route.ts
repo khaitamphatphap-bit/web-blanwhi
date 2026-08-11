@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { readOrders, writeOrders } from "@/lib/orders";
+import { readOrders } from "@/lib/orders";
 
 type CustomerIdentity = {
   phone?: string;
@@ -21,8 +21,12 @@ function addressKey(value: unknown) {
 }
 
 export async function POST(request: Request) {
-  const body = await request.json().catch(() => ({})) as { identities?: CustomerIdentity[]; deviceId?: string };
+  const body = await request.json().catch(() => ({})) as { identities?: CustomerIdentity[]; deviceId?: string; knownCodes?: string[] };
   const deviceId = String(body.deviceId || "").trim().slice(0, 100);
+  const knownCodes = new Set((Array.isArray(body.knownCodes) ? body.knownCodes : [])
+    .slice(0, 100)
+    .map((code) => String(code || "").trim().toUpperCase())
+    .filter(Boolean));
   const identities = (Array.isArray(body.identities) ? body.identities : [])
     .slice(0, 5)
     .map((identity) => ({ phone: phoneKey(identity.phone), address: addressKey(identity.address) }))
@@ -34,18 +38,12 @@ export async function POST(request: Request) {
 
   const orders = await readOrders();
   const matched = orders.filter((order) => {
-    if (deviceId && order.customerDeviceId === deviceId) return true;
+    if (deviceId && order.customerDeviceId === deviceId && order.customerDeviceBoundAt) return true;
+    if (!knownCodes.has(order.code.toUpperCase())) return false;
     const phone = phoneKey(order.customer.phone);
     const address = addressKey(order.customer.address);
     return identities.some((identity) => identity.phone === phone && identity.address === address);
   });
-
-  if (deviceId && matched.some((order) => !order.customerDeviceId)) {
-    const matchedCodes = new Set(matched.map((order) => order.code));
-    await writeOrders(orders.map((order) => matchedCodes.has(order.code) && !order.customerDeviceId
-      ? { ...order, customerDeviceId: deviceId, updatedAt: new Date().toISOString() }
-      : order));
-  }
 
   return NextResponse.json({ orders: matched.slice(0, 100) }, {
     headers: { "Cache-Control": "no-store, max-age=0" }

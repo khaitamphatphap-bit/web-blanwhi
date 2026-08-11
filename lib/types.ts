@@ -98,6 +98,8 @@ export type ShopOrder = {
   id: string;
   code: string;
   customerDeviceId?: string;
+  customerDeviceBoundAt?: string;
+  checkoutRequestId?: string;
   status: OrderStatus;
   paymentMethod: PaymentMethod;
   paymentProvider: string;

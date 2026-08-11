@@ -1,7 +1,7 @@
 import { after, NextResponse } from "next/server";
 import { jsonError } from "@/lib/api-errors";
 import { readIntegrationConfig } from "@/lib/integrations";
-import { createOrder, newOrderCode, updateOrder } from "@/lib/orders";
+import { createOrder, newOrderCode, readOrders, updateOrder } from "@/lib/orders";
 import { createMomoPayment, createVnpayUrl, createZaloPayPayment, fallbackPaymentUrl } from "@/lib/payment";
 import { CartItem, PaymentMethod, ShopOrder } from "@/lib/types";
 import { InventoryService } from "@/lib/pancake/inventory-service";
@@ -11,6 +11,7 @@ import { POSSyncService } from "@/lib/services/pos-sync-service";
 
 type CheckoutPayload = {
   customerDeviceId?: string;
+  checkoutRequestId?: string;
   customer?: {
     name?: string;
     phone?: string;
@@ -197,6 +198,8 @@ export async function POST(request: Request) {
     const items = payload.items ?? [];
     const paymentMethod = payload.paymentMethod ?? "cod";
     const customer = payload.customer ?? {};
+    const customerDeviceId = String(payload.customerDeviceId || "").trim().slice(0, 100);
+    const checkoutRequestId = String(payload.checkoutRequestId || "").trim().slice(0, 120);
     const [integrations, siteContent] = await Promise.all([readIntegrationConfig(), readSiteContent()]);
 
     if (!enabledCheckoutMethods.has(paymentMethod)) {
@@ -220,6 +223,24 @@ export async function POST(request: Request) {
       if (configError) return json({ error: configError }, { status: 400 });
     }
 
+    if (checkoutRequestId) {
+      const existing = (await readOrders()).find((candidate) => candidate.checkoutRequestId === checkoutRequestId
+        && (!customerDeviceId || candidate.customerDeviceId === customerDeviceId));
+      if (existing) {
+        if (paymentMethod === "zalopay" && existing.status === "pending") {
+          const zalopay = await createZaloPayPayment(existing, request, integrations.payment);
+          if (zalopay.order_url) {
+            const refreshed = await updateOrder(existing.code, {
+              paymentProviderOrderId: zalopay.app_trans_id,
+              providerMessage: "ZaloPay payment link recreated for idempotent checkout"
+            }) || existing;
+            return json({ order: refreshed, redirectUrl: zalopay.order_url, token: zalopay.zp_trans_token || zalopay.order_token, deduplicated: true });
+          }
+        }
+        return json({ order: existing, deduplicated: true });
+      }
+    }
+
     const defaultShippingFee = Math.max(0, Math.floor(Number(siteContent.shipping?.defaultFee ?? 30000) || 0));
     const isExpressShipping = payload.shipping?.type === "express";
     if (isExpressShipping && siteContent.shipping?.expressEnabled !== true) {
@@ -240,10 +261,12 @@ export async function POST(request: Request) {
     const pancakeConfigured = inventoryService.configured();
     if (pancakeConfigured) await inventoryService.assertAvailable(orderItems);
     const now = new Date().toISOString();
-    const order: ShopOrder = {
+    let order: ShopOrder = {
       id: crypto.randomUUID(),
       code: newOrderCode(),
-      customerDeviceId: String(payload.customerDeviceId || "").trim().slice(0, 100) || undefined,
+      customerDeviceId: customerDeviceId || undefined,
+      customerDeviceBoundAt: customerDeviceId ? now : undefined,
+      checkoutRequestId: checkoutRequestId || undefined,
       status: "pending",
       paymentMethod,
       paymentProvider: paymentMethod,
@@ -289,7 +312,7 @@ export async function POST(request: Request) {
         lastSyncedAt: now
       };
     }
-    await createOrder(order);
+    order = await createOrder(order);
     if (pancakeConfigured && paymentMethod === "cod") {
       after(async () => {
         try {
