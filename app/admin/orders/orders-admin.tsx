@@ -739,7 +739,7 @@ export function OrdersAdmin({
                       <p><b>Vận chuyển:</b> {order.shippingCarrier || "Chưa chọn"} · {order.shippingMethod || "Giao nhanh"}</p>
                       <p><b>Mã vận đơn:</b> {order.trackingCode || "Chưa có"}</p>
                       <span className={`inline-flex border px-2 py-1 text-xs uppercase ${shippingStatusClass(order.shippingStatus || "not_created")}`}>
-                        {shippingLabels[order.shippingStatus || "not_created"]}
+                        {shippingLabelForOrder(order)}
                       </span>
                       {order.shippingMessage && <p className="text-neutral-600">{order.shippingMessage}</p>}
                       {order.deliveryType === "express" && (
@@ -796,7 +796,9 @@ function normalizeSearch(value: string) {
 
 function canCancelOrder(order: ShopOrder) {
   if (order.status === "cancelled") return false;
-  if (["ready_to_ship", "driver_assigned", "shipping", "delivered", "delivery_failed", "returning", "returned", "cancelled"].includes(order.shippingStatus || "")) return false;
+  const hasTrackingCode = Boolean(String(order.trackingCode || "").trim());
+  if (["driver_assigned", "shipping", "delivered", "delivery_failed", "returning", "returned", "cancelled"].includes(order.shippingStatus || "")) return false;
+  if (order.shippingStatus === "ready_to_ship" && hasTrackingCode) return false;
   if (["shipping", "completed", "returned", "cancelled"].includes(order.pancakeStatus || "")) return false;
   return true;
 }
@@ -813,6 +815,7 @@ function Metric({ active = false, label, value, onClick }: { active?: boolean; l
 function getOrderStage(order: ShopOrder): OrderStage {
   const shippingStatus = order.shippingStatus || "not_created";
   const paymentMethod = String(order.paymentMethod || "cod").trim().toLowerCase();
+  const hasTrackingCode = Boolean(String(order.trackingCode || "").trim());
 
   if (order.status === "cancelled" || shippingStatus === "cancelled" || order.pancakeStatus === "cancelled") return "cancelled";
   if (order.status === "pending" && paymentMethod !== "cod") return "payment_pending";
@@ -820,13 +823,20 @@ function getOrderStage(order: ShopOrder): OrderStage {
   if (shippingStatus === "delivery_failed") return "delivery_failed";
   if (shippingStatus === "delivered") return "delivered";
   if (shippingStatus === "shipping") return "shipping";
-  if (shippingStatus === "driver_assigned" || shippingStatus === "ready_to_ship") return "handed_to_carrier";
+  if (shippingStatus === "driver_assigned" || (shippingStatus === "ready_to_ship" && hasTrackingCode)) return "handed_to_carrier";
   if (order.status === "paid" || (order.status === "pending" && paymentMethod === "cod")) return "paid";
   return "new";
 }
 
 function orderStageLabel(stage: OrderStage) {
   return orderStages.find((item) => item.value === stage)?.label || "Đơn mới đặt";
+}
+
+function shippingLabelForOrder(order: ShopOrder) {
+  const status = order.shippingStatus || "not_created";
+  const hasTrackingCode = Boolean(String(order.trackingCode || "").trim());
+  if (status === "ready_to_ship" && !hasTrackingCode) return "Chưa có mã vận đơn, chờ giao hàng";
+  return shippingLabels[status];
 }
 
 function orderSummary(order: ShopOrder) {

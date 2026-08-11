@@ -3051,9 +3051,10 @@
 
       function customerOrderStep(order) {
         const status = order.shippingStatus || "";
+        const hasTrackingCode = Boolean(String(order.trackingCode || "").trim());
         if (status === "delivered") return 3;
         if (["shipping", "delivery_failed", "returning", "returned"].includes(status)) return 2;
-        if (["ready_to_ship", "driver_assigned"].includes(status) || order.trackingCode) return 1;
+        if (status === "driver_assigned" || hasTrackingCode) return 1;
         return Math.max(order.step || 0, order.status === "Đã thanh toán" ? 1 : 0);
       }
 
@@ -3063,8 +3064,10 @@
         return legacy ? `BLW-${legacy[1]}-${legacy[2]}` : normalized;
       }
       function customerOrderStatus(order) {
+        const hasTrackingCode = Boolean(String(order.trackingCode || "").trim());
         if (order.status === "Đơn hủy" || order.shippingStatus === "cancelled") return "Đơn hủy";
-        if (order.shippingStatus && !["not_created", "unknown"].includes(order.shippingStatus) && customerShippingLabels[order.shippingStatus]) return customerShippingLabels[order.shippingStatus];
+        if (order.shippingStatus && !["not_created", "unknown", "ready_to_ship"].includes(order.shippingStatus) && customerShippingLabels[order.shippingStatus]) return customerShippingLabels[order.shippingStatus];
+        if (order.shippingStatus === "ready_to_ship" && hasTrackingCode) return customerShippingLabels.ready_to_ship;
         if (order.pancakeStatus && customerPancakeLabels[order.pancakeStatus]) return customerPancakeLabels[order.pancakeStatus];
         if (order.rawStatus === "pending" && order.paymentMethod === "cod") return "Chờ vận chuyển";
         if (order.rawStatus === "pending") return "Chờ thanh toán";
