@@ -50,7 +50,7 @@ export async function GET(request: Request) {
       && order.status !== "cancelled"
       && (order.status === "paid" || (String(order.paymentMethod || "").trim().toLowerCase() === "cod" && order.status === "pending")));
     await Promise.allSettled(syncTargets.map((order) => (
-      order.pancakeOrderId || order.pancakeStatus || order.providerOrderId
+      order.pancakeOrderId || order.pancakeStatus
         ? sync.reconcileExisting(order)
         : sync.create(order)
     )));

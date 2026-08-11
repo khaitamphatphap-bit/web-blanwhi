@@ -22,7 +22,7 @@ function externalId(payload: Record<string, unknown>) {
 }
 
 function pancakeOrderId(order: ShopOrder) {
-  return validPancakeOrderId(order.pancakeOrderId || (order.pancakeStatus ? order.providerOrderId || "" : ""));
+  return validPancakeOrderId(order.pancakeOrderId || "");
 }
 
 const shippingProgress: Partial<Record<ShippingStatus, number>> = {
@@ -343,7 +343,7 @@ export class OrderSyncService {
         }
       }) || latest || order;
     }
-    if (pancakeOrderId(current) || current.externalSync?.pancake?.startsWith("Đã tạo")) return current;
+    if (pancakeOrderId(current)) return current;
     try {
       const existing = await this.pancake.findOrder(current.code, current.customer.phone);
       if (existing) {
@@ -387,7 +387,7 @@ export class OrderSyncService {
   async removeUnpaidFromPos(order: ShopOrder) {
     const paymentMethod = String(order.paymentMethod || "").trim().toLowerCase();
     if (order.status === "paid" || paymentMethod === "cod") return order;
-    const remoteOrderId = String(order.pancakeOrderId || (order.pancakeStatus ? order.providerOrderId : "") || "").trim();
+    const remoteOrderId = pancakeOrderId(order);
     if (!remoteOrderId) return order;
 
     try {

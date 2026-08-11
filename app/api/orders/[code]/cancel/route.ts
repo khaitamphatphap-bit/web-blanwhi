@@ -70,7 +70,6 @@ export async function POST(request: Request, { params }: Params) {
     }
     let pancakeCancellationPending = false;
     const mayExistOnPancake = Boolean(current.pancakeOrderId
-      || (current.providerOrderId && current.pancakeStatus)
       || current.paymentMethod === "cod"
       || wasPaid);
     if (mayExistOnPancake && current.pancakeStatus !== "cancelled") {

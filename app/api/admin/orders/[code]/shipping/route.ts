@@ -13,7 +13,7 @@ export async function POST(_request: Request, { params }: Params) {
   if (!order) return NextResponse.json({ error: "Không tìm thấy đơn hàng." }, { status: 404 });
 
   const config = await readIntegrationConfig();
-  if (config.shipping.provider === "shopee_express" || order.pancakeOrderId || order.pancakeStatus || order.providerOrderId) {
+  if (config.shipping.provider === "shopee_express" || order.pancakeOrderId || order.pancakeStatus) {
     try {
       const updated = await new OrderSyncService().reconcileExisting(order);
       return NextResponse.json({ order: updated });

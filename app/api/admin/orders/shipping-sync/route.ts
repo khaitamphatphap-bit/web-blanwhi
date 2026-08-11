@@ -8,8 +8,8 @@ import { createJsonStoreBackup } from "@/lib/data-store";
 
 const finalShippingStatuses = new Set(["delivered", "returning", "returned", "cancelled"]);
 
-function hasPancakeLink(order: Awaited<ReturnType<typeof readOrders>>[number]) {
-  return Boolean(order.pancakeOrderId || order.pancakeStatus || order.providerOrderId);
+function hasPancakeSyncSignal(order: Awaited<ReturnType<typeof readOrders>>[number]) {
+  return Boolean(order.pancakeOrderId || order.pancakeStatus || order.externalSync?.pancake);
 }
 
 async function syncShippingOrders(request: Request) {
@@ -21,7 +21,7 @@ async function syncShippingOrders(request: Request) {
   }
   const candidates = orders.filter((order) => !finalShippingStatuses.has(order.shippingStatus || "") && order.status !== "cancelled" && (order.deliveryType === "express"
     ? Boolean(order.deliveryOrderId)
-    : hasPancakeLink(order) || Boolean(order.trackingCode)));
+    : hasPancakeSyncSignal(order) || Boolean(order.trackingCode)));
 
   const results = [];
   const eligibleUnlinked = fullSync ? orders.filter((order) => {
@@ -30,9 +30,7 @@ async function syncShippingOrders(request: Request) {
     return eligiblePayment
       && order.status !== "cancelled"
       && order.deliveryType !== "express"
-      && !order.pancakeOrderId
-      && !order.pancakeStatus
-      && !order.providerOrderId;
+      && !order.pancakeOrderId;
   }) : [];
   if (eligibleUnlinked.length) {
     const sync = new OrderSyncService();
@@ -46,7 +44,7 @@ async function syncShippingOrders(request: Request) {
     }
     results.push({ code: "pancake-missing-orders", ok: restoreErrors === 0, restored, restoreErrors, message: `Đã gửi lại ${restored} đơn hợp lệ còn thiếu sang Pancake, ${restoreErrors} lỗi.` });
   }
-  const pancakeCandidates = candidates.filter((order) => order.deliveryType !== "express" && Boolean(order.pancakeOrderId || order.pancakeStatus || order.providerOrderId));
+  const pancakeCandidates = candidates.filter((order) => order.deliveryType !== "express" && hasPancakeSyncSignal(order));
   if (pancakeCandidates.length || eligibleUnlinked.length) {
     try {
       const synced = await new OrderSyncService().pollStatuses({ detailLimit: fullSync ? 200 : 20 });
@@ -62,7 +60,7 @@ async function syncShippingOrders(request: Request) {
         results.push({ code: order.code, ok: true, status: updated.shippingStatus, message: updated.shippingMessage });
         continue;
       }
-      if (hasPancakeLink(order)) {
+      if (order.pancakeOrderId) {
         continue;
       }
       if (config.shipping.provider === "shopee_express") {
