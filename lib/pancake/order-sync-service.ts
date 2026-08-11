@@ -173,7 +173,9 @@ function shippingUpdate(payload: unknown, includeReadyStatus = true) {
     const looksLikeInternalUuid = /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(normalizedPartnerCode);
     if (normalizedPartnerCode && !looksLikeWebsiteCode && !looksLikeInternalUuid) trackingCode = normalizedPartnerCode;
   }
-  const carrierLabel = /spx|shopee\s*x?press|vtp|viettel/i.test(carrier)
+  const carrierLabel = /vtp|viettel/i.test(carrier)
+    ? "ViettelPost"
+    : /spx|shopee\s*x?press/i.test(carrier)
     ? "SPX Express"
     : (carrier || "SPX Express");
   const liveStatus = logisticsShippingStatus(payload);
@@ -314,13 +316,13 @@ export class OrderSyncService {
       pancakeOrderId: existingId || pancakeOrderId(order),
       ...(posOrderCodeUpdated ? { posOrderCode: targetPosOrderCode } : {}),
       ...(mapped.status === "cancelled" && order.status !== "cancelled" ? { status: "cancelled" as const } : {}),
-      ...(synchronizedShippingStatus && order.deliveryType !== "express" ? { shippingStatus: synchronizedShippingStatus } : {}),
       ...(mapped.pancakeStatus ? { pancakeStatus: mapped.pancakeStatus } : {}),
       ...(order.deliveryType !== "express" && hasShippingDetails(remotePayload)
         ? shippingUpdate(remotePayload, !logisticsStatus && (!mapped.shippingStatus || ["unknown", "not_created"].includes(mapped.shippingStatus)))
         : order.deliveryType !== "express" && spxAssigned
           ? { shippingCarrier: "SPX Express", shippingMessage: "Đã chuyển sang SPX Express, đang nhận mã vận đơn." }
           : {}),
+      ...(synchronizedShippingStatus && order.deliveryType !== "express" ? { shippingStatus: synchronizedShippingStatus } : {}),
       inventoryReservationReleased: Boolean(order.inventoryReservationReleased || mapped.release),
       externalSync: { ...order.externalSync, pancake: `Đã tồn tại trên Pancake${existingId ? ` #${existingId}` : ""}`, lastSyncedAt: new Date().toISOString() }
     });

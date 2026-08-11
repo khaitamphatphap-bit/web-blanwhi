@@ -72,6 +72,11 @@ const shippingProviders: Array<{ value: ShippingProvider; label: string; endpoin
     endpoint: "https://services.giaohangtietkiem.vn/services/shipment/v2"
   },
   {
+    value: "viettelpost",
+    label: "ViettelPost",
+    endpoint: "https://partner.viettelpost.vn/v2/order/getOrderStatusByOrderNumber"
+  },
+  {
     value: "shopee_express",
     label: "SPX Express",
     endpoint: ""
@@ -815,7 +820,7 @@ function getOrderStage(order: ShopOrder): OrderStage {
   if (shippingStatus === "delivery_failed") return "delivery_failed";
   if (shippingStatus === "delivered") return "delivered";
   if (shippingStatus === "shipping") return "shipping";
-  if (shippingStatus === "driver_assigned") return "handed_to_carrier";
+  if (shippingStatus === "driver_assigned" || shippingStatus === "ready_to_ship") return "handed_to_carrier";
   if (order.status === "paid" || (order.status === "pending" && paymentMethod === "cod")) return "paid";
   return "new";
 }

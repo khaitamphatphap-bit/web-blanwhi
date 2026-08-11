@@ -34,8 +34,8 @@ export function mapPancakeStatus(status: string): PancakeMappedStatus {
   if (["pending", "new", "unconfirmed", "chờ_xác_nhận"].includes(text)) return { pancakeStatus: "pending_confirmation", status: "pending", shippingStatus: "not_created" };
   if (["confirmed", "đã_xác_nhận"].includes(text)) return { pancakeStatus: "confirmed", status: "pending", shippingStatus: "ready_to_ship" };
   if (["packing", "packed", "đóng_gói"].includes(text)) return { pancakeStatus: "packing", status: "pending", shippingStatus: "ready_to_ship" };
-  if (["shipping", "delivering", "đang_giao"].includes(text)) return { pancakeStatus: "shipping", shippingStatus: "shipping" };
-  if (["completed", "delivered", "hoàn_thành"].includes(text)) return { pancakeStatus: "completed", status: "paid", shippingStatus: "delivered" };
+  if (["shipping", "shipped", "sent", "sent_order", "sent_to_carrier", "sent_to_shipping", "delivering", "in_transit", "on_delivery", "đã_gửi_hàng", "da_gui_hang", "đang_giao", "dang_giao"].includes(text)) return { pancakeStatus: "shipping", shippingStatus: "shipping" };
+  if (["completed", "complete", "delivered", "delivery_success", "success", "finished", "finish", "done", "đã_giao", "da_giao", "giao_thành_công", "giao_thanh_cong", "hoàn_thành", "hoan_thanh"].includes(text)) return { pancakeStatus: "completed", status: "paid", shippingStatus: "delivered" };
   if (["cancelled", "canceled", "hủy"].includes(text)) return { pancakeStatus: "cancelled", status: "cancelled", shippingStatus: "cancelled", release: true };
   if (["returned", "return", "hoàn_hàng"].includes(text)) return { pancakeStatus: "returned", shippingStatus: "returned", release: true };
   return { shippingStatus: "unknown" };

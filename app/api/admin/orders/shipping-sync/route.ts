@@ -8,6 +8,10 @@ import { createJsonStoreBackup } from "@/lib/data-store";
 
 const finalShippingStatuses = new Set(["delivered", "returning", "returned", "cancelled"]);
 
+function hasPancakeLink(order: Awaited<ReturnType<typeof readOrders>>[number]) {
+  return Boolean(order.pancakeOrderId || order.pancakeStatus || order.providerOrderId);
+}
+
 async function syncShippingOrders(request: Request) {
   const fullSync = new URL(request.url).searchParams.get("full") === "1" || request.headers.get("x-vercel-cron") === "1";
   const config = await readIntegrationConfig();
@@ -17,7 +21,7 @@ async function syncShippingOrders(request: Request) {
   }
   const candidates = orders.filter((order) => !finalShippingStatuses.has(order.shippingStatus || "") && order.status !== "cancelled" && (order.deliveryType === "express"
     ? Boolean(order.deliveryOrderId)
-    : Boolean(order.pancakeOrderId || order.pancakeStatus || order.providerOrderId || order.trackingCode)));
+    : hasPancakeLink(order) || Boolean(order.trackingCode)));
 
   const results = [];
   const eligibleUnlinked = fullSync ? orders.filter((order) => {
@@ -58,7 +62,12 @@ async function syncShippingOrders(request: Request) {
         results.push({ code: order.code, ok: true, status: updated.shippingStatus, message: updated.shippingMessage });
         continue;
       }
-      if (order.pancakeOrderId || order.pancakeStatus || order.providerOrderId) {
+      if (hasPancakeLink(order)) {
+        continue;
+      }
+      if (config.shipping.provider === "shopee_express") {
+        const updated = await new OrderSyncService().reconcileExisting(order);
+        results.push({ code: order.code, ok: true, status: updated.shippingStatus, message: updated.shippingMessage });
         continue;
       }
       if (!config.shipping.enabled) throw new Error("Chưa bật cập nhật API vận chuyển tiêu chuẩn.");

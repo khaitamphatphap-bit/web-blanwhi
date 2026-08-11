@@ -96,10 +96,9 @@ function normalizeZaloPayEndpoint(endpoint?: string) {
 
 function normalizeShippingConfig(shipping?: Partial<IntegrationConfig["shipping"]>): IntegrationConfig["shipping"] {
   const merged = { ...defaultIntegrationConfig.shipping, ...shipping };
-  if (merged.provider === "viettelpost") {
-    return { ...merged, provider: "shopee_express", providerName: "SPX Express", statusEndpoint: "", token: "" };
-  }
-  return merged.provider === "shopee_express" ? { ...merged, providerName: "SPX Express" } : merged;
+  if (merged.provider === "shopee_express") return { ...merged, providerName: "SPX Express" };
+  if (merged.provider === "viettelpost") return { ...merged, providerName: "ViettelPost" };
+  return merged;
 }
 export async function readIntegrationConfig(): Promise<IntegrationConfig> {
   try {
