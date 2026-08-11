@@ -9,7 +9,6 @@ import type { OrderStatus, ShippingStatus, ShopOrder } from "@/lib/types";
 
 type OrderStage =
   | "new"
-  | "handed_to_carrier"
   | "shipping"
   | "delivered"
   | "payment_pending"
@@ -50,7 +49,6 @@ type StorageHealthReport = {
 
 const orderStages: Array<{ value: OrderStage; label: string }> = [
   { value: "new", label: "Đơn mới đặt" },
-  { value: "handed_to_carrier", label: "Đã giao cho ĐVVC" },
   { value: "shipping", label: "Đang vận chuyển" },
   { value: "delivered", label: "Đã giao cho khách" },
   { value: "payment_pending", label: "Chờ thanh toán" },
@@ -816,15 +814,16 @@ function getOrderStage(order: ShopOrder): OrderStage {
   const shippingStatus = order.shippingStatus || "not_created";
   const paymentMethod = String(order.paymentMethod || "cod").trim().toLowerCase();
   const hasTrackingCode = Boolean(String(order.trackingCode || "").trim());
+  const isReadyForShipment = order.status === "paid" || (order.status === "pending" && paymentMethod === "cod");
 
   if (order.status === "cancelled" || shippingStatus === "cancelled" || order.pancakeStatus === "cancelled") return "cancelled";
   if (order.status === "pending" && paymentMethod !== "cod") return "payment_pending";
+  if (!hasTrackingCode) return isReadyForShipment ? "paid" : "new";
   if (shippingStatus === "returning" || shippingStatus === "returned") return "returning";
   if (shippingStatus === "delivery_failed") return "delivery_failed";
   if (shippingStatus === "delivered") return "delivered";
-  if (shippingStatus === "shipping") return "shipping";
-  if (shippingStatus === "driver_assigned" || (shippingStatus === "ready_to_ship" && hasTrackingCode)) return "handed_to_carrier";
-  if (order.status === "paid" || (order.status === "pending" && paymentMethod === "cod")) return "paid";
+  if (shippingStatus === "shipping" || shippingStatus === "driver_assigned" || shippingStatus === "ready_to_ship" || hasTrackingCode) return "shipping";
+  if (isReadyForShipment) return "paid";
   return "new";
 }
 
@@ -851,7 +850,7 @@ function orderStageNote(order: ShopOrder) {
   if (stage === "cancelled") return "Khách hủy khi đơn chưa giao cho đơn vị vận chuyển.";
   if (stage === "returning") return "Đơn đã giao đi nhưng đang hoàn về shop.";
   if (stage === "delivery_failed") return "Đơn vị vận chuyển báo giao không thành công.";
-  if (stage === "handed_to_carrier") return "Shop đã bàn giao đơn cho đơn vị vận chuyển.";
+  if (stage === "shipping") return "Đơn đã có mã vận đơn và đang được vận chuyển.";
   if (stage === "payment_pending") return "Khách chưa hoàn tất thanh toán online.";
   if (stage === "paid") return "Đơn đã nhận tiền, đang chờ in và giao hàng.";
   return "Đơn vừa được tạo, chờ shop xử lý.";
@@ -956,7 +955,7 @@ function shippingStatusClass(status: ShippingStatus) {
 
 function orderStageClass(stage: OrderStage) {
   if (stage === "delivered" || stage === "paid") return "border-emerald-600 bg-emerald-50 text-emerald-700";
-  if (stage === "handed_to_carrier" || stage === "shipping") return "border-blue-500 bg-blue-50 text-blue-700";
+  if (stage === "shipping") return "border-blue-500 bg-blue-50 text-blue-700";
   if (stage === "payment_pending" || stage === "returning") return "border-orange-500 bg-orange-50 text-orange-700";
   if (stage === "delivery_failed" || stage === "cancelled") return "border-red-500 bg-red-50 text-red-700";
   return "border-neutral-400 bg-neutral-100 text-neutral-700";
