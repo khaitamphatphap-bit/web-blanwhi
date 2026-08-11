@@ -933,7 +933,7 @@
             <span>⌄</span>
           </button>
           <div class="shipping-options" id="shippingOptions">
-            <button class="shipping-option" type="button" data-shipping-method="express">
+            <button class="shipping-option" type="button" data-shipping-method="express" hidden>
               <span class="shipping-logo">HT</span>
               <span><strong>Giao hỏa tốc</strong><small>Ahamove / Lalamove · Phí giao hàng được xác định và hiển thị trước khi đặt.</small></span>
               <span class="shipping-check"></span>
@@ -1943,6 +1943,11 @@
         }
         if (content.shipping) {
           defaultShippingFee = Math.max(0, Math.floor(Number(content.shipping.defaultFee ?? 30000) || 0));
+          expressShippingEnabled = content.shipping.expressEnabled === true;
+          const expressOption = document.querySelector('[data-shipping-method="express"]');
+          if (expressOption) expressOption.hidden = !expressShippingEnabled;
+          if (!expressShippingEnabled && selectedShippingMethod === "express") selectedShippingMethod = "fast";
+          renderShippingMethod();
         }
         if (shouldRenderProducts && Array.isArray(content.products)) {
           productData = content.products
@@ -2027,6 +2032,7 @@
       let orderVoucherCode = "";
       let selectedVoucherCode = "";
       let selectedShippingMethod = "fast";
+      let expressShippingEnabled = false;
       let expressShippingQuote = { fee: 50000, provider: "", providerName: "Hỏa tốc", estimated: false, quotationId: "", message: "Phí giao hàng" };
       let expressQuoteTimer = 0;
       let expressRecipientCoordinates = { latitude: "", longitude: "" };
@@ -2495,6 +2501,7 @@
       }
 
       async function refreshExpressShippingQuote() {
+        if (!expressShippingEnabled) return;
         window.clearTimeout(expressQuoteTimer);
         expressQuoteTimer = window.setTimeout(async () => {
           try {
@@ -3865,6 +3872,7 @@
       shippingOptions.addEventListener("click", (event) => {
         const option = event.target.closest("[data-shipping-method]");
         if (!option) return;
+        if (option.dataset.shippingMethod === "express" && !expressShippingEnabled) return;
         selectedShippingMethod = option.dataset.shippingMethod;
         shippingOptions.classList.remove("open");
         renderShippingMethod();

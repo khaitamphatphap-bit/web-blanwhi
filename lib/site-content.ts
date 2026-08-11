@@ -148,6 +148,7 @@ export type SiteContent = {
   };
   shipping: {
     defaultFee: number;
+    expressEnabled: boolean;
   };
   policies?: CmsPolicyDocument[];
   products: CmsProduct[];
@@ -213,7 +214,8 @@ export const defaultSiteContent: SiteContent = {
     }
   },
   shipping: {
-    defaultFee: 30000
+    defaultFee: 30000,
+    expressEnabled: false
   },
   policies: policyData as CmsPolicyDocument[],
   products: [
@@ -339,7 +341,8 @@ async function loadSiteContent(): Promise<SiteContent> {
     shipping: {
       ...defaultSiteContent.shipping,
       ...saved.shipping,
-      defaultFee: Math.max(0, Math.floor(Number(saved.shipping?.defaultFee ?? defaultSiteContent.shipping.defaultFee) || 0))
+      defaultFee: Math.max(0, Math.floor(Number(saved.shipping?.defaultFee ?? defaultSiteContent.shipping.defaultFee) || 0)),
+      expressEnabled: saved.shipping?.expressEnabled === true
     },
     policies: Array.isArray(saved.policies) && saved.policies.length
       ? saved.policies

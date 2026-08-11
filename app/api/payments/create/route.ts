@@ -221,6 +221,9 @@ export async function POST(request: Request) {
 
     const defaultShippingFee = Math.max(0, Math.floor(Number(siteContent.shipping?.defaultFee ?? 30000) || 0));
     const isExpressShipping = payload.shipping?.type === "express";
+    if (isExpressShipping && siteContent.shipping?.expressEnabled !== true) {
+      return json({ error: "Giao hỏa tốc hiện đang tắt. Vui lòng chọn giao tiêu chuẩn." }, { status: 400 });
+    }
     const standardShippingFor = (subtotal: number) => subtotal === 0 || subtotal >= 2000000 ? 0 : defaultShippingFee;
     const orderItems = await hydratePancakeLinks(normalizeItems(items), siteContent);
     const subtotal = orderItems.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);

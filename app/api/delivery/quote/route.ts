@@ -2,8 +2,13 @@ import { NextResponse } from "next/server";
 import { createDeliveryService } from "@/lib/delivery/factory";
 import { deliveryConfigured, readDeliveryConfig } from "@/lib/delivery/config";
 import { providerLabel } from "@/lib/delivery/status";
+import { readSiteContent } from "@/lib/site-content";
 
 export async function POST(request: Request) {
+  const siteContent = await readSiteContent();
+  if (siteContent.shipping?.expressEnabled !== true) {
+    return NextResponse.json({ error: "Giao hỏa tốc hiện đang tắt." }, { status: 403 });
+  }
   const body = await request.json().catch(() => ({})) as {
     address?: string;
     latitude?: string;

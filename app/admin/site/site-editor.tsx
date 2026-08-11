@@ -552,7 +552,20 @@ export function SiteEditor() {
           </div>
 
           <div className="border border-neutral-200 p-4">
-            <h2 className="text-sm font-semibold uppercase">Phí ship mặc định</h2>
+            <h2 className="text-sm font-semibold uppercase">Vận chuyển trên website</h2>
+            <label className="mt-3 flex cursor-pointer items-center gap-3 border border-neutral-200 p-3 text-sm font-semibold">
+              <input
+                type="checkbox"
+                checked={content.shipping?.expressEnabled === true}
+                onChange={(event) => updateContent({
+                  ...content,
+                  shipping: { ...content.shipping, expressEnabled: event.target.checked }
+                })}
+                className="h-5 w-5"
+              />
+              <span>{content.shipping?.expressEnabled ? "Giao hỏa tốc đang BẬT" : "Giao hỏa tốc đang TẮT"}</span>
+            </label>
+            <p className="mt-2 text-xs leading-5 text-neutral-500">Chỉ khi bật và lưu thay đổi, khách mới thấy và đặt được giao hỏa tốc.</p>
             <p className="mt-2 text-xs leading-5 text-neutral-500">Áp dụng cho giao nhanh trên trang khách. Để 0 nếu muốn miễn phí ship mặc định.</p>
             <label className="mt-3 block text-xs uppercase text-neutral-500">Phí ship giao nhanh</label>
             <input
