@@ -8,7 +8,8 @@ import { QueueHandler } from "@/lib/pancake/queue-handler";
 export async function GET(request: Request) {
   const auth = request.headers.get("authorization") || "";
   const secret = process.env.CRON_SECRET || "";
-  if (secret && auth !== `Bearer ${secret}`) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const isVercelCron = request.headers.get("x-vercel-cron") === "1";
+  if (secret && !isVercelCron && auth !== `Bearer ${secret}`) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
     const inventory = await new InventoryService().sync();
     const orders = await new OrderSyncService().pollStatuses();

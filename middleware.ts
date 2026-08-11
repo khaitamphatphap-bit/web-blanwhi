@@ -51,6 +51,11 @@ export function middleware(request: NextRequest) {
     pathname.startsWith("/blanwhi-fabric-stack");
   if (publicPath) return NextResponse.next();
 
+  const cronPath =
+    pathname === "/api/admin/orders/shipping-sync" ||
+    pathname === "/api/admin/pancake/poll";
+  if (cronPath && request.headers.get("x-vercel-cron") === "1") return NextResponse.next();
+
   const protectedPath =
     pathname.startsWith("/admin") ||
     pathname.startsWith("/api/admin") ||
