@@ -1,6 +1,7 @@
 import type { ShopOrder } from "@/lib/types";
 import { ApiClient } from "@/lib/pancake/api-client";
 import { PancakeIntegrationError } from "@/lib/pancake/exception-handler";
+import { PancakeLogger } from "@/lib/pancake/logger";
 import type { PancakeVariation } from "@/lib/pancake/types";
 import { Validator } from "@/lib/pancake/validator";
 import { buildPancakeOrderPayload, type PancakeOrderSource } from "@/lib/pancake/domain";
@@ -10,7 +11,7 @@ function records(payload: unknown): Record<string, unknown>[] {
   if (Array.isArray(payload)) return payload.filter((item): item is Record<string, unknown> => Boolean(item && typeof item === "object"));
   if (!payload || typeof payload !== "object") return [];
   const record = payload as Record<string, unknown>;
-  for (const key of ["shops", "variations", "data", "products", "items", "orders"]) {
+  for (const key of ["shops", "variations", "data", "products", "items", "orders", "order_sources", "order_source", "sources", "list"]) {
     const nested = records(record[key]);
     if (nested.length) return nested;
   }
@@ -160,8 +161,11 @@ export class PancakeService {
     orderSourceRequest = (async () => {
       const response = await this.client.request<unknown>(`/shops/${encodeURIComponent(this.shopId())}/order_source`);
       const value: PancakeOrderSource[] = records(response).map((source) => ({
-        id: text(source, ["id", "_id", "source_id", "order_source_id"]),
-        name: text(source, ["name", "source_name", "title", "label"])
+        id: text(source, ["id", "_id", "source_id", "order_source_id", "page_id", "pageId"]),
+        name: text(source, ["name", "source_name", "title", "label", "page_name", "pageName"]),
+        pageId: deepText(source, ["page_id", "pageId"]),
+        key: deepText(source, ["key"]),
+        account: deepText(source, ["account"])
       })).filter((source) => Boolean(source.id && source.name));
       orderSourceCache = { expiresAt: Date.now() + 300_000, value };
       return value;
@@ -195,7 +199,15 @@ export class PancakeService {
     if (order.deliveryType !== "express" && !shippingPartner) {
       throw new PancakeIntegrationError("Pancake POS chưa kết nối SPX Express. Vui lòng kết nối SPX trong mục Vận chuyển của Pancake rồi thử lại.", "SPX_PARTNER_NOT_CONFIGURED", 409);
     }
-    const orderSource = await this.websiteOrderSource().catch(() => undefined);
+    const orderSource = await this.websiteOrderSource().catch(async (error) => {
+      await PancakeLogger.write("warning", "order.source", `Chưa đọc được nguồn đơn Pancake: ${error instanceof Error ? error.message : "không rõ lỗi"}`, order.code);
+      return undefined;
+    });
+    if (orderSource) {
+      await PancakeLogger.write("info", "order.source", `Đã gắn nguồn đơn ${orderSource.name} (#${orderSource.id}) vào payload Pancake.`, order.code);
+    } else {
+      await PancakeLogger.write("warning", "order.source", "Không tìm thấy nguồn đơn tên website trên Pancake, tạo đơn không có nguồn website.", order.code);
+    }
     const payload = buildPancakeOrderPayload(order, this.shopId(), shippingPartner || undefined, orderSource);
     try {
       return await this.client.request<Record<string, unknown>>(path, { method: "POST", body: payload });

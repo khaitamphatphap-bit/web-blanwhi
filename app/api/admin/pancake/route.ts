@@ -16,6 +16,15 @@ async function dashboard() {
   await seedPancakeProductLinks(content);
   const logs = await PancakeLogger.list();
   const queue = await QueueHandler.list();
+  const pancake = new PancakeService();
+  const sourceSnapshot = await Promise.all([
+    pancake.orderSources(),
+    pancake.websiteOrderSource()
+  ]).then(([orderSources, websiteOrderSource]) => ({ orderSources, websiteOrderSource, error: "" })).catch((error) => ({
+    orderSources: [],
+    websiteOrderSource: undefined,
+    error: error instanceof Error ? error.message : "Không đọc được nguồn đơn Pancake."
+  }));
   const products = content.products.map((product) => {
     const classificationNames = new Map((product.classifications || []).map((item) => [item.id, item.name]));
     return {
@@ -36,6 +45,13 @@ async function dashboard() {
       shopId: Boolean(process.env.PANCAKE_SHOP_ID),
       webhookSecret: Boolean(process.env.PANCAKE_WEBHOOK_SECRET),
       baseUrl: process.env.PANCAKE_API_BASE_URL || "https://pos.pages.fm/api/v1"
+    },
+    orderSource: {
+      targetName: process.env.PANCAKE_ORDER_SOURCE_NAME || "website",
+      targetId: process.env.PANCAKE_ORDER_SOURCE_ID || "",
+      sources: sourceSnapshot.orderSources,
+      matched: sourceSnapshot.websiteOrderSource,
+      error: sourceSnapshot.error
     },
     storage: {
       database: hasDatabase(),
@@ -84,6 +100,10 @@ export async function POST(request: Request) {
     }
     let result: unknown;
     if (body.action === "test") result = await new PancakeService().testConnection();
+    else if (body.action === "order-sources") result = {
+      sources: await new PancakeService().orderSources(),
+      matched: await new PancakeService().websiteOrderSource()
+    };
     else if (body.action === "recover-links") result = await new ProductLinkService().recoverLinks();
     else if (body.action === "sync-inventory") result = await new InventoryService().sync();
     else if (body.action === "retry-order" && body.orderCode) result = await new OrderSyncService().retry(body.orderCode);

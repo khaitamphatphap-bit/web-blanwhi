@@ -27,8 +27,17 @@ type PancakeVariation = {
   quantity: number;
 };
 
+type PancakeOrderSource = {
+  id: string | number;
+  name: string;
+  pageId?: string;
+  key?: string;
+  account?: string;
+};
+
 type Dashboard = {
   configuration: { apiKey: boolean; token: boolean; shopId: boolean; webhookSecret: boolean; baseUrl: string };
+  orderSource?: { targetName: string; targetId: string; sources: PancakeOrderSource[]; matched?: PancakeOrderSource; error?: string };
   storage: { database: boolean; blob: boolean; persistent: boolean };
   webhookUrl: string;
   products: Array<{ id: string; name: string; rows: ProductRow[] }>;
@@ -82,17 +91,19 @@ export function PancakeAdmin() {
     void load().catch((error) => setMessage(error instanceof Error ? error.message : "Không tải được dữ liệu."));
   }, []);
 
-  async function action(name: "test" | "sync-inventory" | "recover-links") {
+  async function action(name: "test" | "sync-inventory" | "recover-links" | "order-sources") {
     setBusy(name);
     setMessage("");
     try {
       const response = await request({ action: name });
       if (response.dashboard) setDashboard(response.dashboard);
-      const result = response.result as { shopName?: string; recoveredCount?: number; scannedBackups?: number } | undefined;
+      const result = response.result as { shopName?: string; recoveredCount?: number; scannedBackups?: number; sources?: PancakeOrderSource[]; matched?: PancakeOrderSource } | undefined;
       setMessage(name === "test"
         ? `Kết nối thành công: ${result?.shopName || "Pancake POS"}`
         : name === "recover-links"
           ? `Đã khôi phục ${result?.recoveredCount || 0} liên kết từ ${result?.scannedBackups || 0} bản lưu gần nhất.`
+          : name === "order-sources"
+            ? `Đã đọc ${result?.sources?.length || 0} nguồn đơn Pancake${result?.matched ? `, khớp nguồn ${result.matched.name} (#${result.matched.id})` : ", chưa khớp website"}.`
           : "Đã đồng bộ tồn kho Pancake.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Không thực hiện được.");
@@ -198,6 +209,35 @@ export function PancakeAdmin() {
           <p className="mt-2 text-sm text-neutral-600">Webhook cập nhật trạng thái đơn; đồng bộ định kỳ dùng khi Pancake không gửi webhook.</p>
           <code className="mt-4 block break-all bg-neutral-100 p-3 text-xs">{dashboard.webhookUrl}</code>
           <p className="mt-3 text-sm">Hàng đợi đang chờ: <strong>{dashboard.queueCount}</strong></p>
+        </div>
+      </section>
+
+      <section className="mt-6 border border-black p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold uppercase">Nguồn đơn website</h2>
+            <p className="mt-2 text-sm text-neutral-600">Website sẽ tự tìm nguồn tên <strong>{dashboard.orderSource?.targetName || "website"}</strong> trong Pancake và gắn vào đơn khi tạo POS.</p>
+          </div>
+          <button onClick={() => action("order-sources")} disabled={Boolean(busy)} className="h-11 border border-black px-5 text-xs uppercase disabled:opacity-50">{busy === "order-sources" ? "Đang đọc..." : "Đọc lại nguồn đơn"}</button>
+        </div>
+        {dashboard.orderSource?.error && <p className="mt-3 border border-red-200 bg-red-50 p-3 text-sm text-red-700">{dashboard.orderSource.error}</p>}
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          <div className="border border-neutral-300 p-3">
+            <p className="text-xs uppercase text-neutral-500">Nguồn đang khớp</p>
+            {dashboard.orderSource?.matched ? <p className="mt-2 text-sm"><strong>{dashboard.orderSource.matched.name}</strong> · ID <span className="font-mono">{dashboard.orderSource.matched.id}</span>{dashboard.orderSource.matched.pageId ? <> · Page <span className="font-mono">{dashboard.orderSource.matched.pageId}</span></> : null}</p> : <p className="mt-2 text-sm text-red-600">Chưa tìm thấy nguồn tên website trong dữ liệu API trả về.</p>}
+          </div>
+          <div className="border border-neutral-300 p-3">
+            <p className="text-xs uppercase text-neutral-500">Cấu hình dự phòng</p>
+            <p className="mt-2 text-sm">Tên: <strong>{dashboard.orderSource?.targetName || "website"}</strong></p>
+            <p className="mt-1 text-sm">ID cố định: <strong>{dashboard.orderSource?.targetId || "Chưa set"}</strong></p>
+          </div>
+        </div>
+        <div className="mt-4 max-h-56 overflow-auto border border-neutral-200">
+          {(dashboard.orderSource?.sources || []).length ? (dashboard.orderSource?.sources || []).map((source) => <div key={`${source.id}-${source.name}`} className="grid gap-1 border-b border-neutral-100 p-3 text-sm md:grid-cols-[1fr_1fr_1fr]">
+            <span><strong>{source.name}</strong></span>
+            <span>ID <span className="font-mono">{source.id}</span></span>
+            <span>{source.pageId ? <>Page <span className="font-mono">{source.pageId}</span></> : "Không có page_id"}</span>
+          </div>) : <p className="p-3 text-sm text-neutral-500">Chưa đọc được danh sách nguồn đơn từ Pancake.</p>}
         </div>
       </section>
 

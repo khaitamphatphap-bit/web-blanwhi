@@ -56,6 +56,9 @@ function isCashOnDeliveryOrder(order: { paymentMethod: string }) {
 export type PancakeOrderSource = {
   id: string | number;
   name: string;
+  pageId?: string;
+  key?: string;
+  account?: string;
 };
 
 export function buildPancakeOrderPayload(order: {
@@ -74,18 +77,29 @@ export function buildPancakeOrderPayload(order: {
     ? "COD - thu tiền khi giao hàng"
     : `Đã thanh toán online ${normalizedPaymentMethod(order.paymentMethod).toUpperCase()}`;
   const customerNote = order.customer.note || "";
+  const sourceId = Number(orderSource?.id) || orderSource?.id;
+  const pageId = orderSource?.pageId || String(sourceId || "");
   return {
     ...(shopId ? { shop_id: Number(shopId) || shopId } : {}),
     custom_id: shortOrderCode(order.code),
     ...(orderSource ? {
-      order_source_id: Number(orderSource.id) || orderSource.id,
-      source_id: Number(orderSource.id) || orderSource.id,
+      order_source_id: sourceId,
+      source_id: sourceId,
+      source_name: orderSource.name,
+      order_source_name: orderSource.name,
+      page_id: pageId,
       order_source: {
-        id: Number(orderSource.id) || orderSource.id,
-        name: orderSource.name
+        id: sourceId,
+        name: orderSource.name,
+        page_id: pageId
       },
       source: {
-        id: Number(orderSource.id) || orderSource.id,
+        id: sourceId,
+        name: orderSource.name,
+        page_id: pageId
+      },
+      page: {
+        id: pageId,
         name: orderSource.name
       }
     } : {}),
