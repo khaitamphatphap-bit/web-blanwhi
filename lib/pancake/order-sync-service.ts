@@ -19,7 +19,8 @@ function externalId(payload: Record<string, unknown>) {
   const record = (payload.data && typeof payload.data === "object" ? payload.data : payload) as Record<string, unknown>;
   const order = (record.order && typeof record.order === "object" ? record.order : record) as Record<string, unknown>;
   return validPancakeOrderId(
-    order.id
+    deepValue(payload, ["system_id"])
+      || order.id
       || order._id
       || order.order_id
       || order.display_id
