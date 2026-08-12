@@ -18,7 +18,18 @@ function validPancakeOrderId(value: unknown) {
 function externalId(payload: Record<string, unknown>) {
   const record = (payload.data && typeof payload.data === "object" ? payload.data : payload) as Record<string, unknown>;
   const order = (record.order && typeof record.order === "object" ? record.order : record) as Record<string, unknown>;
-  return validPancakeOrderId(order.id || order._id || order.order_id || order.display_id);
+  return validPancakeOrderId(
+    order.id
+      || order._id
+      || order.order_id
+      || order.display_id
+      || order.system_id
+      || record.id
+      || record._id
+      || record.order_id
+      || record.display_id
+      || record.system_id
+  );
 }
 
 function pancakeOrderId(order: ShopOrder) {
@@ -387,6 +398,16 @@ export class OrderSyncService {
         }
       });
       await PancakeLogger.write("info", "order.create", "Đã tạo đơn trên Pancake.", order.code);
+      const latestAfterCreate = await findOrderByCode(order.code);
+      if (latestAfterCreate?.status === "cancelled") {
+        const cancellationTarget = updated || latestAfterCreate;
+        try {
+          return await this.cancel(cancellationTarget, enqueueOnFailure);
+        } catch {
+          // The cancellation is already queued; never queue this cancelled order for creation again.
+          return await findOrderByCode(order.code) || latestAfterCreate;
+        }
+      }
       return updated || current;
     } catch (error) {
       const message = ExceptionHandler.message(error);
@@ -447,9 +468,16 @@ export class OrderSyncService {
     } catch {
       // Vẫn thử ID đã lưu nếu bước tìm lại đơn tạm thời không phản hồi.
     }
-    if (!candidateIds.length) return order;
     let lastError: unknown;
     try {
+      if (!candidateIds.length) {
+        throw new PancakeIntegrationError(
+          "Pancake đã nhận đơn nhưng chưa trả mã để hủy. Hệ thống sẽ tự thử lại.",
+          "PANCAKE_CANCEL_ID_PENDING",
+          409,
+          true
+        );
+      }
       for (const remoteOrderId of candidateIds) {
         try {
           await this.pancake.cancelOrder(remoteOrderId);
@@ -572,6 +600,32 @@ export class OrderSyncService {
       const remoteOrderId = (externalId(payload) || fallbackRemoteOrderId).trim();
       const remoteId = remoteOrderId.toUpperCase();
       const mapped = mapPancakeStatus(value(payload, ["status", "order_status", "state"]));
+      if (order.status === "cancelled" && mapped.pancakeStatus !== "cancelled" && remoteOrderId) {
+        try {
+          await this.pancake.cancelOrder(remoteOrderId);
+          patches.set(order.code, {
+            pancakeOrderId: remoteOrderId,
+            pancakeStatus: "cancelled",
+            externalSync: {
+              pancake: "Đã hủy trên Pancake",
+              lastSyncedAt: new Date().toISOString()
+            }
+          });
+          updated += 1;
+        } catch (error) {
+          const message = ExceptionHandler.message(error);
+          await PancakeLogger.write("error", "order.cancel.reconcile", message, order.code);
+          try { await QueueHandler.enqueue("order.cancel", { orderCode: order.code }); } catch { /* Queue errors must not hide the POS error. */ }
+          patches.set(order.code, {
+            pancakeOrderId: remoteOrderId,
+            externalSync: {
+              pancake: `Chờ gửi yêu cầu hủy: ${message}`,
+              lastSyncedAt: new Date().toISOString()
+            }
+          });
+        }
+        return;
+      }
       const logisticsStatus = logisticsShippingStatus(payload);
       const synchronizedShippingStatus = latestShippingStatus(order.shippingStatus, logisticsStatus || mapped.shippingStatus);
       const remoteShipping = hasShippingDetails(payload) ? shippingUpdate(payload, false) : {};
