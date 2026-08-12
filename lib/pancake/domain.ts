@@ -53,6 +53,11 @@ function isCashOnDeliveryOrder(order: { paymentMethod: string }) {
   return normalizedPaymentMethod(order.paymentMethod) === "cod";
 }
 
+export type PancakeOrderSource = {
+  id: string | number;
+  name: string;
+};
+
 export function buildPancakeOrderPayload(order: {
   code: string;
   customer: { name: string; phone: string; email?: string; address: string; house?: string; ward?: string; wardId?: string; district?: string; districtId?: string; province?: string; provinceId?: string; note?: string };
@@ -61,7 +66,7 @@ export function buildPancakeOrderPayload(order: {
   shipping: number;
   total: number;
   paymentMethod: string;
-}, shopId?: string, shippingPartner?: { id: number; name: string; shopPartnerId?: number }) {
+}, shopId?: string, shippingPartner?: { id: number; name: string; shopPartnerId?: number }, orderSource?: PancakeOrderSource) {
   const cashOnDelivery = isCashOnDeliveryOrder(order);
   const cod = cashOnDelivery ? order.total : 0;
   const prepaidAmount = cashOnDelivery ? 0 : order.total;
@@ -72,6 +77,18 @@ export function buildPancakeOrderPayload(order: {
   return {
     ...(shopId ? { shop_id: Number(shopId) || shopId } : {}),
     custom_id: shortOrderCode(order.code),
+    ...(orderSource ? {
+      order_source_id: Number(orderSource.id) || orderSource.id,
+      source_id: Number(orderSource.id) || orderSource.id,
+      order_source: {
+        id: Number(orderSource.id) || orderSource.id,
+        name: orderSource.name
+      },
+      source: {
+        id: Number(orderSource.id) || orderSource.id,
+        name: orderSource.name
+      }
+    } : {}),
     bill_full_name: order.customer.name,
     bill_phone_number: order.customer.phone,
     bill_email: order.customer.email || "",

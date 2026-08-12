@@ -3,7 +3,7 @@ import { ApiClient } from "@/lib/pancake/api-client";
 import { PancakeIntegrationError } from "@/lib/pancake/exception-handler";
 import type { PancakeVariation } from "@/lib/pancake/types";
 import { Validator } from "@/lib/pancake/validator";
-import { buildPancakeOrderPayload } from "@/lib/pancake/domain";
+import { buildPancakeOrderPayload, type PancakeOrderSource } from "@/lib/pancake/domain";
 import { shortOrderCode } from "@/lib/order-code";
 
 function records(payload: unknown): Record<string, unknown>[] {
@@ -88,6 +88,8 @@ let variationCache: { expiresAt: number; value: PancakeVariation[] } | null = nu
 let variationRequest: Promise<PancakeVariation[]> | null = null;
 let partnerCache: { expiresAt: number; value: PancakeShippingPartner[] } | null = null;
 let partnerRequest: Promise<PancakeShippingPartner[]> | null = null;
+let orderSourceCache: { expiresAt: number; value: PancakeOrderSource[] } | null = null;
+let orderSourceRequest: Promise<PancakeOrderSource[]> | null = null;
 
 export class PancakeService {
   constructor(private readonly client = new ApiClient()) {}
@@ -152,6 +154,36 @@ export class PancakeService {
     }
   }
 
+  async orderSources(): Promise<PancakeOrderSource[]> {
+    if (orderSourceCache && orderSourceCache.expiresAt > Date.now()) return orderSourceCache.value;
+    if (orderSourceRequest) return orderSourceRequest;
+    orderSourceRequest = (async () => {
+      const response = await this.client.request<unknown>(`/shops/${encodeURIComponent(this.shopId())}/order_source`);
+      const value: PancakeOrderSource[] = records(response).map((source) => ({
+        id: text(source, ["id", "_id", "source_id", "order_source_id"]),
+        name: text(source, ["name", "source_name", "title", "label"])
+      })).filter((source) => Boolean(source.id && source.name));
+      orderSourceCache = { expiresAt: Date.now() + 300_000, value };
+      return value;
+    })();
+    try {
+      return await orderSourceRequest;
+    } finally {
+      orderSourceRequest = null;
+    }
+  }
+
+  async websiteOrderSource(): Promise<PancakeOrderSource | undefined> {
+    const configuredId = String(process.env.PANCAKE_ORDER_SOURCE_ID || "").trim();
+    const configuredName = String(process.env.PANCAKE_ORDER_SOURCE_NAME || "website").trim().toLowerCase();
+    const sources = await this.orderSources();
+    if (configuredId) {
+      return sources.find((source) => String(source.id).trim() === configuredId) || { id: configuredId, name: configuredName || "website" };
+    }
+    return sources.find((source) => source.name.trim().toLowerCase() === configuredName)
+      || sources.find((source) => source.name.trim().toLowerCase() === "website");
+  }
+
   async createOrder(order: ShopOrder) {
     order.items.forEach((item) => {
       if (!item.pancakeVariationId && !item.pancakeProductId && !item.pancakeSku) {
@@ -163,8 +195,15 @@ export class PancakeService {
     if (order.deliveryType !== "express" && !shippingPartner) {
       throw new PancakeIntegrationError("Pancake POS chưa kết nối SPX Express. Vui lòng kết nối SPX trong mục Vận chuyển của Pancake rồi thử lại.", "SPX_PARTNER_NOT_CONFIGURED", 409);
     }
-    const payload = buildPancakeOrderPayload(order, this.shopId(), shippingPartner || undefined);
-    return this.client.request<Record<string, unknown>>(path, { method: "POST", body: payload });
+    const orderSource = await this.websiteOrderSource().catch(() => undefined);
+    const payload = buildPancakeOrderPayload(order, this.shopId(), shippingPartner || undefined, orderSource);
+    try {
+      return await this.client.request<Record<string, unknown>>(path, { method: "POST", body: payload });
+    } catch (error) {
+      if (!orderSource || !(error instanceof PancakeIntegrationError) || !/source|nguồn|order_source/i.test(error.message)) throw error;
+      const fallbackPayload = buildPancakeOrderPayload(order, this.shopId(), shippingPartner || undefined);
+      return this.client.request<Record<string, unknown>>(path, { method: "POST", body: fallbackPayload });
+    }
   }
 
   async shippingPartners(): Promise<PancakeShippingPartner[]> {
