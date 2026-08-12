@@ -5348,7 +5348,7 @@
         {
           "key": "product|variant-1783923310603|XS",
           "sku": "ĐEN-XS",
-          "quantity": 0,
+          "quantity": 47,
           "publishQuantity": 20,
           "pancakeQuantity": 75,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
@@ -5361,7 +5361,7 @@
         {
           "key": "product|variant-1783923310603|S",
           "sku": "ĐEN-S",
-          "quantity": 0,
+          "quantity": 116,
           "publishQuantity": 15,
           "pancakeQuantity": 189,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
@@ -5374,7 +5374,7 @@
         {
           "key": "product|variant-1783923310603|M",
           "sku": "ĐEN-M",
-          "quantity": 0,
+          "quantity": 43,
           "publishQuantity": 15,
           "pancakeQuantity": 70,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
@@ -5387,7 +5387,7 @@
         {
           "key": "product|variant-1783923310603|L",
           "sku": "ĐEN-L",
-          "quantity": 0,
+          "quantity": 108,
           "publishQuantity": 30,
           "pancakeQuantity": 113,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
@@ -5400,7 +5400,7 @@
         {
           "key": "product|variant-1783923310603|XL",
           "sku": "ĐEN-XL",
-          "quantity": 0,
+          "quantity": 39,
           "publishQuantity": 9,
           "pancakeQuantity": 16,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
@@ -5413,7 +5413,7 @@
         {
           "key": "product|variant-1783923329459|XS",
           "sku": "TRẮNG-XS",
-          "quantity": 0,
+          "quantity": 19,
           "publishQuantity": 4,
           "pancakeQuantity": 43,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
@@ -5426,7 +5426,7 @@
         {
           "key": "product|variant-1783923329459|S",
           "sku": "TRẮNG-S",
-          "quantity": 0,
+          "quantity": 116,
           "publishQuantity": 19,
           "pancakeQuantity": 144,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
@@ -5439,7 +5439,7 @@
         {
           "key": "product|variant-1783923329459|M",
           "sku": "TRẮNG-M",
-          "quantity": 0,
+          "quantity": 90,
           "publishQuantity": 15,
           "pancakeQuantity": 98,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
@@ -5452,7 +5452,7 @@
         {
           "key": "product|variant-1783923329459|L",
           "sku": "TRẮNG-L",
-          "quantity": 0,
+          "quantity": 103,
           "publishQuantity": 20,
           "pancakeQuantity": 99,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
@@ -5465,7 +5465,7 @@
         {
           "key": "product|variant-1783923329459|XL",
           "sku": "TRẮNG-XL",
-          "quantity": 0,
+          "quantity": 66,
           "publishQuantity": 15,
           "pancakeQuantity": 82,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
@@ -5478,7 +5478,7 @@
         {
           "key": "product|variant-1783923343419|XS",
           "sku": "XÁM-XS",
-          "quantity": 0,
+          "quantity": 22,
           "publishQuantity": 5,
           "pancakeQuantity": 24,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
@@ -5491,7 +5491,7 @@
         {
           "key": "product|variant-1783923343419|S",
           "sku": "XÁM-S",
-          "quantity": 0,
+          "quantity": 119,
           "publishQuantity": 20,
           "pancakeQuantity": 87,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
@@ -5504,7 +5504,7 @@
         {
           "key": "product|variant-1783923343419|M",
           "sku": "XÁM-M",
-          "quantity": 0,
+          "quantity": 113,
           "publishQuantity": 20,
           "pancakeQuantity": 36,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
@@ -5517,7 +5517,7 @@
         {
           "key": "product|variant-1783923343419|L",
           "sku": "XÁM-L",
-          "quantity": 0,
+          "quantity": 141,
           "publishQuantity": 5,
           "pancakeQuantity": 150,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
@@ -5530,7 +5530,7 @@
         {
           "key": "product|variant-1783923343419|XL",
           "sku": "XÁM-XL",
-          "quantity": 0,
+          "quantity": 48,
           "publishQuantity": 19,
           "pancakeQuantity": 69,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
@@ -5543,7 +5543,7 @@
         {
           "key": "product|variant-1783923355811|XS",
           "sku": "XÁM-CARBON-XS",
-          "quantity": 0,
+          "quantity": 25,
           "publishQuantity": 5,
           "pancakeQuantity": 30,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
@@ -5556,7 +5556,7 @@
         {
           "key": "product|variant-1783923355811|S",
           "sku": "XÁM-CARBON-S",
-          "quantity": 0,
+          "quantity": 71,
           "publishQuantity": 10,
           "pancakeQuantity": 96,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
@@ -5569,7 +5569,7 @@
         {
           "key": "product|variant-1783923355811|M",
           "sku": "XÁM-CARBON-M",
-          "quantity": 0,
+          "quantity": 56,
           "publishQuantity": 9,
           "pancakeQuantity": 105,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
@@ -5582,7 +5582,7 @@
         {
           "key": "product|variant-1783923355811|L",
           "sku": "XÁM-CARBON-L",
-          "quantity": 0,
+          "quantity": 93,
           "publishQuantity": 10,
           "pancakeQuantity": 121,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
@@ -5608,7 +5608,7 @@
         {
           "key": "product|variant-1783923359539|XS",
           "sku": "XÁM-GHI-XS",
-          "quantity": 0,
+          "quantity": 51,
           "publishQuantity": 5,
           "pancakeQuantity": 36,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
@@ -5621,7 +5621,7 @@
         {
           "key": "product|variant-1783923359539|S",
           "sku": "XÁM-GHI-S",
-          "quantity": 0,
+          "quantity": 116,
           "publishQuantity": 4,
           "pancakeQuantity": 85,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
@@ -5634,7 +5634,7 @@
         {
           "key": "product|variant-1783923359539|M",
           "sku": "XÁM-GHI-M",
-          "quantity": 0,
+          "quantity": 74,
           "publishQuantity": 5,
           "pancakeQuantity": 43,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
@@ -5647,7 +5647,7 @@
         {
           "key": "product|variant-1783923359539|L",
           "sku": "XÁM-GHI-L",
-          "quantity": 0,
+          "quantity": 85,
           "publishQuantity": 4,
           "pancakeQuantity": 43,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
@@ -5660,7 +5660,7 @@
         {
           "key": "product|variant-1783923359539|XL",
           "sku": "XÁM-GHI-XL",
-          "quantity": 0,
+          "quantity": 24,
           "publishQuantity": 5,
           "pancakeQuantity": 2,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
@@ -5673,7 +5673,7 @@
         {
           "key": "product|variant-1783923366075|XS",
           "sku": "NÂU-DARK-CHOCO-XS",
-          "quantity": 0,
+          "quantity": 46,
           "publishQuantity": 5,
           "pancakeQuantity": 32,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
@@ -5686,7 +5686,7 @@
         {
           "key": "product|variant-1783923366075|S",
           "sku": "NÂU-DARK-CHOCO-S",
-          "quantity": 0,
+          "quantity": 146,
           "publishQuantity": 3,
           "pancakeQuantity": 104,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
@@ -5699,7 +5699,7 @@
         {
           "key": "product|variant-1783923366075|M",
           "sku": "NÂU-DARK-CHOCO-M",
-          "quantity": 0,
+          "quantity": 100,
           "publishQuantity": 4,
           "pancakeQuantity": 49,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
@@ -5712,7 +5712,7 @@
         {
           "key": "product|variant-1783923366075|L",
           "sku": "NÂU-DARK-CHOCO-L",
-          "quantity": 0,
+          "quantity": 158,
           "publishQuantity": 1,
           "pancakeQuantity": 116,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
@@ -5725,7 +5725,7 @@
         {
           "key": "product|variant-1783923366075|XL",
           "sku": "NÂU-DARK-CHOCO-XL",
-          "quantity": 0,
+          "quantity": 27,
           "publishQuantity": 2,
           "pancakeQuantity": 8,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
@@ -5738,7 +5738,7 @@
         {
           "key": "product|variant-1783923379411|XS",
           "sku": "XANH-DEEP-FOREST-XS",
-          "quantity": 0,
+          "quantity": 32,
           "publishQuantity": 5,
           "pancakeQuantity": 39,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
@@ -5751,7 +5751,7 @@
         {
           "key": "product|variant-1783923379411|S",
           "sku": "XANH-DEEP-FOREST-S",
-          "quantity": 0,
+          "quantity": 24,
           "publishQuantity": 3,
           "pancakeQuantity": 31,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
@@ -5764,7 +5764,7 @@
         {
           "key": "product|variant-1783923379411|M",
           "sku": "XANH-DEEP-FOREST-M",
-          "quantity": 0,
+          "quantity": 25,
           "publishQuantity": 4,
           "pancakeQuantity": 43,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
@@ -5777,7 +5777,7 @@
         {
           "key": "product|variant-1783923379411|L",
           "sku": "XANH-DEEP-FOREST-L",
-          "quantity": 0,
+          "quantity": 25,
           "publishQuantity": 5,
           "pancakeQuantity": 42,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
@@ -5790,7 +5790,7 @@
         {
           "key": "product|variant-1783923379411|XL",
           "sku": "XANH-DEEP-FOREST-XL",
-          "quantity": 0,
+          "quantity": 5,
           "publishQuantity": 4,
           "pancakeQuantity": 16,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
@@ -5803,7 +5803,7 @@
         {
           "key": "product|variant-1783923372203|XS",
           "sku": "XANH-BLUE-WHALE-XS",
-          "quantity": 0,
+          "quantity": 60,
           "publishQuantity": 5,
           "pancakeQuantity": 32,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
@@ -5816,7 +5816,7 @@
         {
           "key": "product|variant-1783923372203|S",
           "sku": "XANH-BLUE-WHALE-S",
-          "quantity": 0,
+          "quantity": 49,
           "publishQuantity": 4,
           "pancakeQuantity": 22,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
@@ -5829,7 +5829,7 @@
         {
           "key": "product|variant-1783923372203|M",
           "sku": "XANH-BLUE-WHALE-M",
-          "quantity": 0,
+          "quantity": 78,
           "publishQuantity": 5,
           "pancakeQuantity": 40,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
@@ -5842,7 +5842,7 @@
         {
           "key": "product|variant-1783923372203|L",
           "sku": "XANH-BLUE-WHALE-L",
-          "quantity": 0,
+          "quantity": 35,
           "publishQuantity": 4,
           "pancakeQuantity": 33,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
@@ -5855,7 +5855,7 @@
         {
           "key": "product|variant-1783923372203|XL",
           "sku": "XANH-BLUE-WHALE-XL",
-          "quantity": 0,
+          "quantity": 21,
           "publishQuantity": 4,
           "pancakeQuantity": 22,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
@@ -5868,7 +5868,7 @@
         {
           "key": "product|variant-1783923382533|XS",
           "sku": "SA-MẠC-XS",
-          "quantity": 0,
+          "quantity": 48,
           "publishQuantity": 5,
           "pancakeQuantity": 50,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
@@ -5881,7 +5881,7 @@
         {
           "key": "product|variant-1783923382533|S",
           "sku": "SA-MẠC-S",
-          "quantity": 0,
+          "quantity": 81,
           "publishQuantity": 5,
           "pancakeQuantity": 90,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
@@ -5894,7 +5894,7 @@
         {
           "key": "product|variant-1783923382533|M",
           "sku": "SA-MẠC-M",
-          "quantity": 0,
+          "quantity": 70,
           "publishQuantity": 2,
           "pancakeQuantity": 81,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
@@ -5907,7 +5907,7 @@
         {
           "key": "product|variant-1783923382533|L",
           "sku": "SA-MẠC-L",
-          "quantity": 0,
+          "quantity": 53,
           "publishQuantity": 5,
           "pancakeQuantity": 59,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
@@ -5920,7 +5920,7 @@
         {
           "key": "product|variant-1783923382533|XL",
           "sku": "SA-MẠC-XL",
-          "quantity": 0,
+          "quantity": 32,
           "publishQuantity": 5,
           "pancakeQuantity": 37,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
@@ -5933,7 +5933,7 @@
         {
           "key": "product|variant-1783923388789|XS",
           "sku": "XANH-IDYLLIC-XS",
-          "quantity": 0,
+          "quantity": 10,
           "publishQuantity": 5,
           "pancakeQuantity": 4,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
@@ -5946,7 +5946,7 @@
         {
           "key": "product|variant-1783923388789|S",
           "sku": "XANH-IDYLLIC-S",
-          "quantity": 0,
+          "quantity": 48,
           "publishQuantity": 5,
           "pancakeQuantity": 23,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
@@ -5959,7 +5959,7 @@
         {
           "key": "product|variant-1783923388789|M",
           "sku": "XANH-IDYLLIC-M",
-          "quantity": 0,
+          "quantity": 34,
           "publishQuantity": 5,
           "pancakeQuantity": 15,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
@@ -5972,7 +5972,7 @@
         {
           "key": "product|variant-1783923388789|L",
           "sku": "XANH-IDYLLIC-L",
-          "quantity": 0,
+          "quantity": 80,
           "publishQuantity": 3,
           "pancakeQuantity": 50,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
@@ -5985,7 +5985,7 @@
         {
           "key": "product|variant-1783923388789|XL",
           "sku": "XANH-IDYLLIC-XL",
-          "quantity": 0,
+          "quantity": 32,
           "publishQuantity": 5,
           "pancakeQuantity": 19,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
@@ -6037,7 +6037,7 @@
         {
           "key": "product|variant-1783923392572|L",
           "sku": "PINK-SUGAR-L",
-          "quantity": 0,
+          "quantity": 5,
           "publishQuantity": 0,
           "pancakeQuantity": 10,
           "pancakeProductId": "23ac4a37-8522-4e0b-b99f-02e120543e55",
@@ -6063,7 +6063,7 @@
         {
           "key": "product|variant-1783923403107|XS",
           "sku": "BROKEN-OK-SPECIAL-EDITION-XS",
-          "quantity": 0,
+          "quantity": 5,
           "publishQuantity": 0,
           "pancakeQuantity": 9,
           "pancakeProductId": "5270a14a-4028-434e-bf78-d3b7e2ba5a6c",
@@ -6076,7 +6076,7 @@
         {
           "key": "product|variant-1783923403107|S",
           "sku": "BROKEN-OK-SPECIAL-EDITION-S",
-          "quantity": 0,
+          "quantity": 22,
           "publishQuantity": 9,
           "pancakeQuantity": 14,
           "pancakeProductId": "5270a14a-4028-434e-bf78-d3b7e2ba5a6c",
@@ -6089,7 +6089,7 @@
         {
           "key": "product|variant-1783923403107|M",
           "sku": "BROKEN-OK-SPECIAL-EDITION-M",
-          "quantity": 0,
+          "quantity": 21,
           "publishQuantity": 10,
           "pancakeQuantity": 2,
           "pancakeProductId": "5270a14a-4028-434e-bf78-d3b7e2ba5a6c",
@@ -6102,7 +6102,7 @@
         {
           "key": "product|variant-1783923403107|L",
           "sku": "BROKEN-OK-SPECIAL-EDITION-L",
-          "quantity": 0,
+          "quantity": 21,
           "publishQuantity": 10,
           "pancakeQuantity": 6,
           "pancakeProductId": "5270a14a-4028-434e-bf78-d3b7e2ba5a6c",
@@ -6115,7 +6115,7 @@
         {
           "key": "product|variant-1783923403107|XL",
           "sku": "BROKEN-OK-SPECIAL-EDITION-XL",
-          "quantity": 0,
+          "quantity": 23,
           "publishQuantity": 10,
           "pancakeQuantity": 12,
           "pancakeProductId": "5270a14a-4028-434e-bf78-d3b7e2ba5a6c",
@@ -6187,7 +6187,7 @@
         {
           "key": "product|variant-1785737995366|XS",
           "sku": "ĐEN-XS",
-          "quantity": 0,
+          "quantity": 10,
           "publishQuantity": 6,
           "pancakeQuantity": 3,
           "pancakeProductId": "1d8c02a1-60d8-47de-a511-4d23365205fa",
@@ -6200,7 +6200,7 @@
         {
           "key": "product|variant-1785737995366|S",
           "sku": "ĐEN-S",
-          "quantity": 0,
+          "quantity": 42,
           "publishQuantity": 4,
           "pancakeQuantity": 22,
           "pancakeProductId": "1d8c02a1-60d8-47de-a511-4d23365205fa",
@@ -6213,7 +6213,7 @@
         {
           "key": "product|variant-1785737995366|M",
           "sku": "ĐEN-M",
-          "quantity": 0,
+          "quantity": 89,
           "publishQuantity": 17,
           "pancakeQuantity": 45,
           "pancakeProductId": "1d8c02a1-60d8-47de-a511-4d23365205fa",
@@ -6226,7 +6226,7 @@
         {
           "key": "product|variant-1785737995366|L",
           "sku": "ĐEN-L",
-          "quantity": 0,
+          "quantity": 152,
           "publishQuantity": 8,
           "pancakeQuantity": 53,
           "pancakeProductId": "1d8c02a1-60d8-47de-a511-4d23365205fa",
@@ -6239,7 +6239,7 @@
         {
           "key": "product|variant-1785737995366|XL",
           "sku": "ĐEN-XL",
-          "quantity": 0,
+          "quantity": 22,
           "publishQuantity": 8,
           "pancakeQuantity": 3,
           "pancakeProductId": "1d8c02a1-60d8-47de-a511-4d23365205fa",
@@ -6265,7 +6265,7 @@
         {
           "key": "product|variant-1785738000149|S",
           "sku": "TRẮNG-S",
-          "quantity": 0,
+          "quantity": 17,
           "publishQuantity": 5,
           "pancakeQuantity": 0,
           "pancakeProductId": "1d8c02a1-60d8-47de-a511-4d23365205fa",
@@ -6278,7 +6278,7 @@
         {
           "key": "product|variant-1785738000149|M",
           "sku": "TRẮNG-M",
-          "quantity": 0,
+          "quantity": 26,
           "publishQuantity": 8,
           "pancakeQuantity": 4,
           "pancakeProductId": "1d8c02a1-60d8-47de-a511-4d23365205fa",
@@ -6291,7 +6291,7 @@
         {
           "key": "product|variant-1785738000149|L",
           "sku": "TRẮNG-L",
-          "quantity": 0,
+          "quantity": 31,
           "publishQuantity": 9,
           "pancakeQuantity": 2,
           "pancakeProductId": "1d8c02a1-60d8-47de-a511-4d23365205fa",
@@ -6304,7 +6304,7 @@
         {
           "key": "product|variant-1785738000149|XL",
           "sku": "TRẮNG-XL",
-          "quantity": 0,
+          "quantity": 17,
           "publishQuantity": 7,
           "pancakeQuantity": 5,
           "pancakeProductId": "1d8c02a1-60d8-47de-a511-4d23365205fa",
@@ -6317,7 +6317,7 @@
         {
           "key": "product|variant-1785738002877|XS",
           "sku": "XÁM-XS",
-          "quantity": 0,
+          "quantity": 10,
           "publishQuantity": 4,
           "pancakeQuantity": 0,
           "pancakeProductId": "1d8c02a1-60d8-47de-a511-4d23365205fa",
@@ -6330,7 +6330,7 @@
         {
           "key": "product|variant-1785738002877|S",
           "sku": "XÁM-S",
-          "quantity": 0,
+          "quantity": 38,
           "publishQuantity": 9,
           "pancakeQuantity": 1,
           "pancakeProductId": "1d8c02a1-60d8-47de-a511-4d23365205fa",
@@ -6343,7 +6343,7 @@
         {
           "key": "product|variant-1785738002877|M",
           "sku": "XÁM-M",
-          "quantity": 0,
+          "quantity": 46,
           "publishQuantity": 7,
           "pancakeQuantity": 0,
           "pancakeProductId": "1d8c02a1-60d8-47de-a511-4d23365205fa",
@@ -6356,7 +6356,7 @@
         {
           "key": "product|variant-1785738002877|L",
           "sku": "XÁM-L",
-          "quantity": 0,
+          "quantity": 46,
           "publishQuantity": 10,
           "pancakeQuantity": 1,
           "pancakeProductId": "1d8c02a1-60d8-47de-a511-4d23365205fa",
@@ -6369,7 +6369,7 @@
         {
           "key": "product|variant-1785738002877|XL",
           "sku": "XÁM-XL",
-          "quantity": 0,
+          "quantity": 24,
           "publishQuantity": 7,
           "pancakeQuantity": 2,
           "pancakeProductId": "1d8c02a1-60d8-47de-a511-4d23365205fa",
@@ -6382,7 +6382,7 @@
         {
           "key": "product|variant-1786349548829|XS",
           "sku": "SA-MẠC-XS",
-          "quantity": 0,
+          "quantity": 3,
           "publishQuantity": 3,
           "pancakeQuantity": 8,
           "pancakeProductId": "1d8c02a1-60d8-47de-a511-4d23365205fa",
@@ -6395,7 +6395,7 @@
         {
           "key": "product|variant-1786349548829|S",
           "sku": "SA-MẠC-S",
-          "quantity": 0,
+          "quantity": 18,
           "publishQuantity": 5,
           "pancakeQuantity": 25,
           "pancakeProductId": "1d8c02a1-60d8-47de-a511-4d23365205fa",
@@ -6408,7 +6408,7 @@
         {
           "key": "product|variant-1786349548829|M",
           "sku": "SA-MẠC-M",
-          "quantity": 0,
+          "quantity": 29,
           "publishQuantity": 4,
           "pancakeQuantity": 38,
           "pancakeProductId": "1d8c02a1-60d8-47de-a511-4d23365205fa",
@@ -6421,7 +6421,7 @@
         {
           "key": "product|variant-1786349548829|L",
           "sku": "SA-MẠC-L",
-          "quantity": 0,
+          "quantity": 28,
           "publishQuantity": 4,
           "pancakeQuantity": 8,
           "pancakeProductId": "1d8c02a1-60d8-47de-a511-4d23365205fa",
@@ -6434,7 +6434,7 @@
         {
           "key": "product|variant-1786349548829|XL",
           "sku": "SA-MẠC-XL",
-          "quantity": 0,
+          "quantity": 18,
           "publishQuantity": 3,
           "pancakeQuantity": 9,
           "pancakeProductId": "1d8c02a1-60d8-47de-a511-4d23365205fa",
@@ -6447,7 +6447,7 @@
         {
           "key": "product|variant-1786349555972|XS",
           "sku": "XANH-DEEP-FOREST-XS",
-          "quantity": 0,
+          "quantity": 4,
           "publishQuantity": 2,
           "pancakeQuantity": 0,
           "pancakeProductId": "1d8c02a1-60d8-47de-a511-4d23365205fa",
@@ -6460,7 +6460,7 @@
         {
           "key": "product|variant-1786349555972|S",
           "sku": "XANH-DEEP-FOREST-S",
-          "quantity": 0,
+          "quantity": 22,
           "publishQuantity": 5,
           "pancakeQuantity": 0,
           "pancakeProductId": "1d8c02a1-60d8-47de-a511-4d23365205fa",
@@ -6473,7 +6473,7 @@
         {
           "key": "product|variant-1786349555972|M",
           "sku": "XANH-DEEP-FOREST-M",
-          "quantity": 0,
+          "quantity": 32,
           "publishQuantity": 9,
           "pancakeQuantity": 0,
           "pancakeProductId": "1d8c02a1-60d8-47de-a511-4d23365205fa",
@@ -6486,7 +6486,7 @@
         {
           "key": "product|variant-1786349555972|L",
           "sku": "XANH-DEEP-FOREST-L",
-          "quantity": 0,
+          "quantity": 31,
           "publishQuantity": 10,
           "pancakeQuantity": 0,
           "pancakeProductId": "1d8c02a1-60d8-47de-a511-4d23365205fa",
@@ -6499,7 +6499,7 @@
         {
           "key": "product|variant-1786349555972|XL",
           "sku": "XANH-DEEP-FOREST-XL",
-          "quantity": 0,
+          "quantity": 11,
           "publishQuantity": 3,
           "pancakeQuantity": 0,
           "pancakeProductId": "1d8c02a1-60d8-47de-a511-4d23365205fa",
@@ -6512,7 +6512,7 @@
         {
           "key": "product|variant-1786369151483|XS",
           "sku": "NÂU-DARK-CHOCOLATE-XS",
-          "quantity": 0,
+          "quantity": 5,
           "publishQuantity": 2,
           "pancakeQuantity": 7,
           "pancakeProductId": "1d8c02a1-60d8-47de-a511-4d23365205fa",
@@ -6525,7 +6525,7 @@
         {
           "key": "product|variant-1786369151483|S",
           "sku": "NÂU-DARK-CHOCOLATE-S",
-          "quantity": 0,
+          "quantity": 24,
           "publishQuantity": 10,
           "pancakeQuantity": 26,
           "pancakeProductId": "1d8c02a1-60d8-47de-a511-4d23365205fa",
@@ -6538,7 +6538,7 @@
         {
           "key": "product|variant-1786369151483|M",
           "sku": "NÂU-DARK-CHOCOLATE-M",
-          "quantity": 0,
+          "quantity": 33,
           "publishQuantity": 10,
           "pancakeQuantity": 33,
           "pancakeProductId": "1d8c02a1-60d8-47de-a511-4d23365205fa",
@@ -6551,7 +6551,7 @@
         {
           "key": "product|variant-1786369151483|L",
           "sku": "NÂU-DARK-CHOCOLATE-L",
-          "quantity": 0,
+          "quantity": 33,
           "publishQuantity": 10,
           "pancakeQuantity": 33,
           "pancakeProductId": "1d8c02a1-60d8-47de-a511-4d23365205fa",
@@ -6564,7 +6564,7 @@
         {
           "key": "product|variant-1786369151483|XL",
           "sku": "NÂU-DARK-CHOCOLATE-XL",
-          "quantity": 0,
+          "quantity": 18,
           "publishQuantity": 5,
           "pancakeQuantity": 18,
           "pancakeProductId": "1d8c02a1-60d8-47de-a511-4d23365205fa",
@@ -6636,7 +6636,7 @@
         {
           "key": "product|variant-1785737591662|S",
           "sku": "ĐEN-S",
-          "quantity": 0,
+          "quantity": 16,
           "publishQuantity": 0,
           "pancakeQuantity": 25,
           "pancakeProductId": "8003008a-8910-48c3-8a93-45a1e1251b40",
@@ -6662,7 +6662,7 @@
         {
           "key": "product|variant-1785737591662|L",
           "sku": "ĐEN-L",
-          "quantity": 0,
+          "quantity": 32,
           "publishQuantity": 2,
           "pancakeQuantity": 47,
           "pancakeProductId": "8003008a-8910-48c3-8a93-45a1e1251b40",
@@ -6675,7 +6675,7 @@
         {
           "key": "product|variant-1785737591662|XL",
           "sku": "ĐEN-XL",
-          "quantity": 0,
+          "quantity": 1,
           "publishQuantity": 0,
           "pancakeQuantity": 16,
           "pancakeProductId": "8003008a-8910-48c3-8a93-45a1e1251b40",
@@ -6701,7 +6701,7 @@
         {
           "key": "product|variant-1785737597518|S",
           "sku": "XÁM-S",
-          "quantity": 0,
+          "quantity": 3,
           "publishQuantity": 0,
           "pancakeQuantity": 7,
           "pancakeProductId": "8003008a-8910-48c3-8a93-45a1e1251b40",
@@ -6714,7 +6714,7 @@
         {
           "key": "product|variant-1785737597518|M",
           "sku": "XÁM-M",
-          "quantity": 0,
+          "quantity": 1,
           "publishQuantity": 0,
           "pancakeQuantity": 7,
           "pancakeProductId": "8003008a-8910-48c3-8a93-45a1e1251b40",
@@ -6727,7 +6727,7 @@
         {
           "key": "product|variant-1785737597518|L",
           "sku": "XÁM-L",
-          "quantity": 0,
+          "quantity": 5,
           "publishQuantity": 0,
           "pancakeQuantity": 14,
           "pancakeProductId": "8003008a-8910-48c3-8a93-45a1e1251b40",
@@ -6740,7 +6740,7 @@
         {
           "key": "product|variant-1785737597518|XL",
           "sku": "XÁM-XL",
-          "quantity": 0,
+          "quantity": 1,
           "publishQuantity": 1,
           "pancakeQuantity": 3,
           "pancakeProductId": "8003008a-8910-48c3-8a93-45a1e1251b40",
@@ -6753,7 +6753,7 @@
         {
           "key": "product|variant-1785737597518|XXL",
           "sku": "XÁM-XXL",
-          "quantity": 0,
+          "quantity": 1,
           "publishQuantity": 0,
           "pancakeQuantity": 2,
           "pancakeProductId": "8003008a-8910-48c3-8a93-45a1e1251b40",
@@ -6766,7 +6766,7 @@
         {
           "key": "product|variant-1785737594766|S",
           "sku": "TRẮNG-S",
-          "quantity": 0,
+          "quantity": 4,
           "publishQuantity": 0,
           "pancakeQuantity": 14,
           "pancakeProductId": "8003008a-8910-48c3-8a93-45a1e1251b40",
@@ -6779,7 +6779,7 @@
         {
           "key": "product|variant-1785737594766|M",
           "sku": "TRẮNG-M",
-          "quantity": 0,
+          "quantity": 5,
           "publishQuantity": 0,
           "pancakeQuantity": 14,
           "pancakeProductId": "8003008a-8910-48c3-8a93-45a1e1251b40",
@@ -6792,7 +6792,7 @@
         {
           "key": "product|variant-1785737594766|L",
           "sku": "TRẮNG-L",
-          "quantity": 0,
+          "quantity": 23,
           "publishQuantity": 2,
           "pancakeQuantity": 33,
           "pancakeProductId": "8003008a-8910-48c3-8a93-45a1e1251b40",
@@ -6805,7 +6805,7 @@
         {
           "key": "product|variant-1785737594766|XL",
           "sku": "TRẮNG-XL",
-          "quantity": 0,
+          "quantity": 2,
           "publishQuantity": 0,
           "pancakeQuantity": 13,
           "pancakeProductId": "8003008a-8910-48c3-8a93-45a1e1251b40",
@@ -6818,7 +6818,7 @@
         {
           "key": "product|variant-1785737594766|XXL",
           "sku": "TRẮNG-XXL",
-          "quantity": 0,
+          "quantity": 9,
           "publishQuantity": 0,
           "pancakeQuantity": 15,
           "pancakeProductId": "8003008a-8910-48c3-8a93-45a1e1251b40",
@@ -6925,7 +6925,7 @@
         {
           "key": "product|variant-1783924838338|S",
           "sku": "ĐEN-S",
-          "quantity": 0,
+          "quantity": 21,
           "publishQuantity": 0,
           "pancakeQuantity": 53,
           "pancakeProductId": "a504a82b-a01c-4be9-9602-a9ec0f72bf64",
@@ -6938,7 +6938,7 @@
         {
           "key": "product|variant-1783924838338|M",
           "sku": "ĐEN-M",
-          "quantity": 0,
+          "quantity": 53,
           "publishQuantity": 0,
           "pancakeQuantity": 43,
           "pancakeProductId": "a504a82b-a01c-4be9-9602-a9ec0f72bf64",
@@ -6951,7 +6951,7 @@
         {
           "key": "product|variant-1783924838338|L",
           "sku": "ĐEN-L",
-          "quantity": 0,
+          "quantity": 67,
           "publishQuantity": 0,
           "pancakeQuantity": 69,
           "pancakeProductId": "a504a82b-a01c-4be9-9602-a9ec0f72bf64",
@@ -6964,7 +6964,7 @@
         {
           "key": "product|variant-1783924838338|XL",
           "sku": "ĐEN-XL",
-          "quantity": 0,
+          "quantity": 30,
           "publishQuantity": 2,
           "pancakeQuantity": 54,
           "pancakeProductId": "a504a82b-a01c-4be9-9602-a9ec0f72bf64",
@@ -6977,7 +6977,7 @@
         {
           "key": "product|variant-1783924838338|XXL",
           "sku": "ĐEN-XXL",
-          "quantity": 0,
+          "quantity": 25,
           "publishQuantity": 1,
           "pancakeQuantity": 77,
           "pancakeProductId": "a504a82b-a01c-4be9-9602-a9ec0f72bf64",
@@ -6990,7 +6990,7 @@
         {
           "key": "product|variant-1783924841378|S",
           "sku": "TRẮNG-S",
-          "quantity": 0,
+          "quantity": 18,
           "publishQuantity": 0,
           "pancakeQuantity": 31,
           "pancakeProductId": "a504a82b-a01c-4be9-9602-a9ec0f72bf64",
@@ -7003,7 +7003,7 @@
         {
           "key": "product|variant-1783924841378|M",
           "sku": "TRẮNG-M",
-          "quantity": 0,
+          "quantity": 8,
           "publishQuantity": 0,
           "pancakeQuantity": 18,
           "pancakeProductId": "a504a82b-a01c-4be9-9602-a9ec0f72bf64",
@@ -7016,7 +7016,7 @@
         {
           "key": "product|variant-1783924841378|L",
           "sku": "TRẮNG-L",
-          "quantity": 0,
+          "quantity": 3,
           "publishQuantity": 1,
           "pancakeQuantity": 17,
           "pancakeProductId": "a504a82b-a01c-4be9-9602-a9ec0f72bf64",
@@ -7029,7 +7029,7 @@
         {
           "key": "product|variant-1783924841378|XL",
           "sku": "TRẮNG-XL",
-          "quantity": 0,
+          "quantity": 58,
           "publishQuantity": 0,
           "pancakeQuantity": 64,
           "pancakeProductId": "a504a82b-a01c-4be9-9602-a9ec0f72bf64",
@@ -7042,7 +7042,7 @@
         {
           "key": "product|variant-1783924841378|XXL",
           "sku": "TRẮNG-XXL",
-          "quantity": 0,
+          "quantity": 55,
           "publishQuantity": 2,
           "pancakeQuantity": 62,
           "pancakeProductId": "a504a82b-a01c-4be9-9602-a9ec0f72bf64",
@@ -7055,7 +7055,7 @@
         {
           "key": "product|variant-1783924843778|S",
           "sku": "XÁM-S",
-          "quantity": 0,
+          "quantity": 25,
           "publishQuantity": 1,
           "pancakeQuantity": 34,
           "pancakeProductId": "a504a82b-a01c-4be9-9602-a9ec0f72bf64",
@@ -7068,7 +7068,7 @@
         {
           "key": "product|variant-1783924843778|M",
           "sku": "XÁM-M",
-          "quantity": 0,
+          "quantity": 19,
           "publishQuantity": 4,
           "pancakeQuantity": 31,
           "pancakeProductId": "a504a82b-a01c-4be9-9602-a9ec0f72bf64",
@@ -7081,7 +7081,7 @@
         {
           "key": "product|variant-1783924843778|L",
           "sku": "XÁM-L",
-          "quantity": 0,
+          "quantity": 13,
           "publishQuantity": 4,
           "pancakeQuantity": 23,
           "pancakeProductId": "a504a82b-a01c-4be9-9602-a9ec0f72bf64",
@@ -7094,7 +7094,7 @@
         {
           "key": "product|variant-1783924843778|XL",
           "sku": "XÁM-XL",
-          "quantity": 0,
+          "quantity": 38,
           "publishQuantity": 4,
           "pancakeQuantity": 51,
           "pancakeProductId": "a504a82b-a01c-4be9-9602-a9ec0f72bf64",
@@ -7107,7 +7107,7 @@
         {
           "key": "product|variant-1783924843778|XXL",
           "sku": "XÁM-XXL",
-          "quantity": 0,
+          "quantity": 17,
           "publishQuantity": 4,
           "pancakeQuantity": 27,
           "pancakeProductId": "a504a82b-a01c-4be9-9602-a9ec0f72bf64",
@@ -7120,7 +7120,7 @@
         {
           "key": "product|variant-1783924849203|S",
           "sku": "XÁM-CARBON-S",
-          "quantity": 0,
+          "quantity": 37,
           "publishQuantity": 5,
           "pancakeQuantity": 47,
           "pancakeProductId": "a504a82b-a01c-4be9-9602-a9ec0f72bf64",
@@ -7133,7 +7133,7 @@
         {
           "key": "product|variant-1783924849203|M",
           "sku": "XÁM-CARBON-M",
-          "quantity": 0,
+          "quantity": 1,
           "publishQuantity": 0,
           "pancakeQuantity": 53,
           "pancakeProductId": "a504a82b-a01c-4be9-9602-a9ec0f72bf64",
@@ -7146,7 +7146,7 @@
         {
           "key": "product|variant-1783924849203|L",
           "sku": "XÁM-CARBON-L",
-          "quantity": 0,
+          "quantity": 6,
           "publishQuantity": 5,
           "pancakeQuantity": 27,
           "pancakeProductId": "a504a82b-a01c-4be9-9602-a9ec0f72bf64",
@@ -7159,7 +7159,7 @@
         {
           "key": "product|variant-1783924849203|XL",
           "sku": "XÁM-CARBON-XL",
-          "quantity": 0,
+          "quantity": 24,
           "publishQuantity": 5,
           "pancakeQuantity": 54,
           "pancakeProductId": "a504a82b-a01c-4be9-9602-a9ec0f72bf64",
@@ -7172,7 +7172,7 @@
         {
           "key": "product|variant-1783924849203|XXL",
           "sku": "XÁM-CARBON-XXL",
-          "quantity": 0,
+          "quantity": 8,
           "publishQuantity": 4,
           "pancakeQuantity": 19,
           "pancakeProductId": "a504a82b-a01c-4be9-9602-a9ec0f72bf64",
@@ -7185,7 +7185,7 @@
         {
           "key": "product|variant-1783924854746|S",
           "sku": "XANH-BLUE-WHALE-S",
-          "quantity": 0,
+          "quantity": 6,
           "publishQuantity": 4,
           "pancakeQuantity": 25,
           "pancakeProductId": "a504a82b-a01c-4be9-9602-a9ec0f72bf64",
@@ -7198,7 +7198,7 @@
         {
           "key": "product|variant-1783924854746|M",
           "sku": "XANH-BLUE-WHALE-M",
-          "quantity": 0,
+          "quantity": 30,
           "publishQuantity": 5,
           "pancakeQuantity": 36,
           "pancakeProductId": "a504a82b-a01c-4be9-9602-a9ec0f72bf64",
@@ -7211,7 +7211,7 @@
         {
           "key": "product|variant-1783924854746|L",
           "sku": "XANH-BLUE-WHALE-L",
-          "quantity": 0,
+          "quantity": 40,
           "publishQuantity": 3,
           "pancakeQuantity": 53,
           "pancakeProductId": "a504a82b-a01c-4be9-9602-a9ec0f72bf64",
@@ -7224,7 +7224,7 @@
         {
           "key": "product|variant-1783924854746|XL",
           "sku": "XANH-BLUE-WHALE-XL",
-          "quantity": 0,
+          "quantity": 21,
           "publishQuantity": 5,
           "pancakeQuantity": 46,
           "pancakeProductId": "a504a82b-a01c-4be9-9602-a9ec0f72bf64",
@@ -7237,7 +7237,7 @@
         {
           "key": "product|variant-1783924854746|XXL",
           "sku": "XANH-BLUE-WHALE-XXL",
-          "quantity": 0,
+          "quantity": 31,
           "publishQuantity": 5,
           "pancakeQuantity": 56,
           "pancakeProductId": "a504a82b-a01c-4be9-9602-a9ec0f72bf64",
@@ -7250,7 +7250,7 @@
         {
           "key": "product|variant-1783924861450|S",
           "sku": "XANH-DEEP-FOREST-S",
-          "quantity": 0,
+          "quantity": 26,
           "publishQuantity": 5,
           "pancakeQuantity": 32,
           "pancakeProductId": "a504a82b-a01c-4be9-9602-a9ec0f72bf64",
@@ -7263,7 +7263,7 @@
         {
           "key": "product|variant-1783924861450|M",
           "sku": "XANH-DEEP-FOREST-M",
-          "quantity": 0,
+          "quantity": 53,
           "publishQuantity": 4,
           "pancakeQuantity": 40,
           "pancakeProductId": "a504a82b-a01c-4be9-9602-a9ec0f72bf64",
@@ -7276,7 +7276,7 @@
         {
           "key": "product|variant-1783924861450|L",
           "sku": "XANH-DEEP-FOREST-L",
-          "quantity": 0,
+          "quantity": 12,
           "publishQuantity": 4,
           "pancakeQuantity": 16,
           "pancakeProductId": "a504a82b-a01c-4be9-9602-a9ec0f72bf64",
@@ -7289,7 +7289,7 @@
         {
           "key": "product|variant-1783924861450|XL",
           "sku": "XANH-DEEP-FOREST-XL",
-          "quantity": 0,
+          "quantity": 28,
           "publishQuantity": 4,
           "pancakeQuantity": 37,
           "pancakeProductId": "a504a82b-a01c-4be9-9602-a9ec0f72bf64",
@@ -7302,7 +7302,7 @@
         {
           "key": "product|variant-1783924861450|XXL",
           "sku": "XANH-DEEP-FOREST-XXL",
-          "quantity": 0,
+          "quantity": 5,
           "publishQuantity": 5,
           "pancakeQuantity": 26,
           "pancakeProductId": "a504a82b-a01c-4be9-9602-a9ec0f72bf64",
@@ -7315,7 +7315,7 @@
         {
           "key": "product|variant-1783924867042|S",
           "sku": "NAU-DARK-CHOCO-S",
-          "quantity": 0,
+          "quantity": 57,
           "publishQuantity": 4,
           "pancakeQuantity": 69,
           "pancakeProductId": "a504a82b-a01c-4be9-9602-a9ec0f72bf64",
@@ -7328,7 +7328,7 @@
         {
           "key": "product|variant-1783924867042|M",
           "sku": "NAU-DARK-CHOCO-M",
-          "quantity": 0,
+          "quantity": 68,
           "publishQuantity": 5,
           "pancakeQuantity": 57,
           "pancakeProductId": "a504a82b-a01c-4be9-9602-a9ec0f72bf64",
@@ -7341,7 +7341,7 @@
         {
           "key": "product|variant-1783924867042|L",
           "sku": "NAU-DARK-CHOCO-L",
-          "quantity": 0,
+          "quantity": 62,
           "publishQuantity": 5,
           "pancakeQuantity": 61,
           "pancakeProductId": "a504a82b-a01c-4be9-9602-a9ec0f72bf64",
@@ -7354,7 +7354,7 @@
         {
           "key": "product|variant-1783924867042|XL",
           "sku": "NAU-DARK-CHOCO-XL",
-          "quantity": 0,
+          "quantity": 24,
           "publishQuantity": 5,
           "pancakeQuantity": 53,
           "pancakeProductId": "a504a82b-a01c-4be9-9602-a9ec0f72bf64",
@@ -7367,7 +7367,7 @@
         {
           "key": "product|variant-1783924867042|XXL",
           "sku": "NAU-DARK-CHOCO-XXL",
-          "quantity": 0,
+          "quantity": 13,
           "publishQuantity": 5,
           "pancakeQuantity": 24,
           "pancakeProductId": "a504a82b-a01c-4be9-9602-a9ec0f72bf64",
@@ -7380,7 +7380,7 @@
         {
           "key": "product|variant-1783924870146|S",
           "sku": "SA-MẠC-S",
-          "quantity": 0,
+          "quantity": 21,
           "publishQuantity": 4,
           "pancakeQuantity": 25,
           "pancakeProductId": "a504a82b-a01c-4be9-9602-a9ec0f72bf64",
@@ -7393,7 +7393,7 @@
         {
           "key": "product|variant-1783924870146|M",
           "sku": "SA-MẠC-M",
-          "quantity": 0,
+          "quantity": 18,
           "publishQuantity": 5,
           "pancakeQuantity": 35,
           "pancakeProductId": "a504a82b-a01c-4be9-9602-a9ec0f72bf64",
@@ -7406,7 +7406,7 @@
         {
           "key": "product|variant-1783924870146|L",
           "sku": "SA-MẠC-L",
-          "quantity": 0,
+          "quantity": 31,
           "publishQuantity": 4,
           "pancakeQuantity": 40,
           "pancakeProductId": "a504a82b-a01c-4be9-9602-a9ec0f72bf64",
@@ -7419,7 +7419,7 @@
         {
           "key": "product|variant-1783924870146|XL",
           "sku": "SA-MẠC-XL",
-          "quantity": 0,
+          "quantity": 13,
           "publishQuantity": 5,
           "pancakeQuantity": 37,
           "pancakeProductId": "a504a82b-a01c-4be9-9602-a9ec0f72bf64",
@@ -7432,7 +7432,7 @@
         {
           "key": "product|variant-1783924870146|XXL",
           "sku": "SA-MẠC-XXL",
-          "quantity": 0,
+          "quantity": 19,
           "publishQuantity": 5,
           "pancakeQuantity": 21,
           "pancakeProductId": "a504a82b-a01c-4be9-9602-a9ec0f72bf64",
@@ -7514,7 +7514,7 @@
         {
           "key": "product|variant-1783928949879|S",
           "sku": "ĐEN-S",
-          "quantity": 0,
+          "quantity": 22,
           "publishQuantity": 10,
           "pancakeQuantity": 31,
           "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
@@ -7527,7 +7527,7 @@
         {
           "key": "product|variant-1783928949879|M",
           "sku": "ĐEN-M",
-          "quantity": 0,
+          "quantity": 53,
           "publishQuantity": 9,
           "pancakeQuantity": 2,
           "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
@@ -7540,7 +7540,7 @@
         {
           "key": "product|variant-1783928949879|L",
           "sku": "ĐEN-L",
-          "quantity": 0,
+          "quantity": 26,
           "publishQuantity": 10,
           "pancakeQuantity": 11,
           "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
@@ -7553,7 +7553,7 @@
         {
           "key": "product|variant-1783928949879|XL",
           "sku": "ĐEN-XL",
-          "quantity": 0,
+          "quantity": 41,
           "publishQuantity": 10,
           "pancakeQuantity": 22,
           "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
@@ -7566,7 +7566,7 @@
         {
           "key": "product|variant-1783928949879|XXL",
           "sku": "ĐEN-XXL",
-          "quantity": 0,
+          "quantity": 28,
           "publishQuantity": 5,
           "pancakeQuantity": 0,
           "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
@@ -7579,7 +7579,7 @@
         {
           "key": "product|variant-1783928952822|S",
           "sku": "TRẮNG-S",
-          "quantity": 0,
+          "quantity": 1,
           "publishQuantity": 0,
           "pancakeQuantity": 4,
           "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
@@ -7618,7 +7618,7 @@
         {
           "key": "product|variant-1783928952822|XL",
           "sku": "TRẮNG-XL",
-          "quantity": 0,
+          "quantity": 29,
           "publishQuantity": 1,
           "pancakeQuantity": 36,
           "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
@@ -7631,7 +7631,7 @@
         {
           "key": "product|variant-1783928952822|XXL",
           "sku": "TRẮNG-XXL",
-          "quantity": 0,
+          "quantity": 42,
           "publishQuantity": 4,
           "pancakeQuantity": 44,
           "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
@@ -7644,7 +7644,7 @@
         {
           "key": "product|variant-1783928955190|S",
           "sku": "XÁM-S",
-          "quantity": 0,
+          "quantity": 5,
           "publishQuantity": 0,
           "pancakeQuantity": 5,
           "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
@@ -7657,7 +7657,7 @@
         {
           "key": "product|variant-1783928955190|M",
           "sku": "XÁM-M",
-          "quantity": 0,
+          "quantity": 30,
           "publishQuantity": 0,
           "pancakeQuantity": 34,
           "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
@@ -7670,7 +7670,7 @@
         {
           "key": "product|variant-1783928955190|L",
           "sku": "XÁM-L",
-          "quantity": 0,
+          "quantity": 22,
           "publishQuantity": 1,
           "pancakeQuantity": 25,
           "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
@@ -7683,7 +7683,7 @@
         {
           "key": "product|variant-1783928955190|XL",
           "sku": "XÁM-XL",
-          "quantity": 0,
+          "quantity": 8,
           "publishQuantity": 0,
           "pancakeQuantity": 11,
           "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
@@ -7696,7 +7696,7 @@
         {
           "key": "product|variant-1783928955190|XXL",
           "sku": "XÁM-XXL",
-          "quantity": 0,
+          "quantity": 20,
           "publishQuantity": 4,
           "pancakeQuantity": 23,
           "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
@@ -7709,7 +7709,7 @@
         {
           "key": "product|variant-1783928959238|S",
           "sku": "XÁM-GHI-S",
-          "quantity": 0,
+          "quantity": 4,
           "publishQuantity": 0,
           "pancakeQuantity": 5,
           "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
@@ -7735,7 +7735,7 @@
         {
           "key": "product|variant-1783928959238|L",
           "sku": "XÁM-GHI-L",
-          "quantity": 0,
+          "quantity": 4,
           "publishQuantity": 0,
           "pancakeQuantity": 4,
           "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
@@ -7761,7 +7761,7 @@
         {
           "key": "product|variant-1783928959238|XXL",
           "sku": "XÁM-GHI-XXL",
-          "quantity": 0,
+          "quantity": 6,
           "publishQuantity": 0,
           "pancakeQuantity": 8,
           "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
@@ -7774,7 +7774,7 @@
         {
           "key": "product|variant-1783929018934|S",
           "sku": "XÁM-CARBON-S",
-          "quantity": 0,
+          "quantity": 17,
           "publishQuantity": 4,
           "pancakeQuantity": 19,
           "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
@@ -7787,7 +7787,7 @@
         {
           "key": "product|variant-1783929018934|M",
           "sku": "XÁM-CARBON-M",
-          "quantity": 0,
+          "quantity": 34,
           "publishQuantity": 2,
           "pancakeQuantity": 39,
           "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
@@ -7800,7 +7800,7 @@
         {
           "key": "product|variant-1783929018934|L",
           "sku": "XÁM-CARBON-L",
-          "quantity": 0,
+          "quantity": 22,
           "publishQuantity": 5,
           "pancakeQuantity": 31,
           "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
@@ -7826,7 +7826,7 @@
         {
           "key": "product|variant-1783929018934|XXL",
           "sku": "XÁM-CARBON-XXL",
-          "quantity": 0,
+          "quantity": 3,
           "publishQuantity": 0,
           "pancakeQuantity": 5,
           "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
@@ -7839,7 +7839,7 @@
         {
           "key": "product|variant-1783929025678|S",
           "sku": "XANH-BLUE-WHALE-S",
-          "quantity": 0,
+          "quantity": 8,
           "publishQuantity": 0,
           "pancakeQuantity": 9,
           "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
@@ -7852,7 +7852,7 @@
         {
           "key": "product|variant-1783929025678|M",
           "sku": "XANH-BLUE-WHALE-M",
-          "quantity": 0,
+          "quantity": 3,
           "publishQuantity": 0,
           "pancakeQuantity": 7,
           "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
@@ -7865,7 +7865,7 @@
         {
           "key": "product|variant-1783929025678|L",
           "sku": "XANH-BLUE-WHALE-L",
-          "quantity": 0,
+          "quantity": 7,
           "publishQuantity": 4,
           "pancakeQuantity": 18,
           "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
@@ -7904,7 +7904,7 @@
         {
           "key": "product|variant-1783929029238|S",
           "sku": "XÁM-TIÊU-S",
-          "quantity": 0,
+          "quantity": 1,
           "publishQuantity": 0,
           "pancakeQuantity": 2,
           "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
@@ -7917,7 +7917,7 @@
         {
           "key": "product|variant-1783929029238|M",
           "sku": "XÁM-TIÊU-M",
-          "quantity": 0,
+          "quantity": 4,
           "publishQuantity": 0,
           "pancakeQuantity": 3,
           "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
@@ -7930,7 +7930,7 @@
         {
           "key": "product|variant-1783929029238|L",
           "sku": "XÁM-TIÊU-L",
-          "quantity": 0,
+          "quantity": 6,
           "publishQuantity": 0,
           "pancakeQuantity": 12,
           "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
@@ -7956,7 +7956,7 @@
         {
           "key": "product|variant-1783929029238|XXL",
           "sku": "XÁM-TIÊU-XXL",
-          "quantity": 0,
+          "quantity": 7,
           "publishQuantity": 0,
           "pancakeQuantity": 8,
           "pancakeProductId": "7e893f51-61d8-4669-af71-6847b7ac12a4",
@@ -8039,7 +8039,7 @@
         {
           "key": "product|variant-1783928458279|S",
           "sku": "XÁM-WASH-S",
-          "quantity": 0,
+          "quantity": 23,
           "publishQuantity": 0,
           "pancakeQuantity": 23,
           "pancakeProductId": "265b0390-7937-4f9b-8510-fdfd8874b0b1",
@@ -8052,7 +8052,7 @@
         {
           "key": "product|variant-1783928458279|M",
           "sku": "XÁM-WASH-M",
-          "quantity": 0,
+          "quantity": 22,
           "publishQuantity": 0,
           "pancakeQuantity": 22,
           "pancakeProductId": "265b0390-7937-4f9b-8510-fdfd8874b0b1",
@@ -8065,7 +8065,7 @@
         {
           "key": "product|variant-1783928458279|L",
           "sku": "XÁM-WASH-L",
-          "quantity": 0,
+          "quantity": 21,
           "publishQuantity": 1,
           "pancakeQuantity": 21,
           "pancakeProductId": "265b0390-7937-4f9b-8510-fdfd8874b0b1",
@@ -8104,7 +8104,7 @@
         {
           "key": "product|variant-1783928463143|S",
           "sku": "SA-MẠC-WASH-S",
-          "quantity": 0,
+          "quantity": 21,
           "publishQuantity": 0,
           "pancakeQuantity": 21,
           "pancakeProductId": "265b0390-7937-4f9b-8510-fdfd8874b0b1",
@@ -8117,7 +8117,7 @@
         {
           "key": "product|variant-1783928463143|M",
           "sku": "SA-MẠC-WASH-M",
-          "quantity": 0,
+          "quantity": 18,
           "publishQuantity": 1,
           "pancakeQuantity": 18,
           "pancakeProductId": "265b0390-7937-4f9b-8510-fdfd8874b0b1",
@@ -8130,7 +8130,7 @@
         {
           "key": "product|variant-1783928463143|L",
           "sku": "SA-MẠC-WASH-L",
-          "quantity": 0,
+          "quantity": 18,
           "publishQuantity": 0,
           "pancakeQuantity": 18,
           "pancakeProductId": "265b0390-7937-4f9b-8510-fdfd8874b0b1",
@@ -8156,7 +8156,7 @@
         {
           "key": "product|variant-1784364657779|XS",
           "sku": "XÁM-CARBON-WASH-XS",
-          "quantity": 0,
+          "quantity": 7,
           "publishQuantity": 0,
           "pancakeQuantity": 8,
           "pancakeProductId": "265b0390-7937-4f9b-8510-fdfd8874b0b1",
@@ -8182,7 +8182,7 @@
         {
           "key": "product|variant-1784364657779|M",
           "sku": "XÁM-CARBON-WASH-M",
-          "quantity": 0,
+          "quantity": 1,
           "publishQuantity": 1,
           "pancakeQuantity": 1,
           "pancakeProductId": "265b0390-7937-4f9b-8510-fdfd8874b0b1",
@@ -8195,7 +8195,7 @@
         {
           "key": "product|variant-1784364657779|L",
           "sku": "XÁM-CARBON-WASH-L",
-          "quantity": 0,
+          "quantity": 1,
           "publishQuantity": 0,
           "pancakeQuantity": 1,
           "pancakeProductId": "265b0390-7937-4f9b-8510-fdfd8874b0b1",
@@ -8221,7 +8221,7 @@
         {
           "key": "product|variant-1783928452287|XS",
           "sku": "NÂU-DARK-CHOCO-WASH-XS",
-          "quantity": 0,
+          "quantity": 17,
           "publishQuantity": 0,
           "pancakeQuantity": 17,
           "pancakeProductId": "265b0390-7937-4f9b-8510-fdfd8874b0b1",
@@ -8234,7 +8234,7 @@
         {
           "key": "product|variant-1783928452287|S",
           "sku": "NÂU-DARK-CHOCO-WASH-S",
-          "quantity": 0,
+          "quantity": 23,
           "publishQuantity": 0,
           "pancakeQuantity": 28,
           "pancakeProductId": "265b0390-7937-4f9b-8510-fdfd8874b0b1",
@@ -8247,7 +8247,7 @@
         {
           "key": "product|variant-1783928452287|M",
           "sku": "NÂU-DARK-CHOCO-WASH-M",
-          "quantity": 0,
+          "quantity": 3,
           "publishQuantity": 1,
           "pancakeQuantity": 3,
           "pancakeProductId": "265b0390-7937-4f9b-8510-fdfd8874b0b1",
@@ -8260,7 +8260,7 @@
         {
           "key": "product|variant-1783928452287|L",
           "sku": "NÂU-DARK-CHOCO-WASH-L",
-          "quantity": 0,
+          "quantity": 5,
           "publishQuantity": 0,
           "pancakeQuantity": 10,
           "pancakeProductId": "265b0390-7937-4f9b-8510-fdfd8874b0b1",
@@ -8355,7 +8355,7 @@
         {
           "key": "product|variant-1783923808739|S",
           "sku": "ĐEN-S",
-          "quantity": 0,
+          "quantity": 5,
           "publishQuantity": 1,
           "pancakeQuantity": 63,
           "pancakeProductId": "d660f36f-a505-4ea3-bcf6-961180779241",
@@ -8459,7 +8459,7 @@
         {
           "key": "product|variant-1783923815179|L",
           "sku": "SA-MẠC-L",
-          "quantity": 0,
+          "quantity": 11,
           "publishQuantity": 0,
           "pancakeQuantity": 14,
           "pancakeProductId": "d660f36f-a505-4ea3-bcf6-961180779241",
@@ -8619,7 +8619,7 @@
         {
           "key": "product|variant-1783924024651|S",
           "sku": "ĐEN-S",
-          "quantity": 0,
+          "quantity": 52,
           "publishQuantity": 10,
           "pancakeQuantity": 52,
           "pancakeProductId": "83d09eb9-246e-4aa1-b3ef-9a8f9e8ffa2b",
@@ -8632,7 +8632,7 @@
         {
           "key": "product|variant-1783924024651|M",
           "sku": "ĐEN-M",
-          "quantity": 0,
+          "quantity": 56,
           "publishQuantity": 4,
           "pancakeQuantity": 37,
           "pancakeProductId": "83d09eb9-246e-4aa1-b3ef-9a8f9e8ffa2b",
@@ -8645,7 +8645,7 @@
         {
           "key": "product|variant-1783924024651|L",
           "sku": "ĐEN-L",
-          "quantity": 0,
+          "quantity": 39,
           "publishQuantity": 5,
           "pancakeQuantity": 49,
           "pancakeProductId": "83d09eb9-246e-4aa1-b3ef-9a8f9e8ffa2b",
@@ -8658,7 +8658,7 @@
         {
           "key": "product|variant-1783924024651|XL",
           "sku": "ĐEN-XL",
-          "quantity": 0,
+          "quantity": 53,
           "publishQuantity": 5,
           "pancakeQuantity": 50,
           "pancakeProductId": "83d09eb9-246e-4aa1-b3ef-9a8f9e8ffa2b",
@@ -8671,7 +8671,7 @@
         {
           "key": "product|variant-1783924028699|S",
           "sku": "TRẮNG-S",
-          "quantity": 0,
+          "quantity": 51,
           "publishQuantity": 5,
           "pancakeQuantity": 55,
           "pancakeProductId": "83d09eb9-246e-4aa1-b3ef-9a8f9e8ffa2b",
@@ -8684,7 +8684,7 @@
         {
           "key": "product|variant-1783924028699|M",
           "sku": "TRẮNG-M",
-          "quantity": 0,
+          "quantity": 94,
           "publishQuantity": 4,
           "pancakeQuantity": 109,
           "pancakeProductId": "83d09eb9-246e-4aa1-b3ef-9a8f9e8ffa2b",
@@ -8697,7 +8697,7 @@
         {
           "key": "product|variant-1783924028699|L",
           "sku": "TRẮNG-L",
-          "quantity": 0,
+          "quantity": 83,
           "publishQuantity": 5,
           "pancakeQuantity": 94,
           "pancakeProductId": "83d09eb9-246e-4aa1-b3ef-9a8f9e8ffa2b",
@@ -8710,7 +8710,7 @@
         {
           "key": "product|variant-1783924028699|XL",
           "sku": "TRẮNG-XL",
-          "quantity": 0,
+          "quantity": 42,
           "publishQuantity": 5,
           "pancakeQuantity": 47,
           "pancakeProductId": "83d09eb9-246e-4aa1-b3ef-9a8f9e8ffa2b",
@@ -8723,7 +8723,7 @@
         {
           "key": "product|variant-1783924031123|S",
           "sku": "XÁM-S",
-          "quantity": 0,
+          "quantity": 78,
           "publishQuantity": 5,
           "pancakeQuantity": 78,
           "pancakeProductId": "83d09eb9-246e-4aa1-b3ef-9a8f9e8ffa2b",
@@ -8736,7 +8736,7 @@
         {
           "key": "product|variant-1783924031123|M",
           "sku": "XÁM-M",
-          "quantity": 0,
+          "quantity": 48,
           "publishQuantity": 5,
           "pancakeQuantity": 53,
           "pancakeProductId": "83d09eb9-246e-4aa1-b3ef-9a8f9e8ffa2b",
@@ -8749,7 +8749,7 @@
         {
           "key": "product|variant-1783924031123|L",
           "sku": "XÁM-L",
-          "quantity": 0,
+          "quantity": 68,
           "publishQuantity": 5,
           "pancakeQuantity": 73,
           "pancakeProductId": "83d09eb9-246e-4aa1-b3ef-9a8f9e8ffa2b",
@@ -8762,7 +8762,7 @@
         {
           "key": "product|variant-1783924031123|XL",
           "sku": "XÁM-XL",
-          "quantity": 0,
+          "quantity": 79,
           "publishQuantity": 5,
           "pancakeQuantity": 84,
           "pancakeProductId": "83d09eb9-246e-4aa1-b3ef-9a8f9e8ffa2b",
@@ -8775,7 +8775,7 @@
         {
           "key": "product|variant-1783924033915|S",
           "sku": "XÁM-GHI-S",
-          "quantity": 0,
+          "quantity": 43,
           "publishQuantity": 5,
           "pancakeQuantity": 45,
           "pancakeProductId": "83d09eb9-246e-4aa1-b3ef-9a8f9e8ffa2b",
@@ -8788,7 +8788,7 @@
         {
           "key": "product|variant-1783924033915|M",
           "sku": "XÁM-GHI-M",
-          "quantity": 0,
+          "quantity": 73,
           "publishQuantity": 4,
           "pancakeQuantity": 22,
           "pancakeProductId": "83d09eb9-246e-4aa1-b3ef-9a8f9e8ffa2b",
@@ -8801,7 +8801,7 @@
         {
           "key": "product|variant-1783924033915|L",
           "sku": "XÁM-GHI-L",
-          "quantity": 0,
+          "quantity": 49,
           "publishQuantity": 2,
           "pancakeQuantity": 32,
           "pancakeProductId": "83d09eb9-246e-4aa1-b3ef-9a8f9e8ffa2b",
@@ -8814,7 +8814,7 @@
         {
           "key": "product|variant-1783924033915|XL",
           "sku": "XÁM-GHI-XL",
-          "quantity": 0,
+          "quantity": 52,
           "publishQuantity": 5,
           "pancakeQuantity": 10,
           "pancakeProductId": "83d09eb9-246e-4aa1-b3ef-9a8f9e8ffa2b",
@@ -8827,7 +8827,7 @@
         {
           "key": "product|variant-1783924038867|S",
           "sku": "XÁM-CARBON-S",
-          "quantity": 0,
+          "quantity": 56,
           "publishQuantity": 5,
           "pancakeQuantity": 58,
           "pancakeProductId": "83d09eb9-246e-4aa1-b3ef-9a8f9e8ffa2b",
@@ -8840,7 +8840,7 @@
         {
           "key": "product|variant-1783924038867|M",
           "sku": "XÁM-CARBON-M",
-          "quantity": 0,
+          "quantity": 56,
           "publishQuantity": 5,
           "pancakeQuantity": 70,
           "pancakeProductId": "83d09eb9-246e-4aa1-b3ef-9a8f9e8ffa2b",
@@ -8853,7 +8853,7 @@
         {
           "key": "product|variant-1783924038867|L",
           "sku": "XÁM-CARBON-L",
-          "quantity": 0,
+          "quantity": 31,
           "publishQuantity": 4,
           "pancakeQuantity": 60,
           "pancakeProductId": "83d09eb9-246e-4aa1-b3ef-9a8f9e8ffa2b",
@@ -8866,7 +8866,7 @@
         {
           "key": "product|variant-1783924038867|XL",
           "sku": "XÁM-CARBON-XL",
-          "quantity": 0,
+          "quantity": 41,
           "publishQuantity": 5,
           "pancakeQuantity": 49,
           "pancakeProductId": "83d09eb9-246e-4aa1-b3ef-9a8f9e8ffa2b",
@@ -8879,7 +8879,7 @@
         {
           "key": "product|variant-1783924043707|S",
           "sku": "XANH-BLUE-WHALE-S",
-          "quantity": 0,
+          "quantity": 63,
           "publishQuantity": 5,
           "pancakeQuantity": 65,
           "pancakeProductId": "83d09eb9-246e-4aa1-b3ef-9a8f9e8ffa2b",
@@ -8892,7 +8892,7 @@
         {
           "key": "product|variant-1783924043707|M",
           "sku": "XANH-BLUE-WHALE-M",
-          "quantity": 0,
+          "quantity": 51,
           "publishQuantity": 5,
           "pancakeQuantity": 4,
           "pancakeProductId": "83d09eb9-246e-4aa1-b3ef-9a8f9e8ffa2b",
@@ -8905,7 +8905,7 @@
         {
           "key": "product|variant-1783924043707|L",
           "sku": "XANH-BLUE-WHALE-L",
-          "quantity": 0,
+          "quantity": 53,
           "publishQuantity": 3,
           "pancakeQuantity": 11,
           "pancakeProductId": "83d09eb9-246e-4aa1-b3ef-9a8f9e8ffa2b",
@@ -8918,7 +8918,7 @@
         {
           "key": "product|variant-1783924043707|XL",
           "sku": "XANH-BLUE-WHALE-XL",
-          "quantity": 0,
+          "quantity": 87,
           "publishQuantity": 4,
           "pancakeQuantity": 47,
           "pancakeProductId": "83d09eb9-246e-4aa1-b3ef-9a8f9e8ffa2b",
@@ -8993,7 +8993,7 @@
         {
           "key": "product|variant-1783924314627|XS",
           "sku": "TRẮNG-XS",
-          "quantity": 0,
+          "quantity": 5,
           "publishQuantity": 2,
           "pancakeQuantity": 7,
           "pancakeProductId": "283053d4-0fd3-46a6-888f-bf4ff6ea8ae0",
@@ -9006,7 +9006,7 @@
         {
           "key": "product|variant-1783924314627|S",
           "sku": "TRẮNG-S",
-          "quantity": 0,
+          "quantity": 47,
           "publishQuantity": 3,
           "pancakeQuantity": 50,
           "pancakeProductId": "283053d4-0fd3-46a6-888f-bf4ff6ea8ae0",
@@ -9019,7 +9019,7 @@
         {
           "key": "product|variant-1783924314627|M",
           "sku": "TRẮNG-M",
-          "quantity": 0,
+          "quantity": 72,
           "publishQuantity": 3,
           "pancakeQuantity": 74,
           "pancakeProductId": "283053d4-0fd3-46a6-888f-bf4ff6ea8ae0",
@@ -9032,7 +9032,7 @@
         {
           "key": "product|variant-1783924314627|L",
           "sku": "TRẮNG-L",
-          "quantity": 0,
+          "quantity": 67,
           "publishQuantity": 3,
           "pancakeQuantity": 68,
           "pancakeProductId": "283053d4-0fd3-46a6-888f-bf4ff6ea8ae0",
@@ -9045,7 +9045,7 @@
         {
           "key": "product|variant-1783924317194|XS",
           "sku": "XÁM-XS",
-          "quantity": 0,
+          "quantity": 34,
           "publishQuantity": 3,
           "pancakeQuantity": 34,
           "pancakeProductId": "283053d4-0fd3-46a6-888f-bf4ff6ea8ae0",
@@ -9058,7 +9058,7 @@
         {
           "key": "product|variant-1783924317194|S",
           "sku": "XÁM-S",
-          "quantity": 0,
+          "quantity": 33,
           "publishQuantity": 3,
           "pancakeQuantity": 33,
           "pancakeProductId": "283053d4-0fd3-46a6-888f-bf4ff6ea8ae0",
@@ -9071,7 +9071,7 @@
         {
           "key": "product|variant-1783924317194|M",
           "sku": "XÁM-M",
-          "quantity": 0,
+          "quantity": 56,
           "publishQuantity": 3,
           "pancakeQuantity": 57,
           "pancakeProductId": "283053d4-0fd3-46a6-888f-bf4ff6ea8ae0",
@@ -9084,7 +9084,7 @@
         {
           "key": "product|variant-1783924317194|L",
           "sku": "XÁM-L",
-          "quantity": 0,
+          "quantity": 26,
           "publishQuantity": 3,
           "pancakeQuantity": 31,
           "pancakeProductId": "283053d4-0fd3-46a6-888f-bf4ff6ea8ae0",
@@ -9097,7 +9097,7 @@
         {
           "key": "product|variant-1783924322915|XS",
           "sku": "XÁM-CARBON-XS",
-          "quantity": 0,
+          "quantity": 46,
           "publishQuantity": 3,
           "pancakeQuantity": 46,
           "pancakeProductId": "283053d4-0fd3-46a6-888f-bf4ff6ea8ae0",
@@ -9110,7 +9110,7 @@
         {
           "key": "product|variant-1783924322915|S",
           "sku": "XÁM-CARBON-S",
-          "quantity": 0,
+          "quantity": 47,
           "publishQuantity": 2,
           "pancakeQuantity": 49,
           "pancakeProductId": "283053d4-0fd3-46a6-888f-bf4ff6ea8ae0",
@@ -9123,7 +9123,7 @@
         {
           "key": "product|variant-1783924322915|M",
           "sku": "XÁM-CARBON-M",
-          "quantity": 0,
+          "quantity": 20,
           "publishQuantity": 3,
           "pancakeQuantity": 30,
           "pancakeProductId": "283053d4-0fd3-46a6-888f-bf4ff6ea8ae0",
@@ -9136,7 +9136,7 @@
         {
           "key": "product|variant-1783924322915|L",
           "sku": "XÁM-CARBON-L",
-          "quantity": 0,
+          "quantity": 21,
           "publishQuantity": 2,
           "pancakeQuantity": 26,
           "pancakeProductId": "283053d4-0fd3-46a6-888f-bf4ff6ea8ae0",
@@ -9149,7 +9149,7 @@
         {
           "key": "product|variant-1783924311419|XS",
           "sku": "ĐEN-XS",
-          "quantity": 0,
+          "quantity": 84,
           "publishQuantity": 8,
           "pancakeQuantity": 89,
           "pancakeProductId": "283053d4-0fd3-46a6-888f-bf4ff6ea8ae0",
@@ -9162,7 +9162,7 @@
         {
           "key": "product|variant-1783924311419|S",
           "sku": "ĐEN-S",
-          "quantity": 0,
+          "quantity": 46,
           "publishQuantity": 3,
           "pancakeQuantity": 66,
           "pancakeProductId": "283053d4-0fd3-46a6-888f-bf4ff6ea8ae0",
@@ -9175,7 +9175,7 @@
         {
           "key": "product|variant-1783924311419|M",
           "sku": "ĐEN-M",
-          "quantity": 0,
+          "quantity": 11,
           "publishQuantity": 3,
           "pancakeQuantity": 31,
           "pancakeProductId": "283053d4-0fd3-46a6-888f-bf4ff6ea8ae0",
@@ -9188,7 +9188,7 @@
         {
           "key": "product|variant-1783924311419|L",
           "sku": "ĐEN-L",
-          "quantity": 0,
+          "quantity": 9,
           "publishQuantity": 3,
           "pancakeQuantity": 29,
           "pancakeProductId": "283053d4-0fd3-46a6-888f-bf4ff6ea8ae0",
@@ -9324,7 +9324,7 @@
         {
           "key": "classification-1783927808951|variant-1783927821799|S",
           "sku": "CỔ-TRÒN-ĐEN-S",
-          "quantity": 0,
+          "quantity": 43,
           "publishQuantity": 32,
           "pancakeQuantity": 29,
           "pancakeProductId": "326b63ae-36a7-4a5d-8263-7fdebfcf8e88",
@@ -9338,7 +9338,7 @@
         {
           "key": "classification-1783927808951|variant-1783927821799|M",
           "sku": "CỔ-TRÒN-ĐEN-M",
-          "quantity": 0,
+          "quantity": 73,
           "publishQuantity": 9,
           "pancakeQuantity": 60,
           "pancakeProductId": "326b63ae-36a7-4a5d-8263-7fdebfcf8e88",
@@ -9352,7 +9352,7 @@
         {
           "key": "classification-1783927808951|variant-1783927821799|L",
           "sku": "CỔ-TRÒN-ĐEN-L",
-          "quantity": 0,
+          "quantity": 18,
           "publishQuantity": 10,
           "pancakeQuantity": 16,
           "pancakeProductId": "326b63ae-36a7-4a5d-8263-7fdebfcf8e88",
@@ -9366,7 +9366,7 @@
         {
           "key": "classification-1783927808951|variant-1783927824767|S",
           "sku": "CỔ-TRÒN-TRẮNG-S",
-          "quantity": 0,
+          "quantity": 34,
           "publishQuantity": 4,
           "pancakeQuantity": 0,
           "pancakeProductId": "326b63ae-36a7-4a5d-8263-7fdebfcf8e88",
@@ -9380,7 +9380,7 @@
         {
           "key": "classification-1783927808951|variant-1783927824767|M",
           "sku": "CỔ-TRÒN-TRẮNG-M",
-          "quantity": 0,
+          "quantity": 30,
           "publishQuantity": 5,
           "pancakeQuantity": 5,
           "pancakeProductId": "326b63ae-36a7-4a5d-8263-7fdebfcf8e88",
@@ -9394,7 +9394,7 @@
         {
           "key": "classification-1783927808951|variant-1783927824767|L",
           "sku": "CỔ-TRÒN-TRẮNG-L",
-          "quantity": 0,
+          "quantity": 57,
           "publishQuantity": 5,
           "pancakeQuantity": 41,
           "pancakeProductId": "326b63ae-36a7-4a5d-8263-7fdebfcf8e88",
@@ -9408,7 +9408,7 @@
         {
           "key": "classification-1783927808951|variant-1783927829607|S",
           "sku": "CỔ-TRÒN-XÁM-S",
-          "quantity": 0,
+          "quantity": 34,
           "publishQuantity": 5,
           "pancakeQuantity": 37,
           "pancakeProductId": "326b63ae-36a7-4a5d-8263-7fdebfcf8e88",
@@ -9422,7 +9422,7 @@
         {
           "key": "classification-1783927808951|variant-1783927829607|M",
           "sku": "CỔ-TRÒN-XÁM-M",
-          "quantity": 0,
+          "quantity": 22,
           "publishQuantity": 1,
           "pancakeQuantity": 32,
           "pancakeProductId": "326b63ae-36a7-4a5d-8263-7fdebfcf8e88",
@@ -9436,7 +9436,7 @@
         {
           "key": "classification-1783927808951|variant-1783927829607|L",
           "sku": "CỔ-TRÒN-XÁM-L",
-          "quantity": 0,
+          "quantity": 2,
           "publishQuantity": 1,
           "pancakeQuantity": 10,
           "pancakeProductId": "326b63ae-36a7-4a5d-8263-7fdebfcf8e88",
@@ -9450,7 +9450,7 @@
         {
           "key": "classification-1783927808951|variant-1783927834239|S",
           "sku": "CỔ-TRÒN-XANH-BLUE-WHALE-S",
-          "quantity": 0,
+          "quantity": 42,
           "publishQuantity": 3,
           "pancakeQuantity": 47,
           "pancakeProductId": "326b63ae-36a7-4a5d-8263-7fdebfcf8e88",
@@ -9464,7 +9464,7 @@
         {
           "key": "classification-1783927808951|variant-1783927834239|M",
           "sku": "CỔ-TRÒN-XANH-BLUE-WHALE-M",
-          "quantity": 0,
+          "quantity": 45,
           "publishQuantity": 5,
           "pancakeQuantity": 50,
           "pancakeProductId": "326b63ae-36a7-4a5d-8263-7fdebfcf8e88",
@@ -9478,7 +9478,7 @@
         {
           "key": "classification-1783927808951|variant-1783927834239|L",
           "sku": "CỔ-TRÒN-XANH-BLUE-WHALE-L",
-          "quantity": 0,
+          "quantity": 44,
           "publishQuantity": 5,
           "pancakeQuantity": 51,
           "pancakeProductId": "326b63ae-36a7-4a5d-8263-7fdebfcf8e88",
@@ -9492,7 +9492,7 @@
         {
           "key": "classification-1783927808951|variant-1783927839288|S",
           "sku": "CỔ-TRÒN-PINK-SUGAR-S",
-          "quantity": 0,
+          "quantity": 21,
           "publishQuantity": 5,
           "pancakeQuantity": 24,
           "pancakeProductId": "326b63ae-36a7-4a5d-8263-7fdebfcf8e88",
@@ -9506,7 +9506,7 @@
         {
           "key": "classification-1783927808951|variant-1783927839288|M",
           "sku": "CỔ-TRÒN-PINK-SUGAR-M",
-          "quantity": 0,
+          "quantity": 26,
           "publishQuantity": 0,
           "pancakeQuantity": 10,
           "pancakeProductId": "326b63ae-36a7-4a5d-8263-7fdebfcf8e88",
@@ -9520,7 +9520,7 @@
         {
           "key": "classification-1783927808951|variant-1783927839288|L",
           "sku": "CỔ-TRÒN-PINK-SUGAR-L",
-          "quantity": 0,
+          "quantity": 10,
           "publishQuantity": 5,
           "pancakeQuantity": 45,
           "pancakeProductId": "326b63ae-36a7-4a5d-8263-7fdebfcf8e88",
@@ -9534,7 +9534,7 @@
         {
           "key": "classification-1783927808951|variant-1783927844951|S",
           "sku": "CỔ-TRÒN-XANH-IDYLLIC-S",
-          "quantity": 0,
+          "quantity": 28,
           "publishQuantity": 5,
           "pancakeQuantity": 28,
           "pancakeProductId": "326b63ae-36a7-4a5d-8263-7fdebfcf8e88",
@@ -9548,7 +9548,7 @@
         {
           "key": "classification-1783927808951|variant-1783927844951|M",
           "sku": "CỔ-TRÒN-XANH-IDYLLIC-M",
-          "quantity": 0,
+          "quantity": 14,
           "publishQuantity": 5,
           "pancakeQuantity": 26,
           "pancakeProductId": "326b63ae-36a7-4a5d-8263-7fdebfcf8e88",
@@ -9562,7 +9562,7 @@
         {
           "key": "classification-1783927808951|variant-1783927844951|L",
           "sku": "CỔ-TRÒN-XANH-IDYLLIC-L",
-          "quantity": 0,
+          "quantity": 19,
           "publishQuantity": 5,
           "pancakeQuantity": 26,
           "pancakeProductId": "326b63ae-36a7-4a5d-8263-7fdebfcf8e88",
@@ -9604,7 +9604,7 @@
         {
           "key": "classification-1783927808951|variant-1783927853239|L",
           "sku": "CỔ-TRÒN-CREAM-L",
-          "quantity": 0,
+          "quantity": 2,
           "publishQuantity": 5,
           "pancakeQuantity": 8,
           "pancakeProductId": "326b63ae-36a7-4a5d-8263-7fdebfcf8e88",
@@ -9618,7 +9618,7 @@
         {
           "key": "classification-1783927813119|variant-1783927864287|S",
           "sku": "CỔ-U-XÁM-S",
-          "quantity": 0,
+          "quantity": 41,
           "publishQuantity": 5,
           "pancakeQuantity": 42,
           "pancakeProductId": "49791494-72ed-4afb-b9e0-24bfec3ca9ca",
@@ -9632,7 +9632,7 @@
         {
           "key": "classification-1783927813119|variant-1783927864287|M",
           "sku": "CỔ-U-XÁM-M",
-          "quantity": 0,
+          "quantity": 18,
           "publishQuantity": 5,
           "pancakeQuantity": 27,
           "pancakeProductId": "49791494-72ed-4afb-b9e0-24bfec3ca9ca",
@@ -9646,7 +9646,7 @@
         {
           "key": "classification-1783927813119|variant-1783927864287|L",
           "sku": "CỔ-U-XÁM-L",
-          "quantity": 0,
+          "quantity": 19,
           "publishQuantity": 5,
           "pancakeQuantity": 23,
           "pancakeProductId": "49791494-72ed-4afb-b9e0-24bfec3ca9ca",
@@ -9660,7 +9660,7 @@
         {
           "key": "classification-1783927813119|variant-1783927857951|S",
           "sku": "CỔ-U-ĐEN-S",
-          "quantity": 0,
+          "quantity": 41,
           "publishQuantity": 5,
           "pancakeQuantity": 52,
           "pancakeProductId": "49791494-72ed-4afb-b9e0-24bfec3ca9ca",
@@ -9674,7 +9674,7 @@
         {
           "key": "classification-1783927813119|variant-1783927857951|M",
           "sku": "CỔ-U-ĐEN-M",
-          "quantity": 0,
+          "quantity": 26,
           "publishQuantity": 5,
           "pancakeQuantity": 36,
           "pancakeProductId": "49791494-72ed-4afb-b9e0-24bfec3ca9ca",
@@ -9688,7 +9688,7 @@
         {
           "key": "classification-1783927813119|variant-1783927857951|L",
           "sku": "CỔ-U-ĐEN-L",
-          "quantity": 0,
+          "quantity": 51,
           "publishQuantity": 3,
           "pancakeQuantity": 46,
           "pancakeProductId": "49791494-72ed-4afb-b9e0-24bfec3ca9ca",
@@ -9702,7 +9702,7 @@
         {
           "key": "classification-1783927813119|variant-1783927877855|S",
           "sku": "CỔ-U-PINK-SUGAR-S",
-          "quantity": 0,
+          "quantity": 4,
           "publishQuantity": 1,
           "pancakeQuantity": 5,
           "pancakeProductId": "49791494-72ed-4afb-b9e0-24bfec3ca9ca",
@@ -9744,7 +9744,7 @@
         {
           "key": "classification-1783927813119|variant-1783927871000|S",
           "sku": "CỔ-U-XANH-BLUE-WHALE-S",
-          "quantity": 0,
+          "quantity": 31,
           "publishQuantity": 5,
           "pancakeQuantity": 34,
           "pancakeProductId": "49791494-72ed-4afb-b9e0-24bfec3ca9ca",
@@ -9758,7 +9758,7 @@
         {
           "key": "classification-1783927813119|variant-1783927871000|M",
           "sku": "CỔ-U-XANH-BLUE-WHALE-M",
-          "quantity": 0,
+          "quantity": 49,
           "publishQuantity": 5,
           "pancakeQuantity": 53,
           "pancakeProductId": "49791494-72ed-4afb-b9e0-24bfec3ca9ca",
@@ -9772,7 +9772,7 @@
         {
           "key": "classification-1783927813119|variant-1783927871000|L",
           "sku": "CỔ-U-XANH-BLUE-WHALE-L",
-          "quantity": 0,
+          "quantity": 23,
           "publishQuantity": 5,
           "pancakeQuantity": 35,
           "pancakeProductId": "49791494-72ed-4afb-b9e0-24bfec3ca9ca",
@@ -9786,7 +9786,7 @@
         {
           "key": "classification-1783927813119|variant-1783927881799|S",
           "sku": "CỔ-U-CREAM-S",
-          "quantity": 0,
+          "quantity": 3,
           "publishQuantity": 1,
           "pancakeQuantity": 12,
           "pancakeProductId": "49791494-72ed-4afb-b9e0-24bfec3ca9ca",
@@ -9828,7 +9828,7 @@
         {
           "key": "classification-1783927813119|variant-1783927860848|S",
           "sku": "CỔ-U-TRẮNG-S",
-          "quantity": 0,
+          "quantity": 60,
           "publishQuantity": 5,
           "pancakeQuantity": 61,
           "pancakeProductId": "49791494-72ed-4afb-b9e0-24bfec3ca9ca",
@@ -9842,7 +9842,7 @@
         {
           "key": "classification-1783927813119|variant-1783927860848|M",
           "sku": "CỔ-U-TRẮNG-M",
-          "quantity": 0,
+          "quantity": 45,
           "publishQuantity": 4,
           "pancakeQuantity": 48,
           "pancakeProductId": "49791494-72ed-4afb-b9e0-24bfec3ca9ca",
@@ -9856,7 +9856,7 @@
         {
           "key": "classification-1783927813119|variant-1783927860848|L",
           "sku": "CỔ-U-TRẮNG-L",
-          "quantity": 0,
+          "quantity": 26,
           "publishQuantity": 5,
           "pancakeQuantity": 54,
           "pancakeProductId": "49791494-72ed-4afb-b9e0-24bfec3ca9ca",
@@ -9870,7 +9870,7 @@
         {
           "key": "classification-1783927816807|variant-1783927888335|S",
           "sku": "CỔ-TIM-ĐEN-S",
-          "quantity": 0,
+          "quantity": 8,
           "publishQuantity": 2,
           "pancakeQuantity": 15,
           "pancakeProductId": "b703ed87-9776-40ed-9f63-a6024f545185",
@@ -9884,7 +9884,7 @@
         {
           "key": "classification-1783927816807|variant-1783927888335|M",
           "sku": "CỔ-TIM-ĐEN-M",
-          "quantity": 0,
+          "quantity": 32,
           "publishQuantity": 4,
           "pancakeQuantity": 40,
           "pancakeProductId": "b703ed87-9776-40ed-9f63-a6024f545185",
@@ -9898,7 +9898,7 @@
         {
           "key": "classification-1783927816807|variant-1783927888335|L",
           "sku": "CỔ-TIM-ĐEN-L",
-          "quantity": 0,
+          "quantity": 13,
           "publishQuantity": 5,
           "pancakeQuantity": 25,
           "pancakeProductId": "b703ed87-9776-40ed-9f63-a6024f545185",
@@ -9912,7 +9912,7 @@
         {
           "key": "classification-1783927816807|variant-1783927893839|S",
           "sku": "CỔ-TIM-TRẮNG-S",
-          "quantity": 0,
+          "quantity": 51,
           "publishQuantity": 4,
           "pancakeQuantity": 54,
           "pancakeProductId": "b703ed87-9776-40ed-9f63-a6024f545185",
@@ -9926,7 +9926,7 @@
         {
           "key": "classification-1783927816807|variant-1783927893839|M",
           "sku": "CỔ-TIM-TRẮNG-M",
-          "quantity": 0,
+          "quantity": 9,
           "publishQuantity": 0,
           "pancakeQuantity": 12,
           "pancakeProductId": "b703ed87-9776-40ed-9f63-a6024f545185",
@@ -9940,7 +9940,7 @@
         {
           "key": "classification-1783927816807|variant-1783927893839|L",
           "sku": "CỔ-TIM-TRẮNG-L",
-          "quantity": 0,
+          "quantity": 43,
           "publishQuantity": 5,
           "pancakeQuantity": 49,
           "pancakeProductId": "b703ed87-9776-40ed-9f63-a6024f545185",
@@ -9954,7 +9954,7 @@
         {
           "key": "classification-1783927816807|variant-1783927900991|S",
           "sku": "CỔ-TIM-XANH-BLUE-WHALE-S",
-          "quantity": 0,
+          "quantity": 19,
           "publishQuantity": 5,
           "pancakeQuantity": 20,
           "pancakeProductId": "b703ed87-9776-40ed-9f63-a6024f545185",
@@ -9982,7 +9982,7 @@
         {
           "key": "classification-1783927816807|variant-1783927900991|L",
           "sku": "CỔ-TIM-XANH-BLUE-WHALE-L",
-          "quantity": 0,
+          "quantity": 1,
           "publishQuantity": 0,
           "pancakeQuantity": 3,
           "pancakeProductId": "b703ed87-9776-40ed-9f63-a6024f545185",
@@ -9996,7 +9996,7 @@
         {
           "key": "classification-1783927816807|variant-1783927896519|S",
           "sku": "CỔ-TIM-XÁM-S",
-          "quantity": 0,
+          "quantity": 20,
           "publishQuantity": 5,
           "pancakeQuantity": 21,
           "pancakeProductId": "b703ed87-9776-40ed-9f63-a6024f545185",
@@ -10010,7 +10010,7 @@
         {
           "key": "classification-1783927816807|variant-1783927896519|M",
           "sku": "CỔ-TIM-XÁM-M",
-          "quantity": 0,
+          "quantity": 1,
           "publishQuantity": 0,
           "pancakeQuantity": 2,
           "pancakeProductId": "b703ed87-9776-40ed-9f63-a6024f545185",

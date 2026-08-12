@@ -511,6 +511,72 @@ export class OrderSyncService {
     return this.create(order, false);
   }
 
+  async reconcileCancellations() {
+    const candidates = (await readOrders()).filter((order) => order.status === "cancelled");
+    let found = 0;
+    let cancelled = 0;
+    let alreadyCancelled = 0;
+    let queued = 0;
+    const errors: string[] = [];
+    const batchSize = 8;
+
+    for (let index = 0; index < candidates.length; index += batchSize) {
+      const batch = candidates.slice(index, index + batchSize);
+      await Promise.all(batch.map(async (order) => {
+        try {
+          const remote = await this.pancake.findOrder(order.code, order.customer.phone);
+          if (!remote) return;
+          found += 1;
+          const remoteOrderId = externalId(remote);
+          if (!remoteOrderId) {
+            throw new PancakeIntegrationError(
+              "Pancake đã nhận đơn nhưng chưa trả mã để hủy. Hệ thống sẽ tự thử lại.",
+              "PANCAKE_CANCEL_ID_PENDING",
+              409,
+              true
+            );
+          }
+          const mapped = mapPancakeStatus(value(remote, ["status", "order_status", "state"]));
+          if (mapped.pancakeStatus !== "cancelled") {
+            await this.pancake.cancelOrder(remoteOrderId);
+            cancelled += 1;
+          } else {
+            alreadyCancelled += 1;
+          }
+          await updateOrder(order.code, {
+            pancakeOrderId: remoteOrderId,
+            pancakeStatus: "cancelled",
+            externalSync: {
+              ...order.externalSync,
+              pancake: "Đã hủy trên Pancake",
+              lastSyncedAt: new Date().toISOString()
+            }
+          });
+        } catch (error) {
+          const normalized = ExceptionHandler.normalize(error);
+          errors.push(`${shortOrderCode(order.code)}: ${normalized.message}`);
+          if (normalized.retryable) {
+            try {
+              await QueueHandler.enqueue("order.cancel", { orderCode: order.code });
+              queued += 1;
+            } catch {
+              // Queue errors are reported by the normal poller.
+            }
+          }
+          await updateOrder(order.code, {
+            externalSync: {
+              ...order.externalSync,
+              pancake: `Chờ gửi yêu cầu hủy: ${normalized.message}`,
+              lastSyncedAt: new Date().toISOString()
+            }
+          });
+        }
+      }));
+    }
+
+    return { checked: candidates.length, found, cancelled, alreadyCancelled, queued, errors: errors.slice(0, 20) };
+  }
+
   async applyRemoteUpdate(payload: Record<string, unknown>, matchedOrder?: ShopOrder) {
     const code = value(payload, ["custom_id", "partner_order_id", "external_order_id", "order_code", "code"]).replace(/^BLANWHI:/i, "");
     if (!code && !matchedOrder) throw new PancakeIntegrationError("Dữ liệu Pancake thiếu mã đơn website.", "REMOTE_ORDER_CODE_MISSING", 400);
