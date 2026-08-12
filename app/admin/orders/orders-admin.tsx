@@ -818,6 +818,9 @@ function getOrderStage(order: ShopOrder): OrderStage {
 
   if (order.status === "cancelled" || shippingStatus === "cancelled" || order.pancakeStatus === "cancelled") return "cancelled";
   if (order.status === "pending" && paymentMethod !== "cod") return "payment_pending";
+  if (order.pancakeStatus === "returned") return "returning";
+  if (order.pancakeStatus === "completed") return "delivered";
+  if (order.pancakeStatus === "shipping") return "shipping";
   if (!hasTrackingCode) return isReadyForShipment ? "paid" : "new";
   if (shippingStatus === "returning" || shippingStatus === "returned") return "returning";
   if (shippingStatus === "delivery_failed") return "delivery_failed";
