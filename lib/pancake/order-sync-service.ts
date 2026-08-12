@@ -247,6 +247,29 @@ function hasTrackingCode(payload: unknown) {
 export class OrderSyncService {
   constructor(private readonly pancake = new PancakeService()) {}
 
+  private async refreshItemLinks(order: ShopOrder) {
+    if (order.items.every((item) => item.pancakeVariationId || item.pancakeProductId || item.pancakeSku)) return order;
+    const availability = await new InventoryService().availability();
+    let changed = false;
+    const items = order.items.map((item) => {
+      if (item.pancakeVariationId || item.pancakeProductId || item.pancakeSku) return item;
+      const linked = availability.find((candidate) => candidate.linked && (
+        (item.productId === candidate.productId && item.inventoryKey === candidate.key)
+        || (item.inventoryKey === candidate.key && item.sku === candidate.sku)
+      ));
+      if (!linked) return item;
+      changed = true;
+      return {
+        ...item,
+        pancakeProductId: linked.pancakeProductId || undefined,
+        pancakeVariationId: linked.pancakeVariationId || undefined,
+        pancakeSku: linked.pancakeSku || undefined
+      };
+    });
+    if (!changed) return order;
+    return await updateOrder(order.code, { items }) || { ...order, items };
+  }
+
   async reconcileExisting(order: ShopOrder) {
     const knownId = pancakeOrderId(order);
     let existing: Record<string, unknown> | null = null;
@@ -333,7 +356,7 @@ export class OrderSyncService {
   async create(order: ShopOrder, enqueueOnFailure = true) {
     const latest = await findOrderByCode(order.code);
     if (latest?.status === "cancelled") return latest;
-    const current = latest || order;
+    const current = await this.refreshItemLinks(latest || order);
     if (current.status !== "paid" && !(String(current.paymentMethod || "").trim().toLowerCase() === "cod" && current.status === "pending")) {
       return await updateOrder(order.code, {
         externalSync: {
