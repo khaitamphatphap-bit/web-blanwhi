@@ -308,6 +308,7 @@
       .zoom-modal { position: fixed; inset: 0; z-index: 45; display: none; place-items: center; padding: 22px; background: rgba(0,0,0,.82); }
       .zoom-modal.open { display: grid; }
       .zoom-card { position: relative; width: min(680px, 94vw); background: #fff; padding: 20px; }
+      .zoom-card.size-chart-mode { width: min(1080px, 96vw); }
       .zoom-card .product-visual { width: 100%; min-height: min(72vh, 700px); cursor: default; }
       .zoom-card .icon-button { position: absolute; right: 12px; top: 12px; z-index: 2; }
       .zoom-caption { display: flex; justify-content: space-between; gap: 12px; padding-top: 12px; font-size: 13px; }
@@ -465,6 +466,18 @@
       .size-chart { width: 100%; border: 1px solid #111; border-collapse: collapse; background: #fff; color: #111; }
       .size-chart th, .size-chart td { border: 1px solid #111; padding: 8px; text-align: center; font-size: 12px; }
       .size-chart-image { display: block; width: 100%; max-height: 520px; object-fit: contain; background: #fff; border: 1px solid var(--line); }
+      .size-chart-zoom-trigger { position: relative; width: 100%; border: 0; padding: 0; background: #fff; color: inherit; text-align: inherit; cursor: zoom-in; }
+      .size-chart-zoom-trigger:focus-visible { outline: 2px solid #111; outline-offset: 3px; }
+      .size-chart-zoom-hint { position: absolute; right: 10px; bottom: 10px; z-index: 1; padding: 7px 10px; background: rgba(17,17,17,.88); color: #fff; font-size: 10px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; pointer-events: none; }
+      .zoom-size-chart-wrap { display: grid; gap: 12px; }
+      .zoom-size-chart-stage { width: 100%; max-height: min(76vh, 820px); overflow: auto; background: #f7f7f7; text-align: center; overscroll-behavior: contain; touch-action: pan-x pan-y pinch-zoom; }
+      .zoom-size-chart-content { display: inline-block; min-width: 100%; transform-origin: top center; transition: transform .16s ease; }
+      .zoom-size-chart-content .size-chart-image { width: auto; max-width: 100%; max-height: none; margin: 0 auto; border: 0; }
+      .zoom-size-chart-content .size-chart { min-width: 620px; }
+      .zoom-size-chart-tools { display: flex; align-items: center; justify-content: center; gap: 8px; padding-right: 48px; }
+      .zoom-size-chart-tools button { min-width: 42px; height: 38px; border: 1px solid #111; background: #fff; color: #111; font-weight: 800; cursor: pointer; }
+      .zoom-size-chart-tools button:hover { background: #111; color: #fff; }
+      .zoom-size-chart-percent { min-width: 48px; text-align: center; font-size: 12px; font-weight: 800; }
       .payment-extra { display: none; gap: 8px; padding: 12px; border: 1px solid var(--line); background: #fafafa; }
       .payment-extra.open { display: grid; }
       .bank-account-link { min-height: 44px; border: 1px solid #111; background: #111; color: #fff; font-size: 13px; font-weight: 800; cursor: pointer; text-align: left; padding: 0 12px; }
@@ -2488,6 +2501,7 @@
       }
 
       function openZoom(product, color = product.color) {
+        zoomModal.querySelector(".zoom-card")?.classList.remove("size-chart-mode");
         zoomContent.innerHTML = `
           <div class="product-visual">${productVisualMedia(product, color)}</div>
           <div class="zoom-caption"><strong>${product.name}</strong><span>${colorLabel(color, product)}</span></div>
@@ -2495,8 +2509,41 @@
         zoomModal.classList.add("open");
       }
 
+      let sizeChartZoomLevel = 1;
+
+      function applySizeChartZoom() {
+        const content = zoomContent.querySelector(".zoom-size-chart-content");
+        const percent = zoomContent.querySelector(".zoom-size-chart-percent");
+        if (content) content.style.transform = `scale(${sizeChartZoomLevel})`;
+        if (percent) percent.textContent = `${Math.round(sizeChartZoomLevel * 100)}%`;
+      }
+
+      function openSizeChartZoom(product) {
+        sizeChartZoomLevel = 1;
+        zoomModal.querySelector(".zoom-card")?.classList.add("size-chart-mode");
+        const chart = product.sizeChartImage
+          ? `<img class="size-chart-image" src="${escapeMarkup(product.sizeChartImage)}" alt="Bảng size ${escapeMarkup(product.name)}" />`
+          : defaultSizeChartMarkup();
+        zoomContent.innerHTML = `
+          <div class="zoom-size-chart-wrap">
+            <div class="zoom-size-chart-tools" aria-label="Điều khiển phóng to bảng size">
+              <button type="button" data-size-chart-zoom-out aria-label="Thu nhỏ">−</button>
+              <span class="zoom-size-chart-percent">100%</span>
+              <button type="button" data-size-chart-zoom-in aria-label="Phóng to">+</button>
+              <button type="button" data-size-chart-zoom-reset aria-label="Đặt lại kích thước">100%</button>
+            </div>
+            <div class="zoom-size-chart-stage">
+              <div class="zoom-size-chart-content">${chart}</div>
+            </div>
+            <div class="zoom-caption"><strong>Bảng size ${escapeMarkup(product.name)}</strong><span>Chụm hai ngón tay hoặc dùng nút + / − để phóng to</span></div>
+          </div>
+        `;
+        zoomModal.classList.add("open");
+      }
+
       function closeZoom() {
         zoomModal.classList.remove("open");
+        zoomModal.querySelector(".zoom-card")?.classList.remove("size-chart-mode");
       }
 
       function renderBankList() {
@@ -2626,9 +2673,10 @@
       }
 
       function sizeChartMarkup(product) {
-        return product.sizeChartImage
+        const chart = product.sizeChartImage
           ? `<img class="size-chart-image" src="${escapeMarkup(product.sizeChartImage)}" alt="Bảng size ${escapeMarkup(product.name)}" loading="lazy" />`
           : defaultSizeChartMarkup();
+        return `<div class="size-chart-zoom-trigger" role="button" tabindex="0" data-size-chart-zoom="${escapeMarkup(product.id)}" aria-label="Mở lớn bảng size ${escapeMarkup(product.name)}">${chart}<span class="size-chart-zoom-hint">Nhấn để phóng to</span></div>`;
       }
 
       function multilineMarkup(value) {
@@ -3647,6 +3695,12 @@
       });
 
       detailContent.addEventListener("click", async (event) => {
+        const sizeChartZoom = event.target.closest("[data-size-chart-zoom]");
+        if (sizeChartZoom) {
+          const product = productData.find((item) => item.id === sizeChartZoom.dataset.sizeChartZoom);
+          if (product) openSizeChartZoom(product);
+          return;
+        }
         const detailClassification = event.target.closest("[data-detail-classification]");
         if (detailClassification) {
           const [id, index] = detailClassification.dataset.detailClassification.split(":");
@@ -3763,6 +3817,12 @@
       });
 
       variantContent.addEventListener("click", async (event) => {
+        const sizeChartZoom = event.target.closest("[data-size-chart-zoom]");
+        if (sizeChartZoom) {
+          const product = productData.find((item) => item.id === sizeChartZoom.dataset.sizeChartZoom);
+          if (product) openSizeChartZoom(product);
+          return;
+        }
         const zoomVariant = event.target.closest("[data-zoom-variant]");
         if (zoomVariant) {
           const product = productData.find((item) => item.id === zoomVariant.dataset.zoomVariant);
@@ -4335,6 +4395,20 @@
       document.getElementById("closeDetail").addEventListener("click", closeDetail);
       document.getElementById("closeVariant").addEventListener("click", closeVariant);
       document.getElementById("closeZoom").addEventListener("click", closeZoom);
+      zoomContent.addEventListener("click", (event) => {
+        if (event.target.closest("[data-size-chart-zoom-in]")) sizeChartZoomLevel = Math.min(3, sizeChartZoomLevel + .25);
+        else if (event.target.closest("[data-size-chart-zoom-out]")) sizeChartZoomLevel = Math.max(.75, sizeChartZoomLevel - .25);
+        else if (event.target.closest("[data-size-chart-zoom-reset]")) sizeChartZoomLevel = 1;
+        else return;
+        applySizeChartZoom();
+      });
+      document.addEventListener("keydown", (event) => {
+        const trigger = event.target.closest?.("[data-size-chart-zoom]");
+        if (!trigger || !["Enter", " "].includes(event.key)) return;
+        event.preventDefault();
+        const product = productData.find((item) => item.id === trigger.dataset.sizeChartZoom);
+        if (product) openSizeChartZoom(product);
+      });
       document.getElementById("closeWholesale").addEventListener("click", closeWholesale);
       detailModal.addEventListener("click", (event) => {
         if (event.target === detailModal) closeDetail();
