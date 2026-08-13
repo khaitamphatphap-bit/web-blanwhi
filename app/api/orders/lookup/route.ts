@@ -62,7 +62,8 @@ function maskAddress(value: string) {
     .replace(/^Thành phố\s+/i, "")
     .replace(/^TP\.?\s*HCM$/i, "Hồ Chí Minh")
     .replace(/^HCM$/i, "Hồ Chí Minh");
-  return `${streetNumber}***, ${city}`;
+  const maskedCity = `${city.slice(0, 1).toLocaleUpperCase("vi-VN")}********`;
+  return `${streetNumber}***, ${maskedCity}`;
 }
 
 export async function POST(request: Request) {
