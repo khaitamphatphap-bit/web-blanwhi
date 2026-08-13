@@ -4291,7 +4291,7 @@
             updatedAt: serverOrder.updatedAt ? new Date(serverOrder.updatedAt).toLocaleString("vi-VN") : ""
           }));
           orderLookupReset.hidden = false;
-          orderLookupMessage.textContent = lookedUpOrders.length ? `Tìm thấy ${lookedUpOrders.length} đơn hàng. Tên và địa chỉ đã được che.` : "Không tìm thấy đơn hàng theo số điện thoại này.";
+          orderLookupMessage.textContent = lookedUpOrders.length ? `Tìm thấy ${lookedUpOrders.length} đơn hàng. Tên, số điện thoại và địa chỉ đã được che.` : "Không tìm thấy đơn hàng theo số điện thoại này.";
           renderOrders();
         } catch (error) {
           orderLookupMessage.textContent = error.message || "Không thể tra cứu đơn hàng. Vui lòng thử lại.";

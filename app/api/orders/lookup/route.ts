@@ -41,24 +41,28 @@ function orderPhoneKeys(order: Record<string, any>) {
 function maskPhone(value: string) {
   const key = phoneKey(value);
   const phone = key.length === 9 ? `0${key}` : key;
-  if (phone.length < 7) return "••••••";
-  return `${phone.slice(0, 4)}•••${phone.slice(-3)}`;
+  if (phone.length < 3) return "**********";
+  return `${phone.slice(0, 3)}${"*".repeat(Math.max(7, phone.length - 3))}`;
 }
 
 function maskName(value: string) {
-  return String(value || "")
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((part, index) => index === 0 ? part : `${part.slice(0, 1)}${"•".repeat(Math.max(2, Math.min(4, part.length - 1)))}`)
-    .join(" ");
+  const name = String(value || "").trim();
+  if (!name) return "*";
+  return `${name.slice(0, 1).toLocaleUpperCase("vi-VN")}${"*".repeat(Math.max(3, name.length - 1))}`;
 }
 
 function maskAddress(value: string) {
   const address = String(value || "").trim();
   if (!address) return "Địa chỉ đã được ẩn";
-  const visible = address.slice(0, Math.min(8, address.length));
-  return `${visible}${address.length > visible.length ? "••••••••" : ""}`;
+  const streetNumber = address.match(/^\s*(\d+)/)?.[1] || "*";
+  const parts = address.split(",").map((part) => part.trim()).filter(Boolean);
+  const knownCity = address.match(/(?:Thành phố\s+)?(?:Hồ Chí Minh|Hà Nội|Đà Nẵng|Cần Thơ|Hải Phòng)|(?:TP\.?\s*HCM|HCM)\b/i)?.[0];
+  const lastPart = parts.at(-1) || "";
+  const city = String(knownCity || lastPart || "Tỉnh/Thành phố")
+    .replace(/^Thành phố\s+/i, "")
+    .replace(/^TP\.?\s*HCM$/i, "Hồ Chí Minh")
+    .replace(/^HCM$/i, "Hồ Chí Minh");
+  return `${streetNumber}***, ${city}`;
 }
 
 export async function POST(request: Request) {
@@ -74,7 +78,6 @@ export async function POST(request: Request) {
   const orders = (await readOrders())
     .filter((order) => orderPhoneKeys(order as unknown as Record<string, any>).includes(phone))
     .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
-    .slice(0, 500)
     .map((order) => ({
       ...order,
       customerDeviceId: undefined,
