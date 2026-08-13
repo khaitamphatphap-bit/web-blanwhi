@@ -19,11 +19,28 @@ function mayLookup(request: Request) {
 
 function phoneKey(value: unknown) {
   const digits = String(value || "").replace(/\D/g, "");
-  return digits.startsWith("84") && digits.length > 10 ? `0${digits.slice(2)}` : digits;
+  if (digits.length < 9) return digits;
+
+  // Vietnamese numbers may have been saved as 0xxxxxxxxx, 84xxxxxxxxx,
+  // +84xxxxxxxxx or 0084xxxxxxxxx. The last 9 digits are the stable
+  // national subscriber number shared by all of those representations.
+  return digits.slice(-9);
+}
+
+function orderPhoneKeys(order: Record<string, any>) {
+  return [
+    order.customer?.phone,
+    order.phone,
+    order.customerPhone,
+    order.shippingAddress?.phone,
+    order.deliveryAddress?.phone,
+    order.receiver?.phone
+  ].map(phoneKey).filter(Boolean);
 }
 
 function maskPhone(value: string) {
-  const phone = phoneKey(value);
+  const key = phoneKey(value);
+  const phone = key.length === 9 ? `0${key}` : key;
   if (phone.length < 7) return "••••••";
   return `${phone.slice(0, 4)}•••${phone.slice(-3)}`;
 }
@@ -50,12 +67,12 @@ export async function POST(request: Request) {
   }
   const body = await request.json().catch(() => ({})) as { phone?: string };
   const phone = phoneKey(body.phone);
-  if (phone.length < 10 || phone.length > 11) {
+  if (phone.length !== 9) {
     return NextResponse.json({ error: "Vui lòng nhập đúng số điện thoại đã đặt hàng." }, { status: 400 });
   }
 
   const orders = (await readOrders())
-    .filter((order) => phoneKey(order.customer.phone) === phone)
+    .filter((order) => orderPhoneKeys(order as unknown as Record<string, any>).includes(phone))
     .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
     .slice(0, 500)
     .map((order) => ({

@@ -4265,7 +4265,7 @@
       orderLookupForm.addEventListener("submit", async (event) => {
         event.preventDefault();
         const phone = String(orderLookupPhone.value || "").replace(/\D/g, "");
-        if (phone.length < 10) {
+        if (phone.length < 9) {
           orderLookupMessage.textContent = "Vui lòng nhập đúng số điện thoại đã đặt hàng.";
           return;
         }
