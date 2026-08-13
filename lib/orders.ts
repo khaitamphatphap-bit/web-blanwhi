@@ -4,6 +4,7 @@ import { shortOrderCode } from "@/lib/order-code";
 
 const paymentMethods = new Set<PaymentMethod>(["cod", "bank_transfer", "vnpay", "onepay", "alepay", "momo", "zalopay"]);
 const deletedOrdersStore = "deleted-orders.json";
+export const unpaidOrderLifetimeMs = 24 * 60 * 60 * 1000;
 
 type DeletedOrderRecord = {
   code: string;
@@ -42,15 +43,32 @@ export async function readOrders(): Promise<ShopOrder[]> {
   ]);
   const deletedKeys = deletedOrderKeys(deleted);
   return orders.filter((order) => !orderWasDeleted(order, deletedKeys)).map((order) => {
-    const cancellationRecorded = order.status === "cancelled"
-      || order.shippingStatus === "cancelled"
-      || order.pancakeStatus === "cancelled"
-      || Boolean(order.refundStatus);
-    return {
+    const paymentMethod = normalizePaymentMethod(order.paymentMethod || order.paymentProvider);
+    const createdAt = new Date(order.createdAt).getTime();
+    const paymentDeadline = Number.isFinite(createdAt) ? createdAt + unpaidOrderLifetimeMs : Number.POSITIVE_INFINITY;
+    const paymentExpired = order.status === "pending"
+      && paymentMethod !== "cod"
+      && !order.transactionId
+      && Date.now() >= paymentDeadline;
+    const normalizedOrder: ShopOrder = paymentExpired ? {
       ...order,
-      status: cancellationRecorded ? "cancelled" : order.status,
-      paymentMethod: normalizePaymentMethod(order.paymentMethod || order.paymentProvider),
-      paymentProvider: String(order.paymentProvider || normalizePaymentMethod(order.paymentMethod || order.paymentProvider)).trim().toLowerCase()
+      status: "cancelled",
+      shippingStatus: "cancelled",
+      refundStatus: "not_required",
+      refundMessage: "",
+      paymentExpiredAt: order.paymentExpiredAt || new Date(paymentDeadline).toISOString(),
+      cancellationReason: "Hết hạn thanh toán",
+      updatedAt: order.paymentExpiredAt || new Date(paymentDeadline).toISOString()
+    } : order;
+    const cancellationRecorded = normalizedOrder.status === "cancelled"
+      || normalizedOrder.shippingStatus === "cancelled"
+      || normalizedOrder.pancakeStatus === "cancelled"
+      || Boolean(normalizedOrder.refundStatus);
+    return {
+      ...normalizedOrder,
+      status: cancellationRecorded ? "cancelled" : normalizedOrder.status,
+      paymentMethod,
+      paymentProvider: String(normalizedOrder.paymentProvider || paymentMethod).trim().toLowerCase()
     };
   });
 }

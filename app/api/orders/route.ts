@@ -69,6 +69,8 @@ export async function GET(request: Request) {
           refundMessage: order.refundMessage,
           refundAmount: order.refundAmount,
           refundedAt: order.refundedAt,
+          paymentExpiredAt: order.paymentExpiredAt,
+          cancellationReason: order.cancellationReason,
           shippingCarrier: order.shippingCarrier,
           trackingCode: order.trackingCode,
           shippingStatus: order.shippingStatus,
