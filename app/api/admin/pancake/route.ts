@@ -19,10 +19,10 @@ async function dashboard() {
   const pancake = new PancakeService();
   const sourceSnapshot = await Promise.all([
     pancake.orderSources(),
-    pancake.websiteOrderSource()
-  ]).then(([orderSources, websiteOrderSource]) => ({ orderSources, websiteOrderSource, error: "" })).catch((error) => ({
+    pancake.configuredOrderSource()
+  ]).then(([orderSources, configuredOrderSource]) => ({ orderSources, configuredOrderSource, error: "" })).catch((error) => ({
     orderSources: [],
-    websiteOrderSource: undefined,
+    configuredOrderSource: undefined,
     error: error instanceof Error ? error.message : "Không đọc được nguồn đơn Pancake."
   }));
   const products = content.products.map((product) => {
@@ -47,10 +47,10 @@ async function dashboard() {
       baseUrl: process.env.PANCAKE_API_BASE_URL || "https://pos.pages.fm/api/v1"
     },
     orderSource: {
-      targetName: process.env.PANCAKE_ORDER_SOURCE_NAME || "website",
+      targetName: process.env.PANCAKE_ORDER_SOURCE_NAME || "facebook",
       targetId: process.env.PANCAKE_ORDER_SOURCE_ID || "",
       sources: sourceSnapshot.orderSources,
-      matched: sourceSnapshot.websiteOrderSource,
+      matched: sourceSnapshot.configuredOrderSource,
       error: sourceSnapshot.error
     },
     storage: {
@@ -102,7 +102,7 @@ export async function POST(request: Request) {
     if (body.action === "test") result = await new PancakeService().testConnection();
     else if (body.action === "order-sources") result = {
       sources: await new PancakeService().orderSources(),
-      matched: await new PancakeService().websiteOrderSource()
+      matched: await new PancakeService().configuredOrderSource()
     };
     else if (body.action === "recover-links") result = await new ProductLinkService().recoverLinks();
     else if (body.action === "sync-inventory") result = await new InventoryService().sync();

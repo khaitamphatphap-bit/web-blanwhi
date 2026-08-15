@@ -103,7 +103,7 @@ export function PancakeAdmin() {
         : name === "recover-links"
           ? `Đã khôi phục ${result?.recoveredCount || 0} liên kết từ ${result?.scannedBackups || 0} bản lưu gần nhất.`
           : name === "order-sources"
-            ? `Đã đọc ${result?.sources?.length || 0} nguồn đơn Pancake${result?.matched ? `, khớp nguồn ${result.matched.name} (#${result.matched.id})` : ", chưa khớp website"}.`
+            ? `Đã đọc ${result?.sources?.length || 0} nguồn đơn Pancake${result?.matched ? `, khớp nguồn ${result.matched.name} (#${result.matched.id})` : ", chưa khớp nguồn cấu hình"}.`
           : "Đã đồng bộ tồn kho Pancake.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Không thực hiện được.");
@@ -215,8 +215,8 @@ export function PancakeAdmin() {
       <section className="mt-6 border border-black p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold uppercase">Nguồn đơn website</h2>
-            <p className="mt-2 text-sm text-neutral-600">Website sẽ tự tìm nguồn tên <strong>{dashboard.orderSource?.targetName || "website"}</strong> trong Pancake và gắn vào đơn khi tạo POS.</p>
+            <h2 className="text-lg font-semibold uppercase">Nguồn đơn đẩy sang Pancake</h2>
+            <p className="mt-2 text-sm text-neutral-600">Website sẽ tự tìm nguồn tên <strong>{dashboard.orderSource?.targetName || "facebook"}</strong> trong Pancake và gắn vào đơn khi tạo POS.</p>
           </div>
           <button onClick={() => action("order-sources")} disabled={Boolean(busy)} className="h-11 border border-black px-5 text-xs uppercase disabled:opacity-50">{busy === "order-sources" ? "Đang đọc..." : "Đọc lại nguồn đơn"}</button>
         </div>
@@ -224,11 +224,11 @@ export function PancakeAdmin() {
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           <div className="border border-neutral-300 p-3">
             <p className="text-xs uppercase text-neutral-500">Nguồn đang khớp</p>
-            {dashboard.orderSource?.matched ? <p className="mt-2 text-sm"><strong>{dashboard.orderSource.matched.name}</strong> · ID <span className="font-mono">{dashboard.orderSource.matched.id}</span>{dashboard.orderSource.matched.pageId ? <> · Page <span className="font-mono">{dashboard.orderSource.matched.pageId}</span></> : null}</p> : <p className="mt-2 text-sm text-red-600">Chưa tìm thấy nguồn tên website trong dữ liệu API trả về.</p>}
+            {dashboard.orderSource?.matched ? <p className="mt-2 text-sm"><strong>{dashboard.orderSource.matched.name}</strong> · ID <span className="font-mono">{dashboard.orderSource.matched.id}</span>{dashboard.orderSource.matched.pageId ? <> · Page <span className="font-mono">{dashboard.orderSource.matched.pageId}</span></> : null}</p> : <p className="mt-2 text-sm text-red-600">Chưa tìm thấy nguồn cấu hình trong dữ liệu API trả về.</p>}
           </div>
           <div className="border border-neutral-300 p-3">
             <p className="text-xs uppercase text-neutral-500">Cấu hình dự phòng</p>
-            <p className="mt-2 text-sm">Tên: <strong>{dashboard.orderSource?.targetName || "website"}</strong></p>
+            <p className="mt-2 text-sm">Tên: <strong>{dashboard.orderSource?.targetName || "facebook"}</strong></p>
             <p className="mt-1 text-sm">ID cố định: <strong>{dashboard.orderSource?.targetId || "Chưa set"}</strong></p>
           </div>
         </div>

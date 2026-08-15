@@ -177,15 +177,15 @@ export class PancakeService {
     }
   }
 
-  async websiteOrderSource(): Promise<PancakeOrderSource | undefined> {
+  async configuredOrderSource(): Promise<PancakeOrderSource | undefined> {
     const configuredId = String(process.env.PANCAKE_ORDER_SOURCE_ID || "").trim();
-    const configuredName = String(process.env.PANCAKE_ORDER_SOURCE_NAME || "website").trim().toLowerCase();
+    const configuredName = String(process.env.PANCAKE_ORDER_SOURCE_NAME || "facebook").trim().toLowerCase();
     const sources = await this.orderSources();
     if (configuredId) {
-      return sources.find((source) => String(source.id).trim() === configuredId) || { id: configuredId, name: configuredName || "website" };
+      return sources.find((source) => String(source.id).trim() === configuredId) || { id: configuredId, name: configuredName || "facebook" };
     }
     return sources.find((source) => source.name.trim().toLowerCase() === configuredName)
-      || sources.find((source) => source.name.trim().toLowerCase() === "website");
+      || sources.find((source) => source.name.trim().toLowerCase() === "facebook");
   }
 
   async createOrder(order: ShopOrder) {
@@ -199,14 +199,14 @@ export class PancakeService {
     if (order.deliveryType !== "express" && !shippingPartner) {
       throw new PancakeIntegrationError("Pancake POS chưa kết nối SPX Express. Vui lòng kết nối SPX trong mục Vận chuyển của Pancake rồi thử lại.", "SPX_PARTNER_NOT_CONFIGURED", 409);
     }
-    const orderSource = await this.websiteOrderSource().catch(async (error) => {
+    const orderSource = await this.configuredOrderSource().catch(async (error) => {
       await PancakeLogger.write("warning", "order.source", `Chưa đọc được nguồn đơn Pancake: ${error instanceof Error ? error.message : "không rõ lỗi"}`, order.code);
       return undefined;
     });
     if (orderSource) {
       await PancakeLogger.write("info", "order.source", `Đã gắn nguồn đơn ${orderSource.name} (#${orderSource.id}) vào payload Pancake.`, order.code);
     } else {
-      await PancakeLogger.write("warning", "order.source", "Không tìm thấy nguồn đơn tên website trên Pancake, tạo đơn không có nguồn website.", order.code);
+      await PancakeLogger.write("warning", "order.source", `Không tìm thấy nguồn đơn tên ${process.env.PANCAKE_ORDER_SOURCE_NAME || "facebook"} trên Pancake, tạo đơn không có nguồn cố định.`, order.code);
     }
     const payload = buildPancakeOrderPayload(order, this.shopId(), shippingPartner || undefined, orderSource);
     try {
