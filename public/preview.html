@@ -3271,7 +3271,11 @@
             if (await recoverCustomerOrder(previousOrder)) response = await requestOrderCancellation(code, phone);
           }
           const result = await response.json();
-          if (!response.ok) throw new Error(result.error || "Không thể hủy đơn.");
+          if (!response.ok) {
+            const cancellationError = new Error(result.error || "Không thể hủy đơn.");
+            cancellationError.status = response.status;
+            throw cancellationError;
+          }
           const nextOrders = optimisticOrders.map((order) => order.code === code ? {
             ...order,
             ...(result.order || {}),
@@ -3291,9 +3295,17 @@
             : `Đã hủy đơn ${code} thành công.`;
           alert(cancellationMessage);
         } catch (error) {
-          saveOrders(previousOrders);
+          if ([403, 409].includes(Number(error.status || 0))) {
+            saveOrders(previousOrders);
+            renderOrders();
+            alert(error.message || "Đơn không còn đủ điều kiện hủy.");
+            return;
+          }
+          // Website đã lưu trạng thái hủy trước khi đồng bộ POS. Không phục hồi
+          // đơn về trạng thái cũ chỉ vì mạng/Pancake phản hồi chậm.
+          saveOrders(optimisticOrders);
           renderOrders();
-          alert(error.message || "Không thể hủy đơn. Vui lòng thử lại.");
+          alert("Yêu cầu hủy đã được ghi nhận. Website đang tiếp tục đồng bộ với POS, bạn không cần bấm lại.");
         }
       }
 

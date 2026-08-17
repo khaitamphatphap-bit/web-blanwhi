@@ -4,10 +4,10 @@ import { InventoryService } from "@/lib/pancake/inventory-service";
 import { OrderSyncService } from "@/lib/pancake/order-sync-service";
 import { readIntegrationConfig } from "@/lib/integrations";
 import { jsonError } from "@/lib/api-errors";
-import { ExceptionHandler } from "@/lib/pancake/exception-handler";
 import { OrderService } from "@/lib/services/order-service";
 import { refundZaloPayPayment } from "@/lib/payment";
 import { reconcileZaloPayPayment } from "@/lib/payment-confirmation";
+import { QueueHandler } from "@/lib/pancake/queue-handler";
 
 type Params = { params: Promise<{ code: string }> };
 
@@ -51,53 +51,20 @@ export async function POST(request: Request, { params }: Params) {
         // Không coi lỗi truy vấn hoặc giao dịch chưa thanh toán là một khoản cần hoàn tiền.
       }
     }
-    const orderSync = new OrderSyncService();
-    if (current.pancakeOrderId || current.pancakeStatus || current.status === "paid") {
-      try {
-        current = await orderSync.reconcileExisting(current);
-      } catch {
-        // Không để lỗi đọc POS tạm thời chặn yêu cầu hủy; bước hủy bên dưới sẽ tự tìm lại đúng ID đơn.
-      }
-    }
     if (carrierHasAccepted(current)) {
       return NextResponse.json({ error: "Đơn đã giao cho đơn vị vận chuyển hoặc đang giao hàng nên không thể hủy trực tuyến." }, { status: 409 });
     }
     const wasPaid = current.status === "paid";
-
     const reason = body.reason?.trim() || "Khách yêu cầu hủy đơn";
-    if (current.deliveryType === "express" && current.deliveryOrderId && current.shippingStatus !== "cancelled") {
-      current = await new OrderService().cancelExpressDelivery(code, reason);
-    }
-    let pancakeCancellationPending = false;
-    const mayExistOnPancake = Boolean(current.pancakeOrderId
-      || current.paymentMethod === "cod"
-      || wasPaid);
-    if (mayExistOnPancake && current.pancakeStatus !== "cancelled") {
-      try {
-        current = await orderSync.cancel(current);
-      } catch (error) {
-        const normalized = ExceptionHandler.normalize(error);
-        if (!normalized.retryable) throw error;
-        pancakeCancellationPending = true;
-      }
-    }
+    const expressNeedsCancellation = current.deliveryType === "express" && Boolean(current.deliveryOrderId) && current.shippingStatus !== "cancelled";
 
-    if (current.inventoryReservationApplied && !current.inventoryReservationReleased) {
-      try {
-        await new InventoryService().reserve(current.items, "restore");
-      } catch {
-        // Không để lỗi đồng bộ tồn kho ngăn trạng thái hủy được lưu; hàng đợi POS sẽ tiếp tục xử lý.
-      }
-    }
+    // Ghi nhận hủy trên website trước mọi cuộc gọi ra ngoài. Pancake/ZaloPay chậm
+    // không được làm nút hủy quay lại trạng thái cũ hoặc khiến khách bấm nhiều lần.
     let cancelled = await updateOrder(code, {
       status: "cancelled",
-      pancakeStatus: pancakeCancellationPending ? current.pancakeStatus : "cancelled",
       trackingCode: "",
       shippingStatus: "cancelled",
-      shippingMessage: pancakeCancellationPending
-        ? `${reason}. Website đã ghi nhận; yêu cầu hủy POS đang được tự động thử lại.`
-        : `${reason}. Vận đơn đã được vô hiệu hóa trước khi bàn giao cho bưu tá.`,
-      inventoryReservationReleased: true,
+      shippingMessage: `${reason}. Website đã ghi nhận ngay; POS đang được tự động đồng bộ.`,
       ...(wasPaid ? {
         refundStatus: "pending" as const,
         refundProvider: current.paymentMethod,
@@ -111,6 +78,45 @@ export async function POST(request: Request, { params }: Params) {
         refundAmount: undefined,
         refundMessage: ""
       })
+    });
+    current = cancelled || { ...current, status: "cancelled", shippingStatus: "cancelled" };
+
+    const orderSync = new OrderSyncService();
+    if (expressNeedsCancellation) {
+      try {
+        current = await new OrderService().cancelExpressDelivery(code, reason);
+      } catch {
+        // Trạng thái hủy trên website đã được khóa; tác vụ nền sẽ tiếp tục xử lý vận đơn.
+      }
+    }
+    let pancakeCancellationPending = false;
+    const mayExistOnPancake = Boolean(current.pancakeOrderId
+      || current.paymentMethod === "cod"
+      || wasPaid);
+    if (mayExistOnPancake && current.pancakeStatus !== "cancelled") {
+      try { await QueueHandler.enqueue("order.cancel", { orderCode: code }); } catch { /* Lần đồng bộ nền kế tiếp vẫn quét lại tất cả đơn hủy. */ }
+      try {
+        current = await orderSync.cancel(current);
+      } catch {
+        pancakeCancellationPending = true;
+      }
+    }
+
+    if (current.inventoryReservationApplied && !current.inventoryReservationReleased) {
+      try {
+        await new InventoryService().reserve(current.items, "restore");
+      } catch {
+        // Không để lỗi đồng bộ tồn kho ngăn trạng thái hủy được lưu; hàng đợi POS sẽ tiếp tục xử lý.
+      }
+    }
+    cancelled = await updateOrder(code, {
+      pancakeStatus: pancakeCancellationPending ? current.pancakeStatus : "cancelled",
+      trackingCode: "",
+      shippingStatus: "cancelled",
+      shippingMessage: pancakeCancellationPending
+        ? `${reason}. Website đã ghi nhận; yêu cầu hủy POS đang được tự động thử lại.`
+        : `${reason}. Vận đơn đã được vô hiệu hóa trước khi bàn giao cho bưu tá.`,
+      inventoryReservationReleased: true
     });
     if (wasPaid && current.paymentMethod === "zalopay" && cancelled) {
       try {
