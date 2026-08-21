@@ -12,7 +12,8 @@ import { QueueHandler } from "@/lib/pancake/queue-handler";
 type Params = { params: Promise<{ code: string }> };
 
 function phoneKey(value: unknown) {
-  return String(value || "").replace(/\D/g, "");
+  const digits = String(value || "").replace(/\D/g, "");
+  return digits.startsWith("84") && digits.length > 10 ? `0${digits.slice(2)}` : digits;
 }
 
 function carrierHasAccepted(order: NonNullable<Awaited<ReturnType<typeof findOrderByCode>>>) {
@@ -28,7 +29,7 @@ export async function POST(request: Request, { params }: Params) {
     if (!phoneKey(body.phone) || phoneKey(body.phone) !== phoneKey(order.customer.phone)) {
       return NextResponse.json({ error: "Số điện thoại không khớp với đơn hàng." }, { status: 403 });
     }
-    if (order.status === "cancelled") {
+    if (order.status === "cancelled" && order.pancakeStatus === "cancelled") {
       if (order.paymentMethod === "zalopay" && !order.transactionId && order.refundStatus !== "not_required") {
         const cleaned = await updateOrder(order.code, {
           refundStatus: "not_required",
@@ -54,7 +55,8 @@ export async function POST(request: Request, { params }: Params) {
     if (carrierHasAccepted(current)) {
       return NextResponse.json({ error: "Đơn đã giao cho đơn vị vận chuyển hoặc đang giao hàng nên không thể hủy trực tuyến." }, { status: 409 });
     }
-    const wasPaid = current.status === "paid";
+    const cancellationAlreadyRecorded = current.status === "cancelled";
+    const wasPaid = current.status === "paid" || Boolean(current.transactionId);
     const reason = body.reason?.trim() || "Khách yêu cầu hủy đơn";
     const expressNeedsCancellation = current.deliveryType === "express" && Boolean(current.deliveryOrderId) && current.shippingStatus !== "cancelled";
 
@@ -118,7 +120,7 @@ export async function POST(request: Request, { params }: Params) {
         : `${reason}. Vận đơn đã được vô hiệu hóa trước khi bàn giao cho bưu tá.`,
       inventoryReservationReleased: true
     });
-    if (wasPaid && current.paymentMethod === "zalopay" && cancelled) {
+    if (!cancellationAlreadyRecorded && wasPaid && current.paymentMethod === "zalopay" && cancelled) {
       try {
         const refund = await refundZaloPayPayment(current, config.payment, reason);
         const providerMessage = `${refund.return_message || ""} ${refund.sub_return_message || ""}`;
@@ -144,7 +146,7 @@ export async function POST(request: Request, { params }: Params) {
           refundMessage: error instanceof Error ? error.message : "Không gửi được yêu cầu hoàn tiền ZaloPay."
         }) || cancelled;
       }
-    } else if (wasPaid && cancelled) {
+    } else if (!cancellationAlreadyRecorded && wasPaid && cancelled) {
       cancelled = await updateOrder(code, {
         refundStatus: "pending",
         refundProvider: current.paymentMethod,
