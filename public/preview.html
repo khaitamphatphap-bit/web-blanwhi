@@ -1382,7 +1382,10 @@
           }
         };
         const colorImage = usableImageUrl(activeVariant(product, classificationIndex).colorImages?.[color] || product.colorImages?.[color]);
-        if ((classification || product.useColorImage) && colorImage) return colorImage;
+        // Always keep the admin-selected primary/gallery image on initial render.
+        // A variant image should replace it only after the customer explicitly
+        // chooses a classification or colour.
+        if (product.useColorImage && colorImage) return colorImage;
         const gallery = Array.isArray(product.galleryImages) ? product.galleryImages.map(usableImageUrl).filter(Boolean) : [];
         return gallery[product.galleryIndex || 0] || usableImageUrl(product.image) || colorImage || "";
       };
