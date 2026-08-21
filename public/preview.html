@@ -256,6 +256,9 @@
       .cart-row h3 { margin: 0; font-size: 13px; }
       .cart-row p { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
       .cart-row .cart-variant { color: #555; line-height: 1.45; }
+      .cart-variant-edit { width: fit-content; max-width: 100%; margin-top: 7px; padding: 6px 9px; border: 1px solid #dedede; border-radius: 999px; background: #fafafa; color: #555; display: inline-flex; align-items: center; gap: 7px; font: inherit; font-size: 11px; line-height: 1.25; cursor: pointer; transition: border-color .18s ease, background .18s ease, color .18s ease; }
+      .cart-variant-edit:hover, .cart-variant-edit:focus-visible { border-color: #111; background: #fff; color: #111; outline: none; }
+      .cart-variant-edit svg { width: 12px; height: 12px; flex: 0 0 auto; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
       .checkout-item-copy { display: grid; gap: 3px; }
       .checkout-item-copy small { color: #777; font-size: 11px; line-height: 1.4; }
       .cart-message-label { display: block; margin-top: 10px; color: #777; font-size: 10px; font-weight: 700; text-transform: uppercase; }
@@ -2114,7 +2117,7 @@
 
       const cartCount = () => cart.reduce((sum, item) => sum + item.qty, 0);
       const subtotal = () => cart.reduce((sum, item) => sum + item.amount * item.qty, 0);
-      let variantState = { productId: null, mode: "cart", classificationIndex: 0, colorIndex: 0, size: "M", qty: 1, colorTouched: false };
+      let variantState = { productId: null, mode: "cart", originalCartId: "", classificationIndex: 0, colorIndex: 0, size: "M", qty: 1, colorTouched: false };
       let wholesaleState = { productId: null, qty: 10 };
       const orderStorageKey = "blanwhiOrders";
       const orderBackupStorageKey = "blanwhiOrdersBackup";
@@ -2865,7 +2868,7 @@
               </div>
               <div class="variant-actions">
                 <button class="secondary" id="variantCancel">Huỷ</button>
-                <button class="primary" id="variantConfirm" ${outOfStock ? "disabled" : ""}>${outOfStock ? "Hết hàng" : variantState.mode === "buy" ? "Mua ngay" : "Thêm vào giỏ hàng"}</button>
+                <button class="primary" id="variantConfirm" ${outOfStock ? "disabled" : ""}>${outOfStock ? "Hết hàng" : variantState.mode === "buy" ? "Mua ngay" : variantState.mode === "edit" ? "Cập nhật phân loại" : "Thêm vào giỏ hàng"}</button>
               </div>
             </div>
           </div>
@@ -2912,6 +2915,31 @@
           variantContent.classList.remove("selection-loading");
           requestAnimationFrame(() => markVisibleProductImages(variantContent));
         });
+      }
+
+      function openCartVariant(cartId) {
+        const item = cart.find((entry) => entry.cartId === cartId);
+        const product = item ? productData.find((entry) => entry.id === item.id) : null;
+        if (!item || !product || item.kind?.startsWith("gift-") || item.customDesign) return;
+        const classificationIndex = Math.max(0, product.classifications?.findIndex((entry) => entry.id === item.classificationId) ?? 0);
+        const swatches = variantSwatches(product, classificationIndex);
+        const colorIndex = Math.max(0, swatches.findIndex((color) => color === item.color));
+        variantState = {
+          productId: product.id,
+          mode: "edit",
+          originalCartId: item.cartId,
+          classificationIndex,
+          colorIndex,
+          size: item.size,
+          qty: Math.max(1, Number(item.qty) || 1),
+          colorTouched: true
+        };
+        renderVariantModal();
+        variantModal.classList.add("open");
+        variantContent.classList.add("selection-loading");
+        refreshProductAvailability(product.id).then(() => {
+          if (variantModal.classList.contains("open") && variantState.originalCartId === cartId) renderVariantModal();
+        }).finally(() => variantContent.classList.remove("selection-loading"));
       }
 
       function closeVariant() {
@@ -3008,7 +3036,28 @@
         product.size = options.size;
         closeVariant();
         const purchaseOptions = { ...options, skipAvailabilityRefresh: true };
-        if (variantState.mode === "buy") await buyNow(product.id, purchaseOptions);
+        if (variantState.mode === "edit") {
+          const originalIndex = cart.findIndex((item) => item.cartId === variantState.originalCartId);
+          if (originalIndex < 0) return;
+          const nextCartId = `${product.id}-${options.classificationId}-${options.color}-${options.size}`;
+          const duplicateIndex = cart.findIndex((item, index) => index !== originalIndex && item.cartId === nextCartId);
+          if (duplicateIndex >= 0) {
+            const combinedQty = cart[duplicateIndex].qty + options.qty;
+            if (available !== null && combinedQty > available) {
+              alert(`Phân loại này chỉ còn có thể bán ${available}.`);
+              return;
+            }
+            cart[duplicateIndex].qty = combinedQty;
+            cart.splice(originalIndex, 1);
+          } else {
+            Object.assign(cart[originalIndex], product, options, {
+              cartId: nextCartId,
+              classificationIndex: variantState.classificationIndex
+            });
+          }
+          renderCart();
+          openCart();
+        } else if (variantState.mode === "buy") await buyNow(product.id, purchaseOptions);
         else {
           if (await addToCart(product.id, purchaseOptions)) openCart();
         }
@@ -3037,7 +3086,7 @@
               <div class="product-visual">${cartItemVisualMedia(item)}</div>
               <div>
                 <h3>${escapeMarkup(item.name)}</h3>
-                ${item.kind.startsWith("gift-") ? "" : `<p class="cart-variant">${item.classificationName ? `${escapeMarkup(item.classificationName)} · ` : ""}${escapeMarkup(colorLabel(item.color, item, item.classificationIndex || 0))} · Size ${escapeMarkup(item.size)}</p>`}
+                ${item.kind.startsWith("gift-") || item.customDesign ? "" : `<button class="cart-variant-edit" type="button" data-edit-variant="${escapeMarkup(item.cartId)}" aria-label="Đổi phân loại ${escapeMarkup(item.name)}"><span>${item.classificationName ? `${escapeMarkup(item.classificationName)} · ` : ""}${escapeMarkup(colorLabel(item.color, item, item.classificationIndex || 0))} · Size ${escapeMarkup(item.size)}</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l11-11a2.8 2.8 0 0 0-4-4L4 16v4Z"/><path d="m13.5 6.5 4 4"/></svg></button>`}
                 <p>${escapeMarkup(item.price)}${item.designName ? ` · ${escapeMarkup(item.designName)}` : ""}</p>
                 ${item.customText ? `<p>Chữ thiết kế: ${escapeMarkup(item.customText)}</p>` : ""}
                 ${item.kind === "gift-card" ? `
@@ -3935,9 +3984,14 @@
       });
 
       cartItems.addEventListener("click", (event) => {
+        const editVariant = event.target.closest("[data-edit-variant]");
         const inc = event.target.closest("[data-inc]");
         const dec = event.target.closest("[data-dec]");
         const remove = event.target.closest("[data-remove]");
+        if (editVariant) {
+          openCartVariant(editVariant.dataset.editVariant);
+          return;
+        }
         if (remove) {
           const index = cart.findIndex((entry) => entry.cartId === remove.dataset.remove);
           if (index >= 0) cart.splice(index, 1);
