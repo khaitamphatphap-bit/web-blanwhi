@@ -645,7 +645,12 @@ export function SiteEditor() {
                         <span className="mt-0.5 inline-grid h-6 w-7 shrink-0 place-items-center bg-black text-[10px] font-bold text-white">{index + 1}</span>
                         <span className="min-w-0">
                           <strong className="block truncate">{product.name}</strong>
-                          <span className="mt-1 block text-xs text-neutral-500">{product.salePrice || product.originalPrice || product.price} · tồn {buildProductInventory(product).reduce((sum, item) => sum + item.quantity, 0)} · {product.active ? "đang bán" : "ẩn"}</span>
+                          <span className="mt-1 block text-xs text-neutral-500">
+                            {product.salePrice || product.originalPrice || product.price}
+                            {" · tồn POS "}{buildProductInventory(product).reduce((sum, item) => sum + Math.max(0, Number(item.pancakeQuantity ?? item.quantity) || 0), 0)}
+                            {" · mở bán web "}{buildProductInventory(product).reduce((sum, item) => sum + Math.max(0, Number(item.publishQuantity) || 0), 0)}
+                            {" · "}{product.active ? "đang bán" : "ẩn"}
+                          </span>
                         </span>
                       </span>
                     </button>
@@ -1095,8 +1100,14 @@ function ProductForm({
                 <label className="text-[10px] uppercase text-neutral-500">Số lượng mở bán<input aria-label={`Số lượng mở bán ${inventoryClassificationName(item)} ${inventoryColorName(item)} size ${item.size}`} type="number" min="0" step="1" value={item.publishQuantity || 0} onChange={(event) => updateInventoryItem(item.key, { publishQuantity: Math.max(0, Math.floor(Number(event.target.value) || 0)) })} className="mt-1 h-11 w-full border-2 border-black px-3 text-right text-lg font-bold normal-case" /></label>
               </div>
               <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs text-neutral-600">
-                <span>Tồn Pancake: <strong className="text-black">{item.pancakeQuantity || 0}</strong> (chỉ đọc)</span>
-                <button type="button" onClick={() => updateInventoryItem(item.key, { publishQuantity: 0 })} className="uppercase text-red-600">Đặt số lượng mở bán về 0</button>
+                <span>
+                  Tồn Pancake: <strong className="text-black">{item.pancakeQuantity || 0}</strong> (chỉ đọc)
+                  {(item.pancakeQuantity || 0) > 0 && (item.publishQuantity || 0) === 0 ? <strong className="ml-2 text-red-600">Kho còn nhưng web đang tắt bán</strong> : null}
+                </span>
+                <span className="flex flex-wrap gap-3">
+                  <button type="button" onClick={() => updateInventoryItem(item.key, { publishQuantity: Math.max(0, Math.floor(Number(item.pancakeQuantity ?? item.quantity) || 0)) })} className="font-bold uppercase text-black underline">Mở bán theo tồn POS</button>
+                  <button type="button" onClick={() => updateInventoryItem(item.key, { publishQuantity: 0 })} className="uppercase text-red-600">Đặt số lượng mở bán về 0</button>
+                </span>
               </div>
             </div>
             ))}
