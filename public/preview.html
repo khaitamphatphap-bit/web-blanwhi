@@ -2903,7 +2903,7 @@
         variantModal.classList.add("open");
         variantContent.classList.add("selection-loading");
         refreshProductAvailability(id).then(() => {
-          if (!variantModal.classList.contains("open") || variantState.productId !== id) return;
+          if (!variantModal.classList.contains("open") || variantState.productId !== id || variantState.confirming) return;
           const selectedColor = variantSwatches(product, variantState.classificationIndex)[variantState.colorIndex];
           if (!hasStock(product, { classificationIndex: variantState.classificationIndex, color: selectedColor, size: variantState.size })) {
             Object.assign(variantState, preferredVariantSelection({
@@ -2998,19 +2998,14 @@
       }
 
       async function confirmVariant() {
+        if (variantState.confirming) return;
+        variantState.confirming = true;
+        try {
         const product = productData.find((item) => item.id === variantState.productId);
-        if (!product) return;
-        await refreshProductAvailability(product.id, true);
-        const currentColor = variantSwatches(product, variantState.classificationIndex)[variantState.colorIndex];
-        if (!hasStock(product, { classificationIndex: variantState.classificationIndex, color: currentColor, size: variantState.size })) {
-          Object.assign(variantState, preferredVariantSelection({
-            ...product,
-            classificationIndex: variantState.classificationIndex,
-            colorIndex: variantState.colorIndex,
-            size: variantState.size
-          }));
+        if (!product) {
+          variantState.confirming = false;
+          return;
         }
-        renderVariantModal();
         const classification = activeClassification(product, variantState.classificationIndex);
         const swatches = variantSwatches(product, variantState.classificationIndex);
         const options = {
@@ -3063,6 +3058,9 @@
         } else if (variantState.mode === "buy") await buyNow(product.id, purchaseOptions);
         else {
           if (await addToCart(product.id, purchaseOptions)) openCart();
+        }
+        } finally {
+          variantState.confirming = false;
         }
       }
 
