@@ -123,13 +123,14 @@ function isCartItem(item: CartItem | PreviewCheckoutItem): item is CartItem {
 
 function normalizeItems(items: Array<CartItem | PreviewCheckoutItem>) {
   return items.map((item, index) => {
+    const normalizedQuantity = Math.max(1, Math.min(100, Math.floor(Number(isCartItem(item) ? item.quantity : item.qty) || 1)));
     if (isCartItem(item)) {
       return {
         productId: item.product.id,
         name: item.product.name,
         color: item.color.name,
         size: item.size,
-        quantity: item.quantity,
+        quantity: normalizedQuantity,
         unitPrice: item.product.price
       };
     }
@@ -144,7 +145,9 @@ function normalizeItems(items: Array<CartItem | PreviewCheckoutItem>) {
       name: item.classificationName ? `${item.name} - ${item.classificationName}` : item.name,
       color: item.color || item.designName || "",
       size: item.size || "",
-      quantity: Number(item.qty || 1),
+      classificationId: item.classificationId || "",
+      classificationName: item.classificationName || "",
+      quantity: normalizedQuantity,
       unitPrice: Number(item.price || 0)
     };
   });
@@ -161,6 +164,15 @@ function productUnitPrice(product: SiteContent["products"][number]) {
   return value;
 }
 
+function normalizedText(value: unknown) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ");
+}
+
 async function hydratePancakeLinks(items: ReturnType<typeof normalizeItems>, content: Awaited<ReturnType<typeof readSiteContent>>) {
   return items.map((item) => {
     const product = content.products.find((candidate) => candidate.id === item.productId);
@@ -168,9 +180,20 @@ async function hydratePancakeLinks(items: ReturnType<typeof normalizeItems>, con
       throw new Error(`${item.name || "Sản phẩm"} không còn bán trên website. Vui lòng tải lại trang và đặt lại.`);
     }
     const rows = buildProductInventory(product);
+    const colorNameFor = (row: (typeof rows)[number]) => {
+      const classification = product.classifications?.find((entry) => entry.id === row.classificationId);
+      return classification?.colorNames?.[row.color || ""] || product.colorNames?.[row.color || ""] || row.color || "";
+    };
     const row = rows.find((candidate) =>
       (item.inventoryKey && candidate.key === item.inventoryKey)
+      || (item.pancakeVariationId && candidate.pancakeVariationId === item.pancakeVariationId)
+      || (item.pancakeSku && (candidate.pancakeSku || "").toUpperCase() === item.pancakeSku.toUpperCase())
       || (item.sku && candidate.sku.toUpperCase() === item.sku.toUpperCase())
+      || (
+        item.classificationId === (candidate.classificationId || "")
+        && normalizedText(item.size) === normalizedText(candidate.size)
+        && normalizedText(item.color) === normalizedText(colorNameFor(candidate))
+      )
     );
     const authoritativeItem = {
       ...item,

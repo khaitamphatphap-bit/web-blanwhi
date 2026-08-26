@@ -8,6 +8,19 @@ import { buildProductInventory } from "@/lib/product-inventory";
 import { readSiteContent, writeSiteContent } from "@/lib/site-content";
 import type { OrderItem } from "@/lib/types";
 
+function sameProduct(item: OrderItem, row: PancakeAvailabilityItem & { productId: string }) {
+  return !item.productId || item.productId === row.productId;
+}
+
+function matchesAvailabilityRow(item: OrderItem, row: PancakeAvailabilityItem & { productId: string }) {
+  if (!sameProduct(item, row)) return false;
+  return Boolean(
+    (item.inventoryKey && row.key === item.inventoryKey)
+    || (item.pancakeVariationId && row.pancakeVariationId === item.pancakeVariationId)
+    || (item.pancakeSku && row.pancakeSku.toUpperCase() === item.pancakeSku.toUpperCase())
+  );
+}
+
 export class InventoryService {
   constructor(private readonly pancake = new PancakeService()) {}
 
@@ -83,15 +96,21 @@ export class InventoryService {
   async assertAvailable(items: OrderItem[]) {
     if (!items.length) return;
     const availability = await this.availability(undefined, this.configured());
+    const requested = new Map<string, { row: PancakeAvailabilityItem & { productId: string }; quantity: number; name: string }>();
     for (const item of items) {
-      const row = availability.find((candidate) =>
-        (item.inventoryKey && candidate.key === item.inventoryKey)
-        || (item.pancakeVariationId && candidate.pancakeVariationId === item.pancakeVariationId)
-        || (item.pancakeSku && candidate.pancakeSku.toUpperCase() === item.pancakeSku.toUpperCase())
-      );
+      const row = availability.find((candidate) => matchesAvailabilityRow(item, candidate));
       if (!row) throw new PancakeIntegrationError(`${item.name} chưa có dòng tồn kho trên website.`, "PRODUCT_NOT_LINKED", 409);
-      if (row.availableQuantity < item.quantity) {
-        throw new PancakeIntegrationError(`${item.name} chỉ còn có thể bán ${row.availableQuantity} sản phẩm.`, "OUT_OF_STOCK", 409);
+      const requestKey = `${row.productId}::${row.key}`;
+      const current = requested.get(requestKey);
+      requested.set(requestKey, {
+        row,
+        quantity: (current?.quantity || 0) + Math.max(0, Math.floor(Number(item.quantity) || 0)),
+        name: current?.name || item.name
+      });
+    }
+    for (const request of requested.values()) {
+      if (request.row.availableQuantity < request.quantity) {
+        throw new PancakeIntegrationError(`${request.name} chỉ còn có thể bán ${request.row.availableQuantity} sản phẩm.`, "OUT_OF_STOCK", 409);
       }
     }
   }
@@ -101,13 +120,14 @@ export class InventoryService {
     const products = content.products.map((product) => ({
       ...product,
       inventory: buildProductInventory(product).map((row) => {
-        const item = items.find((candidate) =>
+        const matchedItems = items.filter((candidate) =>
           (candidate.productId === product.id && candidate.inventoryKey === row.key)
-          || (candidate.pancakeVariationId && candidate.pancakeVariationId === row.pancakeVariationId)
-          || (candidate.pancakeSku && candidate.pancakeSku.toUpperCase() === (row.pancakeSku || "").toUpperCase())
+          || (candidate.productId === product.id && candidate.pancakeVariationId && candidate.pancakeVariationId === row.pancakeVariationId)
+          || (candidate.productId === product.id && candidate.pancakeSku && candidate.pancakeSku.toUpperCase() === (row.pancakeSku || "").toUpperCase())
         );
-        if (!item) return row;
-        return { ...row, publishQuantity: changePublishQuantity(row.publishQuantity, item.quantity, direction) };
+        if (!matchedItems.length) return row;
+        const quantity = matchedItems.reduce((sum, item) => sum + Math.max(0, Math.floor(Number(item.quantity) || 0)), 0);
+        return { ...row, publishQuantity: changePublishQuantity(row.publishQuantity, quantity, direction) };
       })
     }));
     return writeSiteContent({ ...content, products });
