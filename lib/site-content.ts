@@ -138,6 +138,12 @@ export type SiteContent = {
     title: string;
     lines: string[];
   }>;
+  commerceNotice: {
+    enabled: boolean;
+    imageUrl: string;
+    verificationUrl: string;
+    altText: string;
+  };
   payment: {
     bank: {
       receiverName: string;
@@ -205,6 +211,12 @@ export const defaultSiteContent: SiteContent = {
     { title: "Chăm sóc khách hàng", lines: ["Câu hỏi thường gặp", "Chính sách đổi trả", "Điều khoản khuyến mãi"] },
     { title: "Kết nối<br />cùng BLANWHI", lines: ["Địa chỉ email", "Khi đăng ký, bạn đồng ý với các điều khoản của BLANWHI."] }
   ],
+  commerceNotice: {
+    enabled: false,
+    imageUrl: "",
+    verificationUrl: "",
+    altText: "Đã thông báo Bộ Công Thương"
+  },
   payment: {
     bank: {
       receiverName: "HỘ KINH DOANH BLANWHI – BNW",
@@ -320,6 +332,11 @@ async function loadSiteContent(): Promise<SiteContent> {
     menu: { ...defaultSiteContent.menu, ...saved.menu },
     support: { ...defaultSiteContent.support, ...saved.support },
     footerColumns: translateLegacyFooterColumns(saved.footerColumns || defaultSiteContent.footerColumns),
+    commerceNotice: {
+      ...defaultSiteContent.commerceNotice,
+      ...saved.commerceNotice,
+      enabled: saved.commerceNotice?.enabled === true
+    },
     payment: {
       bank: {
         ...defaultSiteContent.payment.bank,

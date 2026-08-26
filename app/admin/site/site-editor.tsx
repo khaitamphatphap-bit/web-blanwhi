@@ -435,6 +435,24 @@ export function SiteEditor() {
           </div>
 
           <div className="border border-neutral-200 p-4">
+            <h2 className="text-sm font-semibold uppercase">Tag Bộ Công Thương</h2>
+            <p className="mt-2 text-xs leading-5 text-neutral-500">Dán link xác nhận và tải ảnh tag lên. Tag chỉ hiện ở cuối trang khách khi đã bật và có đủ ảnh cùng đường dẫn.</p>
+            <label className="mt-3 flex items-center gap-2 text-sm font-semibold">
+              <input
+                type="checkbox"
+                checked={content.commerceNotice.enabled}
+                onChange={(event) => updateContent({ ...content, commerceNotice: { ...content.commerceNotice, enabled: event.target.checked } })}
+              />
+              Hiển thị trên website
+            </label>
+            <Text label="Link xác nhận Bộ Công Thương" value={content.commerceNotice.verificationUrl} onChange={(value) => updateContent({ ...content, commerceNotice: { ...content.commerceNotice, verificationUrl: value } })} />
+            <Text label="URL ảnh tag" value={content.commerceNotice.imageUrl} onChange={(value) => updateContent({ ...content, commerceNotice: { ...content.commerceNotice, imageUrl: value } })} />
+            <input type="file" accept="image/*" onChange={(event) => uploadImage(event, (url) => updateContent({ ...content, commerceNotice: { ...content.commerceNotice, imageUrl: url } }))} className="mt-2 text-xs" />
+            <Text label="Mô tả ảnh" value={content.commerceNotice.altText} onChange={(value) => updateContent({ ...content, commerceNotice: { ...content.commerceNotice, altText: value } })} />
+            {content.commerceNotice.imageUrl ? <img src={content.commerceNotice.imageUrl} alt={content.commerceNotice.altText || "Tag Bộ Công Thương"} className="mt-3 max-h-20 max-w-[220px] object-contain" /> : null}
+          </div>
+
+          <div className="border border-neutral-200 p-4">
             <h2 className="text-sm font-semibold uppercase">Hero đầu trang</h2>
             <label className="mt-3 block text-xs uppercase text-neutral-500">Overline</label>
             <input value={content.hero.overline} onChange={(event) => updateContent({ ...content, hero: { ...content.hero, overline: event.target.value } })} className="mt-1 h-10 w-full border px-3" />
