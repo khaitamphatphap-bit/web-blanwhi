@@ -459,6 +459,20 @@ export function SiteEditor() {
               <option value="center">Chính giữa</option>
               <option value="right">Bên phải</option>
             </select>
+            <label className="mt-4 flex items-center justify-between text-xs uppercase text-neutral-500">
+              <span>Dịch lên trên</span>
+              <strong className="text-neutral-900">{content.commerceNotice.moveUp}px</strong>
+            </label>
+            <input
+              type="range"
+              min="0"
+              max="180"
+              step="5"
+              value={content.commerceNotice.moveUp}
+              onChange={(event) => updateContent({ ...content, commerceNotice: { ...content.commerceNotice, moveUp: Number(event.target.value) } })}
+              className="mt-2 w-full accent-black"
+            />
+            <p className="mt-1 text-xs text-neutral-500">Kéo sang phải để đưa tag lên cao hơn. Mức tối đa 180px.</p>
             {content.commerceNotice.imageUrl ? <img src={content.commerceNotice.imageUrl} alt={content.commerceNotice.altText || "Tag Bộ Công Thương"} className="mt-3 max-h-20 max-w-[220px] object-contain" /> : null}
           </div>
 

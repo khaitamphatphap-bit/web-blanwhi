@@ -1978,6 +1978,7 @@
           const visible = notice.enabled === true && Boolean(notice.imageUrl) && Boolean(notice.verificationUrl);
           commerceNotice.hidden = !visible;
           commerceNotice.style.justifyContent = notice.position === "left" ? "flex-start" : notice.position === "center" ? "center" : "flex-end";
+          commerceNotice.style.marginTop = `-${Math.max(0, Math.min(180, Number(notice.moveUp) || 0))}px`;
           if (commerceLink) commerceLink.href = visible ? notice.verificationUrl : "#";
           if (commerceImage) {
             commerceImage.src = visible ? notice.imageUrl : "";

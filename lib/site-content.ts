@@ -144,6 +144,7 @@ export type SiteContent = {
     verificationUrl: string;
     altText: string;
     position: "left" | "center" | "right";
+    moveUp: number;
   };
   payment: {
     bank: {
@@ -217,7 +218,8 @@ export const defaultSiteContent: SiteContent = {
     imageUrl: "",
     verificationUrl: "",
     altText: "Đã thông báo Bộ Công Thương",
-    position: "right"
+    position: "right",
+    moveUp: 0
   },
   payment: {
     bank: {
@@ -338,7 +340,8 @@ async function loadSiteContent(): Promise<SiteContent> {
       ...defaultSiteContent.commerceNotice,
       ...saved.commerceNotice,
       enabled: saved.commerceNotice?.enabled === true,
-      position: saved.commerceNotice?.position || defaultSiteContent.commerceNotice.position
+      position: saved.commerceNotice?.position || defaultSiteContent.commerceNotice.position,
+      moveUp: Math.max(0, Math.min(180, Number(saved.commerceNotice?.moveUp) || 0))
     },
     payment: {
       bank: {
