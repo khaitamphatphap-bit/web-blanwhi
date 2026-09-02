@@ -29,6 +29,11 @@ function toUrlSearchParams(params: Record<string, string | string[] | undefined>
   return searchParams;
 }
 
+function isSuccessfulZaloPayRedirect(params: Record<string, string | string[] | undefined>) {
+  const status = String(valueOf(params.status) || "").trim().toLowerCase();
+  return ["1", "success", "paid", "completed", "complete"].includes(status);
+}
+
 export default async function PaymentResultPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const zaloPayAppTransId = valueOf(params.apptransid) || valueOf(params.app_trans_id) || "";
@@ -44,7 +49,12 @@ export default async function PaymentResultPage({ searchParams }: PageProps) {
     const integrations = await readIntegrationConfig();
     const hasSignedRedirect = Boolean(valueOf(params.checksum));
     const redirectVerified = !hasSignedRedirect || verifyZaloPayRedirectParams(toUrlSearchParams(params), integrations.payment).ok;
-    if (redirectVerified) {
+    if (redirectVerified && isSuccessfulZaloPayRedirect(params)) {
+      order = await markVerifiedPayment(order.code, {
+        paymentProviderOrderId: zaloPayAppTransId || order.paymentProviderOrderId || order.providerOrderId,
+        providerMessage: "ZaloPay redirect payment success"
+      }).catch(() => order);
+    } else if (redirectVerified) {
       order = await reconcileZaloPayPayment({ ...order, paymentProviderOrderId: zaloPayAppTransId || order.paymentProviderOrderId || order.providerOrderId }, integrations.payment).catch(() => order);
     }
   }
