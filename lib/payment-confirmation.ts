@@ -33,7 +33,7 @@ export async function syncVerifiedOrderToPos(order: ShopOrder) {
   }
 }
 
-export async function reconcileZaloPayPayment(order: ShopOrder, paymentConfig: IntegrationConfig["payment"]) {
+export async function reconcileZaloPayPayment(order: ShopOrder, paymentConfig: IntegrationConfig["payment"], options: { syncPos?: boolean } = {}) {
   if (order.paymentMethod !== "zalopay" || order.status !== "pending") return order;
   const result = await queryZaloPayPayment(order, paymentConfig);
   if (Number(result.return_code) !== 1) return order;
@@ -45,7 +45,7 @@ export async function reconcileZaloPayPayment(order: ShopOrder, paymentConfig: I
     paymentProviderOrderId: result.app_trans_id,
     providerMessage: "ZaloPay verified payment success"
   });
-  return syncVerifiedOrderToPos(paid);
+  return options.syncPos === false ? paid : syncVerifiedOrderToPos(paid);
 }
 
 function refundResponseIsProcessing(result: { return_code?: number; sub_return_code?: number; refund_status?: number; return_message?: string; sub_return_message?: string }) {
