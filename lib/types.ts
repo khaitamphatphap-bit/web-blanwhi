@@ -100,6 +100,7 @@ export type ShopOrder = {
   customerDeviceId?: string;
   customerDeviceBoundAt?: string;
   checkoutRequestId?: string;
+  checkoutCompletedAt?: string;
   status: OrderStatus;
   paymentMethod: PaymentMethod;
   paymentProvider: string;

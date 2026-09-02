@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { readIntegrationConfig } from "@/lib/integrations";
+import { canCreatePancakeOrder } from "@/lib/order-readiness";
 import { readOrders, updateOrder } from "@/lib/orders";
 import { fetchShippingStatus } from "@/lib/shipping-providers";
 import { OrderService } from "@/lib/services/order-service";
@@ -9,7 +10,7 @@ import { createJsonStoreBackup } from "@/lib/data-store";
 const finalShippingStatuses = new Set(["delivered", "returning", "returned", "cancelled"]);
 
 function hasPancakeSyncSignal(order: Awaited<ReturnType<typeof readOrders>>[number]) {
-  return Boolean(order.pancakeOrderId || order.pancakeStatus || order.externalSync?.pancake);
+  return Boolean(order.pancakeOrderId || order.pancakeStatus || (canCreatePancakeOrder(order) && order.externalSync?.pancake));
 }
 
 async function syncShippingOrders(request: Request) {
@@ -25,9 +26,7 @@ async function syncShippingOrders(request: Request) {
 
   const results = [];
   const eligibleUnlinked = fullSync ? orders.filter((order) => {
-    const paymentMethod = String(order.paymentMethod || "").trim().toLowerCase();
-    const eligiblePayment = order.status === "paid" || (paymentMethod === "cod" && order.status === "pending");
-    return eligiblePayment
+    return canCreatePancakeOrder(order)
       && order.status !== "cancelled"
       && order.deliveryType !== "express"
       && !order.pancakeOrderId;

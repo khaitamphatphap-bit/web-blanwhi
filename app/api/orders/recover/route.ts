@@ -99,6 +99,7 @@ export async function POST(request: Request) {
     customerDeviceId: String(body.customerDeviceId || "").trim().slice(0, 100) || undefined,
     customerDeviceBoundAt: String(body.customerDeviceId || "").trim() ? now : undefined,
     checkoutRequestId: String(body.checkoutRequestId || "").trim().slice(0, 120) || undefined,
+    checkoutCompletedAt: now,
     status: "pending",
     paymentMethod,
     paymentProvider: paymentMethod,

@@ -1,4 +1,5 @@
 import { findOrderByCode, readOrders, updateOrder, writeOrders } from "@/lib/orders";
+import { canCreatePancakeOrder } from "@/lib/order-readiness";
 import { ExceptionHandler } from "@/lib/pancake/exception-handler";
 import { PancakeIntegrationError } from "@/lib/pancake/exception-handler";
 import { InventoryService } from "@/lib/pancake/inventory-service";
@@ -369,7 +370,7 @@ export class OrderSyncService {
     const latest = await findOrderByCode(order.code);
     if (latest?.status === "cancelled") return latest;
     const current = await this.refreshItemLinks(latest || order);
-    if (current.status !== "paid" && !(String(current.paymentMethod || "").trim().toLowerCase() === "cod" && current.status === "pending")) {
+    if (!canCreatePancakeOrder(current)) {
       return await updateOrder(order.code, {
         externalSync: {
           ...(latest || order).externalSync,

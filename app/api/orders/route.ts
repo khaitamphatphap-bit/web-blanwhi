@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { canCreatePancakeOrder } from "@/lib/order-readiness";
 import { readOrders, updateOrder } from "@/lib/orders";
 import { OrderSyncService } from "@/lib/pancake/order-sync-service";
 import { readIntegrationConfig } from "@/lib/integrations";
@@ -48,7 +49,7 @@ export async function GET(request: Request) {
     const syncTargets = paymentRefreshed.filter((order) => allowed.has(order.code)
       && !finalCustomerShippingStatuses.has(order.shippingStatus || "")
       && order.status !== "cancelled"
-      && (order.status === "paid" || (String(order.paymentMethod || "").trim().toLowerCase() === "cod" && order.status === "pending")));
+      && canCreatePancakeOrder(order));
     await Promise.allSettled(syncTargets.map((order) => (
       order.pancakeOrderId || order.pancakeStatus
         ? sync.reconcileExisting(order)

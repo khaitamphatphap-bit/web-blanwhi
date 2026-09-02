@@ -1,4 +1,5 @@
 import { updateOrder } from "@/lib/orders";
+import { canCreatePancakeOrder } from "@/lib/order-readiness";
 import { InventoryService } from "@/lib/pancake/inventory-service";
 import { OrderSyncService } from "@/lib/pancake/order-sync-service";
 import type { ShopOrder } from "@/lib/types";
@@ -10,7 +11,7 @@ export class POSSyncService {
   ) {}
 
   async confirmOrder(order: ShopOrder) {
-    if (order.status !== "paid" && !(String(order.paymentMethod || "").trim().toLowerCase() === "cod" && order.status === "pending")) {
+    if (!canCreatePancakeOrder(order)) {
       return await updateOrder(order.code, {
         externalSync: {
           ...order.externalSync,

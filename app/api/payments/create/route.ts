@@ -224,6 +224,9 @@ export async function POST(request: Request) {
     const customerDeviceId = String(payload.customerDeviceId || "").trim().slice(0, 100);
     const checkoutRequestId = String(payload.checkoutRequestId || "").trim().slice(0, 120);
     const [integrations, siteContent] = await Promise.all([readIntegrationConfig(), readSiteContent()]);
+    const now = new Date().toISOString();
+    const inventoryService = new InventoryService();
+    const pancakeConfigured = inventoryService.configured();
 
     if (!enabledCheckoutMethods.has(paymentMethod)) {
       return json({ error: "Phương thức thanh toán này không còn được hỗ trợ. Vui lòng chọn COD hoặc Zalopay." }, { status: 400 });
@@ -250,6 +253,33 @@ export async function POST(request: Request) {
       const existing = (await readOrders()).find((candidate) => candidate.checkoutRequestId === checkoutRequestId
         && (!customerDeviceId || candidate.customerDeviceId === customerDeviceId));
       if (existing) {
+        if (paymentMethod === "cod" && existing.status === "pending" && !existing.checkoutCompletedAt) {
+          const accepted = await updateOrder(existing.code, {
+            checkoutCompletedAt: now,
+            ...(pancakeConfigured ? { externalSync: {
+              ...existing.externalSync,
+              pancake: "Đang đồng bộ Pancake",
+              lastSyncedAt: now
+            } } : {})
+          }) || existing;
+          if (pancakeConfigured) {
+            after(async () => {
+              try {
+                await new POSSyncService().confirmOrder(accepted);
+              } catch (error) {
+                const message = error instanceof Error ? error.message : "Không thể đồng bộ đơn sang Pancake.";
+                await updateOrder(accepted.code, {
+                  externalSync: {
+                    ...accepted.externalSync,
+                    pancake: `Lỗi đồng bộ: ${message}`,
+                    lastSyncedAt: new Date().toISOString()
+                  }
+                });
+              }
+            });
+          }
+          return json({ order: accepted, syncQueued: pancakeConfigured, deduplicated: true });
+        }
         if (paymentMethod === "zalopay" && existing.status === "pending") {
           const zalopay = await createZaloPayPayment(existing, request, integrations.payment);
           if (zalopay.order_url) {
@@ -280,10 +310,7 @@ export async function POST(request: Request) {
       shipping,
       total: Math.max(subtotal - discount + shipping, 0)
     };
-    const inventoryService = new InventoryService();
-    const pancakeConfigured = inventoryService.configured();
     if (pancakeConfigured) await inventoryService.assertAvailable(orderItems);
-    const now = new Date().toISOString();
     let order: ShopOrder = {
       id: crypto.randomUUID(),
       code: newOrderCode(),
@@ -328,6 +355,34 @@ export async function POST(request: Request) {
       updatedAt: now
     };
 
+    if (paymentMethod === "zalopay") {
+      const pendingZaloPayOrder: ShopOrder = {
+        ...order,
+        externalSync: pancakeConfigured
+          ? { ...order.externalSync, pancake: "Chờ ZaloPay xác nhận - chưa gửi Pancake", lastSyncedAt: now }
+          : order.externalSync
+      };
+      const zalopay = await createZaloPayPayment(pendingZaloPayOrder, request, integrations.payment);
+      if (!zalopay.order_url) {
+        return json({
+          error: zalopay.return_message || "ZaloPay chưa trả link thanh toán. Vui lòng kiểm tra App ID, Key 1, Key 2 production trong trang admin."
+        }, { status: 400 });
+      }
+      const saved = await createOrder({
+        ...pendingZaloPayOrder,
+        paymentProviderOrderId: zalopay.app_trans_id,
+        providerMessage: "ZaloPay payment link created",
+        checkoutCompletedAt: now
+      });
+      return json({
+        order: saved,
+        redirectUrl: zalopay.order_url,
+        token: zalopay.zp_trans_token || zalopay.order_token,
+        demo: "demo" in zalopay ? zalopay.demo : false,
+        message: zalopay.return_message
+      });
+    }
+
     if (pancakeConfigured && paymentMethod === "cod") {
       order.externalSync = {
         ...order.externalSync,
@@ -335,7 +390,7 @@ export async function POST(request: Request) {
         lastSyncedAt: now
       };
     }
-    order = await createOrder(order);
+    order = await createOrder({ ...order, checkoutCompletedAt: now });
     if (pancakeConfigured && paymentMethod === "cod") {
       after(async () => {
         try {
@@ -353,10 +408,6 @@ export async function POST(request: Request) {
       });
       return json({ order, syncQueued: true });
     }
-    if (pancakeConfigured) {
-      order.externalSync = { ...order.externalSync, pancake: "Chờ ZaloPay xác nhận - chưa gửi Pancake" };
-      await updateOrder(order.code, { externalSync: order.externalSync });
-    }
 
     if (paymentMethod === "vnpay") {
       return json({ order, redirectUrl: createVnpayUrl(order, request, integrations.payment) });
@@ -370,27 +421,6 @@ export async function POST(request: Request) {
         qrCodeUrl: momo.qrCodeUrl,
         deeplink: momo.deeplink,
         demo: "demo" in momo ? momo.demo : false
-      });
-    }
-
-    if (paymentMethod === "zalopay") {
-      const zalopay = await createZaloPayPayment(order, request, integrations.payment);
-      if (!zalopay.order_url) {
-        return json({
-          error: zalopay.return_message || "ZaloPay chưa trả link thanh toán. Vui lòng kiểm tra App ID, Key 1, Key 2 production trong trang admin.",
-          order
-        }, { status: 400 });
-      }
-      const orderWithZaloPayId = await updateOrder(order.code, {
-        paymentProviderOrderId: zalopay.app_trans_id,
-        providerMessage: "ZaloPay payment link created"
-      }) || order;
-      return json({
-        order: orderWithZaloPayId,
-        redirectUrl: zalopay.order_url,
-        token: zalopay.zp_trans_token || zalopay.order_token,
-        demo: "demo" in zalopay ? zalopay.demo : false,
-        message: zalopay.return_message
       });
     }
 
