@@ -147,6 +147,7 @@ export type ShopOrder = {
   externalSync?: {
     misa?: string;
     pancake?: string;
+    payment?: string;
     shipping?: string;
     lastSyncedAt?: string;
   };

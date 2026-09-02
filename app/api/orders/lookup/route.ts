@@ -1,8 +1,6 @@
-import { after, NextResponse } from "next/server";
-import { readIntegrationConfig } from "@/lib/integrations";
+import { NextResponse } from "next/server";
+import { refreshCustomerVisiblePaymentStatuses } from "@/lib/customer-payment-status";
 import { readOrders } from "@/lib/orders";
-import { reconcileZaloPayPayment, syncVerifiedOrderToPos } from "@/lib/payment-confirmation";
-import type { ShopOrder } from "@/lib/types";
 
 const lookupWindows = new Map<string, { count: number; resetAt: number }>();
 
@@ -69,23 +67,6 @@ function maskAddress(value: string) {
   return `${streetNumber}***, ${maskedCity}`;
 }
 
-async function refreshLookupPaymentStatuses(orders: ShopOrder[]) {
-  const pendingZaloPayOrders = orders.filter((order) => order.status === "pending" && order.paymentMethod === "zalopay");
-  if (!pendingZaloPayOrders.length) return orders;
-  const integrations = await readIntegrationConfig();
-  const refreshed = await Promise.all(pendingZaloPayOrders.map(async (order) => {
-    try {
-      const next = await reconcileZaloPayPayment(order, integrations.payment, { syncPos: false });
-      if (next.status === "paid") after(() => syncVerifiedOrderToPos(next));
-      return next;
-    } catch {
-      return order;
-    }
-  }));
-  const byCode = new Map(refreshed.map((order) => [order.code, order]));
-  return orders.map((order) => byCode.get(order.code) || order);
-}
-
 export async function POST(request: Request) {
   if (!mayLookup(request)) {
     return NextResponse.json({ error: "Bạn thao tác quá nhanh. Vui lòng chờ một phút rồi thử lại." }, { status: 429 });
@@ -100,7 +81,7 @@ export async function POST(request: Request) {
     .filter((order) => orderPhoneKeys(order as unknown as Record<string, any>).includes(phone))
     .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime());
 
-  const orders = (await refreshLookupPaymentStatuses(matchedOrders))
+  const orders = (await refreshCustomerVisiblePaymentStatuses(matchedOrders, { source: "Tra cứu đơn bằng số điện thoại" }))
     .map((order) => ({
       ...order,
       customerDeviceId: undefined,

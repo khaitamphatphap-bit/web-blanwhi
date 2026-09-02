@@ -1,8 +1,6 @@
-import { after, NextResponse } from "next/server";
-import { readIntegrationConfig } from "@/lib/integrations";
+import { NextResponse } from "next/server";
+import { refreshCustomerVisiblePaymentStatuses } from "@/lib/customer-payment-status";
 import { readOrders } from "@/lib/orders";
-import { reconcileZaloPayPayment, syncVerifiedOrderToPos } from "@/lib/payment-confirmation";
-import type { ShopOrder } from "@/lib/types";
 
 type CustomerIdentity = {
   phone?: string;
@@ -21,23 +19,6 @@ function addressKey(value: unknown) {
     .toLowerCase()
     .replace(/đ/g, "d")
     .replace(/[^a-z0-9]/g, "");
-}
-
-async function refreshCustomerPaymentStatuses(orders: ShopOrder[]) {
-  const pendingZaloPayOrders = orders.filter((order) => order.status === "pending" && order.paymentMethod === "zalopay");
-  if (!pendingZaloPayOrders.length) return orders;
-  const integrations = await readIntegrationConfig();
-  const refreshed = await Promise.all(pendingZaloPayOrders.map(async (order) => {
-    try {
-      const next = await reconcileZaloPayPayment(order, integrations.payment, { syncPos: false });
-      if (next.status === "paid") after(() => syncVerifiedOrderToPos(next));
-      return next;
-    } catch {
-      return order;
-    }
-  }));
-  const byCode = new Map(refreshed.map((order) => [order.code, order]));
-  return orders.map((order) => byCode.get(order.code) || order);
 }
 
 export async function POST(request: Request) {
@@ -64,7 +45,7 @@ export async function POST(request: Request) {
     const address = addressKey(order.customer.address);
     return identities.some((identity) => identity.phone === phone && identity.address === address);
   });
-  const refreshed = await refreshCustomerPaymentStatuses(matched);
+  const refreshed = await refreshCustomerVisiblePaymentStatuses(matched, { source: "Đơn hàng của tôi" });
 
   return NextResponse.json({ orders: refreshed.slice(0, 100) }, {
     headers: { "Cache-Control": "no-store, max-age=0" }
