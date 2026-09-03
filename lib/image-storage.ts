@@ -1,4 +1,4 @@
-import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { GetObjectCommand, ListObjectsV2Command, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 
 type UploadImageInput = {
   bytes: Buffer;
@@ -92,6 +92,24 @@ export async function writeR2Text(key: string, text: string, contentType = "appl
     ContentType: contentType,
     CacheControl: "no-store"
   }));
+}
+
+export async function listR2Keys(prefix: string) {
+  const config = getR2Config();
+  if (!config) return [];
+  const client = createR2Client(config);
+  const keys: string[] = [];
+  let token: string | undefined;
+  do {
+    const result = await client.send(new ListObjectsV2Command({
+      Bucket: config.bucketName,
+      Prefix: prefix,
+      ContinuationToken: token
+    }));
+    keys.push(...(result.Contents || []).map((item) => item.Key).filter((key): key is string => Boolean(key)));
+    token = result.NextContinuationToken;
+  } while (token);
+  return keys;
 }
 
 export async function uploadImageToR2(input: UploadImageInput) {

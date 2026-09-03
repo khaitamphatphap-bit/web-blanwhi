@@ -1,9 +1,10 @@
-import { readJsonStore, writeJsonStore } from "@/lib/data-store";
+import { readJsonStore, readKeyedJsonStore, writeJsonStore, writeKeyedJsonRecord, writeKeyedJsonRecords } from "@/lib/data-store";
 import { OrderStatus, PaymentMethod, ShopOrder } from "@/lib/types";
 import { shortOrderCode } from "@/lib/order-code";
 
 const paymentMethods = new Set<PaymentMethod>(["cod", "bank_transfer", "vnpay", "onepay", "alepay", "momo", "zalopay"]);
 const deletedOrdersStore = "deleted-orders.json";
+const orderRecordsStore = "order-records";
 export const unpaidOrderLifetimeMs = 24 * 60 * 60 * 1000;
 
 type DeletedOrderRecord = {
@@ -36,46 +37,78 @@ function normalizePaymentMethod(value: unknown): PaymentMethod {
   return paymentMethods.has(normalized as PaymentMethod) ? normalized as PaymentMethod : "zalopay";
 }
 
+function orderRecordKey(code: string) {
+  return String(code || "").trim().toUpperCase();
+}
+
+function newerOrder(left: ShopOrder, right: ShopOrder) {
+  const leftTime = new Date(left.updatedAt || left.createdAt || "").getTime();
+  const rightTime = new Date(right.updatedAt || right.createdAt || "").getTime();
+  return (Number.isFinite(rightTime) ? rightTime : 0) >= (Number.isFinite(leftTime) ? leftTime : 0) ? right : left;
+}
+
+function compactOrders(orders: ShopOrder[], deletedKeys: Set<string>) {
+  const byCode = new Map<string, ShopOrder>();
+  orders.forEach((order) => {
+    const key = orderRecordKey(order.code);
+    if (!key || orderWasDeleted(order, deletedKeys)) return;
+    const existing = byCode.get(key);
+    byCode.set(key, existing ? newerOrder(existing, order) : order);
+  });
+  return Array.from(byCode.values()).sort((left, right) => {
+    const leftTime = new Date(left.createdAt || left.updatedAt || "").getTime();
+    const rightTime = new Date(right.createdAt || right.updatedAt || "").getTime();
+    return (Number.isFinite(rightTime) ? rightTime : 0) - (Number.isFinite(leftTime) ? leftTime : 0);
+  });
+}
+
+function normalizeOrder(order: ShopOrder): ShopOrder {
+  const paymentMethod = normalizePaymentMethod(order.paymentMethod || order.paymentProvider);
+  const createdAt = new Date(order.createdAt).getTime();
+  const paymentDeadline = Number.isFinite(createdAt) ? createdAt + unpaidOrderLifetimeMs : Number.POSITIVE_INFINITY;
+  const paymentExpired = order.status === "pending"
+    && paymentMethod !== "cod"
+    && !order.transactionId
+    && Date.now() >= paymentDeadline;
+  const normalizedOrder: ShopOrder = paymentExpired ? {
+    ...order,
+    status: "cancelled",
+    shippingStatus: "cancelled",
+    refundStatus: "not_required",
+    refundMessage: "",
+    paymentExpiredAt: order.paymentExpiredAt || new Date(paymentDeadline).toISOString(),
+    cancellationReason: "Hết hạn thanh toán",
+    updatedAt: order.paymentExpiredAt || new Date(paymentDeadline).toISOString()
+  } : order;
+  const cancellationRecorded = normalizedOrder.status === "cancelled"
+    || normalizedOrder.shippingStatus === "cancelled"
+    || normalizedOrder.pancakeStatus === "cancelled"
+    || Boolean(normalizedOrder.refundStatus);
+  return {
+    ...normalizedOrder,
+    status: cancellationRecorded ? "cancelled" : normalizedOrder.status,
+    paymentMethod,
+    paymentProvider: String(normalizedOrder.paymentProvider || paymentMethod).trim().toLowerCase()
+  };
+}
+
 export async function readOrders(): Promise<ShopOrder[]> {
-  const [orders, deleted] = await Promise.all([
+  const [orders, orderRecords, deleted] = await Promise.all([
     readJsonStore<ShopOrder[]>("orders.json", []),
+    readKeyedJsonStore<ShopOrder>(orderRecordsStore, {}),
     readDeletedOrderRecords()
   ]);
   const deletedKeys = deletedOrderKeys(deleted);
-  return orders.filter((order) => !orderWasDeleted(order, deletedKeys)).map((order) => {
-    const paymentMethod = normalizePaymentMethod(order.paymentMethod || order.paymentProvider);
-    const createdAt = new Date(order.createdAt).getTime();
-    const paymentDeadline = Number.isFinite(createdAt) ? createdAt + unpaidOrderLifetimeMs : Number.POSITIVE_INFINITY;
-    const paymentExpired = order.status === "pending"
-      && paymentMethod !== "cod"
-      && !order.transactionId
-      && Date.now() >= paymentDeadline;
-    const normalizedOrder: ShopOrder = paymentExpired ? {
-      ...order,
-      status: "cancelled",
-      shippingStatus: "cancelled",
-      refundStatus: "not_required",
-      refundMessage: "",
-      paymentExpiredAt: order.paymentExpiredAt || new Date(paymentDeadline).toISOString(),
-      cancellationReason: "Hết hạn thanh toán",
-      updatedAt: order.paymentExpiredAt || new Date(paymentDeadline).toISOString()
-    } : order;
-    const cancellationRecorded = normalizedOrder.status === "cancelled"
-      || normalizedOrder.shippingStatus === "cancelled"
-      || normalizedOrder.pancakeStatus === "cancelled"
-      || Boolean(normalizedOrder.refundStatus);
-    return {
-      ...normalizedOrder,
-      status: cancellationRecorded ? "cancelled" : normalizedOrder.status,
-      paymentMethod,
-      paymentProvider: String(normalizedOrder.paymentProvider || paymentMethod).trim().toLowerCase()
-    };
-  });
+  return compactOrders([...orders, ...Object.values(orderRecords || {})], deletedKeys).map(normalizeOrder);
 }
 
 export async function writeOrders(orders: ShopOrder[]) {
   const deletedKeys = deletedOrderKeys(await readDeletedOrderRecords());
-  await writeJsonStore("orders.json", orders.filter((order) => !orderWasDeleted(order, deletedKeys)));
+  const filtered = compactOrders(orders, deletedKeys);
+  await Promise.all([
+    writeJsonStore("orders.json", filtered),
+    writeKeyedJsonRecords(orderRecordsStore, Object.fromEntries(filtered.map((order) => [orderRecordKey(order.code), order])))
+  ]);
 }
 
 export async function createOrder(order: ShopOrder) {
@@ -88,6 +121,7 @@ export async function createOrder(order: ShopOrder) {
       && (!order.customerDeviceId || candidate.customerDeviceId === order.customerDeviceId))
     : null;
   if (existing) return existing;
+  await writeKeyedJsonRecord(orderRecordsStore, orderRecordKey(order.code), order);
   await writeOrders([order, ...orders.filter((candidate) => candidate.code !== order.code)]);
   return order;
 }

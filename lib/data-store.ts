@@ -1,6 +1,6 @@
 import { mkdir, readFile, readdir, stat, writeFile } from "fs/promises";
 import path from "path";
-import { hasR2ImageStorage, readR2Text, writeR2Text } from "@/lib/image-storage";
+import { hasR2ImageStorage, listR2Keys, readR2Text, writeR2Text } from "@/lib/image-storage";
 
 type PgPool = {
   query: (text: string, params?: unknown[]) => Promise<{ rows: Array<Record<string, unknown>> }>;
@@ -71,6 +71,11 @@ function encryptedR2Path(filename: string) {
 
 function keyedR2IndexPath(namespace: string) {
   return "blanwhi/data/private-keyed-index/" + namespace + ".enc.json";
+}
+
+function keyedR2RecordPath(namespace: string, itemKey: string) {
+  const encodedKey = Buffer.from(itemKey, "utf8").toString("base64url");
+  return `blanwhi/data/private-keyed/${namespace}/${encodedKey}.enc.json`;
 }
 
 function encryptedBlobPath(filename: string) {
@@ -155,8 +160,30 @@ async function readKeyedR2Index<T>(namespace: string) {
   return text === null ? null : decryptJson<Record<string, T>>(text);
 }
 
+async function readKeyedR2Records<T>(namespace: string) {
+  const prefix = `blanwhi/data/private-keyed/${namespace}/`;
+  const keys = await listR2Keys(prefix);
+  if (!keys.length) return null;
+  const entries = await Promise.all(keys.map(async (key) => {
+    try {
+      const text = await readR2Text(key);
+      if (text === null) return null;
+      const encodedKey = key.slice(prefix.length).replace(/\.enc\.json$/, "");
+      const itemKey = Buffer.from(encodedKey, "base64url").toString("utf8");
+      return [itemKey, await decryptJson<T>(text)] as const;
+    } catch {
+      return null;
+    }
+  }));
+  return Object.fromEntries(entries.filter((entry) => entry !== null)) as Record<string, T>;
+}
+
 async function writeKeyedR2Index<T>(namespace: string, value: Record<string, T>) {
   await writeR2Text(keyedR2IndexPath(namespace), await encryptJson(value));
+}
+
+async function writeKeyedR2Record<T>(namespace: string, itemKey: string, value: T) {
+  await writeR2Text(keyedR2RecordPath(namespace, itemKey), await encryptJson(value));
 }
 
 async function readEncryptedBlobJsonStore<T>(filename: string) {
@@ -587,10 +614,13 @@ export async function readKeyedJsonStore<T>(namespace: string, fallback: Record<
   }
   if (hasR2Store()) {
     try {
-      const indexed = await readKeyedR2Index<T>(namespace);
-      if (indexed) {
+      const [indexed, records] = await Promise.all([
+        readKeyedR2Index<T>(namespace),
+        readKeyedR2Records<T>(namespace)
+      ]);
+      if (indexed || records) {
         const legacy = await readJsonStore<Record<string, T>>(namespace + ".json", fallback);
-        return { ...legacy, ...indexed };
+        return { ...legacy, ...(indexed || {}), ...(records || {}) };
       }
     } catch (error) {
       warnBlobFallback("read R2 keyed store " + namespace, error);
@@ -651,7 +681,10 @@ export async function writeKeyedJsonRecord<T>(namespace: string, itemKey: string
   }
   if (hasR2Store()) {
     const indexed = await readKeyedR2Index<T>(namespace) || {};
-    await writeKeyedR2Index(namespace, { ...indexed, [itemKey]: value });
+    await Promise.all([
+      writeKeyedR2Record(namespace, itemKey, value),
+      writeKeyedR2Index(namespace, { ...indexed, [itemKey]: value })
+    ]);
     return value;
   }
   if (hasBlobStore()) {
@@ -671,6 +704,44 @@ export async function writeKeyedJsonRecord<T>(namespace: string, itemKey: string
   const current = await readJsonStore<Record<string, T>>(`${namespace}.json`, {});
   await writeJsonStore(`${namespace}.json`, { ...current, [itemKey]: value });
   return value;
+}
+
+export async function writeKeyedJsonRecords<T>(namespace: string, values: Record<string, T>) {
+  const entries = Object.entries(values).filter(([key]) => Boolean(key));
+  if (!entries.length) return values;
+
+  if (hasDatabase()) {
+    await ensureDatabaseSchema();
+    const pool = await getPool();
+    if (pool) {
+      await Promise.all(entries.map(([itemKey, value]) => pool.query(
+        `insert into blanwhi_keyed_store (namespace, item_key, item_value, updated_at)
+         values ($1, $2, $3::jsonb, now())
+         on conflict (namespace, item_key)
+         do update set item_value = excluded.item_value, updated_at = now()`,
+        [namespace, itemKey, JSON.stringify(value)]
+      )));
+      return values;
+    }
+  }
+
+  if (hasR2Store()) {
+    const indexed = await readKeyedR2Index<T>(namespace) || {};
+    await Promise.all([
+      ...entries.map(([itemKey, value]) => writeKeyedR2Record(namespace, itemKey, value)),
+      writeKeyedR2Index(namespace, { ...indexed, ...Object.fromEntries(entries) })
+    ]);
+    return values;
+  }
+
+  if (hasBlobStore()) {
+    await Promise.all(entries.map(([itemKey, value]) => writeKeyedJsonRecord(namespace, itemKey, value)));
+    return values;
+  }
+
+  const current = await readJsonStore<Record<string, T>>(`${namespace}.json`, {});
+  await writeJsonStore(`${namespace}.json`, { ...current, ...Object.fromEntries(entries) });
+  return values;
 }
 
 export async function readJsonStoreHistory<T>(filename: string, limit = 100): Promise<T[]> {
