@@ -118,15 +118,19 @@ function normalizeOrder(order: ShopOrder): ShopOrder {
 export async function readOrders(): Promise<ShopOrder[]> {
   const emptyOrders: ShopOrder[] = [];
   const emptyOrderRecords: Record<string, ShopOrder> = {};
-  const [orders, orderRecords, fallbackOrders, fallbackRecords, deleted] = await Promise.all([
+  const [orders, orderRecords, fallbackOrders, deleted] = await Promise.all([
     readJsonStore<ShopOrder[]>("orders.json", []),
     hasDatabase()
       ? readKeyedJsonStoreDatabase<ShopOrder>(orderRecordsStore)
       : readKeyedJsonStore<ShopOrder>(orderRecordsStore, {}),
     hasDatabase() ? readJsonStoreFallbackStores<ShopOrder[]>("orders.json", []) : Promise.resolve(emptyOrders),
-    hasDatabase() ? readKeyedJsonStoreFallbackStores<ShopOrder>(orderRecordsStore, {}) : Promise.resolve(emptyOrderRecords),
     readDeletedOrderRecords()
   ]);
+  // Existing production orders are already preserved in orders.json. Only scan
+  // the much larger legacy per-order backup when that compact store is absent.
+  const fallbackRecords = hasDatabase() && fallbackOrders.length === 0
+    ? await readKeyedJsonStoreFallbackStores<ShopOrder>(orderRecordsStore, {})
+    : emptyOrderRecords;
   const deletedKeys = deletedOrderKeys(deleted);
   return compactOrders([
     ...fallbackOrders,
