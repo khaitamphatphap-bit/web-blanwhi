@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { findOrderByCode, updateOrder } from "@/lib/orders";
 import { InventoryService } from "@/lib/pancake/inventory-service";
 import { OrderSyncService } from "@/lib/pancake/order-sync-service";
@@ -18,20 +18,6 @@ function phoneKey(value: unknown) {
 
 function carrierHasAccepted(order: NonNullable<Awaited<ReturnType<typeof findOrderByCode>>>) {
   return ["delivered", "returning", "returned"].includes(order.shippingStatus || "");
-}
-
-async function withTimeout<T>(promise: Promise<T>, ms: number) {
-  let timeout: ReturnType<typeof setTimeout> | undefined;
-  try {
-    return await Promise.race([
-      promise,
-      new Promise<T>((_, reject) => {
-        timeout = setTimeout(() => reject(new Error("Pancake phản hồi chậm, hệ thống sẽ tự thử lại.")), ms);
-      })
-    ]);
-  } finally {
-    if (timeout) clearTimeout(timeout);
-  }
 }
 
 export async function POST(request: Request, { params }: Params) {
@@ -111,12 +97,15 @@ export async function POST(request: Request, { params }: Params) {
       || current.paymentMethod === "cod"
       || wasPaid);
     if (mayExistOnPancake && current.pancakeStatus !== "cancelled") {
-      try {
-        current = await withTimeout(orderSync.cancel(current), 3500);
-      } catch {
-        pancakeCancellationPending = true;
-        try { await QueueHandler.enqueue("order.cancel", { orderCode: current.code }); } catch { /* Queue failure must not undo the website cancellation. */ }
-      }
+      pancakeCancellationPending = true;
+      try { await QueueHandler.enqueue("order.cancel", { orderCode: current.code }); } catch { /* Queue failure must not undo the website cancellation. */ }
+      after(async () => {
+        try {
+          await orderSync.cancel(current);
+        } catch {
+          try { await QueueHandler.enqueue("order.cancel", { orderCode: current.code }); } catch { /* Queue failure must not undo the website cancellation. */ }
+        }
+      });
     }
 
     if (current.inventoryReservationApplied && !current.inventoryReservationReleased) {
