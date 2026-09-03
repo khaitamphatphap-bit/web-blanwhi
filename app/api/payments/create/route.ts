@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { jsonError } from "@/lib/api-errors";
 import { readIntegrationConfig } from "@/lib/integrations";
 import { createOrder, findOrderByCheckoutRequestId, newOrderCode, updateOrder } from "@/lib/orders";
@@ -94,7 +94,7 @@ async function queuePosSync(order: ShopOrder) {
 }
 
 function schedulePosSync(order: ShopOrder) {
-  void (async () => {
+  after(async () => {
     try {
       await new POSSyncService().confirmOrder(order);
     } catch (error) {
@@ -106,8 +106,11 @@ function schedulePosSync(order: ShopOrder) {
           lastSyncedAt: new Date().toISOString()
         }
       });
+      // The database order is already safe. Queue a retry only when the direct
+      // Pancake request fails, so a slow R2 queue never delays a successful sync.
+      await queuePosSync(order);
     }
-  })();
+  });
 }
 
 function json(body: unknown, init?: ResponseInit) {
@@ -258,7 +261,12 @@ export async function POST(request: Request) {
     const customer = payload.customer ?? {};
     const customerDeviceId = String(payload.customerDeviceId || "").trim().slice(0, 100);
     const checkoutRequestId = String(payload.checkoutRequestId || "").trim().slice(0, 120);
-    const [integrations, siteContent] = await Promise.all([readIntegrationConfig(), readSiteContent()]);
+    // COD must not wait for merchant configuration stored outside Postgres.
+    // Only online payment methods need those credentials.
+    const [integrations, siteContent] = await Promise.all([
+      onlineMethods.has(paymentMethod) ? readIntegrationConfig() : Promise.resolve(null),
+      readSiteContent()
+    ]);
     const now = new Date().toISOString();
     const inventoryService = new InventoryService();
     const pancakeConfigured = inventoryService.configured();
@@ -280,7 +288,7 @@ export async function POST(request: Request) {
       return json({ error: "Giỏ hàng đang trống." }, { status: 400 });
     }
     if (onlineMethods.has(paymentMethod)) {
-      const configError = paymentConfigError(paymentMethod, integrations.payment);
+      const configError = paymentConfigError(paymentMethod, integrations!.payment);
       if (configError) return json({ error: configError }, { status: 400 });
     }
 
@@ -299,13 +307,13 @@ export async function POST(request: Request) {
           const accepted = await inventoryService.reserveOrder(completed);
           let syncQueued = false;
           if (pancakeConfigured) {
-            syncQueued = await queuePosSync(accepted);
             schedulePosSync(accepted);
+            syncQueued = true;
           }
           return json({ order: accepted, syncQueued, deduplicated: true });
         }
         if (paymentMethod === "zalopay" && existing.status === "pending") {
-          const zalopay = await createZaloPayPayment(existing, request, integrations.payment);
+          const zalopay = await createZaloPayPayment(existing, request, integrations!.payment);
           if (zalopay.order_url) {
             const refreshed = await updateOrder(existing.code, {
               paymentProviderOrderId: zalopay.app_trans_id,
@@ -386,7 +394,7 @@ export async function POST(request: Request) {
           ? { ...order.externalSync, pancake: "Chờ ZaloPay xác nhận - chưa gửi Pancake", lastSyncedAt: now }
           : order.externalSync
       };
-      const zalopay = await createZaloPayPayment(pendingZaloPayOrder, request, integrations.payment);
+      const zalopay = await createZaloPayPayment(pendingZaloPayOrder, request, integrations!.payment);
       if (!zalopay.order_url) {
         return json({
           error: zalopay.return_message || "ZaloPay chưa trả link thanh toán. Vui lòng kiểm tra App ID, Key 1, Key 2 production trong trang admin."
@@ -416,17 +424,16 @@ export async function POST(request: Request) {
     }
     order = await inventoryService.createReservedOrder({ ...order, checkoutCompletedAt: now });
     if (pancakeConfigured && paymentMethod === "cod") {
-      const syncQueued = await queuePosSync(order);
       schedulePosSync(order);
-      return json({ order, syncQueued });
+      return json({ order, syncQueued: true });
     }
 
     if (paymentMethod === "vnpay") {
-      return json({ order, redirectUrl: createVnpayUrl(order, request, integrations.payment) });
+      return json({ order, redirectUrl: createVnpayUrl(order, request, integrations!.payment) });
     }
 
     if (paymentMethod === "momo") {
-      const momo = await createMomoPayment(order, request, integrations.payment);
+      const momo = await createMomoPayment(order, request, integrations!.payment);
       return json({
         order,
         redirectUrl: momo.payUrl || fallbackPaymentUrl(order, paymentMethod, request),
