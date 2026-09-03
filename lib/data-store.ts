@@ -1050,46 +1050,28 @@ export async function writeKeyedJsonRecord<T>(namespace: string, itemKey: string
     await ensureDatabaseSchema();
     const pool = await getPool();
     if (pool) {
+      const serialized = JSON.stringify(value);
       await retryDatabaseWrite(() => pool.query(
-        `with incoming as (
-           select $1::text as namespace, $2::text as item_key, $3::jsonb as item_value
-         ),
-         previous as (
-           select current.namespace, current.item_key, current.item_value
-           from blanwhi_keyed_store current
-           join incoming on incoming.namespace = current.namespace and incoming.item_key = current.item_key
-           where current.item_value is distinct from incoming.item_value
-         ),
-         backup as (
-           insert into blanwhi_keyed_store_history (namespace, item_key, item_value, reason)
-           select namespace, item_key, item_value, 'before-write'
-           from previous
-           returning id
-         ),
-         saved as (
-           insert into blanwhi_keyed_store (namespace, item_key, item_value, updated_at)
-           select namespace, item_key, item_value, now()
-           from incoming
-           on conflict (namespace, item_key)
-           do update set item_value = excluded.item_value, updated_at = now()
-           returning namespace, item_key, item_value
-         ),
-         queued as (
-           insert into blanwhi_backup_outbox (namespace, item_key, item_value, attempts, last_error, updated_at)
-           select namespace, item_key, item_value, 0, null, now()
-           from saved
-           on conflict (namespace, item_key)
-           do update set item_value = excluded.item_value, attempts = 0, last_error = null, updated_at = now()
-           returning item_key
-         )
-         insert into blanwhi_keyed_store_history (namespace, item_key, item_value, reason)
-         select namespace, item_key, item_value, 'after-write'
-         from saved`,
-        [namespace, itemKey, JSON.stringify(value)]
-      ));
-      // The database transaction above already persisted both the record and a
-      // durable outbox entry. Do not leave checkout waiting indefinitely when
-      // R2 is slow; the outbox will retry this backup from the health worker.
+        `insert into blanwhi_keyed_store (namespace, item_key, item_value, updated_at)
+         values ($1, $2, $3::jsonb, now())
+         on conflict (namespace, item_key)
+         do update set item_value = excluded.item_value, updated_at = now()`,
+        [namespace, itemKey, serialized]
+      ), 6);
+      await retryDatabaseWrite(() => pool.query(
+        `insert into blanwhi_keyed_store_history (namespace, item_key, item_value, reason)
+         values ($1, $2, $3::jsonb, 'after-write')`,
+        [namespace, itemKey, serialized]
+      ), 3).catch((error) => warnBlobFallback("write database history " + namespace, error));
+      await retryDatabaseWrite(() => pool.query(
+        `insert into blanwhi_backup_outbox (namespace, item_key, item_value, attempts, last_error, updated_at)
+         values ($1, $2, $3::jsonb, 0, null, now())
+         on conflict (namespace, item_key)
+         do update set item_value = excluded.item_value, attempts = 0, last_error = null, updated_at = now()`,
+        [namespace, itemKey, serialized]
+      ), 3).catch((error) => warnBlobFallback("queue database backup " + namespace, error));
+      // The main database record is persisted first. R2 history/outbox failures
+      // must never reject checkout or cancellation after the order row is safe.
       await waitForDatabaseBackupMirror(namespace, itemKey, value);
       return value;
     }
