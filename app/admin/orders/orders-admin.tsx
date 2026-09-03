@@ -23,6 +23,7 @@ type StorageHealthReport = {
   database: {
     configured: boolean;
     ok: boolean;
+    envName?: string;
     sizeBytes?: number;
     limitBytes?: number;
     usedPercent?: number;
@@ -530,6 +531,7 @@ export function OrdersAdmin({
           <div className="border border-current/20 bg-white/55 p-3">
             <p className="text-xs uppercase opacity-70">Database</p>
             <strong className="mt-1 block">{storageHealth?.database.ok ? "Kết nối OK" : storageHealth?.database.configured ? "Có cấu hình nhưng lỗi" : "Chưa có database URL"}</strong>
+            {storageHealth?.database.envName && <span className="mt-1 block text-xs opacity-80">Biến kết nối: {storageHealth.database.envName}</span>}
             <span className="mt-1 block text-xs opacity-80">{storageHealth?.database.usedPercent !== undefined ? `Đã dùng ${storageHealth.database.usedPercent}% · ${formatBytes(storageHealth.database.sizeBytes)}` : formatBytes(storageHealth?.database.sizeBytes)}</span>
           </div>
           <div className="border border-current/20 bg-white/55 p-3">

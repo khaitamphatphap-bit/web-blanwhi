@@ -11,6 +11,7 @@ export type StoreHealthReport = {
   database: {
     configured: boolean;
     ok: boolean;
+    envName?: string;
     sizeBytes?: number;
     limitBytes?: number;
     usedPercent?: number;
@@ -39,6 +40,10 @@ const databaseEnvNames = [
   "POSTGRES_URL",
   "POSTGRES_PRISMA_URL",
   "POSTGRES_URL_NON_POOLING",
+  "STORAGE_DATABASE_URL",
+  "STORAGE_POSTGRES_URL",
+  "STORAGE_POSTGRES_PRISMA_URL",
+  "STORAGE_POSTGRES_URL_NON_POOLING",
   "SUPABASE_DATABASE_URL",
   "NEON_DATABASE_URL"
 ];
@@ -352,7 +357,7 @@ async function ensureDatabaseSchema() {
   const pool = await getPool();
   if (!pool) return;
   if (!schemaReadyPromise) {
-    schemaReadyPromise = (async () => {
+    const schemaRequest = (async () => {
       await pool.query(`
         create table if not exists blanwhi_store (
           store_key text primary key,
@@ -397,6 +402,10 @@ async function ensureDatabaseSchema() {
         on blanwhi_keyed_store_history (namespace, item_key, created_at desc)
       `);
     })();
+    schemaReadyPromise = schemaRequest.catch((error) => {
+      schemaReadyPromise = null;
+      throw error;
+    });
   }
   await schemaReadyPromise;
 }
@@ -515,7 +524,11 @@ export async function getStoreHealthReport(): Promise<StoreHealthReport> {
         : "local_file";
   const report: StoreHealthReport = {
     primaryStore,
-    database: { configured: hasDatabase(), ok: false },
+    database: {
+      configured: hasDatabase(),
+      ok: false,
+      envName: databaseEnvName() || undefined
+    },
     r2: { configured: false, ok: false },
     local: { dataDir: writableDataDir(), ok: false }
   };
@@ -595,22 +608,26 @@ export async function ensureJsonFile<T>(filename: string, fallback: T) {
 
 async function readJsonStoreUncached<T>(filename: string, fallback: T): Promise<T> {
   if (hasDatabase()) {
-    await ensureDatabaseSchema();
-    const pool = await getPool();
-    if (pool) {
-      const key = toStoreKey(filename);
-      const result = await pool.query("select store_value from blanwhi_store where store_key = $1", [key]);
-      if (result.rows[0]?.store_value !== undefined) return result.rows[0].store_value as T;
+    try {
+      await ensureDatabaseSchema();
+      const pool = await getPool();
+      if (pool) {
+        const key = toStoreKey(filename);
+        const result = await pool.query("select store_value from blanwhi_store where store_key = $1", [key]);
+        if (result.rows[0]?.store_value !== undefined) return result.rows[0].store_value as T;
 
-      const file = await ensureJsonFile<T>(filename, fallback);
-      let seed = fallback;
-      try {
-        seed = JSON.parse(await readFile(file, "utf8")) as T;
-      } catch {
-        seed = fallback;
+        const file = await ensureJsonFile<T>(filename, fallback);
+        let seed = fallback;
+        try {
+          seed = JSON.parse(await readFile(file, "utf8")) as T;
+        } catch {
+          seed = fallback;
+        }
+        await writeJsonStore(filename, seed);
+        return seed;
       }
-      await writeJsonStore(filename, seed);
-      return seed;
+    } catch (error) {
+      warnBlobFallback(`read database ${filename}`, error);
     }
   }
 
@@ -720,14 +737,19 @@ export async function readJsonStoreFallbackStores<T>(filename: string, fallback:
 
 export async function readKeyedJsonStoreDatabase<T>(namespace: string) {
   if (!hasDatabase()) return {};
-  await ensureDatabaseSchema();
-  const pool = await getPool();
-  if (!pool) return {};
-  const result = await pool.query(
-    "select item_key, item_value from blanwhi_keyed_store where namespace = $1",
-    [namespace]
-  );
-  return Object.fromEntries(result.rows.map((row) => [String(row.item_key), row.item_value as T])) as Record<string, T>;
+  try {
+    await ensureDatabaseSchema();
+    const pool = await getPool();
+    if (!pool) return {};
+    const result = await pool.query(
+      "select item_key, item_value from blanwhi_keyed_store where namespace = $1",
+      [namespace]
+    );
+    return Object.fromEntries(result.rows.map((row) => [String(row.item_key), row.item_value as T])) as Record<string, T>;
+  } catch (error) {
+    warnBlobFallback(`read database keyed store ${namespace}`, error);
+    return {};
+  }
 }
 
 export async function readKeyedJsonStoreFallbackStores<T>(namespace: string, fallback: Record<string, T> = {}) {
@@ -761,17 +783,11 @@ export async function readKeyedJsonStoreFallbackStores<T>(namespace: string, fal
 
 export async function readKeyedJsonStore<T>(namespace: string, fallback: Record<string, T> = {}) {
   if (hasDatabase()) {
-    await ensureDatabaseSchema();
-    const pool = await getPool();
-    if (pool) {
-      const result = await readKeyedJsonStoreDatabase<T>(namespace);
-      const legacy = await readJsonStore<Record<string, T>>(`${namespace}.json`, fallback);
-      if (Object.keys(result).length) return {
-        ...legacy,
-        ...result
-      };
-      return legacy;
-    }
+    const [result, legacy] = await Promise.all([
+      readKeyedJsonStoreDatabase<T>(namespace),
+      readKeyedJsonStoreFallbackStores<T>(namespace, fallback)
+    ]);
+    return { ...legacy, ...result };
   }
   if (hasR2Store()) {
     try {
