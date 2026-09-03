@@ -529,7 +529,7 @@ export function OrdersAdmin({
           </div>
           <div className="border border-current/20 bg-white/55 p-3">
             <p className="text-xs uppercase opacity-70">Database</p>
-            <strong className="mt-1 block">{storageHealth?.database.ok ? "Kết nối OK" : storageHealth?.database.configured ? "Có cấu hình nhưng lỗi" : "Chưa có DATABASE_URL"}</strong>
+            <strong className="mt-1 block">{storageHealth?.database.ok ? "Kết nối OK" : storageHealth?.database.configured ? "Có cấu hình nhưng lỗi" : "Chưa có database URL"}</strong>
             <span className="mt-1 block text-xs opacity-80">{storageHealth?.database.usedPercent !== undefined ? `Đã dùng ${storageHealth.database.usedPercent}% · ${formatBytes(storageHealth.database.sizeBytes)}` : formatBytes(storageHealth?.database.sizeBytes)}</span>
           </div>
           <div className="border border-current/20 bg-white/55 p-3">
@@ -545,7 +545,7 @@ export function OrdersAdmin({
         </div>
         {(storageHealth?.database.warning || storageHealth?.database.error || storageHealth?.r2.warning || storageHealth?.r2.error || storageHealth?.primaryStore === "local_file") && (
           <div className="mt-3 space-y-1 text-sm">
-            {storageHealth.primaryStore === "local_file" && <p>Đang dùng file local tạm. Khi chạy production phải cấu hình DATABASE_URL để đơn không phụ thuộc server tạm.</p>}
+            {storageHealth.primaryStore === "local_file" && <p>Đang dùng file local tạm. Khi chạy production phải cấu hình database URL để đơn không phụ thuộc server tạm.</p>}
             {storageHealth.database.warning && <p>{storageHealth.database.warning}</p>}
             {storageHealth.database.error && <p>{storageHealth.database.error}</p>}
             {storageHealth.r2.warning && <p>{storageHealth.r2.warning}</p>}

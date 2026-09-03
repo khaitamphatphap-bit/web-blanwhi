@@ -34,6 +34,15 @@ export type StoreHealthReport = {
 let poolPromise: Promise<PgPool> | null = null;
 let schemaReadyPromise: Promise<void> | null = null;
 
+const databaseEnvNames = [
+  "DATABASE_URL",
+  "POSTGRES_URL",
+  "POSTGRES_PRISMA_URL",
+  "POSTGRES_URL_NON_POOLING",
+  "SUPABASE_DATABASE_URL",
+  "NEON_DATABASE_URL"
+];
+
 export function writableDataDir() {
   if (process.env.BLANWHI_DATA_DIR) return process.env.BLANWHI_DATA_DIR;
   if (process.env.VERCEL || process.env.NODE_ENV === "production") return path.join("/tmp", "blanwhi-data");
@@ -41,7 +50,19 @@ export function writableDataDir() {
 }
 
 export function hasDatabase() {
-  return Boolean(process.env.DATABASE_URL);
+  return Boolean(databaseUrl());
+}
+
+export function databaseUrl() {
+  for (const name of databaseEnvNames) {
+    const value = process.env[name];
+    if (value) return value;
+  }
+  return "";
+}
+
+export function databaseEnvName() {
+  return databaseEnvNames.find((name) => Boolean(process.env[name])) || "";
 }
 
 export function hasBlobStore() {
@@ -313,12 +334,13 @@ async function writeBlobJsonStore<T>(value: T) {
 }
 
 async function getPool() {
-  if (!process.env.DATABASE_URL) return null;
+  const url = databaseUrl();
+  if (!url) return null;
   if (!poolPromise) {
     poolPromise = import("pg").then(({ Pool }) => {
-      const isLocal = /localhost|127\.0\.0\.1/.test(process.env.DATABASE_URL || "");
+      const isLocal = /localhost|127\.0\.0\.1/.test(url);
       return new Pool({
-        connectionString: process.env.DATABASE_URL,
+        connectionString: url,
         ssl: process.env.PGSSLMODE === "disable" || isLocal ? false : { rejectUnauthorized: false }
       }) as PgPool;
     });
@@ -525,8 +547,8 @@ export async function getStoreHealthReport(): Promise<StoreHealthReport> {
     }
   } else {
     report.database.warning = hasR2Store()
-      ? "Đơn hàng đang được lưu bền vững trong Cloudflare R2 mã hóa; DATABASE_URL hiện là tùy chọn."
-      : "Chưa có DATABASE_URL. Production nên dùng database thật để đơn hàng không phụ thuộc server tạm.";
+      ? "Đơn hàng đang được lưu bền vững trong Cloudflare R2 mã hóa; database URL hiện là tùy chọn."
+      : "Chưa có database URL. Production nên dùng database thật để đơn hàng không phụ thuộc server tạm.";
   }
 
   try {
