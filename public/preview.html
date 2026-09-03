@@ -3287,6 +3287,27 @@
         keepalive: true
       });
 
+      async function readJsonResponse(response) {
+        const text = await response.text();
+        if (!text) return {};
+        try {
+          return JSON.parse(text);
+        } catch {
+          return response.ok ? {} : { error: text.slice(0, 180) };
+        }
+      }
+
+      async function fetchServerOrderByCode(code) {
+        try {
+          const response = await fetch(`/api/orders?codes=${encodeURIComponent(code)}`, { cache: "no-store" });
+          if (!response.ok) return null;
+          const data = await readJsonResponse(response);
+          return Array.isArray(data.orders) ? data.orders.find((order) => order.code === code) || null : null;
+        } catch {
+          return null;
+        }
+      }
+
       const requestOrderPayment = (code, phone) => fetch("/api/payments/retry", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -3344,7 +3365,7 @@
           if (response.status === 404) {
             if (await recoverCustomerOrder(previousOrder)) response = await requestOrderCancellation(code, phone);
           }
-          const result = await response.json();
+          const result = await readJsonResponse(response);
           if (!response.ok) {
             const cancellationError = new Error(result.error || "Không thể hủy đơn.");
             cancellationError.status = response.status;
@@ -3380,8 +3401,28 @@
             alert(error.message || "Đơn không còn đủ điều kiện hủy.");
             return;
           }
-          // Không báo hủy thành công khi trình duyệt chưa nhận được xác nhận từ
-          // server. Lượt đồng bộ kế tiếp sẽ lấy lại trạng thái thật từ database.
+          const serverOrder = await fetchServerOrderByCode(code);
+          if (serverOrder?.status === "cancelled" || serverOrder?.shippingStatus === "cancelled") {
+            const confirmedOrder = {
+              ...optimisticOrder,
+              ...serverOrder,
+              rawStatus: "cancelled",
+              wasPaidBeforeCancel: paidBeforeCancel,
+              statusBeforeCancel: previousOrder.status,
+              status: "Đơn hủy",
+              trackingCode: "",
+              shippingStatus: "cancelled",
+              shippingMessage: serverOrder.shippingMessage || "Khách yêu cầu hủy đơn",
+              updatedAt: new Date().toLocaleString("vi-VN")
+            };
+            const nextOrders = optimisticOrders.map((order) => order.code === code ? confirmedOrder : order);
+            if (storedOrder) saveOrders(nextOrders);
+            if (Array.isArray(lookedUpOrders)) lookedUpOrders = lookedUpOrders.map((order) => order.code === code ? confirmedOrder : order);
+            renderOrders();
+            alert("Website đã ghi nhận hủy đơn. Pancake sẽ tự động đồng bộ trạng thái hủy, vui lòng kiểm tra lại sau ít phút.");
+            return;
+          }
+          // Không báo hủy thành công khi database cũng chưa xác nhận trạng thái hủy.
           if (storedOrder) saveOrders(previousOrders);
           if (Array.isArray(lookedUpOrders)) lookedUpOrders = lookedUpOrders.map((order) => order.code === code ? previousOrder : order);
           renderOrders();

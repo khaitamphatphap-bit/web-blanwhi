@@ -65,6 +65,7 @@ export async function POST(request: Request, { params }: Params) {
       status: "cancelled",
       trackingCode: "",
       shippingStatus: "cancelled",
+      cancellationReason: reason,
       shippingMessage: `${reason}. Website đã ghi nhận ngay; POS đang được tự động đồng bộ.`,
       ...(wasPaid ? {
         refundStatus: "pending" as const,
@@ -113,6 +114,7 @@ export async function POST(request: Request, { params }: Params) {
       pancakeStatus: pancakeCancellationPending ? current.pancakeStatus : "cancelled",
       trackingCode: "",
       shippingStatus: "cancelled",
+      cancellationReason: reason,
       shippingMessage: pancakeCancellationPending
         ? `${reason}. Website đã ghi nhận; yêu cầu hủy POS đang được tự động thử lại.`
         : `${reason}. Vận đơn đã được vô hiệu hóa trước khi bàn giao cho bưu tá.`,
