@@ -17,3 +17,9 @@ test("nội dung website và tồn kho dùng database, tự giữ dữ liệu R2
   assert.match(source, /SITE_CONTENT_R2_SEED_MISSING/);
   assert.match(source, /filename === "site-content\.json" && hasDatabase\(\)[\s\S]*?SITE_CONTENT_DATABASE_UNAVAILABLE/);
 });
+
+test("mỗi cập nhật tồn kho đọc lại catalog sau khi lấy database lock", async () => {
+  const source = await readFile(new URL("../lib/site-content.ts", import.meta.url), "utf8");
+  assert.doesNotMatch(source, /siteContentRequest/);
+  assert.match(source, /export async function readSiteContent\(\): Promise<SiteContent> \{[\s\S]*?return loadSiteContent\(\)/);
+});

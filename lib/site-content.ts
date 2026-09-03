@@ -374,17 +374,11 @@ async function loadSiteContent(): Promise<SiteContent> {
   };
 }
 
-let siteContentRequest: Promise<SiteContent> | null = null;
-
 export async function readSiteContent(): Promise<SiteContent> {
-  if (siteContentRequest) return siteContentRequest;
-
-  siteContentRequest = loadSiteContent();
-  try {
-    return await siteContentRequest;
-  } finally {
-    siteContentRequest = null;
-  }
+  // Inventory mutations are serialized with a database advisory lock. Each
+  // mutation must read again after acquiring that lock; sharing an in-flight
+  // read here can make concurrent checkouts write the same stale quantity.
+  return loadSiteContent();
 }
 
 export async function writeSiteContent(content: SiteContent) {
