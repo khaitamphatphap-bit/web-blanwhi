@@ -8,6 +8,7 @@ import { InventoryService } from "@/lib/pancake/inventory-service";
 import { buildProductInventory } from "@/lib/product-inventory";
 import { readSiteContent, type SiteContent } from "@/lib/site-content";
 import { POSSyncService } from "@/lib/services/pos-sync-service";
+import { QueueHandler } from "@/lib/pancake/queue-handler";
 
 type CheckoutPayload = {
   customerDeviceId?: string;
@@ -74,6 +75,21 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type"
 };
+
+async function queuePosSync(order: ShopOrder) {
+  try {
+    await QueueHandler.enqueue("order.create", { orderCode: order.code });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Không ghi được hàng đợi Pancake.";
+    await updateOrder(order.code, {
+      externalSync: {
+        ...order.externalSync,
+        pancake: `Đã lưu đơn, chờ gửi Pancake: ${message}`,
+        lastSyncedAt: new Date().toISOString()
+      }
+    });
+  }
+}
 
 function schedulePosSync(order: ShopOrder) {
   void (async () => {
@@ -280,6 +296,7 @@ export async function POST(request: Request) {
           }) || existing;
           const accepted = await inventoryService.reserveOrder(completed);
           if (pancakeConfigured) {
+            await queuePosSync(accepted);
             schedulePosSync(accepted);
           }
           return json({ order: accepted, syncQueued: pancakeConfigured, deduplicated: true });
@@ -396,6 +413,7 @@ export async function POST(request: Request) {
     }
     order = await inventoryService.createReservedOrder({ ...order, checkoutCompletedAt: now });
     if (pancakeConfigured && paymentMethod === "cod") {
+      await queuePosSync(order);
       schedulePosSync(order);
       return json({ order, syncQueued: true });
     }

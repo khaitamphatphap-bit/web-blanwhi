@@ -6,7 +6,6 @@ import { QueueHandler } from "@/lib/pancake/queue-handler";
 import { readIntegrationConfig } from "@/lib/integrations";
 import { jsonError } from "@/lib/api-errors";
 import { OrderService } from "@/lib/services/order-service";
-import { refundZaloPayPayment } from "@/lib/payment";
 import { reconcileZaloPayPayment } from "@/lib/payment-confirmation";
 
 type Params = { params: Promise<{ code: string }> };
@@ -18,6 +17,20 @@ function phoneKey(value: unknown) {
 
 function carrierHasAccepted(order: NonNullable<Awaited<ReturnType<typeof findOrderByCode>>>) {
   return ["delivered", "returning", "returned"].includes(order.shippingStatus || "");
+}
+
+async function withTimeout<T>(promise: Promise<T>, ms: number) {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        timeout = setTimeout(() => reject(new Error("Pancake phản hồi chậm, hệ thống sẽ tự thử lại.")), ms);
+      })
+    ]);
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
 }
 
 export async function POST(request: Request, { params }: Params) {
@@ -72,7 +85,7 @@ export async function POST(request: Request, { params }: Params) {
         refundStatus: "pending" as const,
         refundProvider: current.paymentMethod,
         refundAmount: current.total,
-        refundMessage: "Đã hủy đơn, đang gửi yêu cầu hoàn tiền."
+        refundMessage: "Bạn đã hủy đơn thành công, vui lòng liên hệ Zalo 0866561480 để nhận được tiền hoàn trả của đơn hàng này."
       } : {
         refundStatus: "not_required" as const,
         refundProvider: undefined,
@@ -98,14 +111,13 @@ export async function POST(request: Request, { params }: Params) {
       || wasPaid);
     if (mayExistOnPancake && current.pancakeStatus !== "cancelled") {
       pancakeCancellationPending = true;
-      void (async () => {
-        try {
-          await QueueHandler.enqueue("order.cancel", { orderCode: current.code });
-          await orderSync.cancel(current);
-        } catch {
-          try { await QueueHandler.enqueue("order.cancel", { orderCode: current.code }); } catch { /* Queue failure must not undo the website cancellation. */ }
-        }
-      })();
+      try {
+        await QueueHandler.enqueue("order.cancel", { orderCode: current.code });
+        current = await withTimeout(orderSync.cancel(current), 6500);
+        pancakeCancellationPending = current.pancakeStatus !== "cancelled";
+      } catch {
+        try { await QueueHandler.enqueue("order.cancel", { orderCode: current.code }); } catch { /* Queue failure must not undo the website cancellation. */ }
+      }
     }
 
     if (current.inventoryReservationApplied && !current.inventoryReservationReleased) {
@@ -125,38 +137,12 @@ export async function POST(request: Request, { params }: Params) {
         : `${reason}. Vận đơn đã được vô hiệu hóa trước khi bàn giao cho bưu tá.`,
       inventoryReservationReleased: Boolean(current.inventoryReservationReleased)
     });
-    if (!cancellationAlreadyRecorded && wasPaid && current.paymentMethod === "zalopay" && cancelled) {
-      try {
-        const refund = await refundZaloPayPayment(current, config.payment, reason);
-        const providerMessage = `${refund.return_message || ""} ${refund.sub_return_message || ""}`;
-        const processing = Number(refund.return_code || 0) === 3
-          || [-1, -16].includes(Number(refund.sub_return_code || 0))
-          || /đang\s*(refund|hoàn|xử lý)|refunding|refund\s*in\s*progress|processing/i.test(providerMessage);
-        const accepted = Number(refund.return_code || 0) === 1 || processing;
-        cancelled = await updateOrder(code, {
-          refundStatus: accepted ? "pending" : "failed",
-          refundProvider: "zalopay",
-          refundId: refund.m_refund_id,
-          refundTransactionId: refund.refund_id ? String(refund.refund_id) : undefined,
-          refundAmount: refund.amount,
-          refundMessage: accepted
-            ? "ZaloPay đã nhận yêu cầu hoàn tiền, đang xử lý chuyển tiền về tài khoản khách."
-            : (refund.sub_return_message || refund.return_message || "ZaloPay chưa chấp nhận yêu cầu hoàn tiền.")
-        }) || cancelled;
-      } catch (error) {
-        cancelled = await updateOrder(code, {
-          refundStatus: "failed",
-          refundProvider: "zalopay",
-          refundAmount: current.total,
-          refundMessage: error instanceof Error ? error.message : "Không gửi được yêu cầu hoàn tiền ZaloPay."
-        }) || cancelled;
-      }
-    } else if (!cancellationAlreadyRecorded && wasPaid && cancelled) {
+    if (!cancellationAlreadyRecorded && wasPaid && cancelled) {
       cancelled = await updateOrder(code, {
         refundStatus: "pending",
         refundProvider: current.paymentMethod,
         refundAmount: current.total,
-        refundMessage: "Cổng thanh toán này chưa hỗ trợ hoàn tự động; quản trị viên cần hoàn tiền và xác nhận giao dịch."
+        refundMessage: "Bạn đã hủy đơn thành công, vui lòng liên hệ Zalo 0866561480 để nhận được tiền hoàn trả của đơn hàng này."
       }) || cancelled;
     }
     return NextResponse.json({ ok: true, order: cancelled, pancakeCancellationPending });
