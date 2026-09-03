@@ -1,4 +1,4 @@
-import { readJsonStore, readKeyedJsonStore, writeJsonStore, writeKeyedJsonRecord } from "@/lib/data-store";
+import { readJsonStore, readKeyedJsonStore, withDataStoreLock, writeJsonStore, writeKeyedJsonRecord } from "@/lib/data-store";
 import { buildProductInventory } from "@/lib/product-inventory";
 import policyData from "@/app/chinh-sach/policies-data.json";
 
@@ -450,29 +450,31 @@ export async function seedPancakeProductLinks(content: SiteContent) {
 }
 
 export async function writeSiteContentFromAdmin(content: SiteContent) {
-  const latest = await readSiteContent();
-  const latestProducts = new Map(latest.products.map((product) => [product.id, product]));
-  const products = content.products.map((product) => {
-    const latestProduct = latestProducts.get(product.id);
-    if (!latestProduct) return product;
-    const latestRows = new Map(buildProductInventory(latestProduct).map((row) => [row.key, row]));
-    return {
-      ...product,
-      inventory: buildProductInventory(product).map((row) => {
-        const latestRow = latestRows.get(row.key);
-        if (!latestRow) return row;
-        return {
-          ...row,
-          pancakeProductId: latestRow.pancakeProductId || "",
-          pancakeVariationId: latestRow.pancakeVariationId || "",
-          pancakeSku: latestRow.pancakeSku || "",
-          pancakeQuantity: latestRow.pancakeQuantity || 0,
-          lastSyncedAt: latestRow.lastSyncedAt
-        };
-      })
-    };
+  return withDataStoreLock("website-inventory", async () => {
+    const latest = await readSiteContent();
+    const latestProducts = new Map(latest.products.map((product) => [product.id, product]));
+    const products = content.products.map((product) => {
+      const latestProduct = latestProducts.get(product.id);
+      if (!latestProduct) return product;
+      const latestRows = new Map(buildProductInventory(latestProduct).map((row) => [row.key, row]));
+      return {
+        ...product,
+        inventory: buildProductInventory(product).map((row) => {
+          const latestRow = latestRows.get(row.key);
+          if (!latestRow) return row;
+          return {
+            ...row,
+            pancakeProductId: latestRow.pancakeProductId || "",
+            pancakeVariationId: latestRow.pancakeVariationId || "",
+            pancakeSku: latestRow.pancakeSku || "",
+            pancakeQuantity: latestRow.pancakeQuantity || 0,
+            lastSyncedAt: latestRow.lastSyncedAt
+          };
+        })
+      };
+    });
+    return writeSiteContent({ ...content, products });
   });
-  return writeSiteContent({ ...content, products });
 }
 
 function parseMoneyValue(value: string) {

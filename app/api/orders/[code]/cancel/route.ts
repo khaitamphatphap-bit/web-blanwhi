@@ -106,7 +106,7 @@ export async function POST(request: Request, { params }: Params) {
 
     if (current.inventoryReservationApplied && !current.inventoryReservationReleased) {
       try {
-        await new InventoryService().reserve(current.items, "restore");
+        current = await new InventoryService().releaseOrder(current);
       } catch {
         // Không để lỗi đồng bộ tồn kho ngăn trạng thái hủy được lưu; hàng đợi POS sẽ tiếp tục xử lý.
       }
@@ -118,7 +118,7 @@ export async function POST(request: Request, { params }: Params) {
       shippingMessage: pancakeCancellationPending
         ? `${reason}. Website đã ghi nhận; yêu cầu hủy POS đang được tự động thử lại.`
         : `${reason}. Vận đơn đã được vô hiệu hóa trước khi bàn giao cho bưu tá.`,
-      inventoryReservationReleased: true
+      inventoryReservationReleased: Boolean(current.inventoryReservationReleased)
     });
     if (!cancellationAlreadyRecorded && wasPaid && current.paymentMethod === "zalopay" && cancelled) {
       try {

@@ -45,7 +45,7 @@ export async function POST(request: Request, { params }: Params) {
     }
     if (current.inventoryReservationApplied && !current.inventoryReservationReleased) {
       try {
-        await new InventoryService().reserve(current.items, "restore");
+        current = await new InventoryService().releaseOrder(current);
       } catch {
         // Không để lỗi trả tồn kho chặn thao tác hủy đơn của admin.
       }
@@ -60,7 +60,7 @@ export async function POST(request: Request, { params }: Params) {
       shippingMessage: pancakeCancellationPending
         ? `${reason}. Website đã ghi nhận; yêu cầu hủy POS đang được tự động thử lại.`
         : `${reason}. Đơn đã được hủy bởi admin trước khi bàn giao cho đơn vị vận chuyển.`,
-      inventoryReservationReleased: true,
+      inventoryReservationReleased: Boolean(current.inventoryReservationReleased),
       refundStatus: wasPaid ? "pending" : "not_required",
       refundProvider: wasPaid ? current.paymentMethod : undefined,
       refundAmount: wasPaid ? current.total : undefined,

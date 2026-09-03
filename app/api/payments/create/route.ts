@@ -253,8 +253,8 @@ export async function POST(request: Request) {
       const existing = (await readOrders()).find((candidate) => candidate.checkoutRequestId === checkoutRequestId
         && (!customerDeviceId || candidate.customerDeviceId === customerDeviceId));
       if (existing) {
-        if (paymentMethod === "cod" && existing.status === "pending" && !existing.checkoutCompletedAt) {
-          const accepted = await updateOrder(existing.code, {
+        if (paymentMethod === "cod" && existing.status === "pending") {
+          const completed = existing.checkoutCompletedAt ? existing : await updateOrder(existing.code, {
             checkoutCompletedAt: now,
             ...(pancakeConfigured ? { externalSync: {
               ...existing.externalSync,
@@ -262,6 +262,7 @@ export async function POST(request: Request) {
               lastSyncedAt: now
             } } : {})
           }) || existing;
+          const accepted = await inventoryService.reserveOrder(completed);
           if (pancakeConfigured) {
             after(async () => {
               try {
@@ -310,7 +311,7 @@ export async function POST(request: Request) {
       shipping,
       total: Math.max(subtotal - discount + shipping, 0)
     };
-    if (pancakeConfigured) await inventoryService.assertAvailable(orderItems);
+    await inventoryService.assertAvailable(orderItems);
     let order: ShopOrder = {
       id: crypto.randomUUID(),
       code: newOrderCode(),
@@ -390,7 +391,7 @@ export async function POST(request: Request) {
         lastSyncedAt: now
       };
     }
-    order = await createOrder({ ...order, checkoutCompletedAt: now });
+    order = await inventoryService.createReservedOrder({ ...order, checkoutCompletedAt: now });
     if (pancakeConfigured && paymentMethod === "cod") {
       after(async () => {
         try {

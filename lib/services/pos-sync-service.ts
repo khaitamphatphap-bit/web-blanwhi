@@ -20,11 +20,7 @@ export class POSSyncService {
         }
       }) || order;
     }
-    const synced = await this.orderSync.create(order);
-    if (this.inventory.configured() && !synced.inventoryReservationApplied) {
-      await this.inventory.reserve(synced.items, "decrease");
-      return await updateOrder(synced.code, { inventoryReservationApplied: true }) || synced;
-    }
-    return synced;
+    const reserved = await this.inventory.reserveOrder(order);
+    return this.orderSync.create(reserved);
   }
 }

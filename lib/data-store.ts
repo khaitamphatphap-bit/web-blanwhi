@@ -4,6 +4,10 @@ import { hasR2ImageStorage, listR2Keys, readR2Text, writeR2Text } from "@/lib/im
 
 type PgPool = {
   query: (text: string, params?: unknown[]) => Promise<{ rows: Array<Record<string, unknown>> }>;
+  connect: () => Promise<{
+    query: (text: string, params?: unknown[]) => Promise<{ rows: Array<Record<string, unknown>> }>;
+    release: () => void;
+  }>;
 };
 
 export type StoreHealthReport = {
@@ -34,6 +38,7 @@ export type StoreHealthReport = {
 
 let poolPromise: Promise<PgPool> | null = null;
 let schemaReadyPromise: Promise<void> | null = null;
+const localStoreLocks = new Map<string, Promise<void>>();
 
 const databaseEnvNames = [
   "DATABASE_URL",
@@ -363,6 +368,40 @@ async function getPool() {
     });
   }
   return poolPromise;
+}
+
+export async function withDataStoreLock<T>(name: string, action: () => Promise<T>): Promise<T> {
+  const lockName = `blanwhi:${String(name || "default").slice(0, 120)}`;
+  if (hasDatabase()) {
+    await ensureDatabaseSchema();
+    const pool = await getPool();
+    if (pool) {
+      const client = await pool.connect();
+      try {
+        await client.query("select pg_advisory_lock(hashtext($1))", [lockName]);
+        return await action();
+      } finally {
+        try {
+          await client.query("select pg_advisory_unlock(hashtext($1))", [lockName]);
+        } finally {
+          client.release();
+        }
+      }
+    }
+  }
+
+  const previous = localStoreLocks.get(lockName) || Promise.resolve();
+  let release!: () => void;
+  const current = new Promise<void>((resolve) => { release = resolve; });
+  const queued = previous.then(() => current);
+  localStoreLocks.set(lockName, queued);
+  await previous;
+  try {
+    return await action();
+  } finally {
+    release();
+    if (localStoreLocks.get(lockName) === queued) localStoreLocks.delete(lockName);
+  }
 }
 
 async function ensureDatabaseSchema() {

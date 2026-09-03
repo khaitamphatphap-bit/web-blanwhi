@@ -15,6 +15,12 @@ function isStorageLimitMessage(message: string) {
 
 export function jsonError(error: unknown) {
   const message = error instanceof Error ? error.message : "Có lỗi xảy ra. Vui lòng thử lại.";
-  const status = isStorageLimitMessage(message) ? 507 : 500;
-  return NextResponse.json({ error: message }, { status });
+  const declaredStatus = Number((error as { status?: unknown } | null)?.status);
+  const status = isStorageLimitMessage(message)
+    ? 507
+    : Number.isInteger(declaredStatus) && declaredStatus >= 400 && declaredStatus <= 599
+      ? declaredStatus
+      : 500;
+  const code = String((error as { code?: unknown } | null)?.code || "").trim();
+  return NextResponse.json({ error: message, ...(code ? { code } : {}) }, { status });
 }
