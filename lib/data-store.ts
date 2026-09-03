@@ -306,6 +306,14 @@ async function mirrorDatabaseKeyedRecordToR2<T>(namespace: string, itemKey: stri
   }
 }
 
+async function waitForDatabaseBackupMirror<T>(namespace: string, itemKey: string, value: T) {
+  const mirror = mirrorDatabaseKeyedRecordToR2(namespace, itemKey, value);
+  await Promise.race([
+    mirror,
+    new Promise<void>((resolve) => setTimeout(resolve, 1200))
+  ]);
+}
+
 async function flushDatabaseBackupOutbox(limit = 100) {
   if (!hasDatabase() || !hasR2Store()) return 0;
   await ensureDatabaseSchema();
@@ -877,6 +885,44 @@ export async function readKeyedJsonStoreDatabase<T>(namespace: string) {
   return (await readKeyedJsonStoreDatabaseStatus<T>(namespace)).records;
 }
 
+export async function readKeyedJsonRecordDatabaseStatus<T>(namespace: string, itemKey: string): Promise<{ ok: boolean; record: T | null }> {
+  if (!hasDatabase()) return { ok: false, record: null };
+  try {
+    await ensureDatabaseSchema();
+    const pool = await getPool();
+    if (!pool) return { ok: false, record: null };
+    const result = await pool.query(
+      "select item_value from blanwhi_keyed_store where namespace = $1 and item_key = $2 limit 1",
+      [namespace, itemKey]
+    );
+    return { ok: true, record: (result.rows[0]?.item_value as T | undefined) ?? null };
+  } catch (error) {
+    warnBlobFallback(`read database keyed record ${namespace}/${itemKey}`, error);
+    return { ok: false, record: null };
+  }
+}
+
+export async function findKeyedJsonRecordByFieldDatabaseStatus<T>(
+  namespace: string,
+  field: string,
+  value: string
+): Promise<{ ok: boolean; record: T | null }> {
+  if (!hasDatabase()) return { ok: false, record: null };
+  try {
+    await ensureDatabaseSchema();
+    const pool = await getPool();
+    if (!pool) return { ok: false, record: null };
+    const result = await pool.query(
+      "select item_value from blanwhi_keyed_store where namespace = $1 and item_value ->> $2 = $3 limit 1",
+      [namespace, field, value]
+    );
+    return { ok: true, record: (result.rows[0]?.item_value as T | undefined) ?? null };
+  } catch (error) {
+    warnBlobFallback(`find database keyed record ${namespace}/${field}`, error);
+    return { ok: false, record: null };
+  }
+}
+
 export async function readKeyedJsonStoreDatabaseBackups<T>(namespace: string) {
   try {
     return await readDatabaseKeyedBackupR2Records<T>(namespace);
@@ -1018,7 +1064,10 @@ export async function writeKeyedJsonRecord<T>(namespace: string, itemKey: string
          from saved`,
         [namespace, itemKey, JSON.stringify(value)]
       );
-      await mirrorDatabaseKeyedRecordToR2(namespace, itemKey, value);
+      // The database transaction above already persisted both the record and a
+      // durable outbox entry. Do not leave checkout waiting indefinitely when
+      // R2 is slow; the outbox will retry this backup from the health worker.
+      await waitForDatabaseBackupMirror(namespace, itemKey, value);
       return value;
     }
   }

@@ -1,10 +1,12 @@
 import {
   hasDatabase,
+  findKeyedJsonRecordByFieldDatabaseStatus,
   readJsonStore,
   readJsonStoreFallbackStores,
   readKeyedJsonStore,
   readKeyedJsonStoreDatabaseBackups,
   readKeyedJsonStoreDatabase,
+  readKeyedJsonRecordDatabaseStatus,
   readKeyedJsonStoreDatabaseStatus,
   readKeyedJsonStoreFallbackStores,
   withDataStoreLock,
@@ -175,17 +177,33 @@ export async function createOrder(order: ShopOrder) {
   }
   const lockKey = order.checkoutRequestId || order.code;
   return withDataStoreLock(`order-create:${lockKey}`, async () => {
-    if (hasDatabase() && !(await readKeyedJsonStoreDatabaseStatus<ShopOrder>(orderRecordsStore)).ok) {
-      throw new Error("Không đọc được database đơn hàng. Hệ thống đã dừng tạo đơn để tránh tạo trùng hoặc mất đơn.");
+    let orders: ShopOrder[] = [];
+    let existing: ShopOrder | null | undefined;
+    if (hasDatabase()) {
+      const existingState = order.checkoutRequestId
+        ? await findKeyedJsonRecordByFieldDatabaseStatus<ShopOrder>(orderRecordsStore, "checkoutRequestId", order.checkoutRequestId)
+        : await readKeyedJsonRecordDatabaseStatus<ShopOrder>(orderRecordsStore, orderRecordKey(order.code));
+      if (!existingState.ok) {
+        throw new Error("Không đọc được database đơn hàng. Hệ thống đã dừng tạo đơn để tránh tạo trùng hoặc mất đơn.");
+      }
+      existing = existingState.record;
+      if (existing && order.customerDeviceId && existing.customerDeviceId !== order.customerDeviceId) existing = null;
+
+      const deletedState = await readKeyedJsonRecordDatabaseStatus<DeletedOrderRecord>(deletedOrderRecordsStore, orderRecordKey(order.code));
+      if (!deletedState.ok) {
+        throw new Error("Không kiểm tra được lịch sử xóa đơn. Hệ thống đã dừng tạo đơn để bảo vệ dữ liệu.");
+      }
+      if (deletedState.record) throw new Error("Đơn này đã được xóa trong admin nên không tự tạo lại.");
+    } else {
+      if (await isDeletedOrderCode(order.code)) {
+        throw new Error("Đơn này đã được xóa trong admin nên không tự tạo lại.");
+      }
+      orders = await readOrders();
+      existing = order.checkoutRequestId
+        ? orders.find((candidate) => candidate.checkoutRequestId === order.checkoutRequestId
+          && (!order.customerDeviceId || candidate.customerDeviceId === order.customerDeviceId))
+        : orders.find((candidate) => orderRecordKey(candidate.code) === orderRecordKey(order.code));
     }
-    if (await isDeletedOrderCode(order.code)) {
-      throw new Error("Đơn này đã được xóa trong admin nên không tự tạo lại.");
-    }
-    const orders = await readOrders();
-    const existing = order.checkoutRequestId
-      ? orders.find((candidate) => candidate.checkoutRequestId === order.checkoutRequestId
-        && (!order.customerDeviceId || candidate.customerDeviceId === order.customerDeviceId))
-      : orders.find((candidate) => orderRecordKey(candidate.code) === orderRecordKey(order.code));
     if (existing) return existing;
     await writeKeyedJsonRecord(orderRecordsStore, orderRecordKey(order.code), order);
     if (!hasDatabase()) {
@@ -193,6 +211,19 @@ export async function createOrder(order: ShopOrder) {
     }
     return order;
   });
+}
+
+export async function findOrderByCheckoutRequestId(checkoutRequestId: string, customerDeviceId?: string) {
+  const normalized = String(checkoutRequestId || "").trim();
+  if (!normalized) return null;
+  if (hasDatabase()) {
+    const state = await findKeyedJsonRecordByFieldDatabaseStatus<ShopOrder>(orderRecordsStore, "checkoutRequestId", normalized);
+    if (!state.ok) throw new Error("Không đọc được database đơn hàng.");
+    const order = state.record;
+    return order && (!customerDeviceId || order.customerDeviceId === customerDeviceId) ? normalizeOrder(order) : null;
+  }
+  return (await readOrders()).find((order) => order.checkoutRequestId === normalized
+    && (!customerDeviceId || order.customerDeviceId === customerDeviceId)) ?? null;
 }
 
 export async function findOrderByCode(code: string) {

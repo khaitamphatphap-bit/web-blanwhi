@@ -4643,10 +4643,13 @@
           };
         }
         order.checkoutRequestId = checkoutRequestState.id;
+        const checkoutController = new AbortController();
+        const checkoutTimeout = setTimeout(() => checkoutController.abort(), 25000);
         try {
           const response = await fetch(`${paymentApiBase}/api/payments/create`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
+            signal: checkoutController.signal,
             body: JSON.stringify({
               customerDeviceId,
               checkoutRequestId: checkoutRequestState.id,
@@ -4728,8 +4731,11 @@
             openOrders(order.code);
           }
         } catch (error) {
-          alert(error.message || "Không thể tạo giao dịch thanh toán.");
+          alert(error?.name === "AbortError"
+            ? "Kết nối đang chậm. Vui lòng bấm Đặt hàng lại; hệ thống sẽ kiểm tra giao dịch cũ và không tạo trùng đơn."
+            : error.message || "Không thể tạo giao dịch thanh toán.");
         } finally {
+          clearTimeout(checkoutTimeout);
           checkoutSubmissionPending = false;
           submitButton.disabled = !document.getElementById("policyAgreement").checked;
           submitButton.textContent = "Đặt hàng";

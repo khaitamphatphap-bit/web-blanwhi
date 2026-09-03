@@ -6,7 +6,7 @@ import { Validator } from "@/lib/pancake/validator";
 import { availableQuantity, changePublishQuantity } from "@/lib/pancake/domain";
 import { buildProductInventory } from "@/lib/product-inventory";
 import { readSiteContent, writeSiteContent } from "@/lib/site-content";
-import { createOrder, findOrderByCode, readOrders, updateOrder } from "@/lib/orders";
+import { createOrder, findOrderByCheckoutRequestId, findOrderByCode, updateOrder } from "@/lib/orders";
 import { withDataStoreLock } from "@/lib/data-store";
 import type { OrderItem, ShopOrder } from "@/lib/types";
 
@@ -170,8 +170,7 @@ export class InventoryService {
   async createReservedOrder(order: ShopOrder) {
     return withDataStoreLock("website-inventory", async () => {
       if (order.checkoutRequestId) {
-        const existing = (await readOrders()).find((candidate) => candidate.checkoutRequestId === order.checkoutRequestId
-          && (!order.customerDeviceId || candidate.customerDeviceId === order.customerDeviceId));
+        const existing = await findOrderByCheckoutRequestId(order.checkoutRequestId, order.customerDeviceId);
         if (existing) {
           if (existing.inventoryReservationApplied && !existing.inventoryReservationReleased) return existing;
           await this.reserveUnlocked(existing.items, "decrease");

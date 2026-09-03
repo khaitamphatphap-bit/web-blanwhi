@@ -1,7 +1,7 @@
 import { after, NextResponse } from "next/server";
 import { jsonError } from "@/lib/api-errors";
 import { readIntegrationConfig } from "@/lib/integrations";
-import { createOrder, newOrderCode, readOrders, updateOrder } from "@/lib/orders";
+import { createOrder, findOrderByCheckoutRequestId, newOrderCode, updateOrder } from "@/lib/orders";
 import { createMomoPayment, createVnpayUrl, createZaloPayPayment, fallbackPaymentUrl } from "@/lib/payment";
 import { CartItem, PaymentMethod, ShopOrder } from "@/lib/types";
 import { InventoryService } from "@/lib/pancake/inventory-service";
@@ -250,8 +250,7 @@ export async function POST(request: Request) {
     }
 
     if (checkoutRequestId) {
-      const existing = (await readOrders()).find((candidate) => candidate.checkoutRequestId === checkoutRequestId
-        && (!customerDeviceId || candidate.customerDeviceId === customerDeviceId));
+      const existing = await findOrderByCheckoutRequestId(checkoutRequestId, customerDeviceId);
       if (existing) {
         if (paymentMethod === "cod" && existing.status === "pending") {
           const completed = existing.checkoutCompletedAt ? existing : await updateOrder(existing.code, {
