@@ -336,6 +336,20 @@ async function ensureDatabaseSchema() {
           primary key (namespace, item_key)
         )
       `);
+      await pool.query(`
+        create table if not exists blanwhi_keyed_store_history (
+          id bigserial primary key,
+          namespace text not null,
+          item_key text not null,
+          item_value jsonb not null,
+          reason text not null default 'before-write',
+          created_at timestamptz not null default now()
+        )
+      `);
+      await pool.query(`
+        create index if not exists blanwhi_keyed_store_history_lookup_idx
+        on blanwhi_keyed_store_history (namespace, item_key, created_at desc)
+      `);
     })();
   }
   await schemaReadyPromise;
@@ -612,19 +626,103 @@ export async function readJsonStore<T>(filename: string, fallback: T): Promise<T
     if (jsonStoreReadRequests.get(filename) === request) jsonStoreReadRequests.delete(filename);
   }
 }
+
+export async function readJsonStoreFallbackStores<T>(filename: string, fallback: T): Promise<T> {
+  if (hasR2Store() && filename === "site-content.json") {
+    try {
+      const saved = await readR2JsonStore<T>();
+      if (saved !== null) return saved;
+    } catch (error) {
+      warnBlobFallback("read R2 fallback " + filename, error);
+    }
+  }
+
+  if (hasR2Store() && ["orders.json", "deleted-orders.json", "integrations.json", "pancake-logs.json", "pancake-queue.json", "pancake-links.json"].includes(filename)) {
+    try {
+      const saved = await readEncryptedR2JsonStore<T>(filename);
+      if (saved !== null) return saved;
+    } catch (error) {
+      warnBlobFallback("read encrypted R2 fallback " + filename, error);
+    }
+  }
+
+  if (shouldUseBlobStore(filename)) {
+    try {
+      const saved = await readBlobJsonStore<T>();
+      if (saved !== null) return saved;
+    } catch (error) {
+      warnBlobFallback("read Blob fallback " + filename, error);
+    }
+  }
+
+  if (shouldUseEncryptedBlobStore(filename)) {
+    try {
+      const saved = await readEncryptedBlobJsonStore<T>(filename);
+      if (saved !== null) return saved;
+    } catch (error) {
+      warnBlobFallback("read encrypted Blob fallback " + filename, error);
+    }
+  }
+
+  const file = await ensureJsonFile<T>(filename, fallback);
+  try {
+    return JSON.parse(await readFile(file, "utf8")) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+export async function readKeyedJsonStoreDatabase<T>(namespace: string) {
+  if (!hasDatabase()) return {};
+  await ensureDatabaseSchema();
+  const pool = await getPool();
+  if (!pool) return {};
+  const result = await pool.query(
+    "select item_key, item_value from blanwhi_keyed_store where namespace = $1",
+    [namespace]
+  );
+  return Object.fromEntries(result.rows.map((row) => [String(row.item_key), row.item_value as T])) as Record<string, T>;
+}
+
+export async function readKeyedJsonStoreFallbackStores<T>(namespace: string, fallback: Record<string, T> = {}) {
+  if (hasR2Store()) {
+    try {
+      const [indexed, records, legacy] = await Promise.all([
+        readKeyedR2Index<T>(namespace),
+        readKeyedR2Records<T>(namespace),
+        readJsonStoreFallbackStores<Record<string, T>>(namespace + ".json", fallback)
+      ]);
+      if (indexed || records) return { ...legacy, ...(indexed || {}), ...(records || {}) };
+      if (Object.keys(legacy).length) return legacy;
+    } catch (error) {
+      warnBlobFallback("read R2 keyed fallback store " + namespace, error);
+    }
+  }
+
+  if (hasBlobStore()) {
+    try {
+      const indexed = await readKeyedBlobIndex<T>(namespace);
+      const legacy = await readJsonStoreFallbackStores<Record<string, T>>(namespace + ".json", fallback);
+      if (indexed) return { ...legacy, ...indexed };
+      if (Object.keys(legacy).length) return legacy;
+    } catch (error) {
+      warnBlobFallback("read Blob keyed fallback store " + namespace, error);
+    }
+  }
+
+  return readJsonStoreFallbackStores<Record<string, T>>(namespace + ".json", fallback);
+}
+
 export async function readKeyedJsonStore<T>(namespace: string, fallback: Record<string, T> = {}) {
   if (hasDatabase()) {
     await ensureDatabaseSchema();
     const pool = await getPool();
     if (pool) {
-      const result = await pool.query(
-        "select item_key, item_value from blanwhi_keyed_store where namespace = $1",
-        [namespace]
-      );
+      const result = await readKeyedJsonStoreDatabase<T>(namespace);
       const legacy = await readJsonStore<Record<string, T>>(`${namespace}.json`, fallback);
-      if (result.rows.length) return {
+      if (Object.keys(result).length) return {
         ...legacy,
-        ...Object.fromEntries(result.rows.map((row) => [String(row.item_key), row.item_value as T]))
+        ...result
       };
       return legacy;
     }
@@ -687,8 +785,24 @@ export async function writeKeyedJsonRecord<T>(namespace: string, itemKey: string
     const pool = await getPool();
     if (pool) {
       await pool.query(
-        `insert into blanwhi_keyed_store (namespace, item_key, item_value, updated_at)
-         values ($1, $2, $3::jsonb, now())
+        `with incoming as (
+           select $1::text as namespace, $2::text as item_key, $3::jsonb as item_value
+         ),
+         previous as (
+           select current.namespace, current.item_key, current.item_value
+           from blanwhi_keyed_store current
+           join incoming on incoming.namespace = current.namespace and incoming.item_key = current.item_key
+           where current.item_value is distinct from incoming.item_value
+         ),
+         backup as (
+           insert into blanwhi_keyed_store_history (namespace, item_key, item_value, reason)
+           select namespace, item_key, item_value, 'before-write'
+           from previous
+           returning id
+         )
+         insert into blanwhi_keyed_store (namespace, item_key, item_value, updated_at)
+         select namespace, item_key, item_value, now()
+         from incoming
          on conflict (namespace, item_key)
          do update set item_value = excluded.item_value, updated_at = now()`,
         [namespace, itemKey, JSON.stringify(value)]
@@ -728,18 +842,8 @@ export async function writeKeyedJsonRecords<T>(namespace: string, values: Record
   if (!entries.length) return values;
 
   if (hasDatabase()) {
-    await ensureDatabaseSchema();
-    const pool = await getPool();
-    if (pool) {
-      await Promise.all(entries.map(([itemKey, value]) => pool.query(
-        `insert into blanwhi_keyed_store (namespace, item_key, item_value, updated_at)
-         values ($1, $2, $3::jsonb, now())
-         on conflict (namespace, item_key)
-         do update set item_value = excluded.item_value, updated_at = now()`,
-        [namespace, itemKey, JSON.stringify(value)]
-      )));
-      return values;
-    }
+    await Promise.all(entries.map(([itemKey, value]) => writeKeyedJsonRecord(namespace, itemKey, value)));
+    return values;
   }
 
   if (hasR2Store()) {

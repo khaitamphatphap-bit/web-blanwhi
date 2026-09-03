@@ -1,4 +1,14 @@
-import { readJsonStore, readKeyedJsonStore, writeJsonStore, writeKeyedJsonRecord, writeKeyedJsonRecords } from "@/lib/data-store";
+import {
+  hasDatabase,
+  readJsonStore,
+  readJsonStoreFallbackStores,
+  readKeyedJsonStore,
+  readKeyedJsonStoreDatabase,
+  readKeyedJsonStoreFallbackStores,
+  writeJsonStore,
+  writeKeyedJsonRecord,
+  writeKeyedJsonRecords
+} from "@/lib/data-store";
 import { OrderStatus, PaymentMethod, ShopOrder } from "@/lib/types";
 import { shortOrderCode } from "@/lib/order-code";
 
@@ -14,7 +24,16 @@ type DeletedOrderRecord = {
 };
 
 async function readDeletedOrderRecords() {
-  return readJsonStore<DeletedOrderRecord[]>(deletedOrdersStore, []);
+  const [primary, fallback] = await Promise.all([
+    readJsonStore<DeletedOrderRecord[]>(deletedOrdersStore, []),
+    hasDatabase() ? readJsonStoreFallbackStores<DeletedOrderRecord[]>(deletedOrdersStore, []) : Promise.resolve([])
+  ]);
+  const byCode = new Map<string, DeletedOrderRecord>();
+  [...fallback, ...primary].forEach((record) => {
+    const key = String(record.code || record.shortCode || "").trim().toUpperCase();
+    if (key) byCode.set(key, record);
+  });
+  return Array.from(byCode.values());
 }
 
 function deletedOrderKeys(records: DeletedOrderRecord[]) {
@@ -93,18 +112,36 @@ function normalizeOrder(order: ShopOrder): ShopOrder {
 }
 
 export async function readOrders(): Promise<ShopOrder[]> {
-  const [orders, orderRecords, deleted] = await Promise.all([
+  const emptyOrders: ShopOrder[] = [];
+  const emptyOrderRecords: Record<string, ShopOrder> = {};
+  const [orders, orderRecords, fallbackOrders, fallbackRecords, deleted] = await Promise.all([
     readJsonStore<ShopOrder[]>("orders.json", []),
     readKeyedJsonStore<ShopOrder>(orderRecordsStore, {}),
+    hasDatabase() ? readJsonStoreFallbackStores<ShopOrder[]>("orders.json", []) : Promise.resolve(emptyOrders),
+    hasDatabase() ? readKeyedJsonStoreFallbackStores<ShopOrder>(orderRecordsStore, {}) : Promise.resolve(emptyOrderRecords),
     readDeletedOrderRecords()
   ]);
   const deletedKeys = deletedOrderKeys(deleted);
-  return compactOrders([...orders, ...Object.values(orderRecords || {})], deletedKeys).map(normalizeOrder);
+  return compactOrders([
+    ...fallbackOrders,
+    ...Object.values(fallbackRecords || {}),
+    ...orders,
+    ...Object.values(orderRecords || {})
+  ], deletedKeys).map(normalizeOrder);
 }
 
 export async function writeOrders(orders: ShopOrder[]) {
   const deletedKeys = deletedOrderKeys(await readDeletedOrderRecords());
   const filtered = compactOrders(orders, deletedKeys);
+  if (hasDatabase()) {
+    const databaseRecords = await readKeyedJsonStoreDatabase<ShopOrder>(orderRecordsStore);
+    const databaseKeys = new Set(Object.keys(databaseRecords));
+    const recordsToUpdate = filtered.filter((order) => databaseKeys.has(orderRecordKey(order.code)));
+    if (recordsToUpdate.length) {
+      await writeKeyedJsonRecords(orderRecordsStore, Object.fromEntries(recordsToUpdate.map((order) => [orderRecordKey(order.code), order])));
+    }
+    return;
+  }
   await Promise.all([
     writeJsonStore("orders.json", filtered),
     writeKeyedJsonRecords(orderRecordsStore, Object.fromEntries(filtered.map((order) => [orderRecordKey(order.code), order])))
@@ -122,7 +159,9 @@ export async function createOrder(order: ShopOrder) {
     : null;
   if (existing) return existing;
   await writeKeyedJsonRecord(orderRecordsStore, orderRecordKey(order.code), order);
-  await writeOrders([order, ...orders.filter((candidate) => candidate.code !== order.code)]);
+  if (!hasDatabase()) {
+    await writeOrders([order, ...orders.filter((candidate) => candidate.code !== order.code)]);
+  }
   return order;
 }
 
@@ -150,8 +189,13 @@ export async function updateOrderStatus(
     };
     return updated;
   });
-  await writeOrders(next);
-  return updated;
+  const updatedOrder = updated as ShopOrder | null;
+  if (updatedOrder && hasDatabase()) {
+    await writeKeyedJsonRecord(orderRecordsStore, orderRecordKey(updatedOrder.code), updatedOrder);
+  } else {
+    await writeOrders(next);
+  }
+  return updatedOrder;
 }
 
 export async function updateOrder(code: string, patch: Partial<ShopOrder>): Promise<ShopOrder | null> {
@@ -171,8 +215,13 @@ export async function updateOrder(code: string, patch: Partial<ShopOrder>): Prom
     };
     return updated;
   });
-  await writeOrders(next);
-  return updated;
+  const updatedOrder = updated as ShopOrder | null;
+  if (updatedOrder && hasDatabase()) {
+    await writeKeyedJsonRecord(orderRecordsStore, orderRecordKey(updatedOrder.code), updatedOrder);
+  } else {
+    await writeOrders(next);
+  }
+  return updatedOrder;
 }
 
 export async function deleteOrdersByCodes(codes: string[]) {
@@ -200,7 +249,7 @@ export async function deleteOrdersByCodes(codes: string[]) {
   });
   const deletedCount = orders.length - next.length;
   await Promise.all([
-    writeOrders(next),
+    hasDatabase() ? Promise.resolve() : writeOrders(next),
     rememberDeletedOrders([...requestedDeleted, ...matchedDeleted])
   ]);
   return { deletedCount, orders: next };
