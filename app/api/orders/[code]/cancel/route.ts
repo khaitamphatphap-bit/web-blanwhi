@@ -1,4 +1,4 @@
-import { after, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { findOrderByCode, updateOrder } from "@/lib/orders";
 import { InventoryService } from "@/lib/pancake/inventory-service";
 import { OrderSyncService } from "@/lib/pancake/order-sync-service";
@@ -98,14 +98,14 @@ export async function POST(request: Request, { params }: Params) {
       || wasPaid);
     if (mayExistOnPancake && current.pancakeStatus !== "cancelled") {
       pancakeCancellationPending = true;
-      try { await QueueHandler.enqueue("order.cancel", { orderCode: current.code }); } catch { /* Queue failure must not undo the website cancellation. */ }
-      after(async () => {
+      void (async () => {
         try {
+          await QueueHandler.enqueue("order.cancel", { orderCode: current.code });
           await orderSync.cancel(current);
         } catch {
           try { await QueueHandler.enqueue("order.cancel", { orderCode: current.code }); } catch { /* Queue failure must not undo the website cancellation. */ }
         }
-      });
+      })();
     }
 
     if (current.inventoryReservationApplied && !current.inventoryReservationReleased) {
