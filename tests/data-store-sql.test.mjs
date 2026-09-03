@@ -9,3 +9,9 @@ test("ghi database ưu tiên lưu bản chính trước backup để tránh dead
   assert.match(source, /queue database backup/);
   assert.match(source, /must never reject checkout or cancellation/);
 });
+
+test("nội dung website và tồn kho dùng database, tự giữ dữ liệu R2 khi chuyển lần đầu", async () => {
+  const source = await readFile(new URL("../lib/data-store.ts", import.meta.url), "utf8");
+  assert.match(source, /return hasDatabase\(\) && !\["integrations\.json", "orders\.json"\]\.includes\(filename\)/);
+  assert.match(source, /filename === "site-content\.json" && hasR2Store\(\)[\s\S]*?readR2JsonStore<T>\(\)[\s\S]*?writeJsonStore\(filename, r2Value\)/);
+});

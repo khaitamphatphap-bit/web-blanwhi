@@ -89,10 +89,11 @@ function shouldUseBlobStore(filename: string) {
 }
 
 function shouldUseDatabaseJsonStore(filename: string) {
-  // These existing admin stores remain authoritative in R2. New orders use
-  // the database-only keyed order-records store, so enabling Postgres cannot
-  // replace live products, merchant keys, or the legacy order archive.
-  return hasDatabase() && !["site-content.json", "integrations.json", "orders.json"].includes(filename);
+  // Merchant keys and the legacy order archive keep their existing stores.
+  // Site content must use Postgres when available because checkout updates its
+  // inventory counters. A shared R2 JSON object cannot provide an atomic
+  // read-modify-write cycle when several customers order at the same time.
+  return hasDatabase() && !["integrations.json", "orders.json"].includes(filename);
 }
 
 function shouldUseEncryptedBlobStore(filename: string) {
@@ -764,6 +765,17 @@ async function readJsonStoreUncached<T>(filename: string, fallback: T): Promise<
         const key = toStoreKey(filename);
         const result = await pool.query("select store_value from blanwhi_store where store_key = $1", [key]);
         if (result.rows[0]?.store_value !== undefined) return result.rows[0].store_value as T;
+
+        // Preserve every existing admin edit when site content first moves
+        // from R2 to Postgres. The insert happens before this value is used by
+        // checkout, so later inventory updates all share one authoritative row.
+        if (filename === "site-content.json" && hasR2Store()) {
+          const r2Value = await readR2JsonStore<T>();
+          if (r2Value !== null) {
+            await writeJsonStore(filename, r2Value);
+            return r2Value;
+          }
+        }
 
         const file = await ensureJsonFile<T>(filename, fallback);
         let seed = fallback;
