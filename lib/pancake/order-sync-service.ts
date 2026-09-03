@@ -460,39 +460,50 @@ export class OrderSyncService {
     }
   }
   async cancel(order: ShopOrder, enqueueOnFailure = true) {
-    const candidateIds: string[] = [];
     const knownId = pancakeOrderId(order);
-    if (knownId) candidateIds.push(knownId);
-    try {
-      const discovered = await this.pancake.findOrder(order.code, order.customer.phone);
-      const discoveredId = discovered ? externalId(discovered) : "";
-      if (discoveredId && !candidateIds.includes(discoveredId)) candidateIds.push(discoveredId);
-    } catch {
-      // Vẫn thử ID đã lưu nếu bước tìm lại đơn tạm thời không phản hồi.
-    }
     let lastError: unknown;
+    const cancelRemoteOrder = async (remoteOrderId: string) => {
+      await this.pancake.cancelOrder(remoteOrderId);
+      const updated = await updateOrder(order.code, {
+        pancakeOrderId: remoteOrderId,
+        pancakeStatus: "cancelled",
+        externalSync: { ...order.externalSync, pancake: "Đã hủy trên Pancake", lastSyncedAt: new Date().toISOString() }
+      });
+      await PancakeLogger.write("info", "order.cancel", `Đã hủy đơn trên Pancake #${remoteOrderId}.`, order.code);
+      return updated || order;
+    };
     try {
-      if (!candidateIds.length) {
+      // Most orders already have the Pancake ID. Cancel it immediately instead
+      // of delaying the request with a remote search first.
+      if (knownId) {
+        try {
+          return await cancelRemoteOrder(knownId);
+        } catch (error) {
+          lastError = error;
+        }
+      }
+
+      let discoveredId = "";
+      try {
+        const discovered = await this.pancake.findOrder(order.code, order.customer.phone);
+        discoveredId = discovered ? externalId(discovered) : "";
+      } catch (error) {
+        if (!lastError) lastError = error;
+      }
+      if (discoveredId && discoveredId !== knownId) {
+        try {
+          return await cancelRemoteOrder(discoveredId);
+        } catch (error) {
+          lastError = error;
+        }
+      }
+      if (!knownId && !discoveredId) {
         throw new PancakeIntegrationError(
           "Pancake đã nhận đơn nhưng chưa trả mã để hủy. Hệ thống sẽ tự thử lại.",
           "PANCAKE_CANCEL_ID_PENDING",
           409,
           true
         );
-      }
-      for (const remoteOrderId of candidateIds) {
-        try {
-          await this.pancake.cancelOrder(remoteOrderId);
-          const updated = await updateOrder(order.code, {
-            pancakeOrderId: remoteOrderId,
-            pancakeStatus: "cancelled",
-            externalSync: { ...order.externalSync, pancake: "Đã hủy trên Pancake", lastSyncedAt: new Date().toISOString() }
-          });
-          await PancakeLogger.write("info", "order.cancel", `Đã hủy đơn trên Pancake #${remoteOrderId}.`, order.code);
-          return updated || order;
-        } catch (error) {
-          lastError = error;
-        }
       }
       throw lastError || new Error("Pancake không xác nhận hủy đơn.");
     } catch (error) {

@@ -7,7 +7,6 @@ import { jsonError } from "@/lib/api-errors";
 import { OrderService } from "@/lib/services/order-service";
 import { refundZaloPayPayment } from "@/lib/payment";
 import { reconcileZaloPayPayment } from "@/lib/payment-confirmation";
-import { QueueHandler } from "@/lib/pancake/queue-handler";
 
 type Params = { params: Promise<{ code: string }> };
 
@@ -96,7 +95,6 @@ export async function POST(request: Request, { params }: Params) {
       || current.paymentMethod === "cod"
       || wasPaid);
     if (mayExistOnPancake && current.pancakeStatus !== "cancelled") {
-      try { await QueueHandler.enqueue("order.cancel", { orderCode: code }); } catch { /* Lần đồng bộ nền kế tiếp vẫn quét lại tất cả đơn hủy. */ }
       try {
         current = await orderSync.cancel(current);
       } catch {

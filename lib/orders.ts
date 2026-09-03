@@ -227,8 +227,12 @@ export async function findOrderByCheckoutRequestId(checkoutRequestId: string, cu
 }
 
 export async function findOrderByCode(code: string) {
-  const orders = await readOrders();
   const normalized = String(code || "").trim().toUpperCase();
+  if (hasDatabase()) {
+    const state = await readKeyedJsonRecordDatabaseStatus<ShopOrder>(orderRecordsStore, normalized);
+    if (state.ok && state.record) return normalizeOrder(state.record);
+  }
+  const orders = await readOrders();
   return orders.find((order) => order.code.toUpperCase() === normalized || shortOrderCode(order.code) === normalized) ?? null;
 }
 
@@ -258,8 +262,27 @@ export async function updateOrderStatus(
 
 export async function updateOrder(code: string, patch: Partial<ShopOrder>): Promise<ShopOrder | null> {
   return withDataStoreLock(`order-update:${orderRecordKey(code)}`, async () => {
-    if (hasDatabase() && !(await readKeyedJsonStoreDatabaseStatus<ShopOrder>(orderRecordsStore)).ok) {
-      throw new Error("Không đọc được database đơn hàng nên chưa cập nhật để tránh ghi đè dữ liệu.");
+    if (hasDatabase()) {
+      const recordKey = orderRecordKey(code);
+      const [orderState, deletedState] = await Promise.all([
+        readKeyedJsonRecordDatabaseStatus<ShopOrder>(orderRecordsStore, recordKey),
+        readKeyedJsonRecordDatabaseStatus<DeletedOrderRecord>(deletedOrderRecordsStore, recordKey)
+      ]);
+      if (!orderState.ok || !deletedState.ok) {
+        throw new Error("Không đọc được database đơn hàng nên chưa cập nhật để tránh ghi đè dữ liệu.");
+      }
+      if (deletedState.record) return null;
+      if (orderState.record) {
+        const current = normalizeOrder(orderState.record);
+        const updated: ShopOrder = {
+          ...current,
+          ...patch,
+          externalSync: { ...current.externalSync, ...patch.externalSync },
+          updatedAt: new Date().toISOString()
+        };
+        await writeKeyedJsonRecord(orderRecordsStore, recordKey, updated);
+        return updated;
+      }
     }
     if (await isDeletedOrderCode(code)) return null;
     const orders = await readOrders();
