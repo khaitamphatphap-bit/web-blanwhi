@@ -1,4 +1,4 @@
-import { after, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { jsonError } from "@/lib/api-errors";
 import { readIntegrationConfig } from "@/lib/integrations";
 import { createOrder, findOrderByCheckoutRequestId, newOrderCode, updateOrder } from "@/lib/orders";
@@ -74,6 +74,23 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type"
 };
+
+function schedulePosSync(order: ShopOrder) {
+  void (async () => {
+    try {
+      await new POSSyncService().confirmOrder(order);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Không thể đồng bộ đơn sang Pancake.";
+      await updateOrder(order.code, {
+        externalSync: {
+          ...order.externalSync,
+          pancake: `Lỗi đồng bộ: ${message}`,
+          lastSyncedAt: new Date().toISOString()
+        }
+      });
+    }
+  })();
+}
 
 function json(body: unknown, init?: ResponseInit) {
   return NextResponse.json(body, {
@@ -263,20 +280,7 @@ export async function POST(request: Request) {
           }) || existing;
           const accepted = await inventoryService.reserveOrder(completed);
           if (pancakeConfigured) {
-            after(async () => {
-              try {
-                await new POSSyncService().confirmOrder(accepted);
-              } catch (error) {
-                const message = error instanceof Error ? error.message : "Không thể đồng bộ đơn sang Pancake.";
-                await updateOrder(accepted.code, {
-                  externalSync: {
-                    ...accepted.externalSync,
-                    pancake: `Lỗi đồng bộ: ${message}`,
-                    lastSyncedAt: new Date().toISOString()
-                  }
-                });
-              }
-            });
+            schedulePosSync(accepted);
           }
           return json({ order: accepted, syncQueued: pancakeConfigured, deduplicated: true });
         }
@@ -392,20 +396,7 @@ export async function POST(request: Request) {
     }
     order = await inventoryService.createReservedOrder({ ...order, checkoutCompletedAt: now });
     if (pancakeConfigured && paymentMethod === "cod") {
-      after(async () => {
-        try {
-          await new POSSyncService().confirmOrder(order);
-        } catch (error) {
-          const message = error instanceof Error ? error.message : "Không thể đồng bộ đơn sang Pancake.";
-          await updateOrder(order.code, {
-            externalSync: {
-              ...order.externalSync,
-              pancake: `Lỗi đồng bộ: ${message}`,
-              lastSyncedAt: new Date().toISOString()
-            }
-          });
-        }
-      });
+      schedulePosSync(order);
       return json({ order, syncQueued: true });
     }
 
