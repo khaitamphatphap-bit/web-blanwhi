@@ -7,16 +7,13 @@ import { readIntegrationConfig } from "@/lib/integrations";
 import { jsonError } from "@/lib/api-errors";
 import { OrderService } from "@/lib/services/order-service";
 import { reconcileZaloPayPayment } from "@/lib/payment-confirmation";
+import { carrierHasAcceptedCustomerOrder } from "@/lib/order-state";
 
 type Params = { params: Promise<{ code: string }> };
 
 function phoneKey(value: unknown) {
   const digits = String(value || "").replace(/\D/g, "");
   return digits.startsWith("84") && digits.length > 10 ? `0${digits.slice(2)}` : digits;
-}
-
-function carrierHasAccepted(order: NonNullable<Awaited<ReturnType<typeof findOrderByCode>>>) {
-  return ["ready_to_ship", "shipping", "delivered", "returning", "returned"].includes(order.shippingStatus || "");
 }
 
 async function withTimeout<T>(promise: Promise<T>, ms: number) {
@@ -73,7 +70,7 @@ export async function POST(request: Request, { params }: Params) {
         // Không coi lỗi truy vấn hoặc giao dịch chưa thanh toán là một khoản cần hoàn tiền.
       }
     }
-    if (carrierHasAccepted(current)) {
+    if (carrierHasAcceptedCustomerOrder(current)) {
       return NextResponse.json({ error: "Đơn đã giao cho đơn vị vận chuyển hoặc đang giao hàng nên không thể hủy trực tuyến." }, { status: 409 });
     }
     const cancellationAlreadyRecorded = current.status === "cancelled";

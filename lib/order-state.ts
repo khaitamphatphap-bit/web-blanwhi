@@ -21,3 +21,9 @@ export function mergeOrderPatch(current: ShopOrder, patch: Partial<ShopOrder>, u
   }
   return updated;
 }
+
+export function carrierHasAcceptedCustomerOrder(order: Pick<ShopOrder, "shippingStatus" | "trackingCode">) {
+  const shippingStatus = String(order.shippingStatus || "");
+  if (["shipping", "delivered", "returning", "returned"].includes(shippingStatus)) return true;
+  return shippingStatus === "ready_to_ship" && Boolean(String(order.trackingCode || "").trim());
+}

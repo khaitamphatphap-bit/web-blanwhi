@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { mergeOrderPatch } from "../lib/order-state.ts";
+import { carrierHasAcceptedCustomerOrder, mergeOrderPatch } from "../lib/order-state.ts";
 
 const cancelledOrder = {
   id: "test-order",
@@ -39,4 +39,10 @@ test("xác nhận hủy từ Pancake được phép nâng trạng thái POS thà
   const result = mergeOrderPatch(cancelledOrder, { pancakeStatus: "cancelled" });
   assert.equal(result.status, "cancelled");
   assert.equal(result.pancakeStatus, "cancelled");
+});
+
+test("khách vẫn được hủy khi Pancake mới đóng gói nhưng chưa có mã vận đơn", () => {
+  assert.equal(carrierHasAcceptedCustomerOrder({ shippingStatus: "ready_to_ship", trackingCode: "" }), false);
+  assert.equal(carrierHasAcceptedCustomerOrder({ shippingStatus: "ready_to_ship", trackingCode: "SPX123" }), true);
+  assert.equal(carrierHasAcceptedCustomerOrder({ shippingStatus: "shipping", trackingCode: "" }), true);
 });
