@@ -23,3 +23,12 @@ test("mỗi cập nhật tồn kho đọc lại catalog sau khi lấy database l
   assert.doesNotMatch(source, /siteContentRequest/);
   assert.match(source, /export async function readSiteContent\(\): Promise<SiteContent> \{[\s\S]*?return loadSiteContent\(\)/);
 });
+
+test("database lock tự giải phóng khi function bị ngắt", async () => {
+  const source = await readFile(new URL("../lib/data-store.ts", import.meta.url), "utf8");
+  assert.match(source, /blanwhi-v2:/);
+  assert.match(source, /pg_advisory_xact_lock/);
+  assert.match(source, /set local lock_timeout = '12s'/);
+  assert.doesNotMatch(source, /pg_advisory_lock\(/);
+  assert.doesNotMatch(source, /pg_advisory_unlock\(/);
+});

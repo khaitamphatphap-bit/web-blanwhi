@@ -458,21 +458,28 @@ async function getPool() {
 }
 
 export async function withDataStoreLock<T>(name: string, action: () => Promise<T>): Promise<T> {
-  const lockName = `blanwhi:${String(name || "default").slice(0, 120)}`;
+  // v2 leaves any session locks held by an interrupted older deployment
+  // behind and uses transaction locks that Postgres always releases.
+  const lockName = `blanwhi-v2:${String(name || "default").slice(0, 120)}`;
   if (hasDatabase()) {
     await ensureDatabaseSchema();
     const pool = await getPool();
     if (pool) {
       const client = await pool.connect();
       try {
-        await client.query("select pg_advisory_lock(hashtext($1))", [lockName]);
-        return await action();
-      } finally {
+        await client.query("begin");
+        await client.query("set local lock_timeout = '12s'");
+        await client.query("select pg_advisory_xact_lock(hashtext($1))", [lockName]);
         try {
-          await client.query("select pg_advisory_unlock(hashtext($1))", [lockName]);
-        } finally {
-          client.release();
+          const result = await action();
+          await client.query("commit");
+          return result;
+        } catch (error) {
+          await client.query("rollback").catch(() => undefined);
+          throw error;
         }
+      } finally {
+        client.release();
       }
     }
   }
