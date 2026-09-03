@@ -1,4 +1,4 @@
-import { findOrderByCode, readOrders, updateOrder, writeOrders } from "@/lib/orders";
+import { findOrderByCode, readOrders, updateOrder } from "@/lib/orders";
 import { canCreatePancakeOrder } from "@/lib/order-readiness";
 import { ExceptionHandler } from "@/lib/pancake/exception-handler";
 import { PancakeIntegrationError } from "@/lib/pancake/exception-handler";
@@ -777,18 +777,7 @@ export class OrderSyncService {
       await applyPayload(payload, target.order, target.remoteId);
     }
     if (patches.size) {
-      const latestOrders = await readOrders();
-      const updatedAt = new Date().toISOString();
-      await writeOrders(latestOrders.map((order) => {
-        const patch = patches.get(order.code);
-        if (!patch) return order;
-        return {
-          ...order,
-          ...patch,
-          externalSync: { ...order.externalSync, ...patch.externalSync },
-          updatedAt
-        };
-      }));
+      await Promise.all(Array.from(patches.entries()).map(([code, patch]) => updateOrder(code, patch)));
       await PancakeLogger.write("info", "order.poll", `Đã cập nhật nhanh ${patches.size} đơn và tự chuyển ${posStatusesUpdated} trạng thái POS.`);
     }
     if (detailFailures.length || posStatusFailures.length) {

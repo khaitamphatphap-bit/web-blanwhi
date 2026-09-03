@@ -16,6 +16,7 @@ import {
 } from "@/lib/data-store";
 import { OrderStatus, PaymentMethod, ShopOrder } from "@/lib/types";
 import { shortOrderCode } from "@/lib/order-code";
+import { mergeOrderPatch } from "@/lib/order-state";
 
 const paymentMethods = new Set<PaymentMethod>(["cod", "bank_transfer", "vnpay", "onepay", "alepay", "momo", "zalopay"]);
 const deletedOrdersStore = "deleted-orders.json";
@@ -273,13 +274,9 @@ export async function updateOrder(code: string, patch: Partial<ShopOrder>): Prom
       }
       if (deletedState.record) return null;
       if (orderState.record) {
-        const current = normalizeOrder(orderState.record);
-        const updated: ShopOrder = {
-          ...current,
-          ...patch,
-          externalSync: { ...current.externalSync, ...patch.externalSync },
-          updatedAt: new Date().toISOString()
-        };
+        // A stale Pancake poll must never restore packing/shipping after the
+        // customer cancellation has already been committed.
+        const updated = mergeOrderPatch(normalizeOrder(orderState.record), patch);
         await writeKeyedJsonRecord(orderRecordsStore, recordKey, updated);
         return updated;
       }

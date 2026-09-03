@@ -152,7 +152,7 @@ export async function POST(request: Request, { params }: Params) {
         refundMessage: "Cổng thanh toán này chưa hỗ trợ hoàn tự động; quản trị viên cần hoàn tiền và xác nhận giao dịch."
       }) || cancelled;
     }
-    return NextResponse.json({ ok: true, order: cancelled });
+    return NextResponse.json({ ok: true, order: cancelled, pancakeCancellationPending });
   } catch (error) {
     return jsonError(error);
   }

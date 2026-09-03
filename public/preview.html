@@ -3366,9 +3366,11 @@
           if (storedOrder) saveOrders(nextOrders);
           if (Array.isArray(lookedUpOrders)) lookedUpOrders = lookedUpOrders.map((order) => order.code === code ? confirmedOrder : order);
           renderOrders();
-          const cancellationMessage = paidBeforeCancel
-            ? (refundNotice(confirmedOrder) || "Đã hủy đơn và đang xử lý hoàn tiền.")
-            : `Đã hủy đơn ${code} thành công.`;
+          const cancellationMessage = result.pancakeCancellationPending
+            ? "Website đã ghi nhận yêu cầu hủy. Pancake đang được tự động thử lại, vui lòng kiểm tra trạng thái sau ít phút."
+            : paidBeforeCancel
+              ? (refundNotice(confirmedOrder) || "Đã hủy đơn và đang xử lý hoàn tiền.")
+              : `Đã hủy đơn ${code} thành công trên website và Pancake.`;
           alert(cancellationMessage);
         } catch (error) {
           if ([403, 409].includes(Number(error.status || 0))) {
@@ -3378,12 +3380,13 @@
             alert(error.message || "Đơn không còn đủ điều kiện hủy.");
             return;
           }
-          // Website đã lưu trạng thái hủy trước khi đồng bộ POS. Không phục hồi
-          // đơn về trạng thái cũ chỉ vì mạng/Pancake phản hồi chậm.
-          if (storedOrder) saveOrders(optimisticOrders);
-          if (Array.isArray(lookedUpOrders)) lookedUpOrders = lookedUpOrders.map((order) => order.code === code ? optimisticOrder : order);
+          // Không báo hủy thành công khi trình duyệt chưa nhận được xác nhận từ
+          // server. Lượt đồng bộ kế tiếp sẽ lấy lại trạng thái thật từ database.
+          if (storedOrder) saveOrders(previousOrders);
+          if (Array.isArray(lookedUpOrders)) lookedUpOrders = lookedUpOrders.map((order) => order.code === code ? previousOrder : order);
           renderOrders();
-          alert("Yêu cầu hủy đã được ghi nhận. Website đang tiếp tục đồng bộ với POS, bạn không cần bấm lại.");
+          alert("Chưa xác nhận được việc hủy đơn. Vui lòng kiểm tra lại trạng thái đơn rồi thử lại.");
+          void syncCustomerOrderStatuses();
         }
       }
 
