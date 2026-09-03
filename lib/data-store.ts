@@ -155,6 +155,23 @@ async function writeEncryptedR2JsonStore<T>(filename: string, value: T) {
   return value;
 }
 
+async function readEncryptedR2JsonStoreHistory<T>(filename: string, limit: number) {
+  const prefix = "blanwhi/data/private-history/" + toStoreKey(filename) + "-";
+  const keys = (await listR2Keys(prefix))
+    .filter((key) => key.endsWith(".enc.json"))
+    .sort((left, right) => right.localeCompare(left))
+    .slice(0, limit);
+  const values = await Promise.all(keys.map(async (key) => {
+    try {
+      const text = await readR2Text(key);
+      return text === null ? null : await decryptJson<T>(text);
+    } catch {
+      return null;
+    }
+  }));
+  return values.filter((value) => value !== null) as T[];
+}
+
 async function readKeyedR2Index<T>(namespace: string) {
   const text = await readR2Text(keyedR2IndexPath(namespace));
   return text === null ? null : decryptJson<Record<string, T>>(text);
@@ -785,6 +802,15 @@ export async function readJsonStoreHistory<T>(filename: string, limit = 100): Pr
   }
 
   if (history.length > 0) return history;
+
+  if (hasR2Store() && ["orders.json", "deleted-orders.json", "integrations.json", "pancake-logs.json", "pancake-queue.json", "pancake-links.json"].includes(filename)) {
+    try {
+      const values = await readEncryptedR2JsonStoreHistory<T>(filename, safeLimit);
+      if (values.length > 0) return values;
+    } catch (error) {
+      warnBlobFallback("read encrypted R2 history " + filename, error);
+    }
+  }
 
   const backupDir = path.join(writableDataDir(), "backups", toStoreKey(filename));
   try {
