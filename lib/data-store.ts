@@ -333,6 +333,29 @@ async function flushDatabaseBackupOutbox(limit = 100) {
   return Number(pending.rows[0]?.count || 0);
 }
 
+function isRetryableDatabaseWriteError(error: unknown) {
+  const code = String((error as { code?: unknown } | null)?.code || "");
+  const message = error instanceof Error ? error.message.toLowerCase() : String(error || "").toLowerCase();
+  return code === "40P01"
+    || code === "40001"
+    || message.includes("deadlock detected")
+    || message.includes("could not serialize access");
+}
+
+async function retryDatabaseWrite<T>(action: () => Promise<T>, attempts = 4) {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      return await action();
+    } catch (error) {
+      lastError = error;
+      if (!isRetryableDatabaseWriteError(error) || attempt === attempts - 1) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 80 * (attempt + 1) + Math.floor(Math.random() * 80)));
+    }
+  }
+  throw lastError;
+}
+
 async function readEncryptedBlobJsonStore<T>(filename: string) {
   const { get } = await import("@vercel/blob");
   const result = await get(encryptedBlobPath(filename), { access: "public", useCache: false });
@@ -1027,7 +1050,7 @@ export async function writeKeyedJsonRecord<T>(namespace: string, itemKey: string
     await ensureDatabaseSchema();
     const pool = await getPool();
     if (pool) {
-      await pool.query(
+      await retryDatabaseWrite(() => pool.query(
         `with incoming as (
            select $1::text as namespace, $2::text as item_key, $3::jsonb as item_value
          ),
@@ -1063,7 +1086,7 @@ export async function writeKeyedJsonRecord<T>(namespace: string, itemKey: string
          select namespace, item_key, item_value, 'after-write'
          from saved`,
         [namespace, itemKey, JSON.stringify(value)]
-      );
+      ));
       // The database transaction above already persisted both the record and a
       // durable outbox entry. Do not leave checkout waiting indefinitely when
       // R2 is slow; the outbox will retry this backup from the health worker.
