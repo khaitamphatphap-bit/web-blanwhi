@@ -14,4 +14,6 @@ test("nội dung website và tồn kho dùng database, tự giữ dữ liệu R2
   const source = await readFile(new URL("../lib/data-store.ts", import.meta.url), "utf8");
   assert.match(source, /return hasDatabase\(\) && !\["integrations\.json", "orders\.json"\]\.includes\(filename\)/);
   assert.match(source, /filename === "site-content\.json" && hasR2Store\(\)[\s\S]*?readR2JsonStore<T>\(\)[\s\S]*?writeJsonStore\(filename, r2Value\)/);
+  assert.match(source, /SITE_CONTENT_R2_SEED_MISSING/);
+  assert.match(source, /filename === "site-content\.json" && hasDatabase\(\)[\s\S]*?SITE_CONTENT_DATABASE_UNAVAILABLE/);
 });

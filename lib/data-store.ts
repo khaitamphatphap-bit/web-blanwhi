@@ -757,6 +757,7 @@ export async function ensureJsonFile<T>(filename: string, fallback: T) {
 }
 
 async function readJsonStoreUncached<T>(filename: string, fallback: T): Promise<T> {
+  let databaseReadError: unknown;
   if (shouldUseDatabaseJsonStore(filename)) {
     try {
       await ensureDatabaseSchema();
@@ -775,6 +776,11 @@ async function readJsonStoreUncached<T>(filename: string, fallback: T): Promise<
             await writeJsonStore(filename, r2Value);
             return r2Value;
           }
+          throw new Error("SITE_CONTENT_R2_SEED_MISSING");
+        }
+
+        if (filename === "site-content.json") {
+          throw new Error("SITE_CONTENT_DATABASE_SEED_REQUIRED");
         }
 
         const file = await ensureJsonFile<T>(filename, fallback);
@@ -789,6 +795,7 @@ async function readJsonStoreUncached<T>(filename: string, fallback: T): Promise<
       }
     } catch (error) {
       warnBlobFallback(`read database ${filename}`, error);
+      databaseReadError = error;
     }
   }
 
@@ -799,6 +806,14 @@ async function readJsonStoreUncached<T>(filename: string, fallback: T): Promise<
     } catch (error) {
       warnBlobFallback("read R2 " + filename, error);
     }
+  }
+
+  // Never replace the live catalog with repository defaults when Postgres is
+  // configured but temporarily unavailable or its first R2 seed cannot be read.
+  if (filename === "site-content.json" && hasDatabase()) {
+    throw databaseReadError instanceof Error
+      ? databaseReadError
+      : new Error("SITE_CONTENT_DATABASE_UNAVAILABLE");
   }
 
   if (hasR2Store() && ["orders.json", "deleted-orders.json", "integrations.json", "pancake-logs.json", "pancake-queue.json", "pancake-links.json"].includes(filename)) {
