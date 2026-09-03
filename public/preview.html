@@ -3436,14 +3436,21 @@
         const identities = loadCustomerIdentities();
         if (identities.length || customerDeviceId) {
           try {
-            const discoveredResponse = await fetch("/api/orders/customer", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ identities, deviceId: customerDeviceId, knownCodes: orders.map((order) => order.code).filter(Boolean) })
-            });
-            if (discoveredResponse.ok) {
+            const knownCodes = orders.map((order) => order.code).filter(Boolean).slice(0, 500);
+            const discovered = [];
+            for (let offset = 0; offset < 500; offset += 100) {
+              const discoveredResponse = await fetch("/api/orders/customer", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ identities, deviceId: customerDeviceId, knownCodes, offset, limit: 100 })
+              });
+              if (!discoveredResponse.ok) break;
               const discoveredData = await discoveredResponse.json();
-              const discoveredOrders = (discoveredData.orders || []).map((serverOrder) => ({
+              discovered.push(...(discoveredData.orders || []));
+              if (!discoveredData.hasMore) break;
+            }
+            if (discovered.length) {
+              const discoveredOrders = discovered.map((serverOrder) => ({
                 ...serverOrder,
                 rawStatus: serverOrder.status,
                 status: serverOrder.status === "paid" ? "Đã thanh toán" : serverOrder.status === "failed" ? "Thanh toán thất bại" : serverOrder.status === "cancelled" ? "Đơn hủy" : serverOrder.paymentMethod === "cod" ? "Chờ vận chuyển" : "Chờ thanh toán",
@@ -3451,11 +3458,9 @@
                 items: (serverOrder.items || []).map((item) => ({ ...item, qty: Number(item.quantity || item.qty || 1), price: Number(item.unitPrice || item.price || 0) })),
                 updatedAt: serverOrder.updatedAt ? new Date(serverOrder.updatedAt).toLocaleString("vi-VN") : ""
               }));
-              if (discoveredOrders.length) {
-                restoreLocalOrderCodes(discoveredOrders.map((order) => order.code));
-                saveOrders([...discoveredOrders, ...orders]);
-                orders = loadOrders();
-              }
+              restoreLocalOrderCodes(discoveredOrders.map((order) => order.code));
+              saveOrders([...discoveredOrders, ...orders]);
+              orders = loadOrders();
             }
           } catch {
             // Giữ lịch sử cục bộ nếu mạng tạm thời chưa sẵn sàng.
@@ -3464,19 +3469,22 @@
         const codes = orders.map((order) => order.code).filter(Boolean);
         if (!codes.length) return orders;
         try {
-          const response = await fetch(`/api/orders?codes=${encodeURIComponent(codes.join(","))}`, { cache: "no-store" });
-          if (!response.ok) return orders;
-          let data = await response.json();
-          let serverOrders = new Map((data.orders || []).map((order) => [order.code, order]));
+          const fetchStatusPages = async () => {
+            const pages = [];
+            for (let index = 0; index < codes.length; index += 100) {
+              const response = await fetch(`/api/orders?codes=${encodeURIComponent(codes.slice(index, index + 100).join(","))}`, { cache: "no-store" });
+              if (!response.ok) continue;
+              const data = await response.json();
+              pages.push(...(data.orders || []));
+            }
+            return pages;
+          };
+          let serverOrders = new Map((await fetchStatusPages()).map((order) => [order.code, order]));
           const missingOrders = orders.filter((order) => order.code && !serverOrders.has(order.code) && !["Đơn hủy", "Thanh toán thất bại"].includes(order.status));
           if (missingOrders.length) {
             const recovered = await Promise.allSettled(missingOrders.map(recoverCustomerOrder));
             if (recovered.some((result) => result.status === "fulfilled" && result.value)) {
-              const refreshed = await fetch(`/api/orders?codes=${encodeURIComponent(codes.join(","))}`, { cache: "no-store" });
-              if (refreshed.ok) {
-                data = await refreshed.json();
-                serverOrders = new Map((data.orders || []).map((order) => [order.code, order]));
-              }
+              serverOrders = new Map((await fetchStatusPages()).map((order) => [order.code, order]));
             }
           }
           let changed = false;

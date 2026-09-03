@@ -22,10 +22,12 @@ function addressKey(value: unknown) {
 }
 
 export async function POST(request: Request) {
-  const body = await request.json().catch(() => ({})) as { identities?: CustomerIdentity[]; deviceId?: string; knownCodes?: string[] };
+  const body = await request.json().catch(() => ({})) as { identities?: CustomerIdentity[]; deviceId?: string; knownCodes?: string[]; offset?: number; limit?: number };
   const deviceId = String(body.deviceId || "").trim().slice(0, 100);
+  const offset = Math.max(0, Math.min(10_000, Math.floor(Number(body.offset) || 0)));
+  const limit = Math.max(1, Math.min(100, Math.floor(Number(body.limit) || 100)));
   const knownCodes = new Set((Array.isArray(body.knownCodes) ? body.knownCodes : [])
-    .slice(0, 100)
+    .slice(0, 500)
     .map((code) => String(code || "").trim().toUpperCase())
     .filter(Boolean));
   const identities = (Array.isArray(body.identities) ? body.identities : [])
@@ -45,9 +47,15 @@ export async function POST(request: Request) {
     const address = addressKey(order.customer.address);
     return identities.some((identity) => identity.phone === phone && identity.address === address);
   });
-  const refreshed = await refreshCustomerVisiblePaymentStatuses(matched, { source: "Đơn hàng của tôi" });
+  const page = matched.slice(offset, offset + limit);
+  const refreshed = await refreshCustomerVisiblePaymentStatuses(page, { source: "Đơn hàng của tôi" });
 
-  return NextResponse.json({ orders: refreshed.slice(0, 100) }, {
+  return NextResponse.json({
+    orders: refreshed,
+    total: matched.length,
+    nextOffset: offset + refreshed.length,
+    hasMore: offset + refreshed.length < matched.length
+  }, {
     headers: { "Cache-Control": "no-store, max-age=0" }
   });
 }
