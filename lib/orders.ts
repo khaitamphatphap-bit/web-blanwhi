@@ -60,6 +60,10 @@ function orderRecordKey(code: string) {
   return String(code || "").trim().toUpperCase();
 }
 
+function productionOrdersRequireDatabase() {
+  return process.env.BLANWHI_REQUIRE_DATABASE_ORDERS === "true" || Boolean(process.env.VERCEL);
+}
+
 function newerOrder(left: ShopOrder, right: ShopOrder) {
   const leftTime = new Date(left.updatedAt || left.createdAt || "").getTime();
   const rightTime = new Date(right.updatedAt || right.createdAt || "").getTime();
@@ -149,6 +153,9 @@ export async function writeOrders(orders: ShopOrder[]) {
 }
 
 export async function createOrder(order: ShopOrder) {
+  if (productionOrdersRequireDatabase() && !hasDatabase()) {
+    throw new Error("Database thật chưa được cấu hình. Hệ thống đã chặn tạo đơn mới để tránh mất đơn hàng.");
+  }
   if (await isDeletedOrderCode(order.code)) {
     throw new Error("Đơn này đã được xóa trong admin nên không tự tạo lại.");
   }

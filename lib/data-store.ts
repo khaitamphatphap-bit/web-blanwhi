@@ -78,6 +78,17 @@ function keyedR2RecordPath(namespace: string, itemKey: string) {
   return `blanwhi/data/private-keyed/${namespace}/${encodedKey}.enc.json`;
 }
 
+function databaseBackupR2RecordPath(namespace: string, itemKey: string) {
+  const encodedKey = Buffer.from(itemKey, "utf8").toString("base64url");
+  return `blanwhi/data/database-keyed-backup/${namespace}/${encodedKey}.enc.json`;
+}
+
+function databaseBackupR2HistoryPath(namespace: string, itemKey: string) {
+  const encodedKey = Buffer.from(itemKey, "utf8").toString("base64url");
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+  return `blanwhi/data/database-keyed-backup-history/${namespace}/${encodedKey}-${timestamp}.enc.json`;
+}
+
 function encryptedBlobPath(filename: string) {
   return `blanwhi/private/${filename.replace(/\.json$/, "")}.enc.json`;
 }
@@ -201,6 +212,19 @@ async function writeKeyedR2Index<T>(namespace: string, value: Record<string, T>)
 
 async function writeKeyedR2Record<T>(namespace: string, itemKey: string, value: T) {
   await writeR2Text(keyedR2RecordPath(namespace, itemKey), await encryptJson(value));
+}
+
+async function mirrorDatabaseKeyedRecordToR2<T>(namespace: string, itemKey: string, value: T) {
+  if (!hasR2Store()) return;
+  try {
+    const encrypted = await encryptJson(value);
+    await Promise.all([
+      writeR2Text(databaseBackupR2RecordPath(namespace, itemKey), encrypted),
+      writeR2Text(databaseBackupR2HistoryPath(namespace, itemKey), encrypted)
+    ]);
+  } catch (error) {
+    warnBlobFallback("mirror database keyed record to R2 " + namespace, error);
+  }
 }
 
 async function readEncryptedBlobJsonStore<T>(filename: string) {
@@ -807,6 +831,7 @@ export async function writeKeyedJsonRecord<T>(namespace: string, itemKey: string
          do update set item_value = excluded.item_value, updated_at = now()`,
         [namespace, itemKey, JSON.stringify(value)]
       );
+      await mirrorDatabaseKeyedRecordToR2(namespace, itemKey, value);
       return value;
     }
   }
