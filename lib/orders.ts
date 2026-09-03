@@ -120,7 +120,9 @@ export async function readOrders(): Promise<ShopOrder[]> {
   const emptyOrderRecords: Record<string, ShopOrder> = {};
   const [orders, orderRecords, fallbackOrders, fallbackRecords, deleted] = await Promise.all([
     readJsonStore<ShopOrder[]>("orders.json", []),
-    readKeyedJsonStore<ShopOrder>(orderRecordsStore, {}),
+    hasDatabase()
+      ? readKeyedJsonStoreDatabase<ShopOrder>(orderRecordsStore)
+      : readKeyedJsonStore<ShopOrder>(orderRecordsStore, {}),
     hasDatabase() ? readJsonStoreFallbackStores<ShopOrder[]>("orders.json", []) : Promise.resolve(emptyOrders),
     hasDatabase() ? readKeyedJsonStoreFallbackStores<ShopOrder>(orderRecordsStore, {}) : Promise.resolve(emptyOrderRecords),
     readDeletedOrderRecords()

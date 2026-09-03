@@ -218,17 +218,22 @@ async function readKeyedR2Records<T>(namespace: string) {
   const prefix = `blanwhi/data/private-keyed/${namespace}/`;
   const keys = await listR2Keys(prefix);
   if (!keys.length) return null;
-  const entries = await Promise.all(keys.map(async (key) => {
-    try {
-      const text = await readR2Text(key);
-      if (text === null) return null;
-      const encodedKey = key.slice(prefix.length).replace(/\.enc\.json$/, "");
-      const itemKey = Buffer.from(encodedKey, "base64url").toString("utf8");
-      return [itemKey, await decryptJson<T>(text)] as const;
-    } catch {
-      return null;
-    }
-  }));
+  const entries: Array<readonly [string, T] | null> = [];
+  const concurrency = 12;
+  for (let index = 0; index < keys.length; index += concurrency) {
+    const batch = await Promise.all(keys.slice(index, index + concurrency).map(async (key) => {
+      try {
+        const text = await readR2Text(key);
+        if (text === null) return null;
+        const encodedKey = key.slice(prefix.length).replace(/\.enc\.json$/, "");
+        const itemKey = Buffer.from(encodedKey, "base64url").toString("utf8");
+        return [itemKey, await decryptJson<T>(text)] as const;
+      } catch {
+        return null;
+      }
+    }));
+    entries.push(...batch);
+  }
   return Object.fromEntries(entries.filter((entry) => entry !== null)) as Record<string, T>;
 }
 
@@ -755,12 +760,13 @@ export async function readKeyedJsonStoreDatabase<T>(namespace: string) {
 export async function readKeyedJsonStoreFallbackStores<T>(namespace: string, fallback: Record<string, T> = {}) {
   if (hasR2Store()) {
     try {
-      const [indexed, records, legacy] = await Promise.all([
+      const [indexed, legacy] = await Promise.all([
         readKeyedR2Index<T>(namespace),
-        readKeyedR2Records<T>(namespace),
         readJsonStoreFallbackStores<Record<string, T>>(namespace + ".json", fallback)
       ]);
-      if (indexed || records) return { ...legacy, ...(indexed || {}), ...(records || {}) };
+      if (indexed) return { ...legacy, ...indexed };
+      const records = await readKeyedR2Records<T>(namespace);
+      if (records) return { ...legacy, ...records };
       if (Object.keys(legacy).length) return legacy;
     } catch (error) {
       warnBlobFallback("read R2 keyed fallback store " + namespace, error);
