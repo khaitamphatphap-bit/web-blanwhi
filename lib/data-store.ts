@@ -19,6 +19,7 @@ export type StoreHealthReport = {
     sizeBytes?: number;
     limitBytes?: number;
     usedPercent?: number;
+    backupPending?: number;
     warning?: string;
     error?: string;
   };
@@ -124,7 +125,7 @@ function databaseBackupR2RecordPath(namespace: string, itemKey: string) {
 function databaseBackupR2HistoryPath(namespace: string, itemKey: string) {
   const encodedKey = Buffer.from(itemKey, "utf8").toString("base64url");
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-  return `blanwhi/data/database-keyed-backup-history/${namespace}/${encodedKey}-${timestamp}.enc.json`;
+  return `blanwhi/data/database-keyed-backup-history/${namespace}/${encodedKey}-${timestamp}-${crypto.randomUUID()}.enc.json`;
 }
 
 function encryptedBlobPath(filename: string) {
@@ -249,6 +250,28 @@ async function readKeyedR2Records<T>(namespace: string) {
   return Object.fromEntries(entries.filter((entry) => entry !== null)) as Record<string, T>;
 }
 
+async function readDatabaseKeyedBackupR2Records<T>(namespace: string) {
+  if (!hasR2Store()) return {};
+  const prefix = `blanwhi/data/database-keyed-backup/${namespace}/`;
+  const keys = await listR2Keys(prefix);
+  const entries: Array<readonly [string, T] | null> = [];
+  const concurrency = 12;
+  for (let index = 0; index < keys.length; index += concurrency) {
+    const batch = await Promise.all(keys.slice(index, index + concurrency).map(async (key) => {
+      try {
+        const text = await readR2Text(key);
+        if (text === null) return null;
+        const encodedKey = key.slice(prefix.length).replace(/\.enc\.json$/, "");
+        return [Buffer.from(encodedKey, "base64url").toString("utf8"), await decryptJson<T>(text)] as const;
+      } catch {
+        return null;
+      }
+    }));
+    entries.push(...batch);
+  }
+  return Object.fromEntries(entries.filter((entry) => entry !== null)) as Record<string, T>;
+}
+
 async function writeKeyedR2Index<T>(namespace: string, value: Record<string, T>) {
   await writeR2Text(keyedR2IndexPath(namespace), await encryptJson(value));
 }
@@ -265,9 +288,41 @@ async function mirrorDatabaseKeyedRecordToR2<T>(namespace: string, itemKey: stri
       writeR2Text(databaseBackupR2RecordPath(namespace, itemKey), encrypted),
       writeR2Text(databaseBackupR2HistoryPath(namespace, itemKey), encrypted)
     ]);
+    const pool = await getPool();
+    if (pool) {
+      await pool.query("delete from blanwhi_backup_outbox where namespace = $1 and item_key = $2", [namespace, itemKey]);
+    }
   } catch (error) {
     warnBlobFallback("mirror database keyed record to R2 " + namespace, error);
+    const pool = await getPool().catch(() => null);
+    if (pool) {
+      await pool.query(
+        `update blanwhi_backup_outbox
+         set attempts = attempts + 1, last_error = $3, updated_at = now()
+         where namespace = $1 and item_key = $2`,
+        [namespace, itemKey, error instanceof Error ? error.message.slice(0, 1000) : String(error).slice(0, 1000)]
+      ).catch(() => undefined);
+    }
   }
+}
+
+async function flushDatabaseBackupOutbox(limit = 100) {
+  if (!hasDatabase() || !hasR2Store()) return 0;
+  await ensureDatabaseSchema();
+  const pool = await getPool();
+  if (!pool) return 0;
+  const result = await pool.query(
+    `select namespace, item_key, item_value
+     from blanwhi_backup_outbox
+     order by updated_at asc
+     limit $1`,
+    [Math.max(1, Math.min(500, Math.floor(limit)))]
+  );
+  for (const row of result.rows) {
+    await mirrorDatabaseKeyedRecordToR2(String(row.namespace), String(row.item_key), row.item_value);
+  }
+  const pending = await pool.query("select count(*)::int as count from blanwhi_backup_outbox");
+  return Number(pending.rows[0]?.count || 0);
 }
 
 async function readEncryptedBlobJsonStore<T>(filename: string) {
@@ -452,6 +507,17 @@ async function ensureDatabaseSchema() {
         create index if not exists blanwhi_keyed_store_history_lookup_idx
         on blanwhi_keyed_store_history (namespace, item_key, created_at desc)
       `);
+      await pool.query(`
+        create table if not exists blanwhi_backup_outbox (
+          namespace text not null,
+          item_key text not null,
+          item_value jsonb not null,
+          attempts integer not null default 0,
+          last_error text,
+          updated_at timestamptz not null default now(),
+          primary key (namespace, item_key)
+        )
+      `);
     })();
     schemaReadyPromise = schemaRequest.catch((error) => {
       schemaReadyPromise = null;
@@ -594,6 +660,7 @@ export async function getStoreHealthReport(): Promise<StoreHealthReport> {
           pool.query("select pg_database_size(current_database()) as size_bytes").catch(() => ({ rows: [] }))
         ]);
         report.database.ok = Number(ping.rows[0]?.ok) === 1;
+        report.database.backupPending = await flushDatabaseBackupOutbox(100);
         const rawSize = size.rows[0]?.size_bytes;
         const sizeBytes = typeof rawSize === "bigint" ? Number(rawSize) : Number(rawSize || 0);
         if (Number.isFinite(sizeBytes) && sizeBytes > 0) report.database.sizeBytes = sizeBytes;
@@ -786,19 +853,35 @@ export async function readJsonStoreFallbackStores<T>(filename: string, fallback:
   }
 }
 
-export async function readKeyedJsonStoreDatabase<T>(namespace: string) {
-  if (!hasDatabase()) return {};
+export async function readKeyedJsonStoreDatabaseStatus<T>(namespace: string): Promise<{ ok: boolean; records: Record<string, T> }> {
+  if (!hasDatabase()) return { ok: false, records: {} };
   try {
     await ensureDatabaseSchema();
     const pool = await getPool();
-    if (!pool) return {};
+    if (!pool) return { ok: false, records: {} };
     const result = await pool.query(
       "select item_key, item_value from blanwhi_keyed_store where namespace = $1",
       [namespace]
     );
-    return Object.fromEntries(result.rows.map((row) => [String(row.item_key), row.item_value as T])) as Record<string, T>;
+    return {
+      ok: true,
+      records: Object.fromEntries(result.rows.map((row) => [String(row.item_key), row.item_value as T])) as Record<string, T>
+    };
   } catch (error) {
     warnBlobFallback(`read database keyed store ${namespace}`, error);
+    return { ok: false, records: {} };
+  }
+}
+
+export async function readKeyedJsonStoreDatabase<T>(namespace: string) {
+  return (await readKeyedJsonStoreDatabaseStatus<T>(namespace)).records;
+}
+
+export async function readKeyedJsonStoreDatabaseBackups<T>(namespace: string) {
+  try {
+    return await readDatabaseKeyedBackupR2Records<T>(namespace);
+  } catch (error) {
+    warnBlobFallback(`read database keyed backup ${namespace}`, error);
     return {};
   }
 }
@@ -914,42 +997,86 @@ export async function writeKeyedJsonRecord<T>(namespace: string, itemKey: string
            from previous
            returning id
          )
-         insert into blanwhi_keyed_store (namespace, item_key, item_value, updated_at)
-         select namespace, item_key, item_value, now()
-         from incoming
-         on conflict (namespace, item_key)
-         do update set item_value = excluded.item_value, updated_at = now()`,
+         saved as (
+           insert into blanwhi_keyed_store (namespace, item_key, item_value, updated_at)
+           select namespace, item_key, item_value, now()
+           from incoming
+           on conflict (namespace, item_key)
+           do update set item_value = excluded.item_value, updated_at = now()
+           returning namespace, item_key, item_value
+         ),
+         queued as (
+           insert into blanwhi_backup_outbox (namespace, item_key, item_value, attempts, last_error, updated_at)
+           select namespace, item_key, item_value, 0, null, now()
+           from saved
+           on conflict (namespace, item_key)
+           do update set item_value = excluded.item_value, attempts = 0, last_error = null, updated_at = now()
+           returning item_key
+         )
+         insert into blanwhi_keyed_store_history (namespace, item_key, item_value, reason)
+         select namespace, item_key, item_value, 'after-write'
+         from saved`,
         [namespace, itemKey, JSON.stringify(value)]
       );
       await mirrorDatabaseKeyedRecordToR2(namespace, itemKey, value);
       return value;
     }
   }
-  if (hasR2Store()) {
-    const indexed = await readKeyedR2Index<T>(namespace) || {};
-    await Promise.all([
-      writeKeyedR2Record(namespace, itemKey, value),
-      writeKeyedR2Index(namespace, { ...indexed, [itemKey]: value })
-    ]);
+  return withDataStoreLock(`keyed-store:${namespace}`, async () => {
+    if (hasR2Store()) {
+      const indexed = await readKeyedR2Index<T>(namespace) || {};
+      await Promise.all([
+        writeKeyedR2Record(namespace, itemKey, value),
+        writeKeyedR2Index(namespace, { ...indexed, [itemKey]: value })
+      ]);
+      return value;
+    }
+    if (hasBlobStore()) {
+      const { put } = await import("@vercel/blob");
+      const encodedKey = Buffer.from(itemKey, "utf8").toString("base64url");
+      await put(`blanwhi/private-keyed/${namespace}/${encodedKey}.enc.json`, await encryptJson(value), {
+        access: "public",
+        addRandomSuffix: false,
+        allowOverwrite: true,
+        cacheControlMaxAge: 60,
+        contentType: "application/json"
+      });
+      const indexed = await readKeyedBlobIndex<T>(namespace) || {};
+      await writeKeyedBlobIndex(namespace, { ...indexed, [itemKey]: value });
+      return value;
+    }
+    const current = await readJsonStore<Record<string, T>>(`${namespace}.json`, {});
+    await writeJsonStore(`${namespace}.json`, { ...current, [itemKey]: value });
     return value;
-  }
-  if (hasBlobStore()) {
-    const { put } = await import("@vercel/blob");
-    const encodedKey = Buffer.from(itemKey, "utf8").toString("base64url");
-    await put(`blanwhi/private-keyed/${namespace}/${encodedKey}.enc.json`, await encryptJson(value), {
-      access: "public",
-      addRandomSuffix: false,
-      allowOverwrite: true,
-      cacheControlMaxAge: 60,
-      contentType: "application/json"
-    });
-    const indexed = await readKeyedBlobIndex<T>(namespace) || {};
-    await writeKeyedBlobIndex(namespace, { ...indexed, [itemKey]: value });
-    return value;
-  }
-  const current = await readJsonStore<Record<string, T>>(`${namespace}.json`, {});
-  await writeJsonStore(`${namespace}.json`, { ...current, [itemKey]: value });
-  return value;
+  });
+}
+
+export async function readKeyedJsonStoreHistory<T>(namespace: string, itemKey?: string, limit = 250): Promise<T[]> {
+  if (!hasDatabase()) return [];
+  await ensureDatabaseSchema();
+  const pool = await getPool();
+  if (!pool) return [];
+  const safeLimit = Math.max(1, Math.min(1000, Math.floor(limit)));
+  const result = itemKey
+    ? await pool.query(
+      `select item_value
+       from blanwhi_keyed_store_history
+       where namespace = $1 and item_key = $2
+       order by created_at desc, id desc
+       limit $3`,
+      [namespace, itemKey, safeLimit]
+    )
+    : await pool.query(
+      `select item_value
+       from blanwhi_keyed_store_history
+       where namespace = $1
+       order by created_at desc, id desc
+       limit $2`,
+      [namespace, safeLimit]
+    );
+  return result.rows
+    .map((row) => row.item_value as T)
+    .filter((value): value is T => value !== undefined && value !== null);
 }
 
 export async function writeKeyedJsonRecords<T>(namespace: string, values: Record<string, T>) {

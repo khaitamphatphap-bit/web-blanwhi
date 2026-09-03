@@ -27,6 +27,7 @@ type StorageHealthReport = {
     sizeBytes?: number;
     limitBytes?: number;
     usedPercent?: number;
+    backupPending?: number;
     warning?: string;
     error?: string;
   };
@@ -533,6 +534,7 @@ export function OrdersAdmin({
             <strong className="mt-1 block">{storageHealth?.database.ok ? "Kết nối OK" : storageHealth?.database.configured ? "Có cấu hình nhưng lỗi" : "Chưa có database URL"}</strong>
             {storageHealth?.database.envName && <span className="mt-1 block text-xs opacity-80">Biến kết nối: {storageHealth.database.envName}</span>}
             <span className="mt-1 block text-xs opacity-80">{storageHealth?.database.usedPercent !== undefined ? `Đã dùng ${storageHealth.database.usedPercent}% · ${formatBytes(storageHealth.database.sizeBytes)}` : formatBytes(storageHealth?.database.sizeBytes)}</span>
+            {storageHealth?.database.backupPending !== undefined && <span className="mt-1 block text-xs opacity-80">Backup R2 đang chờ: {storageHealth.database.backupPending}</span>}
           </div>
           <div className="border border-current/20 bg-white/55 p-3">
             <p className="text-xs uppercase opacity-70">R2 backup/ảnh</p>

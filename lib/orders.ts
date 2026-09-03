@@ -3,8 +3,11 @@ import {
   readJsonStore,
   readJsonStoreFallbackStores,
   readKeyedJsonStore,
+  readKeyedJsonStoreDatabaseBackups,
   readKeyedJsonStoreDatabase,
+  readKeyedJsonStoreDatabaseStatus,
   readKeyedJsonStoreFallbackStores,
+  withDataStoreLock,
   writeJsonStore,
   writeKeyedJsonRecord,
   writeKeyedJsonRecords
@@ -15,6 +18,7 @@ import { shortOrderCode } from "@/lib/order-code";
 const paymentMethods = new Set<PaymentMethod>(["cod", "bank_transfer", "vnpay", "onepay", "alepay", "momo", "zalopay"]);
 const deletedOrdersStore = "deleted-orders.json";
 const orderRecordsStore = "order-records";
+const deletedOrderRecordsStore = "deleted-order-records";
 export const unpaidOrderLifetimeMs = 24 * 60 * 60 * 1000;
 
 type DeletedOrderRecord = {
@@ -24,12 +28,13 @@ type DeletedOrderRecord = {
 };
 
 async function readDeletedOrderRecords() {
-  const [primary, fallback] = await Promise.all([
+  const [primary, fallback, keyed] = await Promise.all([
     readJsonStore<DeletedOrderRecord[]>(deletedOrdersStore, []),
-    hasDatabase() ? readJsonStoreFallbackStores<DeletedOrderRecord[]>(deletedOrdersStore, []) : Promise.resolve([])
+    hasDatabase() ? readJsonStoreFallbackStores<DeletedOrderRecord[]>(deletedOrdersStore, []) : Promise.resolve([]),
+    readKeyedJsonStore<DeletedOrderRecord>(deletedOrderRecordsStore, {})
   ]);
   const byCode = new Map<string, DeletedOrderRecord>();
-  [...fallback, ...primary].forEach((record) => {
+  [...fallback, ...primary, ...Object.values(keyed)].forEach((record) => {
     const key = String(record.code || record.shortCode || "").trim().toUpperCase();
     if (key) byCode.set(key, record);
   });
@@ -118,19 +123,22 @@ function normalizeOrder(order: ShopOrder): ShopOrder {
 export async function readOrders(): Promise<ShopOrder[]> {
   const emptyOrders: ShopOrder[] = [];
   const emptyOrderRecords: Record<string, ShopOrder> = {};
-  const [orders, orderRecords, fallbackOrders, deleted] = await Promise.all([
+  const [orders, databaseState, fallbackOrders, deleted] = await Promise.all([
     readJsonStore<ShopOrder[]>("orders.json", []),
     hasDatabase()
-      ? readKeyedJsonStoreDatabase<ShopOrder>(orderRecordsStore)
-      : readKeyedJsonStore<ShopOrder>(orderRecordsStore, {}),
+      ? readKeyedJsonStoreDatabaseStatus<ShopOrder>(orderRecordsStore)
+      : readKeyedJsonStore<ShopOrder>(orderRecordsStore, {}).then((records) => ({ ok: true, records })),
     hasDatabase() ? readJsonStoreFallbackStores<ShopOrder[]>("orders.json", []) : Promise.resolve(emptyOrders),
     readDeletedOrderRecords()
   ]);
+  const orderRecords = databaseState.records;
   // Existing production orders are already preserved in orders.json. Only scan
   // the much larger legacy per-order backup when that compact store is absent.
-  const fallbackRecords = hasDatabase() && fallbackOrders.length === 0
-    ? await readKeyedJsonStoreFallbackStores<ShopOrder>(orderRecordsStore, {})
-    : emptyOrderRecords;
+  const fallbackRecords = hasDatabase() && !databaseState.ok
+    ? await readKeyedJsonStoreDatabaseBackups<ShopOrder>(orderRecordsStore)
+    : hasDatabase() && fallbackOrders.length === 0
+      ? await readKeyedJsonStoreFallbackStores<ShopOrder>(orderRecordsStore, {})
+      : emptyOrderRecords;
   const deletedKeys = deletedOrderKeys(deleted);
   return compactOrders([
     ...fallbackOrders,
@@ -141,41 +149,50 @@ export async function readOrders(): Promise<ShopOrder[]> {
 }
 
 export async function writeOrders(orders: ShopOrder[]) {
-  const deletedKeys = deletedOrderKeys(await readDeletedOrderRecords());
-  const filtered = compactOrders(orders, deletedKeys);
-  if (hasDatabase()) {
-    const databaseRecords = await readKeyedJsonStoreDatabase<ShopOrder>(orderRecordsStore);
-    const databaseKeys = new Set(Object.keys(databaseRecords));
-    const recordsToUpdate = filtered.filter((order) => databaseKeys.has(orderRecordKey(order.code)));
-    if (recordsToUpdate.length) {
-      await writeKeyedJsonRecords(orderRecordsStore, Object.fromEntries(recordsToUpdate.map((order) => [orderRecordKey(order.code), order])));
+  return withDataStoreLock("orders-write", async () => {
+    const deletedKeys = deletedOrderKeys(await readDeletedOrderRecords());
+    const filtered = compactOrders(orders, deletedKeys);
+    if (hasDatabase()) {
+      const databaseRecords = await readKeyedJsonStoreDatabase<ShopOrder>(orderRecordsStore);
+      const databaseKeys = new Set(Object.keys(databaseRecords));
+      const recordsToUpdate = filtered.filter((order) => databaseKeys.has(orderRecordKey(order.code)));
+      if (recordsToUpdate.length) {
+        await writeKeyedJsonRecords(orderRecordsStore, Object.fromEntries(recordsToUpdate.map((order) => [orderRecordKey(order.code), order])));
+      }
+      return;
     }
-    return;
-  }
-  await Promise.all([
-    writeJsonStore("orders.json", filtered),
-    writeKeyedJsonRecords(orderRecordsStore, Object.fromEntries(filtered.map((order) => [orderRecordKey(order.code), order])))
-  ]);
+    const latest = compactOrders([...(await readOrders()), ...filtered], deletedKeys);
+    await Promise.all([
+      writeJsonStore("orders.json", latest),
+      writeKeyedJsonRecords(orderRecordsStore, Object.fromEntries(latest.map((order) => [orderRecordKey(order.code), order])))
+    ]);
+  });
 }
 
 export async function createOrder(order: ShopOrder) {
   if (productionOrdersRequireDatabase() && !hasDatabase()) {
     throw new Error("Database thật chưa được cấu hình. Hệ thống đã chặn tạo đơn mới để tránh mất đơn hàng.");
   }
-  if (await isDeletedOrderCode(order.code)) {
-    throw new Error("Đơn này đã được xóa trong admin nên không tự tạo lại.");
-  }
-  const orders = await readOrders();
-  const existing = order.checkoutRequestId
-    ? orders.find((candidate) => candidate.checkoutRequestId === order.checkoutRequestId
-      && (!order.customerDeviceId || candidate.customerDeviceId === order.customerDeviceId))
-    : null;
-  if (existing) return existing;
-  await writeKeyedJsonRecord(orderRecordsStore, orderRecordKey(order.code), order);
-  if (!hasDatabase()) {
-    await writeOrders([order, ...orders.filter((candidate) => candidate.code !== order.code)]);
-  }
-  return order;
+  const lockKey = order.checkoutRequestId || order.code;
+  return withDataStoreLock(`order-create:${lockKey}`, async () => {
+    if (hasDatabase() && !(await readKeyedJsonStoreDatabaseStatus<ShopOrder>(orderRecordsStore)).ok) {
+      throw new Error("Không đọc được database đơn hàng. Hệ thống đã dừng tạo đơn để tránh tạo trùng hoặc mất đơn.");
+    }
+    if (await isDeletedOrderCode(order.code)) {
+      throw new Error("Đơn này đã được xóa trong admin nên không tự tạo lại.");
+    }
+    const orders = await readOrders();
+    const existing = order.checkoutRequestId
+      ? orders.find((candidate) => candidate.checkoutRequestId === order.checkoutRequestId
+        && (!order.customerDeviceId || candidate.customerDeviceId === order.customerDeviceId))
+      : orders.find((candidate) => orderRecordKey(candidate.code) === orderRecordKey(order.code));
+    if (existing) return existing;
+    await writeKeyedJsonRecord(orderRecordsStore, orderRecordKey(order.code), order);
+    if (!hasDatabase()) {
+      await writeOrders([order, ...orders.filter((candidate) => candidate.code !== order.code)]);
+    }
+    return order;
+  });
 }
 
 export async function findOrderByCode(code: string) {
@@ -189,52 +206,48 @@ export async function updateOrderStatus(
   status: OrderStatus,
   patch: Partial<Pick<ShopOrder, "transactionId" | "providerOrderId" | "paymentProviderOrderId" | "providerMessage">> = {}
 ): Promise<ShopOrder | null> {
-  if (await isDeletedOrderCode(code)) return null;
-  const orders = await readOrders();
-  let updated: ShopOrder | null = null;
-  const next = orders.map((order) => {
-    if (order.code !== code) return order;
-    updated = {
-      ...order,
-      ...patch,
-      status,
-      updatedAt: new Date().toISOString()
-    };
-    return updated;
+  return withDataStoreLock(`order-update:${orderRecordKey(code)}`, async () => {
+    if (hasDatabase() && !(await readKeyedJsonStoreDatabaseStatus<ShopOrder>(orderRecordsStore)).ok) {
+      throw new Error("Không đọc được database đơn hàng nên chưa cập nhật để tránh ghi đè dữ liệu.");
+    }
+    if (await isDeletedOrderCode(code)) return null;
+    const orders = await readOrders();
+    let updated: ShopOrder | null = null;
+    const next = orders.map((order) => {
+      if (orderRecordKey(order.code) !== orderRecordKey(code)) return order;
+      updated = { ...order, ...patch, status, updatedAt: new Date().toISOString() };
+      return updated;
+    });
+    const updatedOrder = updated as ShopOrder | null;
+    if (updatedOrder && hasDatabase()) await writeKeyedJsonRecord(orderRecordsStore, orderRecordKey(updatedOrder.code), updatedOrder);
+    else await writeOrders(next);
+    return updatedOrder;
   });
-  const updatedOrder = updated as ShopOrder | null;
-  if (updatedOrder && hasDatabase()) {
-    await writeKeyedJsonRecord(orderRecordsStore, orderRecordKey(updatedOrder.code), updatedOrder);
-  } else {
-    await writeOrders(next);
-  }
-  return updatedOrder;
 }
 
 export async function updateOrder(code: string, patch: Partial<ShopOrder>): Promise<ShopOrder | null> {
-  if (await isDeletedOrderCode(code)) return null;
-  const orders = await readOrders();
-  let updated: ShopOrder | null = null;
-  const next = orders.map((order) => {
-    if (order.code !== code) return order;
-    updated = {
-      ...order,
-      ...patch,
-      externalSync: {
-        ...order.externalSync,
-        ...patch.externalSync
-      },
-      updatedAt: new Date().toISOString()
-    };
-    return updated;
+  return withDataStoreLock(`order-update:${orderRecordKey(code)}`, async () => {
+    if (hasDatabase() && !(await readKeyedJsonStoreDatabaseStatus<ShopOrder>(orderRecordsStore)).ok) {
+      throw new Error("Không đọc được database đơn hàng nên chưa cập nhật để tránh ghi đè dữ liệu.");
+    }
+    if (await isDeletedOrderCode(code)) return null;
+    const orders = await readOrders();
+    let updated: ShopOrder | null = null;
+    const next = orders.map((order) => {
+      if (orderRecordKey(order.code) !== orderRecordKey(code)) return order;
+      updated = {
+        ...order,
+        ...patch,
+        externalSync: { ...order.externalSync, ...patch.externalSync },
+        updatedAt: new Date().toISOString()
+      };
+      return updated;
+    });
+    const updatedOrder = updated as ShopOrder | null;
+    if (updatedOrder && hasDatabase()) await writeKeyedJsonRecord(orderRecordsStore, orderRecordKey(updatedOrder.code), updatedOrder);
+    else await writeOrders(next);
+    return updatedOrder;
   });
-  const updatedOrder = updated as ShopOrder | null;
-  if (updatedOrder && hasDatabase()) {
-    await writeKeyedJsonRecord(orderRecordsStore, orderRecordKey(updatedOrder.code), updatedOrder);
-  } else {
-    await writeOrders(next);
-  }
-  return updatedOrder;
 }
 
 export async function deleteOrdersByCodes(codes: string[]) {
@@ -283,7 +296,11 @@ async function rememberDeletedOrders(records: DeletedOrderRecord[]) {
     if (!record.code) return;
     byCode.set(record.code, record);
   });
-  await writeJsonStore(deletedOrdersStore, Array.from(byCode.values()).slice(-5000));
+  const allRecords = Array.from(byCode.values());
+  await Promise.all([
+    writeJsonStore(deletedOrdersStore, allRecords),
+    writeKeyedJsonRecords(deletedOrderRecordsStore, Object.fromEntries(records.map((record) => [orderRecordKey(record.code), record])))
+  ]);
 }
 
 export function newOrderCode() {

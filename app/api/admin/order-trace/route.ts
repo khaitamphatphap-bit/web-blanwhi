@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { jsonError } from "@/lib/api-errors";
-import { readJsonStore, readJsonStoreHistory } from "@/lib/data-store";
+import { readJsonStore, readJsonStoreHistory, readKeyedJsonStoreHistory } from "@/lib/data-store";
 import { readOrders } from "@/lib/orders";
 import { readPaymentOrphans } from "@/lib/payment-orphans";
 import type { ShopOrder } from "@/lib/types";
@@ -68,10 +68,11 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Nhập mã đơn, số điện thoại hoặc số tiền cần truy vết." }, { status: 400 });
     }
 
-    const [orders, paymentOrphans, orderHistories, storeValues, storeHistories] = await Promise.all([
+    const [orders, paymentOrphans, orderHistories, keyedOrderHistories, storeValues, storeHistories] = await Promise.all([
       readOrders(),
       readPaymentOrphans(),
       readJsonStoreHistory<ShopOrder[]>("orders.json", 250),
+      readKeyedJsonStoreHistory<ShopOrder>("order-records", undefined, 1000),
       Promise.all(privateStores.map(async (store) => [store, await readJsonStore<unknown>(store, [])] as const)),
       Promise.all(privateStores.map(async (store) => [store, await readJsonStoreHistory<unknown>(store, 250)] as const))
     ]);
@@ -84,6 +85,9 @@ export async function GET(request: Request) {
       snapshot.forEach((order) => {
         pushHit(hits, `orders.history.${snapshotIndex + 1}`, order, terms, orderSummary(order));
       });
+    });
+    keyedOrderHistories.forEach((order, index) => {
+      pushHit(hits, `order-records.history.${index + 1}`, order, terms, orderSummary(order));
     });
 
     storeValues.forEach(([store, value]) => {
