@@ -34,6 +34,15 @@ function isSuccessfulZaloPayRedirect(params: Record<string, string | string[] | 
   return ["1", "success", "paid", "completed", "complete"].includes(status);
 }
 
+function isFailedZaloPayRedirect(params: Record<string, string | string[] | undefined>) {
+  const status = String(valueOf(params.status) || "").trim().toLowerCase();
+  const returnCode = String(valueOf(params.returncode) || valueOf(params.return_code) || "").trim().toLowerCase();
+  const resultCode = String(valueOf(params.resultcode) || valueOf(params.resultCode) || "").trim().toLowerCase();
+  return ["0", "-1", "2", "failed", "fail", "cancelled", "canceled", "cancel"].includes(status)
+    || ["0", "-1", "2", "failed", "fail", "cancelled", "canceled", "cancel"].includes(returnCode)
+    || ["0", "-1", "2", "failed", "fail", "cancelled", "canceled", "cancel"].includes(resultCode);
+}
+
 export default async function PaymentResultPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const zaloPayAppTransId = valueOf(params.apptransid) || valueOf(params.app_trans_id) || "";
@@ -49,7 +58,7 @@ export default async function PaymentResultPage({ searchParams }: PageProps) {
     const integrations = await readIntegrationConfig();
     const hasSignedRedirect = Boolean(valueOf(params.checksum));
     const redirectVerified = !hasSignedRedirect || verifyZaloPayRedirectParams(toUrlSearchParams(params), integrations.payment).ok;
-    if (redirectVerified && isSuccessfulZaloPayRedirect(params)) {
+    if (redirectVerified && (isSuccessfulZaloPayRedirect(params) || !isFailedZaloPayRedirect(params))) {
       order = await markVerifiedPayment(order.code, {
         paymentProviderOrderId: zaloPayAppTransId || order.paymentProviderOrderId || order.providerOrderId,
         providerMessage: "ZaloPay redirect payment success"
