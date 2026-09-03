@@ -82,6 +82,13 @@ function shouldUseBlobStore(filename: string) {
   return filename === "site-content.json" && hasBlobStore();
 }
 
+function shouldUseDatabaseJsonStore(filename: string) {
+  // These existing admin stores remain authoritative in R2. New orders use
+  // the database-only keyed order-records store, so enabling Postgres cannot
+  // replace live products, merchant keys, or the legacy order archive.
+  return hasDatabase() && !["site-content.json", "integrations.json", "orders.json"].includes(filename);
+}
+
 function shouldUseEncryptedBlobStore(filename: string) {
   return ["orders.json", "deleted-orders.json", "integrations.json", "pancake-logs.json", "pancake-queue.json", "pancake-links.json"].includes(filename)
     && hasBlobStore()
@@ -612,7 +619,7 @@ export async function ensureJsonFile<T>(filename: string, fallback: T) {
 }
 
 async function readJsonStoreUncached<T>(filename: string, fallback: T): Promise<T> {
-  if (hasDatabase()) {
+  if (shouldUseDatabaseJsonStore(filename)) {
     try {
       await ensureDatabaseSchema();
       const pool = await getPool();
@@ -1005,7 +1012,7 @@ export async function readJsonStoreHistory<T>(filename: string, limit = 100): Pr
 }
 
 export async function writeJsonStore<T>(filename: string, value: T) {
-  if (hasDatabase()) {
+  if (shouldUseDatabaseJsonStore(filename)) {
     await ensureDatabaseSchema();
     const pool = await getPool();
     if (pool) {
