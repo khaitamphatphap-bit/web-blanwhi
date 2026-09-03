@@ -346,7 +346,7 @@ export class OrderSyncService {
     const logisticsStatus = logisticsShippingStatus(remotePayload);
     const synchronizedShippingStatus = latestShippingStatus(order.shippingStatus, logisticsStatus || mapped.shippingStatus);
     if (mapped.release && order.inventoryReservationApplied && !order.inventoryReservationReleased) {
-      await new InventoryService().reserve(order.items, "restore");
+      await new InventoryService().releaseOrder(order);
     }
     const updated = await updateOrder(order.code, {
       pancakeOrderId: existingId || pancakeOrderId(order),
@@ -601,7 +601,7 @@ export class OrderSyncService {
     const synchronizedShippingStatus = latestShippingStatus(order.shippingStatus, logisticsStatus || mapped.shippingStatus);
     const preserveCancellation = order.status === "cancelled" && mapped.pancakeStatus !== "cancelled";
     if (mapped.release && order.inventoryReservationApplied && !order.inventoryReservationReleased) {
-      await new InventoryService().reserve(order.items, "restore");
+      await new InventoryService().releaseOrder(order);
     }
     const updated = await updateOrder(order.code, {
       ...(mapped.status === "cancelled" && order.status !== "cancelled" ? { status: "cancelled" as const } : {}),
@@ -724,7 +724,7 @@ export class OrderSyncService {
       if (!changed) return;
       const preserveCancellation = order.status === "cancelled" && mapped.pancakeStatus !== "cancelled";
       if (mapped.release && order.inventoryReservationApplied && !order.inventoryReservationReleased) {
-        await new InventoryService().reserve(order.items, "restore");
+        await new InventoryService().releaseOrder(order);
       }
       patches.set(order.code, {
         ...(remoteOrderId ? { pancakeOrderId: remoteOrderId } : {}),

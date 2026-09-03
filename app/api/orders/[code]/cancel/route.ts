@@ -16,7 +16,7 @@ function phoneKey(value: unknown) {
 }
 
 function carrierHasAccepted(order: NonNullable<Awaited<ReturnType<typeof findOrderByCode>>>) {
-  return ["delivered", "returning", "returned"].includes(order.shippingStatus || "");
+  return ["ready_to_ship", "shipping", "delivered", "returning", "returned"].includes(order.shippingStatus || "");
 }
 
 async function withTimeout<T>(promise: Promise<T>, ms: number) {
@@ -43,6 +43,14 @@ export async function POST(request: Request, { params }: Params) {
       return NextResponse.json({ error: "Số điện thoại không khớp với đơn hàng." }, { status: 403 });
     }
     if (order.status === "cancelled" && order.pancakeStatus === "cancelled") {
+      let current = order;
+      if (current.inventoryReservationApplied && !current.inventoryReservationReleased) {
+        try {
+          current = await new InventoryService().releaseOrder(current);
+        } catch {
+          // Vẫn trả trạng thái hủy; lần bấm lại hoặc job đồng bộ sau sẽ tiếp tục thử trả kho.
+        }
+      }
       if (order.paymentMethod === "zalopay" && !order.transactionId && order.refundStatus !== "not_required") {
         const cleaned = await updateOrder(order.code, {
           refundStatus: "not_required",
@@ -52,9 +60,9 @@ export async function POST(request: Request, { params }: Params) {
           refundAmount: undefined,
           refundMessage: ""
         });
-        return NextResponse.json({ ok: true, order: cleaned || order });
+        return NextResponse.json({ ok: true, order: cleaned || current });
       }
-      return NextResponse.json({ ok: true, order });
+      return NextResponse.json({ ok: true, order: current });
     }
     const config = await readIntegrationConfig();
     let current = order;

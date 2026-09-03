@@ -189,6 +189,15 @@ export async function createOrder(order: ShopOrder) {
       }
       existing = existingState.record;
       if (existing && order.customerDeviceId && existing.customerDeviceId !== order.customerDeviceId) existing = null;
+      if (!existing && order.checkoutRequestId) {
+        const codeState = await readKeyedJsonRecordDatabaseStatus<ShopOrder>(orderRecordsStore, orderRecordKey(order.code));
+        if (!codeState.ok) {
+          throw new Error("Không kiểm tra được mã đơn trong database. Hệ thống đã dừng tạo đơn để tránh ghi đè dữ liệu.");
+        }
+        if (codeState.record) {
+          throw new Error("Mã đơn bị trùng. Vui lòng đặt lại để hệ thống tạo mã đơn mới.");
+        }
+      }
 
       const deletedState = await readKeyedJsonRecordDatabaseStatus<DeletedOrderRecord>(deletedOrderRecordsStore, orderRecordKey(order.code));
       if (!deletedState.ok) {

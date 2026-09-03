@@ -79,6 +79,7 @@ const corsHeaders = {
 async function queuePosSync(order: ShopOrder) {
   try {
     await QueueHandler.enqueue("order.create", { orderCode: order.code });
+    return true;
   } catch (error) {
     const message = error instanceof Error ? error.message : "Không ghi được hàng đợi Pancake.";
     await updateOrder(order.code, {
@@ -88,6 +89,7 @@ async function queuePosSync(order: ShopOrder) {
         lastSyncedAt: new Date().toISOString()
       }
     });
+    return false;
   }
 }
 
@@ -295,11 +297,12 @@ export async function POST(request: Request) {
             } } : {})
           }) || existing;
           const accepted = await inventoryService.reserveOrder(completed);
+          let syncQueued = false;
           if (pancakeConfigured) {
-            await queuePosSync(accepted);
+            syncQueued = await queuePosSync(accepted);
             schedulePosSync(accepted);
           }
-          return json({ order: accepted, syncQueued: pancakeConfigured, deduplicated: true });
+          return json({ order: accepted, syncQueued, deduplicated: true });
         }
         if (paymentMethod === "zalopay" && existing.status === "pending") {
           const zalopay = await createZaloPayPayment(existing, request, integrations.payment);
@@ -413,9 +416,9 @@ export async function POST(request: Request) {
     }
     order = await inventoryService.createReservedOrder({ ...order, checkoutCompletedAt: now });
     if (pancakeConfigured && paymentMethod === "cod") {
-      await queuePosSync(order);
+      const syncQueued = await queuePosSync(order);
       schedulePosSync(order);
-      return json({ order, syncQueued: true });
+      return json({ order, syncQueued });
     }
 
     if (paymentMethod === "vnpay") {

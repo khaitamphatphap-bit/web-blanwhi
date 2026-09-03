@@ -20,12 +20,13 @@ export async function GET(request: Request) {
       if (job.type === "order.create") {
         const orderCode = String(job.payload.orderCode || "");
         const order = await findOrderByCode(orderCode);
-        if (!order || order.status === "cancelled") return;
+        if (!order) throw new Error(`Chưa đọc được đơn ${orderCode}; giữ job để thử lại.`);
+        if (order.status === "cancelled") return;
         await new OrderSyncService().retry(orderCode);
       } else if (job.type === "order.cancel") {
         const orderCode = String(job.payload.orderCode || "");
         const order = await findOrderByCode(orderCode);
-        if (!order) return;
+        if (!order) throw new Error(`Chưa đọc được đơn ${orderCode}; giữ job để thử lại.`);
         await new OrderSyncService().cancel(order, false);
       } else if (job.type === "inventory.sync") {
         await new InventoryService().sync();

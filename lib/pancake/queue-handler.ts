@@ -1,4 +1,4 @@
-import { readJsonStore, writeJsonStore } from "@/lib/data-store";
+import { readJsonStore, withDataStoreLock, writeJsonStore } from "@/lib/data-store";
 import { ExceptionHandler } from "@/lib/pancake/exception-handler";
 import type { PancakeQueueJob } from "@/lib/pancake/types";
 
@@ -8,30 +8,32 @@ export class QueueHandler {
   }
 
   static async enqueue(type: PancakeQueueJob["type"], payload: Record<string, unknown>) {
-    const queue = await this.list();
-    const duplicate = queue.find((job) => job.type === type && JSON.stringify(job.payload) === JSON.stringify(payload));
-    if (duplicate) return duplicate;
-    const now = new Date().toISOString();
-    const job: PancakeQueueJob = { id: crypto.randomUUID(), type, payload, attempts: 0, availableAt: now, createdAt: now };
-    await writeJsonStore("pancake-queue.json", [...queue, job]);
-    return job;
+    return withDataStoreLock("pancake-queue", async () => {
+      const queue = await this.list();
+      const duplicate = queue.find((job) => job.type === type && JSON.stringify(job.payload) === JSON.stringify(payload));
+      if (duplicate) return duplicate;
+      const now = new Date().toISOString();
+      const job: PancakeQueueJob = { id: crypto.randomUUID(), type, payload, attempts: 0, availableAt: now, createdAt: now };
+      await writeJsonStore("pancake-queue.json", [...queue, job]);
+      return job;
+    });
   }
 
   static async process(processor: (job: PancakeQueueJob) => Promise<void>) {
-    const queue = await this.list();
-    const remaining: PancakeQueueJob[] = [];
-    let completed = 0;
-    for (const job of queue) {
-      if (new Date(job.availableAt).getTime() > Date.now()) {
-        remaining.push(job);
-        continue;
-      }
-      try {
-        await processor(job);
-        completed += 1;
-      } catch (error) {
-        const attempts = job.attempts + 1;
-        if (attempts < 8) {
+    return withDataStoreLock("pancake-queue", async () => {
+      const queue = await this.list();
+      const remaining: PancakeQueueJob[] = [];
+      let completed = 0;
+      for (const job of queue) {
+        if (new Date(job.availableAt).getTime() > Date.now()) {
+          remaining.push(job);
+          continue;
+        }
+        try {
+          await processor(job);
+          completed += 1;
+        } catch (error) {
+          const attempts = job.attempts + 1;
           remaining.push({
             ...job,
             attempts,
@@ -40,8 +42,8 @@ export class QueueHandler {
           });
         }
       }
-    }
-    await writeJsonStore("pancake-queue.json", remaining);
-    return { completed, remaining: remaining.length };
+      await writeJsonStore("pancake-queue.json", remaining);
+      return { completed, remaining: remaining.length };
+    });
   }
 }
