@@ -1,11 +1,5 @@
 import { NextResponse } from "next/server";
-import { canCreatePancakeOrder } from "@/lib/order-readiness";
 import { readOrders, updateOrder } from "@/lib/orders";
-import { OrderSyncService } from "@/lib/pancake/order-sync-service";
-import { readIntegrationConfig } from "@/lib/integrations";
-import { reconcileZaloPayPayment, reconcileZaloPayRefund } from "@/lib/payment-confirmation";
-
-const finalCustomerShippingStatuses = new Set(["delivered", "returned", "cancelled"]);
 
 export async function GET(request: Request) {
   let orders = await readOrders();
@@ -34,31 +28,8 @@ export async function GET(request: Request) {
   if (codes.length) {
     const allowed = new Set(codes);
     const requested = orders.filter((order) => allowed.has(order.code));
-    const integrations = await readIntegrationConfig();
-    await Promise.allSettled(requested.map(async (order) => {
-      let current = order;
-      if (current.status === "pending" && current.paymentMethod === "zalopay") {
-        current = await reconcileZaloPayPayment(current, integrations.payment);
-      }
-      if (["pending", "failed"].includes(current.refundStatus || "") && current.paymentMethod === "zalopay" && (current.refundId || current.transactionId)) {
-        await reconcileZaloPayRefund(current, integrations.payment);
-      }
-    }));
-    const paymentRefreshed = await readOrders();
-    const sync = new OrderSyncService();
-    const syncTargets = paymentRefreshed.filter((order) => allowed.has(order.code)
-      && !finalCustomerShippingStatuses.has(order.shippingStatus || "")
-      && order.status !== "cancelled"
-      && canCreatePancakeOrder(order));
-    await Promise.allSettled(syncTargets.map((order) => (
-      order.pancakeOrderId || order.pancakeStatus
-        ? sync.reconcileExisting(order)
-        : sync.create(order)
-    )));
-    const refreshedOrders = await readOrders();
     return NextResponse.json({
-      orders: refreshedOrders
-        .filter((order) => allowed.has(order.code))
+      orders: requested
         .map((order) => ({
           code: order.code,
           createdAt: order.createdAt,
