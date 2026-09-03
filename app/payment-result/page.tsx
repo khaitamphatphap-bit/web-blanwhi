@@ -7,6 +7,7 @@ import { money } from "@/lib/pricing";
 import { BankTransferConfirm } from "./BankTransferConfirm";
 import { shortOrderCode } from "@/lib/order-code";
 import { DemoPaymentActions } from "./DemoPaymentActions";
+import { PaymentResultRecovery } from "./PaymentResultRecovery";
 
 type PageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -85,6 +86,7 @@ export default async function PaymentResultPage({ searchParams }: PageProps) {
   const success = order?.status === "paid";
   const failed = order?.status === "failed" || order?.status === "cancelled";
   const bankTransferPending = order?.paymentMethod === "bank_transfer" && order.status === "pending";
+  const shouldRecoverMissingZaloPayOrder = isZaloPayRedirect && !order && Boolean(orderCode) && !isFailedZaloPayRedirect(params);
   const successTitle = order?.paymentMethod === "bank_transfer"
     ? "Đã nhận chuyển khoản thành công"
     : "Chúc mừng bạn đã thanh toán thành công";
@@ -122,6 +124,7 @@ export default async function PaymentResultPage({ searchParams }: PageProps) {
             Đơn hàng đã được cập nhật sang trạng thái đã thanh toán.
           </div>
         )}
+        <PaymentResultRecovery orderCode={orderCode} shouldRecover={shouldRecoverMissingZaloPayOrder} />
       </section>
       <div className="mt-8 flex flex-wrap gap-3">
         {fromAdmin ? (
