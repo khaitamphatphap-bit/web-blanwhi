@@ -1042,7 +1042,7 @@ export async function writeKeyedJsonRecord<T>(namespace: string, itemKey: string
            select namespace, item_key, item_value, 'before-write'
            from previous
            returning id
-         )
+         ),
          saved as (
            insert into blanwhi_keyed_store (namespace, item_key, item_value, updated_at)
            select namespace, item_key, item_value, now()
