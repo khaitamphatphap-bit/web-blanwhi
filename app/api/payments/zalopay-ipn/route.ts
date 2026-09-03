@@ -4,6 +4,7 @@ import { readIntegrationConfig } from "@/lib/integrations";
 import { findOrderByCode } from "@/lib/orders";
 import { verifyZaloPayBody } from "@/lib/payment";
 import { markVerifiedPayment, syncVerifiedOrderToPos } from "@/lib/payment-confirmation";
+import { recordPaymentOrphan } from "@/lib/payment-orphans";
 
 export async function POST(request: Request) {
   try {
@@ -25,13 +26,38 @@ export async function POST(request: Request) {
     const transIdParts = appTransId.split("_");
     const orderCode = transIdParts[1]?.startsWith("R") ? transIdParts.slice(2).join("_") : transIdParts.slice(1).join("_");
     const amount = Number(data.amount ?? 0);
+    const transactionId = data.zp_trans_id ? String(data.zp_trans_id) : undefined;
     const order = await findOrderByCode(orderCode);
 
-    if (!order) return NextResponse.json({ return_code: 0, return_message: "Order not found" });
-    if (order.total !== amount) return NextResponse.json({ return_code: 0, return_message: "Invalid amount" });
+    if (!order) {
+      await recordPaymentOrphan({
+        provider: "zalopay",
+        orderCode,
+        appTransId,
+        transactionId,
+        amount,
+        reason: "order_not_found",
+        message: "ZaloPay báo thanh toán thành công nhưng website không tìm thấy đơn tương ứng.",
+        payload: data
+      });
+      return NextResponse.json({ return_code: 0, return_message: "Order not found" });
+    }
+    if (order.total !== amount) {
+      await recordPaymentOrphan({
+        provider: "zalopay",
+        orderCode,
+        appTransId,
+        transactionId,
+        amount,
+        reason: "amount_mismatch",
+        message: `ZaloPay báo số tiền ${amount} nhưng đơn website là ${order.total}.`,
+        payload: data
+      });
+      return NextResponse.json({ return_code: 0, return_message: "Invalid amount" });
+    }
 
     const paid = await markVerifiedPayment(orderCode, {
-      transactionId: data.zp_trans_id ? String(data.zp_trans_id) : undefined,
+      transactionId,
       paymentProviderOrderId: appTransId,
       providerMessage: "ZaloPay payment success"
     });

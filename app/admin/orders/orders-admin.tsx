@@ -5,6 +5,7 @@ import { shortOrderCode } from "@/lib/order-code";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import type { IntegrationConfig, ShippingProvider } from "@/lib/integrations";
 import { money } from "@/lib/pricing";
+import type { PaymentOrphan } from "@/lib/payment-orphans";
 import type { OrderStatus, ShippingStatus, ShopOrder } from "@/lib/types";
 
 type OrderStage =
@@ -149,14 +150,17 @@ function storageHealthClass(level: string) {
 
 export function OrdersAdmin({
   initialOrders,
+  initialPaymentOrphans,
   initialIntegrations,
   deliveryConfig
 }: {
   initialOrders: ShopOrder[];
+  initialPaymentOrphans: PaymentOrphan[];
   initialIntegrations: IntegrationConfig;
   deliveryConfig: { provider: "ahamove" | "lalamove"; configured: boolean; senderReady: boolean };
 }) {
   const [orders, setOrders] = useState(initialOrders);
+  const [paymentOrphans] = useState(initialPaymentOrphans);
   const [integrations, setIntegrations] = useState(initialIntegrations);
   const [message, setMessage] = useState("");
   const [busyCode, setBusyCode] = useState("");
@@ -466,6 +470,39 @@ export function OrdersAdmin({
       </header>
 
       {message && <p className="mt-4 border border-neutral-200 bg-neutral-50 p-3 text-sm">{message}</p>}
+      {paymentOrphans.length > 0 && (
+        <section className="mt-4 border border-red-300 bg-red-50 p-4 text-sm text-red-900">
+          <p className="text-xs font-semibold uppercase">Cảnh báo thanh toán cần xử lý</p>
+          <h2 className="mt-1 text-xl font-medium">Có {paymentOrphans.length} giao dịch đã báo tiền nhưng thiếu đơn hợp lệ</h2>
+          <div className="mt-3 grid gap-2">
+            {paymentOrphans.slice(0, 8).map((payment) => (
+              <div key={payment.id} className="grid gap-2 border border-red-200 bg-white/70 p-3 md:grid-cols-5">
+                <div>
+                  <p className="text-xs uppercase opacity-70">Mã đơn</p>
+                  <strong>{shortOrderCode(payment.orderCode) || payment.orderCode || "Không rõ"}</strong>
+                </div>
+                <div>
+                  <p className="text-xs uppercase opacity-70">Cổng</p>
+                  <strong className="uppercase">{payment.provider}</strong>
+                </div>
+                <div>
+                  <p className="text-xs uppercase opacity-70">Số tiền</p>
+                  <strong>{money(payment.amount)}</strong>
+                </div>
+                <div>
+                  <p className="text-xs uppercase opacity-70">Mã giao dịch</p>
+                  <strong className="break-all">{payment.transactionId || payment.appTransId || "Đang cập nhật"}</strong>
+                </div>
+                <div>
+                  <p className="text-xs uppercase opacity-70">Lý do</p>
+                  <strong>{payment.reason === "order_not_found" ? "Không tìm thấy đơn" : "Lệch số tiền"}</strong>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="mt-3 text-xs">Các dòng này là biên nhận bảo vệ khi ZaloPay báo thanh toán thành công nhưng website không ghép được vào đơn. Cần đối chiếu ZaloPay/Pancake hoặc liên hệ khách để lấy địa chỉ nếu đơn gốc đã mất.</p>
+        </section>
+      )}
       <p className="mt-4 border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
         {autoSyncText}. Dữ liệu đơn được cập nhật nền mỗi 10 giây, không reload trang, không tự cuộn và không đóng đơn đang mở.
         {lastBackgroundRefresh && <span> Lần cập nhật gần nhất: {lastBackgroundRefresh.toLocaleTimeString("vi-VN")}.</span>}
