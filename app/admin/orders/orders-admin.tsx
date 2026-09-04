@@ -397,6 +397,23 @@ export function OrdersAdmin({
     }
   }
 
+  async function refundZaloPayOrder(order: ShopOrder) {
+    if (!window.confirm(`Hoàn ${money(order.total)} qua ZaloPay cho đơn ${shortOrderCode(order.code)}?`)) return;
+    setBusyCode(`${order.code}-refund`);
+    setMessage("");
+    try {
+      const response = await fetch(`/api/admin/orders/${encodeURIComponent(order.code)}/refund`, { method: "POST" });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Không gửi được yêu cầu hoàn tiền ZaloPay.");
+      setOrders((current) => current.map((item) => item.code === order.code ? data.order : item));
+      setMessage(`Đã gửi yêu cầu hoàn tiền ZaloPay cho đơn ${shortOrderCode(order.code)}.`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Không gửi được yêu cầu hoàn tiền ZaloPay.");
+    } finally {
+      setBusyCode("");
+    }
+  }
+
   async function deleteOrders(codes: string[]) {
     const uniqueCodes = Array.from(new Set(codes)).filter(Boolean);
     if (!uniqueCodes.length) return;
@@ -773,6 +790,15 @@ export function OrdersAdmin({
                           {order.refundAmount !== undefined && <p><b>Số tiền hoàn:</b> {money(order.refundAmount)}</p>}
                           {order.refundTransactionId && <p><b>Mã yêu cầu hoàn:</b> {order.refundTransactionId}</p>}
                           {order.refundMessage && <p className="text-neutral-600">{order.refundMessage}</p>}
+                          {order.status === "cancelled" && Boolean(order.transactionId) && order.refundStatus !== "succeeded" && (
+                            <button
+                              onClick={() => refundZaloPayOrder(order)}
+                              disabled={busyCode === `${order.code}-refund`}
+                              className="mt-3 h-9 border border-black bg-black px-3 text-xs uppercase text-white disabled:opacity-50"
+                            >
+                              {busyCode === `${order.code}-refund` ? "Đang gửi..." : "Hoàn tiền ZaloPay"}
+                            </button>
+                          )}
                         </div>
                       )}
                       <p><b>Vận chuyển:</b> {order.shippingCarrier || "Chưa chọn"} · {order.shippingMethod || "Giao nhanh"}</p>

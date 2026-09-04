@@ -23,7 +23,13 @@ test("luôn dùng lại mã hoàn tiền đã lưu", () => {
 
 test("route huỷ đơn khách gọi API hoàn tiền tự động", async () => {
   const source = await readFile(new URL("../app/api/orders/[code]/cancel/route.ts", import.meta.url), "utf8");
-  assert.match(source, /refundZaloPayPayment\(current, config\.payment, reason\)/);
   assert.match(source, /requestAutomaticZaloPayRefund\(cancelled, config, reason\)/);
   assert.match(source, /Liên hệ Zalo 0866561480 để được hỗ trợ thêm/);
+});
+
+test("dịch vụ hoàn tiền gọi ZaloPay và admin có route thử lại", async () => {
+  const service = await readFile(new URL("../lib/zalopay-refund-service.ts", import.meta.url), "utf8");
+  const adminRoute = await readFile(new URL("../app/api/admin/orders/[code]/refund/route.ts", import.meta.url), "utf8");
+  assert.match(service, /refundZaloPayPayment\(current, config\.payment, reason\)/);
+  assert.match(adminRoute, /requestAutomaticZaloPayRefund\(order, await readIntegrationConfig\(\)/);
 });
