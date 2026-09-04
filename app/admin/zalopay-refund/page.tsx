@@ -1,6 +1,6 @@
 import { readIntegrationConfig } from "@/lib/integrations";
 import { readKeyedJsonStore } from "@/lib/data-store";
-import { queryZaloPayPayment } from "@/lib/payment";
+import { queryZaloPayPayment, queryZaloPayRefund } from "@/lib/payment";
 import type { ShopOrder } from "@/lib/types";
 
 type Props = { searchParams: Promise<{ appTransId?: string }> };
@@ -41,6 +41,7 @@ export default async function ZaloPayRefundLookupPage({ searchParams }: Props) {
   const appTransId = String((await searchParams).appTransId || "").trim();
   let result: Awaited<ReturnType<typeof queryZaloPayPayment>> | null = null;
   let refund: RefundAudit | null = null;
+  let liveRefund: Awaited<ReturnType<typeof queryZaloPayRefund>> | null = null;
   let error = "";
   if (appTransId) {
     try {
@@ -51,6 +52,9 @@ export default async function ZaloPayRefundLookupPage({ searchParams }: Props) {
       ]);
       result = payment;
       refund = refunds[appTransId] || null;
+      if (refund?.mRefundId) {
+        liveRefund = await queryZaloPayRefund(refund.mRefundId, config.payment).catch(() => null);
+      }
     } catch (cause) {
       error = cause instanceof Error ? cause.message : "Không tra cứu được giao dịch.";
     }
@@ -75,6 +79,9 @@ export default async function ZaloPayRefundLookupPage({ searchParams }: Props) {
                 <p><b>Hoàn tiền:</b> {refund.status || "-"}</p>
                 <p><b>Mã yêu cầu hoàn:</b> {refund.mRefundId || "-"}</p>
                 <p><b>Phản hồi:</b> {refund.message || "-"}</p>
+                {liveRefund && (
+                  <p><b>Kết quả ZaloPay mới nhất:</b> {Number(liveRefund.refund_status || 0) === 1 ? "Đã hoàn tiền" : liveRefund.sub_return_message || liveRefund.return_message || "Đang xử lý"}</p>
+                )}
               </div>
             )}
             {!refund && Number(result.return_code || 0) === 1 && Number(result.amount || 0) > 0 && (
