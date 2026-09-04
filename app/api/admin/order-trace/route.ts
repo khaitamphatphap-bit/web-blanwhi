@@ -3,6 +3,7 @@ import { jsonError } from "@/lib/api-errors";
 import { readJsonStore, readJsonStoreHistory, readKeyedJsonStoreHistory } from "@/lib/data-store";
 import { readOrders } from "@/lib/orders";
 import { readPaymentOrphans } from "@/lib/payment-orphans";
+import { PancakeService } from "@/lib/pancake/pancake-service";
 import type { ShopOrder } from "@/lib/types";
 
 type TraceHit = {
@@ -107,6 +108,21 @@ export async function GET(request: Request) {
         }
       });
     });
+
+    const orderCode = terms.find((term) => /^blw-/i.test(term));
+    if (orderCode) {
+      try {
+        const pancakeOrder = await new PancakeService().findOrder(orderCode.toUpperCase());
+        if (pancakeOrder) pushHit(hits, "pancake.remote", pancakeOrder, terms, `Tìm thấy đơn trực tiếp trên Pancake · ${orderCode.toUpperCase()}`);
+      } catch (error) {
+        hits.push({
+          source: "pancake.remote.error",
+          matched: [orderCode],
+          summary: "Không truy vấn được Pancake",
+          record: { error: error instanceof Error ? error.message : String(error) }
+        });
+      }
+    }
 
     return NextResponse.json({
       terms,
