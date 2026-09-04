@@ -225,6 +225,7 @@
       .sizes { display: flex; gap: 4px; margin-top: 10px; }
       .sizes button { position: relative; border: 1px solid var(--line); background: #fff; min-width: 27px; height: 27px; display: grid; place-items: center; overflow: hidden; font-size: 11px; }
       .selection-loading .sizes button, .selection-loading .swatches button, .grid.inventory-checking .sizes button, .grid.inventory-checking .swatches button { color: transparent; pointer-events: none; }
+      .selection-loading #variantConfirm { pointer-events: none; opacity: .55; }
       .sizes button.active { border-color: #000; background: #000; color: #fff; }
       .selection-loading .sizes button.active, .selection-loading .swatches button.active, .grid.inventory-checking .sizes button.active, .grid.inventory-checking .swatches button.active { outline: 0; border-color: var(--line); background: #fff; color: transparent; }
       .sizes button.out-of-stock, .swatches button.out-of-stock { color: #aaa; border-color: #ddd; background: #f4f4f4; opacity: .55; cursor: not-allowed; filter: grayscale(1); }
@@ -1834,20 +1835,22 @@
 
       async function refreshProductAvailability(productId, force = false) {
         const product = productData.find((item) => item.id === productId);
-        if (!product) return;
-        if (!force && product.availabilityUpdatedAt && Date.now() - product.availabilityUpdatedAt < 15000) return;
+        if (!product) return false;
+        if (!force && product.availabilityUpdatedAt && Date.now() - product.availabilityUpdatedAt < 15000) return true;
         if (product.availabilityPromise) return product.availabilityPromise;
         product.availabilityPromise = (async () => {
           try {
             const response = await fetch(`${paymentApiBase}/api/inventory/availability?productId=${encodeURIComponent(productId)}&t=${Date.now()}`, { cache: "no-store" });
-            if (!response.ok) return;
+            if (!response.ok) throw new Error(`Không tải được tồn kho (${response.status})`);
             const result = await response.json();
             product.inventoryConfigured = Boolean(result.configured);
             if (Array.isArray(result.items) && result.items.length) product.inventory = result.items;
+            product.availabilityUpdatedAt = Date.now();
+            return true;
           } catch (error) {
             console.warn("Không cập nhật được tồn kho", error);
+            return false;
           } finally {
-            product.availabilityUpdatedAt = Date.now();
             product.availabilityPromise = null;
           }
         })();
@@ -1863,17 +1866,19 @@
 
       let allAvailabilityUpdatedAt = 0;
       let allAvailabilityPromise = null;
+      let inventoryVersion = "";
 
-      async function refreshAllAvailability(force = false) {
-        if (!force && allAvailabilityUpdatedAt && Date.now() - allAvailabilityUpdatedAt < 15000) return;
+      async function refreshAllAvailability(force = false, showLoading = true) {
+        if (!force && allAvailabilityUpdatedAt && Date.now() - allAvailabilityUpdatedAt < 15000) return true;
         if (allAvailabilityPromise) return allAvailabilityPromise;
 
-        productGridShell.classList.add("inventory-checking");
+        if (showLoading) productGridShell.classList.add("inventory-checking");
         allAvailabilityPromise = (async () => {
           try {
             const response = await fetch(`${paymentApiBase}/api/inventory/availability?t=${Date.now()}`, { cache: "no-store" });
-            if (!response.ok) return;
+            if (!response.ok) throw new Error(`Không tải được tồn kho (${response.status})`);
             const result = await response.json();
+            inventoryVersion = String(result.inventoryVersion || inventoryVersion);
             productData.forEach((product) => {
               product.inventoryConfigured = Boolean(result.configured);
               const nextInventory = Array.isArray(result.items) ? result.items.filter((item) => item.productId === product.id) : [];
@@ -1881,10 +1886,12 @@
               product.availabilityUpdatedAt = Date.now();
             });
             renderProducts(currentProductList, false);
+            allAvailabilityUpdatedAt = Date.now();
+            return true;
           } catch (error) {
             console.warn("Không cập nhật được danh sách tồn kho Pancake", error);
+            return false;
           } finally {
-            allAvailabilityUpdatedAt = Date.now();
             allAvailabilityPromise = null;
             productGridShell.classList.remove("inventory-checking");
           }
@@ -2139,10 +2146,23 @@
       const refreshInventoryWhenIdle = () => void refreshAllAvailability();
       if ("requestIdleCallback" in window) window.requestIdleCallback(refreshInventoryWhenIdle, { timeout: 5000 });
       else window.setTimeout(refreshInventoryWhenIdle, 1500);
+      async function refreshInventoryWhenChanged() {
+        if (document.visibilityState !== "visible") return;
+        try {
+          const response = await fetch(`${paymentApiBase}/api/inventory/availability?summary=true&t=${Date.now()}`, { cache: "no-store" });
+          if (!response.ok) return;
+          const result = await response.json();
+          const latestVersion = String(result.inventoryVersion || "");
+          if (latestVersion && latestVersion !== inventoryVersion) await refreshAllAvailability(true, false);
+        } catch (error) {
+          console.warn("Không kiểm tra được phiên bản tồn kho", error);
+        }
+      }
+      window.setInterval(refreshInventoryWhenChanged, 5000);
 
       const cartCount = () => cart.reduce((sum, item) => sum + item.qty, 0);
       const subtotal = () => cart.reduce((sum, item) => sum + item.amount * item.qty, 0);
-      let variantState = { productId: null, mode: "cart", originalCartId: "", classificationIndex: 0, colorIndex: 0, size: "M", qty: 1, colorTouched: false };
+      let variantState = { productId: null, mode: "cart", originalCartId: "", classificationIndex: 0, colorIndex: 0, size: "M", qty: 1, colorTouched: false, availabilityLoading: false, confirming: false };
       let wholesaleState = { productId: null, qty: 10 };
       const orderStorageKey = "blanwhiOrders";
       const orderBackupStorageKey = "blanwhiOrdersBackup";
@@ -2843,6 +2863,7 @@
         const stock = liveAvailable === null ? stockFor(product, { classificationIndex: variantState.classificationIndex, color, size: variantState.size }) : liveAvailable;
         if (stock !== Infinity && stock > 0 && variantState.qty > stock) variantState.qty = stock;
         const outOfStock = stock <= 0;
+        const checkingAvailability = Boolean(variantState.availabilityLoading || variantState.confirming);
         const customerStockNote = outOfStock
           ? "Hết hàng"
           : liveAvailable !== null && liveAvailable > 0 && liveAvailable < 5
@@ -2893,7 +2914,7 @@
               </div>
               <div class="variant-actions">
                 <button class="secondary" id="variantCancel">Huỷ</button>
-                <button class="primary" id="variantConfirm" ${outOfStock ? "disabled" : ""}>${outOfStock ? "Hết hàng" : variantState.mode === "buy" ? "Mua ngay" : variantState.mode === "edit" ? "Cập nhật phân loại" : "Thêm vào giỏ hàng"}</button>
+                <button class="primary" id="variantConfirm" ${outOfStock || checkingAvailability ? "disabled" : ""}>${checkingAvailability ? "Đang kiểm tra tồn kho..." : outOfStock ? "Hết hàng" : variantState.mode === "buy" ? "Mua ngay" : variantState.mode === "edit" ? "Cập nhật phân loại" : "Thêm vào giỏ hàng"}</button>
               </div>
             </div>
           </div>
@@ -2920,12 +2941,18 @@
       function openVariant(id, mode) {
         const product = productData.find((item) => item.id === id);
         if (!product) return;
-        variantState = { productId: id, mode, ...preferredVariantSelection(product), qty: Math.max(1, Number(product.orderQty) || 1), colorTouched: false };
+        variantState = { productId: id, mode, ...preferredVariantSelection(product), qty: Math.max(1, Number(product.orderQty) || 1), colorTouched: false, availabilityLoading: true, confirming: false };
         renderVariantModal();
         variantModal.classList.add("open");
         variantContent.classList.add("selection-loading");
-        refreshProductAvailability(id).then(() => {
+        refreshProductAvailability(id, true).then((refreshed) => {
           if (!variantModal.classList.contains("open") || variantState.productId !== id || variantState.confirming) return;
+          variantState.availabilityLoading = false;
+          if (!refreshed) {
+            renderVariantModal();
+            alert("Chưa kiểm tra được tồn kho mới nhất. Vui lòng thử lại.");
+            return;
+          }
           const selectedColor = variantSwatches(product, variantState.classificationIndex)[variantState.colorIndex];
           if (!hasStock(product, { classificationIndex: variantState.classificationIndex, color: selectedColor, size: variantState.size })) {
             Object.assign(variantState, preferredVariantSelection({
@@ -2937,6 +2964,7 @@
           }
           renderVariantModal();
         }).finally(() => {
+          if (variantState.productId === id) variantState.availabilityLoading = false;
           variantContent.classList.remove("selection-loading");
           requestAnimationFrame(() => markVisibleProductImages(variantContent));
         });
@@ -2957,14 +2985,22 @@
           colorIndex,
           size: item.size,
           qty: Math.max(1, Number(item.qty) || 1),
-          colorTouched: true
+          colorTouched: true,
+          availabilityLoading: true,
+          confirming: false
         };
         renderVariantModal();
         variantModal.classList.add("open");
         variantContent.classList.add("selection-loading");
-        refreshProductAvailability(product.id).then(() => {
-          if (variantModal.classList.contains("open") && variantState.originalCartId === cartId) renderVariantModal();
-        }).finally(() => variantContent.classList.remove("selection-loading"));
+        refreshProductAvailability(product.id, true).then((refreshed) => {
+          if (!variantModal.classList.contains("open") || variantState.originalCartId !== cartId) return;
+          variantState.availabilityLoading = false;
+          renderVariantModal();
+          if (!refreshed) alert("Chưa kiểm tra được tồn kho mới nhất. Vui lòng thử lại.");
+        }).finally(() => {
+          variantState.availabilityLoading = false;
+          variantContent.classList.remove("selection-loading");
+        });
       }
 
       function closeVariant() {
@@ -3028,6 +3064,16 @@
           variantState.confirming = false;
           return;
         }
+        variantState.availabilityLoading = true;
+        renderVariantModal();
+        variantContent.classList.add("selection-loading");
+        const refreshed = await refreshProductAvailability(product.id, true);
+        variantState.availabilityLoading = false;
+        variantContent.classList.remove("selection-loading");
+        if (!refreshed) {
+          alert("Chưa kiểm tra được tồn kho mới nhất. Vui lòng thử lại.");
+          return;
+        }
         const classification = activeClassification(product, variantState.classificationIndex);
         const swatches = variantSwatches(product, variantState.classificationIndex);
         const options = {
@@ -3055,7 +3101,7 @@
         product.color = options.color;
         product.size = options.size;
         closeVariant();
-        const purchaseOptions = { ...options, skipAvailabilityRefresh: true };
+        const purchaseOptions = { ...options };
         if (variantState.mode === "edit") {
           const originalIndex = cart.findIndex((item) => item.cartId === variantState.originalCartId);
           if (originalIndex < 0) return;
@@ -3083,6 +3129,8 @@
         }
         } finally {
           variantState.confirming = false;
+          variantState.availabilityLoading = false;
+          if (variantModal.classList.contains("open")) renderVariantModal();
         }
       }
 
@@ -3615,7 +3663,11 @@
       async function addToCart(id, options = {}) {
         const product = productData.find((item) => item.id === id);
         if (!product) return false;
-        if (!options.skipAvailabilityRefresh) await refreshProductAvailability(id);
+        const refreshed = await refreshProductAvailability(id, true);
+        if (!refreshed) {
+          alert("Chưa kiểm tra được tồn kho mới nhất. Vui lòng thử lại.");
+          return false;
+        }
         const color = options.color || product.color;
         const size = options.size || product.size;
         const qty = Math.max(1, Math.floor(Number(options.qty) || 1));
@@ -3665,8 +3717,32 @@
         card.querySelectorAll(`[data-swatches="${id}"] button`).forEach((swatch, index) => swatch.classList.toggle("active", index === product.colorIndex));
       }
 
-      function openCheckout() {
+      async function validateCartAvailability() {
+        const refreshed = await refreshAllAvailability(true, false);
+        if (!refreshed) {
+          alert("Chưa kiểm tra được tồn kho mới nhất. Vui lòng thử lại.");
+          return false;
+        }
+        for (const item of cart) {
+          const stock = stockForCartItem(item);
+          if (stock <= 0) {
+            alert(`${item.name} - phân loại đã chọn hiện đã hết hàng. Vui lòng xóa hoặc đổi phân loại.`);
+            return false;
+          }
+          if (stock !== Infinity && item.qty > stock) {
+            alert(`${item.name} - phân loại đã chọn chỉ còn ${stock} sản phẩm.`);
+            return false;
+          }
+        }
+        return true;
+      }
+
+      async function openCheckout() {
         closeCart();
+        if (!await validateCartAvailability()) {
+          openCart();
+          return;
+        }
         renderSavedAddresses();
         if (checkoutProvince.options.length <= 1) void loadProvinces().catch((error) => alert(error.message));
         document.querySelector(".checkout-card").classList.add("quick-checkout");
@@ -3681,7 +3757,7 @@
       }
       function stockForCartItem(item) {
         const product = productData.find((entry) => entry.id === item.id);
-        if (!product || item.wholesale) return Infinity;
+        if (!product) return 0;
         const liveAvailable = availableFor(product, item.classificationId || "", item.color, item.size);
         if (liveAvailable !== null) return liveAvailable;
         const classificationIndex = product.classifications?.findIndex((classification) => classification.id === item.classificationId);
@@ -3800,11 +3876,19 @@
         delete swipeStart[visual.dataset.swipe];
       }, { passive: true });
 
-      wholesaleContent.addEventListener("click", (event) => {
+      wholesaleContent.addEventListener("click", async (event) => {
         if (event.target.closest("#wholesaleAdd")) {
           const product = productData.find((item) => item.id === wholesaleState.productId);
           if (!product) return;
-          const stock = stockFor(product, { color: product.color, size: product.size });
+          if (!await refreshProductAvailability(product.id, true)) {
+            alert("Chưa kiểm tra được tồn kho mới nhất. Vui lòng thử lại.");
+            return;
+          }
+          const classificationIndex = product.classificationIndex || 0;
+          const classification = activeClassification(product, classificationIndex);
+          const classificationId = classification?.id || "";
+          const row = inventoryRowFor(product, classificationId, product.color, product.size);
+          const stock = availableFor(product, classificationId, product.color, product.size);
           if (stock <= 0) {
             showSoldOut();
             return;
@@ -3824,7 +3908,15 @@
             qty: wholesaleState.qty,
             amount: unitPrice,
             price: `${formatMoney(unitPrice)} sỉ`,
-            wholesale: true
+            wholesale: true,
+            classificationId,
+            classificationName: classification?.name || "",
+            classificationIndex,
+            inventoryKey: row?.key || "",
+            sku: row?.sku || "",
+            pancakeSku: row?.pancakeSku || "",
+            pancakeProductId: row?.pancakeProductId || "",
+            pancakeVariationId: row?.pancakeVariationId || ""
           });
           closeWholesale();
           renderCart();
@@ -4546,10 +4638,10 @@
       document.getElementById("closeCart").addEventListener("click", closeCart);
       document.getElementById("closeOrders").addEventListener("click", closeOrders);
       document.getElementById("continueBtn").addEventListener("click", closeCart);
-      document.getElementById("checkoutBtn").addEventListener("click", () => {
+      document.getElementById("checkoutBtn").addEventListener("click", async () => {
         if (!cart.length) return;
         document.querySelector(".checkout-card").classList.remove("quick-checkout");
-        openCheckout();
+        await openCheckout();
       });
       document.getElementById("closeCheckout").addEventListener("click", () => checkoutModal.classList.remove("open"));
       document.getElementById("openBankTransfer").addEventListener("click", openBankTransferPage);
@@ -4623,6 +4715,13 @@
         const paymentMethod = paymentMethodMap[selectedPay] || "cod";
         const submitButton = checkoutForm.querySelector("button[type='submit']");
         submitButton.disabled = true;
+        submitButton.textContent = "Đang kiểm tra tồn kho...";
+        if (!await validateCartAvailability()) {
+          checkoutSubmissionPending = false;
+          submitButton.disabled = !document.getElementById("policyAgreement").checked;
+          submitButton.textContent = "Đặt hàng";
+          return;
+        }
         submitButton.textContent = "Đang tạo giao dịch...";
         await addressSelectionReady.catch(() => undefined);
         const savedAddressForCheckout = savedAddressSelect.value !== "new"
