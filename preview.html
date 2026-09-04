@@ -3112,7 +3112,7 @@
         const hasTrackingCode = Boolean(String(order.trackingCode || "").trim());
         if (order.status === "Đơn hủy" || order.shippingStatus === "cancelled") return order.paymentExpiredAt || order.cancellationReason === "Hết hạn thanh toán" ? "Đã hủy" : "Đơn hủy";
         if (order.shippingStatus && !["not_created", "unknown", "ready_to_ship"].includes(order.shippingStatus) && customerShippingLabels[order.shippingStatus]) return customerShippingLabels[order.shippingStatus];
-        if (order.shippingStatus === "ready_to_ship" && hasTrackingCode) return customerShippingLabels.ready_to_ship;
+        if (hasTrackingCode) return customerShippingLabels.ready_to_ship;
         if (order.pancakeStatus && customerPancakeLabels[order.pancakeStatus]) return customerPancakeLabels[order.pancakeStatus];
         if (order.rawStatus === "pending" && order.paymentMethod === "cod") return "Chờ vận chuyển";
         if (order.rawStatus === "pending") return "Chờ thanh toán";
@@ -3323,29 +3323,29 @@
             changed = true;
             const merged = {
               ...order,
-              rawStatus: serverOrder.status || order.rawStatus,
+              rawStatus: serverOrder.status,
               createdAt: serverOrder.createdAt || order.createdAt,
-              status: serverOrder.status === "paid" ? "Đã thanh toán" : serverOrder.status === "failed" ? "Thanh toán thất bại" : serverOrder.status === "cancelled" ? "Đơn hủy" : order.status === "Đơn hủy" ? "Đơn mới đặt" : order.status,
+              status: serverOrder.status === "paid" ? "Đã thanh toán" : serverOrder.status === "failed" ? "Thanh toán thất bại" : serverOrder.status === "cancelled" ? "Đơn hủy" : serverOrder.paymentMethod === "cod" ? "Chờ vận chuyển" : "Chờ thanh toán",
               paymentMethod: serverOrder.paymentMethod || order.paymentMethod,
               paymentProvider: serverOrder.paymentProvider || order.paymentProvider,
-              transactionId: serverOrder.transactionId || order.transactionId,
-              refundStatus: serverOrder.refundStatus || order.refundStatus,
-              refundMessage: Object.prototype.hasOwnProperty.call(serverOrder, "refundMessage") ? serverOrder.refundMessage : order.refundMessage,
-               refundAmount: serverOrder.refundAmount ?? order.refundAmount,
-               refundedAt: serverOrder.refundedAt || order.refundedAt,
-               paymentExpiredAt: serverOrder.paymentExpiredAt || order.paymentExpiredAt,
-               cancellationReason: serverOrder.cancellationReason || order.cancellationReason,
-               shippingCarrier: serverOrder.shippingCarrier || order.shippingCarrier,
-              trackingCode: Object.prototype.hasOwnProperty.call(serverOrder, "trackingCode") ? serverOrder.trackingCode : order.trackingCode,
-              shippingStatus: serverOrder.shippingStatus || order.shippingStatus,
-              shippingMessage: serverOrder.shippingMessage || order.shippingMessage,
-              deliveryType: serverOrder.deliveryType || order.deliveryType,
-              deliveryProvider: serverOrder.deliveryProvider || order.deliveryProvider,
-              deliveryOrderId: serverOrder.deliveryOrderId || order.deliveryOrderId,
-              deliveryDriver: serverOrder.deliveryDriver || order.deliveryDriver,
-              deliveryTrackingUrl: serverOrder.deliveryTrackingUrl || order.deliveryTrackingUrl,
-              deliveryFeeActual: serverOrder.deliveryFeeActual ?? order.deliveryFeeActual,
-              pancakeStatus: serverOrder.pancakeStatus || order.pancakeStatus,
+              transactionId: serverOrder.transactionId || "",
+              refundStatus: serverOrder.refundStatus || null,
+              refundMessage: serverOrder.refundMessage || "",
+               refundAmount: serverOrder.refundAmount || 0,
+               refundedAt: serverOrder.refundedAt || "",
+               paymentExpiredAt: serverOrder.paymentExpiredAt || "",
+               cancellationReason: serverOrder.cancellationReason || "",
+               shippingCarrier: serverOrder.shippingCarrier || "",
+              trackingCode: serverOrder.trackingCode || "",
+              shippingStatus: serverOrder.shippingStatus || "not_created",
+              shippingMessage: serverOrder.shippingMessage || "",
+              deliveryType: serverOrder.deliveryType || null,
+              deliveryProvider: serverOrder.deliveryProvider || "",
+              deliveryOrderId: serverOrder.deliveryOrderId || "",
+              deliveryDriver: serverOrder.deliveryDriver || null,
+              deliveryTrackingUrl: serverOrder.deliveryTrackingUrl || "",
+              deliveryFeeActual: serverOrder.deliveryFeeActual || 0,
+              pancakeStatus: serverOrder.pancakeStatus || null,
               updatedAt: serverOrder.updatedAt ? new Date(serverOrder.updatedAt).toLocaleString("vi-VN") : order.updatedAt
             };
             if (serverOrder.refundStatus === "not_required" && !serverOrder.transactionId) {

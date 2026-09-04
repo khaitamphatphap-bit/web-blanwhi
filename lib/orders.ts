@@ -117,8 +117,7 @@ function normalizeOrder(order: ShopOrder): ShopOrder {
   } : order;
   const cancellationRecorded = normalizedOrder.status === "cancelled"
     || normalizedOrder.shippingStatus === "cancelled"
-    || normalizedOrder.pancakeStatus === "cancelled"
-    || Boolean(normalizedOrder.refundStatus);
+    || normalizedOrder.pancakeStatus === "cancelled";
   return {
     ...normalizedOrder,
     status: cancellationRecorded ? "cancelled" : normalizedOrder.status,
