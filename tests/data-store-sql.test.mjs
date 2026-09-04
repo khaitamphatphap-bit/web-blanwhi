@@ -5,9 +5,15 @@ import test from "node:test";
 test("ghi database ưu tiên lưu bản chính trước backup để tránh deadlock", async () => {
   const source = await readFile(new URL("../lib/data-store.ts", import.meta.url), "utf8");
   assert.match(source, /insert into blanwhi_keyed_store \(namespace, item_key, item_value, updated_at\)[\s\S]*?on conflict \(namespace, item_key\)/);
+  assert.match(source, /item_value is distinct from excluded\.item_value[\s\S]*?if \(!saved\.rows\.length\) return value/);
   assert.match(source, /write database history/);
   assert.match(source, /queue database backup/);
   assert.match(source, /must never reject checkout or cancellation/);
+});
+
+test("ghi nhiều record theo lô nhỏ để không làm nghẽn pool Neon", async () => {
+  const source = await readFile(new URL("../lib/data-store.ts", import.meta.url), "utf8");
+  assert.match(source, /export async function writeKeyedJsonRecords[\s\S]*?const concurrency = 3;[\s\S]*?entries\.slice\(index, index \+ concurrency\)/);
 });
 
 test("nội dung website và tồn kho dùng database, tự giữ dữ liệu R2 khi chuyển lần đầu", async () => {

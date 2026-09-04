@@ -1089,13 +1089,18 @@ export async function writeKeyedJsonRecord<T>(namespace: string, itemKey: string
     const pool = await getPool();
     if (pool) {
       const serialized = JSON.stringify(value);
-      await retryDatabaseWrite(() => pool.query(
+      const saved = await retryDatabaseWrite(() => pool.query(
         `insert into blanwhi_keyed_store (namespace, item_key, item_value, updated_at)
          values ($1, $2, $3::jsonb, now())
          on conflict (namespace, item_key)
-         do update set item_value = excluded.item_value, updated_at = now()`,
+         do update set item_value = excluded.item_value, updated_at = now()
+         where blanwhi_keyed_store.item_value is distinct from excluded.item_value
+         returning 1 as changed`,
         [namespace, itemKey, serialized]
       ), 6);
+      // Polling and retry paths can submit an identical snapshot repeatedly.
+      // Keep the durable row, history and backup unchanged for true no-op writes.
+      if (!saved.rows.length) return value;
       await retryDatabaseWrite(() => pool.query(
         `insert into blanwhi_keyed_store_history (namespace, item_key, item_value, reason)
          values ($1, $2, $3::jsonb, 'after-write')`,
@@ -1176,7 +1181,12 @@ export async function writeKeyedJsonRecords<T>(namespace: string, values: Record
   if (!entries.length) return values;
 
   if (hasDatabase()) {
-    await Promise.all(entries.map(([itemKey, value]) => writeKeyedJsonRecord(namespace, itemKey, value)));
+    const concurrency = 3;
+    for (let index = 0; index < entries.length; index += concurrency) {
+      await Promise.all(entries.slice(index, index + concurrency).map(([itemKey, value]) => (
+        writeKeyedJsonRecord(namespace, itemKey, value)
+      )));
+    }
     return values;
   }
 
