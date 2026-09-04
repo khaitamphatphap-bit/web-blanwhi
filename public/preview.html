@@ -2065,6 +2065,7 @@
       const orderLookupReset = document.getElementById("orderLookupReset");
       const orderLookupMessage = document.getElementById("orderLookupMessage");
       let lookedUpOrders = null;
+      const cancellingOrderCodes = new Set();
       const voucherNote = document.getElementById("voucherNote");
       const voucherModal = document.getElementById("voucherModal");
       const voucherList = document.getElementById("voucherList");
@@ -3342,6 +3343,12 @@
         const lookupOrder = Array.isArray(lookedUpOrders) ? lookedUpOrders.find((order) => order.code === code) : null;
         const previousOrder = storedOrder || lookupOrder;
         if (!previousOrder) return;
+        if (cancellingOrderCodes.has(code)) return;
+        cancellingOrderCodes.add(code);
+        if (button) {
+          button.disabled = true;
+          button.textContent = "Đang huỷ...";
+        }
         const paidBeforeCancel = isPaidOrder(previousOrder) || hasRefundProcess(previousOrder);
         const optimisticOrder = {
           ...previousOrder,
@@ -3428,10 +3435,13 @@
           renderOrders();
           alert("Chưa xác nhận được việc hủy đơn. Vui lòng kiểm tra lại trạng thái đơn rồi thử lại.");
           void syncCustomerOrderStatuses();
+        } finally {
+          cancellingOrderCodes.delete(code);
         }
       }
 
       async function syncCustomerOrderStatuses() {
+        if (cancellingOrderCodes.size) return loadOrders();
         let orders = loadOrders();
         const identities = loadCustomerIdentities();
         if (identities.length || customerDeviceId) {
@@ -3550,13 +3560,17 @@
         return Number.isNaN(parsed.getTime()) ? String(value) : parsed.toLocaleString("vi-VN");
       }
       function renderOrders() {
+        const openOrderCodes = new Set([
+          ...Array.from(orderList.querySelectorAll(".order-card[open]"), (element) => element.dataset.orderCode),
+          ...cancellingOrderCodes
+        ].filter(Boolean));
         const orders = Array.isArray(lookedUpOrders) ? lookedUpOrders : loadOrders();
         if (!orders.length) {
           orderList.innerHTML = `<div class="empty">${Array.isArray(lookedUpOrders) ? "Không tìm thấy đơn hàng theo số điện thoại này." : "Chưa có đơn hàng nào. Khi đặt hàng xong, đơn sẽ hiện ở đây để khách theo dõi."}</div>`;
           return;
         }
         orderList.innerHTML = orders.map((order) => `
-          <details class="order-card" data-order-code="${escapeMarkup(order.code)}">
+          <details class="order-card" data-order-code="${escapeMarkup(order.code)}"${openOrderCodes.has(order.code) ? " open" : ""}>
             <summary class="order-card-summary">
               <span class="order-summary-main">
                 <time class="order-summary-time">${escapeMarkup(customerOrderPlacedAt(order))}</time>
@@ -3592,7 +3606,7 @@
             </div>
             <p class="muted">Cập nhật gần nhất: ${order.updatedAt}</p>
             ${order.status === "Đơn hủy" || order.shippingStatus === "cancelled" ? `<p class="order-cancelled-note">${escapeMarkup(refundNotice(order) || "Đơn hàng đã được hủy thành công.")}</p>` : ""}
-            ${(canCustomerPay(order) || canCustomerCancel(order)) ? `<div class="order-actions">${canCustomerPay(order) ? `<button class="order-pay" type="button" data-pay-order="${escapeMarkup(order.code)}" data-order-phone="${escapeMarkup(order.lookupPhone || order.customer.phone)}">Thanh toán</button>` : ""}${canCustomerCancel(order) ? `<button class="order-cancel" type="button" data-cancel-order="${escapeMarkup(order.code)}" data-order-phone="${escapeMarkup(order.lookupPhone || order.customer.phone)}">Hủy đơn</button>` : ""}</div>` : ""}
+            ${(canCustomerPay(order) || canCustomerCancel(order)) ? `<div class="order-actions">${canCustomerPay(order) ? `<button class="order-pay" type="button" data-pay-order="${escapeMarkup(order.code)}" data-order-phone="${escapeMarkup(order.lookupPhone || order.customer.phone)}">Thanh toán</button>` : ""}${canCustomerCancel(order) ? `<button class="order-cancel" type="button" data-cancel-order="${escapeMarkup(order.code)}" data-order-phone="${escapeMarkup(order.lookupPhone || order.customer.phone)}"${cancellingOrderCodes.has(order.code) ? " disabled" : ""}>${cancellingOrderCodes.has(order.code) ? "Đang huỷ..." : "Hủy đơn"}</button>` : ""}</div>` : ""}
             </div>
           </details>
         `).join("");

@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
+import vm from "node:vm";
 import {
   buildPancakeOrderPayload,
   changePublishQuantity,
@@ -15,7 +17,26 @@ function seededRandom(seed = 260904) {
   };
 }
 
-test("300 vòng đặt và hủy giữ nguyên tồn kho, mã đơn và trạng thái Pancake", async () => {
+const customerPage = await readFile(new URL("../public/preview.html", import.meta.url), "utf8");
+const customerStatusSource = customerPage.match(/function customerOrderStatus\(order\) \{[\s\S]*?\n      \}\n\n      function canCustomerCancel/)?.[0]
+  .replace(/\n\n      function canCustomerCancel[\s\S]*$/, "");
+assert.ok(customerStatusSource);
+const customerStatusContext = {
+  customerShippingLabels: {
+    not_created: "Đơn mới đặt",
+    ready_to_ship: "Đã giao cho đơn vị vận chuyển",
+    shipping: "Đang giao hàng",
+    delivered: "Đã giao hàng cho khách",
+    cancelled: "Đơn hủy",
+    unknown: "Đang cập nhật"
+  },
+  customerPancakeLabels: { packing: "Đóng gói", shipping: "Đang giao" }
+};
+vm.createContext(customerStatusContext);
+vm.runInContext(`${customerStatusSource}; this.customerOrderStatus = customerOrderStatus;`, customerStatusContext);
+
+test("1000 vòng đặt và hủy theo nhóm 10 giữ nguyên dữ liệu, tồn kho và trạng thái khách", async () => {
+  const startedAt = performance.now();
   const random = seededRandom();
   const variants = Array.from({ length: 24 }, (_, index) => ({
     id: `variant-${index + 1}`,
@@ -27,11 +48,11 @@ test("300 vòng đặt và hủy giữ nguyên tồn kho, mã đơn và trạng 
   const database = new Map();
   const pancake = new Map();
 
-  for (let batchStart = 1; batchStart <= 300; batchStart += 10) {
+  for (let batchStart = 1; batchStart <= 1000; batchStart += 10) {
     const batch = Array.from({ length: 10 }, (_, batchIndex) => batchStart + batchIndex);
     await Promise.all(batch.map(async (number) => {
-      const code = `BLW-STRESS-${String(number).padStart(3, "0")}`;
-      const checkoutRequestId = `stress-checkout-${String(number).padStart(3, "0")}`;
+      const code = `BLW-STRESS-${String(number).padStart(4, "0")}`;
+      const checkoutRequestId = `stress-checkout-${String(number).padStart(4, "0")}`;
       const lineCount = 1 + Math.floor(random() * 4);
       const selected = new Map();
 
@@ -61,7 +82,7 @@ test("300 vòng đặt và hủy giữ nguyên tồn kho, mã đơn và trạng 
         checkoutRequestId,
         status: "pending",
         customer: {
-          name: `TEST ${String(number).padStart(3, "0")}`,
+          name: `TEST ${String(number).padStart(4, "0")}`,
           phone: `0977${String(number).padStart(6, "0")}`,
           address: "Địa chỉ kiểm thử cô lập"
         },
@@ -70,10 +91,19 @@ test("300 vòng đặt và hủy giữ nguyên tồn kho, mã đơn và trạng 
         shipping: 30000,
         total: items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 30000),
         paymentMethod: "cod",
+        shippingStatus: "not_created",
+        pancakeStatus: "pending_confirmation",
         inventoryReservationApplied: true,
         inventoryReservationReleased: false
       };
       database.set(code, order);
+      assert.equal(customerStatusContext.customerOrderStatus({
+        rawStatus: order.status,
+        status: "Chờ vận chuyển",
+        paymentMethod: order.paymentMethod,
+        shippingStatus: order.shippingStatus,
+        pancakeStatus: order.pancakeStatus
+      }), "Chờ vận chuyển");
 
       const duplicate = database.get(code);
       assert.strictEqual(duplicate, order, "cùng mã yêu cầu phải trả lại đúng đơn đã lưu");
@@ -88,6 +118,8 @@ test("300 vòng đặt và hủy giữ nguyên tồn kho, mã đơn và trạng 
       assert.equal(cancelled.status, "cancelled");
       assert.equal(cancelled.release, true);
       order.status = "cancelled";
+      order.shippingStatus = "cancelled";
+      order.pancakeStatus = "cancelled";
       order.inventoryReservationReleased = true;
       for (const item of items) {
         const variant = variants.find((candidate) => candidate.id === item.pancakeVariationId);
@@ -95,11 +127,18 @@ test("300 vòng đặt và hủy giữ nguyên tồn kho, mã đơn và trạng 
         variant.stock = changePublishQuantity(variant.stock, item.quantity, "restore");
       }
       pancake.set(pancakeOrderKey(code), { ...payload, status: "cancelled" });
+      assert.equal(customerStatusContext.customerOrderStatus({
+        rawStatus: order.status,
+        status: "Đơn hủy",
+        paymentMethod: order.paymentMethod,
+        shippingStatus: order.shippingStatus,
+        pancakeStatus: order.pancakeStatus
+      }), "Đơn hủy");
     }));
   }
 
-  assert.equal(database.size, 300, "database test phải có đủ 300 mã đơn riêng biệt");
-  assert.equal(pancake.size, 300, "Pancake test phải có đủ 300 mã chống trùng");
+  assert.equal(database.size, 1000, "database test phải có đủ 1000 mã đơn riêng biệt");
+  assert.equal(pancake.size, 1000, "Pancake test phải có đủ 1000 mã chống trùng");
   for (const variant of variants) {
     assert.equal(variant.stock, initialStock.get(variant.id), `${variant.sku} phải được hoàn đúng tồn ban đầu`);
   }
@@ -108,4 +147,5 @@ test("300 vòng đặt và hủy giữ nguyên tồn kho, mã đơn và trạng 
     assert.equal(order.inventoryReservationApplied, true);
     assert.equal(order.inventoryReservationReleased, true);
   }
+  assert.ok(performance.now() - startedAt < 10_000, "1.000 vòng kiểm thử không được bị treo");
 });
