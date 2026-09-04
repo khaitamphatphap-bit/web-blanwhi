@@ -32,3 +32,17 @@ test("database lock tự giải phóng khi function bị ngắt", async () => {
   assert.doesNotMatch(source, /pg_advisory_lock\(/);
   assert.doesNotMatch(source, /pg_advisory_unlock\(/);
 });
+
+test("database khỏe không đọc song song R2 hoặc file fallback", async () => {
+  const source = await readFile(new URL("../lib/data-store.ts", import.meta.url), "utf8");
+  assert.match(source, /max: 3/);
+  assert.match(source, /connectionTimeoutMillis: 5_000/);
+  assert.match(source, /const result = await readKeyedJsonStoreDatabaseStatus<T>\(namespace\);[\s\S]*?if \(result\.ok\) return result\.records;[\s\S]*?return readKeyedJsonStoreFallbackStores<T>/);
+  assert.doesNotMatch(source, /const \[result, legacy\] = await Promise\.all/);
+});
+
+test("đọc danh sách đơn chỉ mở backup khi database lỗi", async () => {
+  const source = await readFile(new URL("../lib/orders.ts", import.meta.url), "utf8");
+  assert.match(source, /if \(databaseState\.ok\) \{[\s\S]*?compactOrders\(Object\.values\(databaseState\.records\)/);
+  assert.match(source, /Disaster recovery is intentionally cold-path/);
+});

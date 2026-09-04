@@ -450,7 +450,13 @@ async function getPool() {
       const isLocal = /localhost|127\.0\.0\.1/.test(url);
       return new Pool({
         connectionString: url,
-        ssl: process.env.PGSSLMODE === "disable" || isLocal ? false : { rejectUnauthorized: false }
+        ssl: process.env.PGSSLMODE === "disable" || isLocal ? false : { rejectUnauthorized: false },
+        // Fluid compute keeps the module alive between requests. A small pool
+        // prevents a burst of functions from exhausting sockets/file handles.
+        max: 3,
+        connectionTimeoutMillis: 5_000,
+        idleTimeoutMillis: 10_000,
+        allowExitOnIdle: true
       }) as PgPool;
     });
   }
@@ -1021,11 +1027,9 @@ export async function readKeyedJsonStoreFallbackStores<T>(namespace: string, fal
 
 export async function readKeyedJsonStore<T>(namespace: string, fallback: Record<string, T> = {}) {
   if (hasDatabase()) {
-    const [result, legacy] = await Promise.all([
-      readKeyedJsonStoreDatabase<T>(namespace),
-      readKeyedJsonStoreFallbackStores<T>(namespace, fallback)
-    ]);
-    return { ...legacy, ...result };
+    const result = await readKeyedJsonStoreDatabaseStatus<T>(namespace);
+    if (result.ok) return result.records;
+    return readKeyedJsonStoreFallbackStores<T>(namespace, fallback);
   }
   if (hasR2Store()) {
     try {

@@ -31,13 +31,17 @@ type DeletedOrderRecord = {
 };
 
 async function readDeletedOrderRecords() {
-  const [primary, fallback, keyed] = await Promise.all([
+  if (hasDatabase()) {
+    const databaseState = await readKeyedJsonStoreDatabaseStatus<DeletedOrderRecord>(deletedOrderRecordsStore);
+    if (databaseState.ok) return Object.values(databaseState.records);
+  }
+
+  const [primary, keyed] = await Promise.all([
     readJsonStore<DeletedOrderRecord[]>(deletedOrdersStore, []),
-    hasDatabase() ? readJsonStoreFallbackStores<DeletedOrderRecord[]>(deletedOrdersStore, []) : Promise.resolve([]),
-    readKeyedJsonStore<DeletedOrderRecord>(deletedOrderRecordsStore, {})
+    readKeyedJsonStoreFallbackStores<DeletedOrderRecord>(deletedOrderRecordsStore, {})
   ]);
   const byCode = new Map<string, DeletedOrderRecord>();
-  [...fallback, ...primary, ...Object.values(keyed)].forEach((record) => {
+  [...primary, ...Object.values(keyed)].forEach((record) => {
     const key = String(record.code || record.shortCode || "").trim().toUpperCase();
     if (key) byCode.set(key, record);
   });
@@ -124,31 +128,37 @@ function normalizeOrder(order: ShopOrder): ShopOrder {
 }
 
 export async function readOrders(): Promise<ShopOrder[]> {
-  const emptyOrders: ShopOrder[] = [];
-  const emptyOrderRecords: Record<string, ShopOrder> = {};
-  const [orders, databaseState, fallbackOrders, deleted] = await Promise.all([
+  if (hasDatabase()) {
+    const [databaseState, deleted] = await Promise.all([
+      readKeyedJsonStoreDatabaseStatus<ShopOrder>(orderRecordsStore),
+      readDeletedOrderRecords()
+    ]);
+    if (databaseState.ok) {
+      return compactOrders(Object.values(databaseState.records), deletedOrderKeys(deleted)).map(normalizeOrder);
+    }
+
+    // Disaster recovery is intentionally cold-path. Do not download R2/Blob
+    // archives during every healthy request because that multiplies network
+    // sockets and can exhaust a long-lived Vercel Fluid process.
+    const [fallbackOrders, fallbackRecords] = await Promise.all([
+      readJsonStoreFallbackStores<ShopOrder[]>("orders.json", []),
+      readKeyedJsonStoreDatabaseBackups<ShopOrder>(orderRecordsStore)
+    ]);
+    return compactOrders([
+      ...fallbackOrders,
+      ...Object.values(fallbackRecords)
+    ], deletedOrderKeys(deleted)).map(normalizeOrder);
+  }
+
+  const [orders, orderRecords, deleted] = await Promise.all([
     readJsonStore<ShopOrder[]>("orders.json", []),
-    hasDatabase()
-      ? readKeyedJsonStoreDatabaseStatus<ShopOrder>(orderRecordsStore)
-      : readKeyedJsonStore<ShopOrder>(orderRecordsStore, {}).then((records) => ({ ok: true, records })),
-    hasDatabase() ? readJsonStoreFallbackStores<ShopOrder[]>("orders.json", []) : Promise.resolve(emptyOrders),
+    readKeyedJsonStore<ShopOrder>(orderRecordsStore, {}),
     readDeletedOrderRecords()
   ]);
-  const orderRecords = databaseState.records;
-  // Existing production orders are already preserved in orders.json. Only scan
-  // the much larger legacy per-order backup when that compact store is absent.
-  const fallbackRecords = hasDatabase() && !databaseState.ok
-    ? await readKeyedJsonStoreDatabaseBackups<ShopOrder>(orderRecordsStore)
-    : hasDatabase() && fallbackOrders.length === 0
-      ? await readKeyedJsonStoreFallbackStores<ShopOrder>(orderRecordsStore, {})
-      : emptyOrderRecords;
-  const deletedKeys = deletedOrderKeys(deleted);
   return compactOrders([
-    ...fallbackOrders,
-    ...Object.values(fallbackRecords || {}),
     ...orders,
-    ...Object.values(orderRecords || {})
-  ], deletedKeys).map(normalizeOrder);
+    ...Object.values(orderRecords)
+  ], deletedOrderKeys(deleted)).map(normalizeOrder);
 }
 
 export async function writeOrders(orders: ShopOrder[]) {
