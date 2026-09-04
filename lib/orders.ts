@@ -304,12 +304,7 @@ export async function updateOrder(code: string, patch: Partial<ShopOrder>): Prom
     let updated: ShopOrder | null = null;
     const next = orders.map((order) => {
       if (orderRecordKey(order.code) !== orderRecordKey(code)) return order;
-      updated = {
-        ...order,
-        ...patch,
-        externalSync: { ...order.externalSync, ...patch.externalSync },
-        updatedAt: new Date().toISOString()
-      };
+      updated = mergeOrderPatch(normalizeOrder(order), patch);
       return updated;
     });
     const updatedOrder = updated as ShopOrder | null;

@@ -46,3 +46,46 @@ test("khách vẫn được hủy khi Pancake mới đóng gói nhưng chưa có
   assert.equal(carrierHasAcceptedCustomerOrder({ shippingStatus: "ready_to_ship", trackingCode: "SPX123" }), true);
   assert.equal(carrierHasAcceptedCustomerOrder({ shippingStatus: "shipping", trackingCode: "" }), true);
 });
+
+test("giá đã chốt của đơn không đổi khi bản vá dùng giá sản phẩm mới", () => {
+  const original = {
+    ...cancelledOrder,
+    status: "pending",
+    shippingStatus: "not_created",
+    items: [{
+      productId: "product-1",
+      inventoryKey: "black|m",
+      name: "Áo đã mua",
+      color: "Đen",
+      size: "M",
+      quantity: 1,
+      unitPrice: 1_000_000
+    }],
+    subtotal: 1_000_000,
+    discount: 0,
+    shipping: 30_000,
+    total: 1_030_000
+  };
+  const result = mergeOrderPatch(original, {
+    items: [{
+      ...original.items[0],
+      name: "Tên sản phẩm mới",
+      unitPrice: 1_500_000,
+      pancakeVariationId: "pancake-variation-1"
+    }],
+    subtotal: 1_500_000,
+    discount: 100_000,
+    shipping: 50_000,
+    total: 1_450_000,
+    pancakeStatus: "packing"
+  });
+
+  assert.equal(result.items[0].name, "Áo đã mua");
+  assert.equal(result.items[0].unitPrice, 1_000_000);
+  assert.equal(result.items[0].pancakeVariationId, "pancake-variation-1");
+  assert.equal(result.subtotal, 1_000_000);
+  assert.equal(result.discount, 0);
+  assert.equal(result.shipping, 30_000);
+  assert.equal(result.total, 1_030_000);
+  assert.equal(result.pancakeStatus, "packing");
+});
