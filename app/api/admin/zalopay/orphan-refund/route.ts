@@ -82,7 +82,10 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json() as { appTransId?: unknown; expectedAmount?: unknown };
+    const contentType = request.headers.get("content-type") || "";
+    const body = contentType.includes("application/json")
+      ? await request.json() as { appTransId?: unknown; expectedAmount?: unknown }
+      : Object.fromEntries(await request.formData()) as { appTransId?: unknown; expectedAmount?: unknown };
     const appTransId = normalizeAppTransId(body.appTransId);
     const expectedAmount = Math.floor(Number(body.expectedAmount));
     const { config, payment, amount, zpTransId } = await verifiedPayment(appTransId);

@@ -54,6 +54,15 @@ export default async function ZaloPayRefundLookupPage({ searchParams }: Props) {
             <p><b>zp_trans_id:</b> {result.zp_trans_id || "Không có"}</p>
             <p><b>Mã phản hồi:</b> {result.return_code || 0}</p>
             <p><b>Thông báo:</b> {result.sub_return_message || result.return_message || "-"}</p>
+            {Number(result.return_code || 0) === 1 && Number(result.amount || 0) > 0 && (
+              <form method="post" action="/api/admin/zalopay/orphan-refund" className="pt-5">
+                <input type="hidden" name="appTransId" value={appTransId} />
+                <input type="hidden" name="expectedAmount" value={String(Math.floor(Number(result.amount)))} />
+                <button type="submit" className="border border-red-700 px-5 py-3 font-semibold text-red-700">
+                  Hoàn {Number(result.amount).toLocaleString("vi-VN")} đ qua ZaloPay
+                </button>
+              </form>
+            )}
           </div>
         )}
       </div>
