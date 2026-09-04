@@ -6,7 +6,8 @@ import { QueueHandler } from "@/lib/pancake/queue-handler";
 import { readIntegrationConfig } from "@/lib/integrations";
 import { jsonError } from "@/lib/api-errors";
 import { OrderService } from "@/lib/services/order-service";
-import { reconcileZaloPayPayment } from "@/lib/payment-confirmation";
+import { reconcileZaloPayPayment, reconcileZaloPayRefund } from "@/lib/payment-confirmation";
+import { refundZaloPayPayment, zaloPayRefundRequestId } from "@/lib/payment";
 import { carrierHasAcceptedCustomerOrder } from "@/lib/order-state";
 
 type Params = { params: Promise<{ code: string }> };
@@ -39,28 +40,6 @@ export async function POST(request: Request, { params }: Params) {
     if (!phoneKey(body.phone) || phoneKey(body.phone) !== phoneKey(order.customer.phone)) {
       return NextResponse.json({ error: "Số điện thoại không khớp với đơn hàng." }, { status: 403 });
     }
-    if (order.status === "cancelled" && order.pancakeStatus === "cancelled") {
-      let current = order;
-      if (current.inventoryReservationApplied && !current.inventoryReservationReleased) {
-        try {
-          current = await new InventoryService().releaseOrder(current);
-        } catch {
-          // Vẫn trả trạng thái hủy; lần bấm lại hoặc job đồng bộ sau sẽ tiếp tục thử trả kho.
-        }
-      }
-      if (order.paymentMethod === "zalopay" && !order.transactionId && order.refundStatus !== "not_required") {
-        const cleaned = await updateOrder(order.code, {
-          refundStatus: "not_required",
-          refundProvider: undefined,
-          refundId: undefined,
-          refundTransactionId: undefined,
-          refundAmount: undefined,
-          refundMessage: ""
-        });
-        return NextResponse.json({ ok: true, order: cleaned || current });
-      }
-      return NextResponse.json({ ok: true, order: current });
-    }
     const config = await readIntegrationConfig();
     let current = order;
     if (current.status === "pending" && current.paymentMethod === "zalopay") {
@@ -90,7 +69,7 @@ export async function POST(request: Request, { params }: Params) {
         refundStatus: "pending" as const,
         refundProvider: current.paymentMethod,
         refundAmount: current.total,
-        refundMessage: "Bạn đã hủy đơn thành công, vui lòng liên hệ Zalo 0866561480 để nhận được tiền hoàn trả của đơn hàng này."
+        refundMessage: "Đang gửi yêu cầu hoàn tiền qua ZaloPay. Liên hệ Zalo 0866561480 để được hỗ trợ thêm."
       } : {
         refundStatus: "not_required" as const,
         refundProvider: undefined,
@@ -147,11 +126,82 @@ export async function POST(request: Request, { params }: Params) {
         refundStatus: "pending",
         refundProvider: current.paymentMethod,
         refundAmount: current.total,
-        refundMessage: "Bạn đã hủy đơn thành công, vui lòng liên hệ Zalo 0866561480 để nhận được tiền hoàn trả của đơn hàng này."
+        refundMessage: "Đang gửi yêu cầu hoàn tiền qua ZaloPay. Liên hệ Zalo 0866561480 để được hỗ trợ thêm."
       }) || cancelled;
+    }
+    if (cancelled && wasPaid && current.paymentMethod === "zalopay") {
+      cancelled = await requestAutomaticZaloPayRefund(cancelled, config, reason);
     }
     return NextResponse.json({ ok: true, order: cancelled, pancakeCancellationPending });
   } catch (error) {
     return jsonError(error);
+  }
+}
+
+async function requestAutomaticZaloPayRefund(
+  order: NonNullable<Awaited<ReturnType<typeof findOrderByCode>>>,
+  config: Awaited<ReturnType<typeof readIntegrationConfig>>,
+  reason: string
+) {
+  if (order.refundStatus === "succeeded") return order;
+
+  // A saved request id means ZaloPay may already have received this refund.
+  // Query that request instead of creating a second refund.
+  if (order.refundTransactionId) {
+    try {
+      return await reconcileZaloPayRefund(order, config.payment);
+    } catch (error) {
+      return await updateOrder(order.code, {
+        refundStatus: "pending",
+        refundMessage: `${error instanceof Error ? error.message : "Chưa kiểm tra được kết quả hoàn tiền ZaloPay."} Liên hệ Zalo 0866561480 để được hỗ trợ thêm.`
+      }) || order;
+    }
+  }
+
+  const refundTransactionId = zaloPayRefundRequestId(order, config.payment);
+  let current = await updateOrder(order.code, {
+    refundStatus: "pending",
+    refundProvider: "zalopay",
+    refundTransactionId,
+    refundAmount: order.total,
+    refundMessage: "ZaloPay đang xử lý hoàn tiền. Liên hệ Zalo 0866561480 để được hỗ trợ thêm."
+  }) || { ...order, refundTransactionId };
+
+  try {
+    const result = await refundZaloPayPayment(current, config.payment, reason);
+    const returnCode = Number(result.return_code || 0);
+    const message = result.sub_return_message || result.return_message || "";
+    if (returnCode !== 1 && returnCode !== 3) {
+      return await updateOrder(order.code, {
+        refundStatus: "failed",
+        refundProvider: "zalopay",
+        refundId: result.refund_id ? String(result.refund_id) : undefined,
+        refundTransactionId: result.m_refund_id,
+        refundAmount: result.amount,
+        refundMessage: `${message || "ZaloPay chưa chấp nhận yêu cầu hoàn tiền."} Liên hệ Zalo 0866561480 để được hỗ trợ thêm.`
+      }) || current;
+    }
+
+    current = await updateOrder(order.code, {
+      refundStatus: "pending",
+      refundProvider: "zalopay",
+      refundId: result.refund_id ? String(result.refund_id) : undefined,
+      refundTransactionId: result.m_refund_id,
+      refundAmount: result.amount,
+      refundMessage: `${message || "ZaloPay đang xử lý hoàn tiền."} Liên hệ Zalo 0866561480 để được hỗ trợ thêm.`
+    }) || current;
+    try {
+      return await reconcileZaloPayRefund(current, config.payment);
+    } catch {
+      return current;
+    }
+  } catch (error) {
+    return await updateOrder(order.code, {
+      refundStatus: "failed",
+      refundProvider: "zalopay",
+      refundTransactionId,
+      refundAmount: order.total,
+      refundMessage: `${error instanceof Error ? error.message : "Không gửi được yêu cầu hoàn tiền ZaloPay."} Liên hệ Zalo 0866561480 để được hỗ trợ thêm.`
+    }) || current;
   }
 }

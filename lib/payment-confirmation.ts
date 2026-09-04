@@ -65,7 +65,7 @@ export async function reconcileZaloPayRefund(order: ShopOrder, paymentConfig: In
     if (Number(payment.refund_status || 0) === 1) {
       return await updateOrder(order.code, {
         refundStatus: "succeeded",
-        refundMessage: "ĐÃ HOÀN TIỀN",
+        refundMessage: "Đã hoàn tiền qua ZaloPay. Liên hệ Zalo 0866561480 để được hỗ trợ thêm.",
         refundedAt: new Date().toISOString()
       }) || order;
     }
@@ -73,32 +73,33 @@ export async function reconcileZaloPayRefund(order: ShopOrder, paymentConfig: In
     // Tiếp tục kiểm tra bằng mã hoàn tiền nếu truy vấn giao dịch gốc tạm thời chưa phản hồi.
   }
 
-  if (!order.refundId) return order;
-  const result = await queryZaloPayRefund(order.refundId, paymentConfig);
+  const refundRequestId = order.refundTransactionId || order.refundId;
+  if (!refundRequestId) return order;
+  const result = await queryZaloPayRefund(refundRequestId, paymentConfig);
   const refundStatus = Number(result.refund_status || 0);
   const returnCode = Number(result.return_code || 0);
   const processing = refundResponseIsProcessing(result);
   if (refundStatus === 1 || (refundStatus === 0 && returnCode === 1 && !processing)) {
     return await updateOrder(order.code, {
       refundStatus: "succeeded",
-      refundMessage: "ĐÃ HOÀN TIỀN",
+      refundMessage: "Đã hoàn tiền qua ZaloPay. Liên hệ Zalo 0866561480 để được hỗ trợ thêm.",
       refundedAt: new Date().toISOString()
     }) || order;
   }
   if (processing) {
     return await updateOrder(order.code, {
       refundStatus: "pending",
-      refundMessage: "ZaloPay đang xử lý hoàn tiền về tài khoản khách. Website sẽ tiếp tục tự động kiểm tra."
+      refundMessage: "ZaloPay đang xử lý hoàn tiền về tài khoản khách. Liên hệ Zalo 0866561480 để được hỗ trợ thêm."
     }) || order;
   }
   if (refundStatus === 2 || returnCode === 2) {
     return await updateOrder(order.code, {
       refundStatus: "failed",
-      refundMessage: result.sub_return_message || result.return_message || "ZaloPay báo hoàn tiền thất bại."
+      refundMessage: `${result.sub_return_message || result.return_message || "ZaloPay báo hoàn tiền thất bại."} Liên hệ Zalo 0866561480 để được hỗ trợ thêm.`
     }) || order;
   }
   return await updateOrder(order.code, {
     refundStatus: "pending",
-    refundMessage: "Đang chờ ZaloPay cập nhật kết quả hoàn tiền."
+    refundMessage: "Đang chờ ZaloPay cập nhật kết quả hoàn tiền. Liên hệ Zalo 0866561480 để được hỗ trợ thêm."
   }) || order;
 }

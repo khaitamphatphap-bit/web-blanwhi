@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import type { IntegrationConfig } from "@/lib/integrations";
 import { PaymentMethod, ShopOrder } from "@/lib/types";
+import { buildZaloPayRefundRequestId } from "@/lib/zalopay-refund-id";
 
 const vnpayVersion = "2.1.0";
 type PaymentConfig = IntegrationConfig["payment"];
@@ -265,6 +266,12 @@ function zaloPayAppTransIdForOrder(order: ShopOrder) {
   return `${zaloPayDatePrefix(date)}_${order.code}`;
 }
 
+export function zaloPayRefundRequestId(order: ShopOrder, paymentConfig?: PaymentConfig, date = new Date()) {
+  const { appId } = getZaloPayCredentials(paymentConfig);
+  if (!appId) throw new Error("Website chưa cấu hình App ID ZaloPay production để hoàn tiền.");
+  return buildZaloPayRefundRequestId(order, appId, date);
+}
+
 export async function queryZaloPayPayment(order: ShopOrder, paymentConfig?: PaymentConfig) {
   const { appId, key1 } = getZaloPayCredentials(paymentConfig);
   const appTransId = zaloPayAppTransIdForOrder(order);
@@ -324,8 +331,9 @@ export async function refundZaloPayPayment(order: ShopOrder, paymentConfig?: Pay
   if (!amount) throw new Error("Số tiền hoàn ZaloPay không hợp lệ.");
 
   const timestamp = Date.now();
-  const tail = `${Date.now().toString().slice(-8)}${Math.random().toString(36).slice(2, 6)}`.replace(/[^a-zA-Z0-9]/g, "").slice(0, 12);
-  const mRefundId = `${zaloPayDatePrefix()}_${appId}_${tail}`;
+  // A stable request id makes retries idempotent when the client retries a
+  // cancellation after ZaloPay accepted it but before our database update.
+  const mRefundId = zaloPayRefundRequestId(order, paymentConfig);
   const description = reason.slice(0, 100) || `Hoan tien don ${order.code}`;
   const data = `${appId}|${zpTransId}|${amount}|${description}|${timestamp}`;
   const body = new URLSearchParams({
