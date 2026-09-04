@@ -1,8 +1,18 @@
 import { readIntegrationConfig } from "@/lib/integrations";
+import { readKeyedJsonStore } from "@/lib/data-store";
 import { queryZaloPayPayment } from "@/lib/payment";
 import type { ShopOrder } from "@/lib/types";
 
 type Props = { searchParams: Promise<{ appTransId?: string }> };
+
+type RefundAudit = {
+  status?: string;
+  amount?: number;
+  mRefundId?: string;
+  refundId?: string;
+  message?: string;
+  updatedAt?: string;
+};
 
 export const dynamic = "force-dynamic";
 
@@ -30,11 +40,17 @@ function queryOrder(appTransId: string): ShopOrder {
 export default async function ZaloPayRefundLookupPage({ searchParams }: Props) {
   const appTransId = String((await searchParams).appTransId || "").trim();
   let result: Awaited<ReturnType<typeof queryZaloPayPayment>> | null = null;
+  let refund: RefundAudit | null = null;
   let error = "";
   if (appTransId) {
     try {
       const config = await readIntegrationConfig();
-      result = await queryZaloPayPayment(queryOrder(appTransId), config.payment);
+      const [payment, refunds] = await Promise.all([
+        queryZaloPayPayment(queryOrder(appTransId), config.payment),
+        readKeyedJsonStore<RefundAudit>("zalopay-orphan-refunds", {})
+      ]);
+      result = payment;
+      refund = refunds[appTransId] || null;
     } catch (cause) {
       error = cause instanceof Error ? cause.message : "Không tra cứu được giao dịch.";
     }
@@ -54,7 +70,14 @@ export default async function ZaloPayRefundLookupPage({ searchParams }: Props) {
             <p><b>zp_trans_id:</b> {result.zp_trans_id || "Không có"}</p>
             <p><b>Mã phản hồi:</b> {result.return_code || 0}</p>
             <p><b>Thông báo:</b> {result.sub_return_message || result.return_message || "-"}</p>
-            {Number(result.return_code || 0) === 1 && Number(result.amount || 0) > 0 && (
+            {refund && (
+              <div className="mt-5 border border-neutral-300 p-4">
+                <p><b>Hoàn tiền:</b> {refund.status || "-"}</p>
+                <p><b>Mã yêu cầu hoàn:</b> {refund.mRefundId || "-"}</p>
+                <p><b>Phản hồi:</b> {refund.message || "-"}</p>
+              </div>
+            )}
+            {!refund && Number(result.return_code || 0) === 1 && Number(result.amount || 0) > 0 && (
               <form method="post" action="/api/admin/zalopay/orphan-refund" className="pt-5">
                 <input type="hidden" name="appTransId" value={appTransId} />
                 <input type="hidden" name="expectedAmount" value={String(Math.floor(Number(result.amount)))} />
