@@ -232,6 +232,7 @@ export async function createZaloPayPayment(order: ShopOrder, request: Request, p
     item,
     description: `BLANWHI - thanh toan don hang ${order.code}`,
     bank_code: "",
+    expire_duration_seconds: "300",
     callback_url: `${baseUrl}/api/payments/zalopay-ipn`,
     mac: hmacSha256Hex(data, key1)
   });

@@ -1,6 +1,7 @@
 import { findOrderByCode, updateOrder, updateOrderStatus } from "@/lib/orders";
 import { POSSyncService } from "@/lib/services/pos-sync-service";
 import { queryZaloPayPayment, queryZaloPayRefund } from "@/lib/payment";
+import { InventoryService } from "@/lib/pancake/inventory-service";
 import type { IntegrationConfig } from "@/lib/integrations";
 import type { ShopOrder } from "@/lib/types";
 
@@ -12,7 +13,9 @@ export async function markVerifiedPayment(orderCode: string, payment: VerifiedPa
   if (current.status === "cancelled") throw new Error("Đơn hàng đã hủy nên không thể xác nhận thanh toán.");
   if (current.status === "paid") return current;
 
-  const updated = await updateOrderStatus(orderCode, "paid", payment);
+  const updated = current.paymentMethod === "zalopay" && current.inventoryReservationApplied
+    ? await new InventoryService().confirmReservedPayment(orderCode, payment)
+    : await updateOrderStatus(orderCode, "paid", payment);
   if (!updated) throw new Error("Không cập nhật được trạng thái thanh toán.");
   return updated;
 }

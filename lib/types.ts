@@ -153,6 +153,7 @@ export type ShopOrder = {
   };
   inventoryReservationApplied?: boolean;
   inventoryReservationReleased?: boolean;
+  inventoryReservationExpiresAt?: string;
   createdAt: string;
   updatedAt: string;
 };

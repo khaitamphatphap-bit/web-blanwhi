@@ -1,7 +1,7 @@
 import { after, NextResponse } from "next/server";
 import { jsonError } from "@/lib/api-errors";
 import { readIntegrationConfig } from "@/lib/integrations";
-import { createOrder, findOrderByCheckoutRequestId, newOrderCode, updateOrder } from "@/lib/orders";
+import { findOrderByCheckoutRequestId, newOrderCode, updateOrder } from "@/lib/orders";
 import { createMomoPayment, createVnpayUrl, createZaloPayPayment, fallbackPaymentUrl } from "@/lib/payment";
 import { CartItem, PaymentMethod, ShopOrder } from "@/lib/types";
 import { InventoryService } from "@/lib/pancake/inventory-service";
@@ -9,6 +9,7 @@ import { buildProductInventory } from "@/lib/product-inventory";
 import { readSiteContent, type SiteContent } from "@/lib/site-content";
 import { POSSyncService } from "@/lib/services/pos-sync-service";
 import { QueueHandler } from "@/lib/pancake/queue-handler";
+import { expireStaleZaloPayReservations, zaloPayReservationExpiresAt } from "@/lib/zalopay-reservation";
 
 type CheckoutPayload = {
   customerDeviceId?: string;
@@ -292,6 +293,9 @@ export async function POST(request: Request) {
       if (configError) return json({ error: configError }, { status: 400 });
     }
 
+    // Trả các lượt giữ ZaloPay đã hết hạn trước khi kiểm tra tồn cho khách mới.
+    await expireStaleZaloPayReservations(Date.now(), { limit: 4, queryTimeoutMs: 2500, syncPos: false }).catch(() => undefined);
+
     if (checkoutRequestId) {
       const existing = await findOrderByCheckoutRequestId(checkoutRequestId, customerDeviceId);
       if (existing) {
@@ -315,10 +319,11 @@ export async function POST(request: Request) {
         if (paymentMethod === "zalopay" && existing.status === "pending") {
           const zalopay = await createZaloPayPayment(existing, request, integrations!.payment);
           if (zalopay.order_url) {
-            const refreshed = await updateOrder(existing.code, {
+            const refreshed = await inventoryService.renewZaloPayReservation(existing.code, {
               paymentProviderOrderId: zalopay.app_trans_id,
-              providerMessage: "ZaloPay payment link recreated for idempotent checkout"
-            }) || existing;
+              providerMessage: "ZaloPay payment link recreated for idempotent checkout",
+              inventoryReservationExpiresAt: zaloPayReservationExpiresAt()
+            });
             return json({ order: refreshed, redirectUrl: zalopay.order_url, token: zalopay.zp_trans_token || zalopay.order_token, deduplicated: true });
           }
         }
@@ -400,10 +405,11 @@ export async function POST(request: Request) {
           error: zalopay.return_message || "ZaloPay chưa trả link thanh toán. Vui lòng kiểm tra App ID, Key 1, Key 2 production trong trang admin."
         }, { status: 400 });
       }
-      const saved = await createOrder({
+      const saved = await inventoryService.createReservedOrder({
         ...pendingZaloPayOrder,
         paymentProviderOrderId: zalopay.app_trans_id,
         providerMessage: "ZaloPay payment link created",
+        inventoryReservationExpiresAt: zaloPayReservationExpiresAt(),
         checkoutCompletedAt: now
       });
       return json({

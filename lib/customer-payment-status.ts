@@ -3,6 +3,7 @@ import { findOrderByCode, updateOrder } from "@/lib/orders";
 import { PancakeLogger } from "@/lib/pancake/logger";
 import { PancakeService } from "@/lib/pancake/pancake-service";
 import { queryZaloPayPayment } from "@/lib/payment";
+import { markVerifiedPayment } from "@/lib/payment-confirmation";
 import type { ShopOrder } from "@/lib/types";
 
 type RefreshOptions = {
@@ -117,17 +118,18 @@ async function verifyWithZaloPay(order: ShopOrder) {
     await PancakeLogger.write("error", "payment.customer.zalopay", `ZaloPay báo lệch tiền: ${result.amount || 0}/${order.total}.`, order.code);
     return order;
   }
-  return await updateOrder(order.code, {
-    status: "paid",
+  const paid = await markVerifiedPayment(order.code, {
     transactionId: String(result.zp_trans_id),
     paymentProviderOrderId: result.app_trans_id || order.paymentProviderOrderId,
-    providerMessage: "ZaloPay verified while customer viewed order",
+    providerMessage: "ZaloPay verified while customer viewed order"
+  });
+  return await updateOrder(order.code, {
     externalSync: {
-      ...order.externalSync,
+      ...paid.externalSync,
       payment: "ZaloPay xác nhận đã thanh toán khi khách xem đơn",
       lastSyncedAt: new Date().toISOString()
     }
-  }) || order;
+  }) || paid;
 }
 
 async function verifyWithPancakeReadOnly(order: ShopOrder) {
@@ -146,15 +148,16 @@ async function verifyWithPancakeReadOnly(order: ShopOrder) {
     await PancakeLogger.write("warning", "payment.customer.pancake", "Pancake chưa có trường thanh toán online đủ rõ để đổi website sang đã thanh toán.", order.code);
     return order;
   }
+  const paid = await markVerifiedPayment(order.code, {
+    providerMessage: "Pancake read-only confirmed prepaid ZaloPay order while customer viewed order"
+  });
   return await updateOrder(order.code, {
-    status: "paid",
-    providerMessage: "Pancake read-only confirmed prepaid ZaloPay order while customer viewed order",
     externalSync: {
-      ...order.externalSync,
+      ...paid.externalSync,
       payment: "Pancake xác nhận đơn ZaloPay đã thanh toán online",
       lastSyncedAt: new Date().toISOString()
     }
-  }) || order;
+  }) || paid;
 }
 
 export async function refreshCustomerVisiblePaymentStatus(order: ShopOrder, options: RefreshOptions = {}) {

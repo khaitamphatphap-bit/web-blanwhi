@@ -167,6 +167,71 @@ export class InventoryService {
     });
   }
 
+  async confirmReservedPayment(orderCode: string, payment: Partial<ShopOrder>) {
+    return withDataStoreLock("website-inventory", async () => {
+      const current = await findOrderByCode(orderCode);
+      if (!current) throw new Error("Không tìm thấy đơn hàng để xác nhận thanh toán.");
+      if (current.status === "cancelled") throw new Error("Đơn hàng đã hủy nên không thể xác nhận thanh toán.");
+      if (current.status === "paid") return current;
+      if (!current.inventoryReservationApplied || current.inventoryReservationReleased) {
+        throw new PancakeIntegrationError("Đơn ZaloPay không còn lượt giữ tồn kho hợp lệ.", "RESERVATION_EXPIRED", 409);
+      }
+      return await updateOrder(current.code, {
+        ...payment,
+        status: "paid"
+      }) || { ...current, ...payment, status: "paid" as const };
+    });
+  }
+
+  async renewZaloPayReservation(orderCode: string, patch: Partial<ShopOrder>) {
+    return withDataStoreLock("website-inventory", async () => {
+      const current = await findOrderByCode(orderCode);
+      const expiresAt = new Date(current?.inventoryReservationExpiresAt || "").getTime();
+      const active = current?.paymentMethod === "zalopay"
+        && current.status === "pending"
+        && current.inventoryReservationApplied
+        && !current.inventoryReservationReleased
+        && Number.isFinite(expiresAt)
+        && expiresAt > Date.now();
+      if (!current || !active) {
+        throw new PancakeIntegrationError("Lượt giữ hàng ZaloPay đã hết 5 phút. Vui lòng đặt lại.", "RESERVATION_EXPIRED", 409);
+      }
+      return await updateOrder(current.code, patch) || { ...current, ...patch };
+    });
+  }
+
+  async expireZaloPayReservation(orderCode: string, now = new Date()) {
+    return withDataStoreLock("website-inventory", async () => {
+      const current = await findOrderByCode(orderCode);
+      if (!current) return null;
+      const expiresAt = new Date(current.inventoryReservationExpiresAt || "").getTime();
+      const canExpire = current.paymentMethod === "zalopay"
+        && current.status === "pending"
+        && current.inventoryReservationApplied
+        && !current.inventoryReservationReleased
+        && Number.isFinite(expiresAt)
+        && expiresAt <= now.getTime();
+      if (!canExpire) return current;
+
+      await this.reserveUnlocked(current.items, "restore");
+      try {
+        return await updateOrder(current.code, {
+          status: "cancelled",
+          shippingStatus: "cancelled",
+          inventoryReservationReleased: true,
+          paymentExpiredAt: current.inventoryReservationExpiresAt,
+          cancellationReason: "Hết hạn thanh toán",
+          providerMessage: "Giao dịch ZaloPay hết hạn sau 5 phút",
+          refundStatus: "not_required",
+          refundMessage: ""
+        }) || { ...current, status: "cancelled" as const, inventoryReservationReleased: true };
+      } catch (error) {
+        await this.reserveUnlocked(current.items, "decrease");
+        throw error;
+      }
+    });
+  }
+
   async createReservedOrder(order: ShopOrder) {
     return withDataStoreLock("website-inventory", async () => {
       if (order.checkoutRequestId) {
