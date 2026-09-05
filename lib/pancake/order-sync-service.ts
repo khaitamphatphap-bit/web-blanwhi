@@ -592,8 +592,12 @@ export class OrderSyncService {
 
   async applyRemoteUpdate(payload: Record<string, unknown>, matchedOrder?: ShopOrder) {
     const code = value(payload, ["custom_id", "partner_order_id", "external_order_id", "order_code", "code"]).replace(/^BLANWHI:/i, "");
-    if (!code && !matchedOrder) throw new PancakeIntegrationError("Dữ liệu Pancake thiếu mã đơn website.", "REMOTE_ORDER_CODE_MISSING", 400);
-    const order = matchedOrder || await findOrderByCode(code);
+    let order = matchedOrder || (code ? await findOrderByCode(code) : null);
+    if (!order) {
+      const remoteId = externalId(payload).trim().toUpperCase();
+      if (remoteId) order = (await readOrders()).find((candidate) => pancakeOrderId(candidate).trim().toUpperCase() === remoteId) || null;
+    }
+    if (!order && !code) throw new PancakeIntegrationError("Dữ liệu Pancake thiếu mã đơn website hoặc Pancake Order ID.", "REMOTE_ORDER_CODE_MISSING", 400);
     if (!order) throw new PancakeIntegrationError(`Không tìm thấy đơn ${code}.`, "ORDER_NOT_FOUND", 404);
     const pancakeStatus = value(payload, ["status", "order_status", "state"]);
     const mapped = mapPancakeStatus(pancakeStatus);

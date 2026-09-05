@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { refreshCustomerVisiblePaymentStatuses } from "@/lib/customer-payment-status";
 import { readCustomerSessionFromCookieHeader } from "@/lib/customer-session";
 import { readOrders } from "@/lib/orders";
+import { refreshMissingPancakeTracking } from "@/lib/pancake/tracking-refresh";
 
 type CustomerIdentity = {
   phone?: string;
@@ -50,7 +51,13 @@ export async function POST(request: Request) {
     return identities.some((identity) => identity.phone === phone && identity.address === address);
   });
   const page = matched.slice(offset, offset + limit);
-  const refreshed = await refreshCustomerVisiblePaymentStatuses(page, { source: "Đơn hàng của tôi" });
+  const trackingRefreshed = await refreshMissingPancakeTracking(page, {
+    limit: 3,
+    minIntervalMs: 10_000,
+    timeoutMs: 3500,
+    source: "Đơn hàng của tôi"
+  });
+  const refreshed = await refreshCustomerVisiblePaymentStatuses(trackingRefreshed, { source: "Đơn hàng của tôi" });
 
   return NextResponse.json({
     orders: refreshed,

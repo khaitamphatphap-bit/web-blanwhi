@@ -4,6 +4,7 @@ type RequestOptions = {
   method?: "GET" | "POST" | "PUT" | "DELETE";
   query?: Record<string, string | number | undefined>;
   body?: unknown;
+  timeoutMs?: number;
 };
 
 export class ApiClient {
@@ -25,7 +26,8 @@ export class ApiClient {
       if (value !== undefined) url.searchParams.set(key, String(value));
     }
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000);
+    const timeoutMs = Math.max(1000, Math.min(15000, Math.floor(Number(options.timeoutMs) || 15000)));
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
     try {
       const response = await fetch(url, {
         method: options.method || "GET",

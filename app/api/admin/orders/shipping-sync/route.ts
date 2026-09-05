@@ -6,6 +6,7 @@ import { fetchShippingStatus } from "@/lib/shipping-providers";
 import { OrderService } from "@/lib/services/order-service";
 import { OrderSyncService } from "@/lib/pancake/order-sync-service";
 import { createJsonStoreBackup } from "@/lib/data-store";
+import { refreshMissingPancakeTracking } from "@/lib/pancake/tracking-refresh";
 
 const finalShippingStatuses = new Set(["delivered", "returning", "returned", "cancelled"]);
 
@@ -48,6 +49,17 @@ async function syncShippingOrders(request: Request) {
     try {
       const synced = await new OrderSyncService().pollStatuses({ detailLimit: fullSync ? 200 : 20 });
       results.push({ code: "pancake-pos", ok: true, status: "synced", received: synced.received, detailed: synced.detailed, detailErrors: synced.detailErrors, updated: synced.updated, posStatusesUpdated: synced.posStatusesUpdated, posStatusErrors: synced.posStatusErrors, message: `Đã nhận ${synced.received} đơn từ POS, đọc chi tiết ${synced.detailed} đơn, cập nhật ${synced.updated} đơn và tự chuyển ${synced.posStatusesUpdated} trạng thái POS.` });
+      const latestOrders = await readOrders();
+      const beforeTracking = new Map(latestOrders.map((order) => [order.code, order.trackingCode || ""]));
+      const trackingRefreshed = await refreshMissingPancakeTracking(latestOrders, {
+        force: true,
+        limit: fullSync ? 20 : 6,
+        timeoutMs: 6000,
+        rotate: true,
+        source: "Cron vận chuyển"
+      });
+      const trackingUpdated = trackingRefreshed.filter((order) => order.trackingCode && order.trackingCode !== beforeTracking.get(order.code)).length;
+      results.push({ code: "pancake-tracking", ok: true, status: "synced", updated: trackingUpdated, message: `Đã cập nhật ${trackingUpdated} mã vận đơn mới từ Pancake.` });
     } catch (error) {
       results.push({ code: "pancake-pos", ok: false, error: error instanceof Error ? error.message : "Không cập nhật được trạng thái Pancake POS." });
     }

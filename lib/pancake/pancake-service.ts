@@ -342,23 +342,27 @@ export class PancakeService {
     return combined;
   }
 
-  async tracking(systemId: string) {
+  async tracking(systemId: string, options: { timeoutMs?: number } = {}) {
     const id = Validator.required(systemId, "Pancake System ID");
     return this.client.request<Record<string, unknown>>(`/shops/${encodeURIComponent(this.shopId())}/orders/get_tracking_url`, {
       method: "POST",
-      body: { system_id: Number(id) || id }
+      body: { system_id: Number(id) || id },
+      timeoutMs: options.timeoutMs
     });
   }
 
-  async order(providerOrderId: string) {
+  async order(providerOrderId: string, options: { attempts?: number; timeoutMs?: number } = {}) {
     const id = Validator.required(providerOrderId, "Pancake Order ID");
     let lastError: unknown;
-    for (let attempt = 0; attempt < 2; attempt += 1) {
+    const attempts = Math.max(1, Math.min(2, Math.floor(Number(options.attempts) || 2)));
+    for (let attempt = 0; attempt < attempts; attempt += 1) {
       try {
-        return await this.client.request<Record<string, unknown>>(`/shops/${encodeURIComponent(this.shopId())}/orders/${encodeURIComponent(id)}`);
+        return await this.client.request<Record<string, unknown>>(`/shops/${encodeURIComponent(this.shopId())}/orders/${encodeURIComponent(id)}`, {
+          timeoutMs: options.timeoutMs
+        });
       } catch (error) {
         lastError = error;
-        if (!(error instanceof PancakeIntegrationError) || !error.retryable || attempt === 1) throw error;
+        if (!(error instanceof PancakeIntegrationError) || !error.retryable || attempt === attempts - 1) throw error;
         await new Promise((resolve) => setTimeout(resolve, 250));
       }
     }

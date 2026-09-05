@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { refreshCustomerVisiblePaymentStatuses } from "@/lib/customer-payment-status";
 import { readOrders } from "@/lib/orders";
+import { refreshMissingPancakeTracking } from "@/lib/pancake/tracking-refresh";
 
 const lookupWindows = new Map<string, { count: number; resetAt: number }>();
 
@@ -81,7 +82,13 @@ export async function POST(request: Request) {
     .filter((order) => orderPhoneKeys(order as unknown as Record<string, any>).includes(phone))
     .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime());
 
-  const orders = (await refreshCustomerVisiblePaymentStatuses(matchedOrders, { source: "Tra cứu đơn bằng số điện thoại" }))
+  const trackingRefreshed = await refreshMissingPancakeTracking(matchedOrders, {
+    limit: 3,
+    minIntervalMs: 10_000,
+    timeoutMs: 3500,
+    source: "Tra cứu đơn bằng số điện thoại"
+  });
+  const orders = (await refreshCustomerVisiblePaymentStatuses(trackingRefreshed, { source: "Tra cứu đơn bằng số điện thoại" }))
     .map((order) => ({
       ...order,
       customerDeviceId: undefined,
