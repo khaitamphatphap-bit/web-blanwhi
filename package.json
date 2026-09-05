@@ -8,7 +8,8 @@
     "check:data": "node scripts/check-data-integrity.mjs",
     "images:migrate-r2": "node scripts/migrate-images-to-r2.mjs",
     "db:import-json": "node scripts/import-json-to-db.mjs",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:soak": "node scripts/order-resilience-soak.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1089.0",

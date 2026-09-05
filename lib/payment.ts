@@ -14,6 +14,34 @@ function cleanSecret(value?: string) {
   return (value || "").trim();
 }
 
+async function fetchZaloPayJson<T>(url: string, init: RequestInit, operation: string, timeoutMs = 12_000): Promise<T> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, { ...init, signal: controller.signal });
+    const text = await response.text();
+    let result: T;
+    try {
+      result = JSON.parse(text || "{}") as T;
+    } catch {
+      throw new Error(`${operation} trả dữ liệu không hợp lệ. Vui lòng thử lại.`);
+    }
+    if (!response.ok) {
+      const message = (result as { return_message?: string; sub_return_message?: string }).sub_return_message
+        || (result as { return_message?: string }).return_message;
+      throw new Error(message || `${operation} trả lỗi HTTP ${response.status}. Vui lòng thử lại.`);
+    }
+    return result;
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error(`${operation} phản hồi quá thời gian. Vui lòng thử lại; hệ thống sẽ dùng mã giao dịch cũ để tránh tạo trùng đơn.`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 function formatVnpDate(date: Date) {
   const pad = (value: number) => String(value).padStart(2, "0");
   return [
@@ -237,12 +265,11 @@ export async function createZaloPayPayment(order: ShopOrder, request: Request, p
     mac: hmacSha256Hex(data, key1)
   });
 
-  const response = await fetch(endpoint, {
+  const result = await fetchZaloPayJson<{ order_url?: string; zp_trans_token?: string; order_token?: string; app_trans_id?: string; return_code?: number; return_message?: string; sub_return_message?: string; demo?: boolean }>(endpoint, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body
-  });
-  const result = await response.json() as { order_url?: string; zp_trans_token?: string; order_token?: string; app_trans_id?: string; return_code?: number; return_message?: string; sub_return_message?: string; demo?: boolean };
+  }, "ZaloPay tạo giao dịch");
   return { ...result, app_trans_id: result.app_trans_id || appTransId };
 }
 
@@ -280,16 +307,7 @@ export async function queryZaloPayPayment(order: ShopOrder, paymentConfig?: Paym
   if (!appTransId) throw new Error("Đơn ZaloPay này chưa có app_trans_id để kiểm tra giao dịch.");
 
   const data = `${appId}|${appTransId}|${key1}`;
-  const response = await fetch(zaloPayProductionEndpoint("query"), {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      app_id: appId,
-      app_trans_id: appTransId,
-      mac: hmacSha256Hex(data, key1)
-    })
-  });
-  const result = await response.json() as {
+  const result = await fetchZaloPayJson<{
     return_code?: number;
     return_message?: string;
     sub_return_code?: number;
@@ -299,10 +317,15 @@ export async function queryZaloPayPayment(order: ShopOrder, paymentConfig?: Paym
     zp_trans_id?: string | number;
     server_time?: number;
     refund_status?: number;
-  };
-  if (!response.ok) {
-    throw new Error(result.return_message || `ZaloPay query HTTP ${response.status}`);
-  }
+  }>(zaloPayProductionEndpoint("query"), {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      app_id: appId,
+      app_trans_id: appTransId,
+      mac: hmacSha256Hex(data, key1)
+    })
+  }, "ZaloPay kiểm tra giao dịch");
   return {
     ...result,
     app_trans_id: appTransId,
@@ -347,21 +370,17 @@ export async function refundZaloPayPayment(order: ShopOrder, paymentConfig?: Pay
     mac: hmacSha256Hex(data, key1)
   });
 
-  const response = await fetch(zaloPayProductionEndpoint("refund"), {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body
-  });
-  const result = await response.json() as {
+  const result = await fetchZaloPayJson<{
     return_code?: number;
     return_message?: string;
     sub_return_code?: number;
     sub_return_message?: string;
     refund_id?: string | number;
-  };
-  if (!response.ok) {
-    throw new Error(result.return_message || `ZaloPay refund HTTP ${response.status}`);
-  }
+  }>(zaloPayProductionEndpoint("refund"), {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body
+  }, "ZaloPay hoàn tiền");
   return {
     ...result,
     m_refund_id: mRefundId,
@@ -377,7 +396,13 @@ export async function queryZaloPayRefund(mRefundId: string, paymentConfig?: Paym
   if (!cleanSecret(mRefundId)) throw new Error("Thiếu mã yêu cầu hoàn tiền ZaloPay.");
   const timestamp = Date.now();
   const data = `${appId}|${mRefundId}|${timestamp}`;
-  const response = await fetch(zaloPayProductionEndpoint("query_refund"), {
+  return fetchZaloPayJson<{
+    return_code?: number;
+    return_message?: string;
+    sub_return_code?: number;
+    sub_return_message?: string;
+    refund_status?: number;
+  }>(zaloPayProductionEndpoint("query_refund"), {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
@@ -386,16 +411,7 @@ export async function queryZaloPayRefund(mRefundId: string, paymentConfig?: Paym
       timestamp: String(timestamp),
       mac: hmacSha256Hex(data, key1)
     })
-  });
-  const result = await response.json() as {
-    return_code?: number;
-    return_message?: string;
-    sub_return_code?: number;
-    sub_return_message?: string;
-    refund_status?: number;
-  };
-  if (!response.ok) throw new Error(result.return_message || `ZaloPay query refund HTTP ${response.status}`);
-  return result;
+  }, "ZaloPay kiểm tra hoàn tiền");
 }
 
 export function verifyZaloPayBody(body: Record<string, unknown>, paymentConfig?: PaymentConfig) {

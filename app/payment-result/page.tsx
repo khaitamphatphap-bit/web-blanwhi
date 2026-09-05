@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { readIntegrationConfig } from "@/lib/integrations";
 import { findOrderByCode } from "@/lib/orders";
-import { verifyVnpayParams, verifyZaloPayRedirectParams } from "@/lib/payment";
+import { verifyVnpayParams } from "@/lib/payment";
 import { markVerifiedPayment, reconcileZaloPayPayment, syncVerifiedOrderToPos } from "@/lib/payment-confirmation";
 import { money } from "@/lib/pricing";
 import { BankTransferConfirm } from "./BankTransferConfirm";
@@ -9,6 +9,7 @@ import { shortOrderCode } from "@/lib/order-code";
 import { DemoPaymentActions } from "./DemoPaymentActions";
 import { PaymentResultRecovery } from "./PaymentResultRecovery";
 import { CustomerOrderLink } from "./CustomerOrderLink";
+import type { ShopOrder } from "@/lib/types";
 
 type PageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -31,11 +32,6 @@ function toUrlSearchParams(params: Record<string, string | string[] | undefined>
   return searchParams;
 }
 
-function isSuccessfulZaloPayRedirect(params: Record<string, string | string[] | undefined>) {
-  const status = String(valueOf(params.status) || "").trim().toLowerCase();
-  return ["1", "success", "paid", "completed", "complete"].includes(status);
-}
-
 function isFailedZaloPayRedirect(params: Record<string, string | string[] | undefined>) {
   const status = String(valueOf(params.status) || "").trim().toLowerCase();
   const returnCode = String(valueOf(params.returncode) || valueOf(params.return_code) || "").trim().toLowerCase();
@@ -43,6 +39,17 @@ function isFailedZaloPayRedirect(params: Record<string, string | string[] | unde
   return ["0", "-1", "2", "failed", "fail", "cancelled", "canceled", "cancel"].includes(status)
     || ["0", "-1", "2", "failed", "fail", "cancelled", "canceled", "cancel"].includes(returnCode)
     || ["0", "-1", "2", "failed", "fail", "cancelled", "canceled", "cancel"].includes(resultCode);
+}
+
+async function reconcileReturnedZaloPayOrder(order: NonNullable<Awaited<ReturnType<typeof findOrderByCode>>>, appTransId: string) {
+  const integrations = await readIntegrationConfig();
+  let current: ShopOrder = { ...order, paymentProviderOrderId: appTransId || order.paymentProviderOrderId || order.providerOrderId };
+  for (let attempt = 0; attempt < 3 && current.status === "pending"; attempt += 1) {
+    current = await reconcileZaloPayPayment(current, integrations.payment).catch(() => current);
+    if (current.status === "paid") break;
+    if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 700 * (attempt + 1)));
+  }
+  return current;
 }
 
 export default async function PaymentResultPage({ searchParams }: PageProps) {
@@ -56,18 +63,10 @@ export default async function PaymentResultPage({ searchParams }: PageProps) {
   let order = orderCode ? await findOrderByCode(orderCode) : null;
 
   const isZaloPayRedirect = provider === "zalopay" || Boolean(valueOf(params.apptransid));
-  if (isZaloPayRedirect && order && order.status === "pending") {
-    const integrations = await readIntegrationConfig();
-    const hasSignedRedirect = Boolean(valueOf(params.checksum));
-    const redirectVerified = !hasSignedRedirect || verifyZaloPayRedirectParams(toUrlSearchParams(params), integrations.payment).ok;
-    if (redirectVerified && (isSuccessfulZaloPayRedirect(params) || !isFailedZaloPayRedirect(params))) {
-      order = await markVerifiedPayment(order.code, {
-        paymentProviderOrderId: zaloPayAppTransId || order.paymentProviderOrderId || order.providerOrderId,
-        providerMessage: "ZaloPay redirect payment success"
-      }).catch(() => order);
-    } else if (redirectVerified) {
-      order = await reconcileZaloPayPayment({ ...order, paymentProviderOrderId: zaloPayAppTransId || order.paymentProviderOrderId || order.providerOrderId }, integrations.payment).catch(() => order);
-    }
+  if (isZaloPayRedirect && order && order.status === "pending" && !isFailedZaloPayRedirect(params)) {
+    // Redirect chỉ là tín hiệu để hỏi lại ZaloPay. Chỉ API query/IPN có chữ ký
+    // mới được đổi đơn sang paid, tránh URL giả làm đơn được miễn COD trên POS.
+    order = await reconcileReturnedZaloPayOrder(order, zaloPayAppTransId);
   }
 
   if (provider === "vnpay" && order && order.status === "pending" && valueOf(params.vnp_ResponseCode)) {
