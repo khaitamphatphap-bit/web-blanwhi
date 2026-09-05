@@ -563,6 +563,21 @@ async function ensureDatabaseSchema() {
           primary key (namespace, item_key)
         )
       `);
+      await pool.query(`
+        create table if not exists blanwhi_ephemeral_store (
+          namespace text not null,
+          item_key text not null,
+          item_value jsonb not null,
+          client_updated_at bigint not null default 0,
+          updated_at timestamptz not null default now(),
+          expires_at timestamptz not null,
+          primary key (namespace, item_key)
+        )
+      `);
+      await pool.query(`
+        create index if not exists blanwhi_ephemeral_store_expiry_idx
+        on blanwhi_ephemeral_store (expires_at)
+      `);
     })();
     schemaReadyPromise = schemaRequest.catch((error) => {
       schemaReadyPromise = null;
@@ -1207,6 +1222,78 @@ export async function writeKeyedJsonRecords<T>(namespace: string, values: Record
   const current = await readJsonStore<Record<string, T>>(`${namespace}.json`, {});
   await writeJsonStore(`${namespace}.json`, { ...current, ...Object.fromEntries(entries) });
   return values;
+}
+
+export async function readEphemeralJsonRecord<T>(namespace: string, itemKey: string): Promise<T | null> {
+  if (hasDatabase()) {
+    await ensureDatabaseSchema();
+    const pool = await getPool();
+    if (!pool) return null;
+    const result = await pool.query(
+      `select item_value
+       from blanwhi_ephemeral_store
+       where namespace = $1 and item_key = $2 and expires_at > now()
+       limit 1`,
+      [namespace, itemKey]
+    );
+    return (result.rows[0]?.item_value as T | undefined) ?? null;
+  }
+  const records = await readJsonStore<Record<string, T>>(`${namespace}-ephemeral.json`, {});
+  return records[itemKey] ?? null;
+}
+
+export async function writeEphemeralJsonRecord<T>(
+  namespace: string,
+  itemKey: string,
+  value: T,
+  clientUpdatedAt: number,
+  ttlSeconds: number
+) {
+  const safeUpdatedAt = Math.max(0, Math.floor(clientUpdatedAt));
+  const safeTtlSeconds = Math.max(60, Math.min(60 * 60 * 24 * 90, Math.floor(ttlSeconds)));
+  if (hasDatabase()) {
+    await ensureDatabaseSchema();
+    const pool = await getPool();
+    if (!pool) throw new Error("Không kết nối được database lưu giỏ hàng.");
+    await retryDatabaseWrite(() => pool.query(
+      `insert into blanwhi_ephemeral_store
+         (namespace, item_key, item_value, client_updated_at, updated_at, expires_at)
+       values ($1, $2, $3::jsonb, $4, now(), now() + make_interval(secs => $5::integer))
+       on conflict (namespace, item_key)
+       do update set
+         item_value = excluded.item_value,
+         client_updated_at = excluded.client_updated_at,
+         updated_at = now(),
+         expires_at = excluded.expires_at
+       where excluded.client_updated_at >= blanwhi_ephemeral_store.client_updated_at`,
+      [namespace, itemKey, JSON.stringify(value), safeUpdatedAt, safeTtlSeconds]
+    ), 4);
+    // Dọn dữ liệu tạm hết hạn, không đụng tới bảng đơn hàng hoặc lịch sử đơn.
+    if (Math.random() < 0.02) {
+      void pool.query("delete from blanwhi_ephemeral_store where expires_at <= now()").catch(() => undefined);
+    }
+    return value;
+  }
+  return withDataStoreLock(`ephemeral:${namespace}`, async () => {
+    const records = await readJsonStore<Record<string, T>>(`${namespace}-ephemeral.json`, {});
+    await writeJsonStore(`${namespace}-ephemeral.json`, { ...records, [itemKey]: value });
+    return value;
+  });
+}
+
+export async function deleteEphemeralJsonRecord(namespace: string, itemKey: string) {
+  if (hasDatabase()) {
+    await ensureDatabaseSchema();
+    const pool = await getPool();
+    if (!pool) throw new Error("Không kết nối được database lưu giỏ hàng.");
+    await pool.query("delete from blanwhi_ephemeral_store where namespace = $1 and item_key = $2", [namespace, itemKey]);
+    return;
+  }
+  await withDataStoreLock(`ephemeral:${namespace}`, async () => {
+    const records = await readJsonStore<Record<string, unknown>>(`${namespace}-ephemeral.json`, {});
+    delete records[itemKey];
+    await writeJsonStore(`${namespace}-ephemeral.json`, records);
+  });
 }
 
 export async function readJsonStoreHistory<T>(filename: string, limit = 100): Promise<T[]> {

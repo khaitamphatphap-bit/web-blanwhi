@@ -2143,7 +2143,7 @@
         applySiteContent(initialSiteContent, { renderProducts: false });
       }
       renderProductSkeletons();
-      loadSiteContent();
+      const siteContentLoadPromise = loadSiteContent();
       const refreshContentWhenIdle = () => {
         if (document.visibilityState !== "visible") return;
         if (document.querySelector(".cart-drawer.open, .orders-drawer.open, .detail-modal.open, .variant-modal.open, .checkout-modal.open, .wholesale-modal.open")) return;
@@ -2222,6 +2222,242 @@
         }
       };
       const customerSessionReady = initializeCustomerSession();
+      const cartDraftStorageKey = "blanwhiCartDraftV1";
+      let cartDraftHydrated = false;
+      let cartDraftSaveTimer = 0;
+      let lastCartDraftSignature = "";
+
+      const compactCartDraftItem = (item, includeLocalOnly = false) => {
+        const compact = {
+          productId: String(item.id || item.productId || ""),
+          cartId: String(item.cartId || ""),
+          classificationId: String(item.classificationId || ""),
+          classificationName: String(item.classificationName || ""),
+          classificationIndex: Math.max(0, Math.floor(Number(item.classificationIndex) || 0)),
+          color: String(item.color || ""),
+          size: String(item.size || ""),
+          quantity: Math.max(1, Math.min(999, Math.floor(Number(item.qty) || 1))),
+          inventoryKey: String(item.inventoryKey || ""),
+          sku: String(item.sku || ""),
+          pancakeSku: String(item.pancakeSku || ""),
+          pancakeProductId: String(item.pancakeProductId || ""),
+          pancakeVariationId: String(item.pancakeVariationId || ""),
+          message: String(item.message || "").slice(0, 300),
+          wholesale: item.wholesale === true
+        };
+        if (includeLocalOnly && item.customDesign) {
+          compact.localCustomProduct = {
+            name: String(item.name || "Custom Company Tee"),
+            kind: String(item.kind || "tee"),
+            amount: Math.max(0, Number(item.amount) || 0),
+            price: String(item.price || ""),
+            designName: String(item.designName || ""),
+            customText: String(item.customText || ""),
+            customDesign: item.customDesign
+          };
+        }
+        return compact;
+      };
+
+      const createCartDraft = (includeLocalOnly = false, updatedAt = Date.now()) => ({
+        version: 1,
+        updatedAt,
+        items: cart.map((item) => compactCartDraftItem(item, includeLocalOnly)),
+        note: orderNote,
+        voucherCode: orderVoucherCode,
+        shippingMethod: selectedShippingMethod === "express" ? "express" : "fast"
+      });
+
+      const readLocalCartDraft = () => {
+        try {
+          const draft = JSON.parse(localStorage.getItem(cartDraftStorageKey) || "null");
+          const age = Date.now() - Number(draft?.updatedAt || 0);
+          if (draft?.version !== 1 || !Array.isArray(draft.items) || age > 30 * 24 * 60 * 60 * 1000) return null;
+          return draft;
+        } catch {
+          return null;
+        }
+      };
+
+      const writeLocalCartDraft = (updatedAt = Date.now()) => {
+        let draft = createCartDraft(true, updatedAt);
+        try {
+          localStorage.setItem(cartDraftStorageKey, JSON.stringify(draft));
+        } catch {
+          // Ảnh thiết kế tùy chỉnh có thể lớn; vẫn giữ chắc phần sản phẩm thông thường.
+          draft = createCartDraft(false, updatedAt);
+          try { localStorage.setItem(cartDraftStorageKey, JSON.stringify(draft)); } catch { /* Database vẫn giữ bản gọn. */ }
+        }
+        return draft;
+      };
+
+      const serverSafeCartDraft = (draft) => ({
+        version: 1,
+        updatedAt: Number(draft.updatedAt) || Date.now(),
+        items: (draft.items || []).filter((item) => !item.localCustomProduct).map((item) => ({
+          productId: item.productId,
+          cartId: item.cartId,
+          classificationId: item.classificationId,
+          classificationName: item.classificationName,
+          classificationIndex: item.classificationIndex,
+          color: item.color,
+          size: item.size,
+          quantity: item.quantity,
+          inventoryKey: item.inventoryKey,
+          sku: item.sku,
+          pancakeSku: item.pancakeSku,
+          pancakeProductId: item.pancakeProductId,
+          pancakeVariationId: item.pancakeVariationId,
+          message: item.message,
+          wholesale: item.wholesale === true
+        })),
+        note: draft.note || "",
+        voucherCode: draft.voucherCode || "",
+        shippingMethod: draft.shippingMethod === "express" ? "express" : "fast"
+      });
+
+      const cartDraftContentSignature = (draft) => JSON.stringify({
+        ...serverSafeCartDraft(draft),
+        updatedAt: 0
+      });
+
+      const sendCartDraftToServer = async (draft) => {
+        await customerSessionReady;
+        const controller = new AbortController();
+        const timeout = window.setTimeout(() => controller.abort(), 5000);
+        try {
+          await fetch("/api/customer/cart", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "same-origin",
+            cache: "no-store",
+            keepalive: true,
+            signal: controller.signal,
+            body: JSON.stringify({ draft: serverSafeCartDraft(draft) })
+          });
+        } catch {
+          // Bản local đã được ghi đồng bộ; lần thay đổi sau sẽ thử database lại.
+        } finally {
+          window.clearTimeout(timeout);
+        }
+      };
+
+      const scheduleCartDraftSave = () => {
+        if (!cartDraftHydrated) return;
+        const snapshot = createCartDraft(false);
+        const signature = cartDraftContentSignature(snapshot);
+        if (signature === lastCartDraftSignature) return;
+        lastCartDraftSignature = signature;
+        const draft = writeLocalCartDraft(snapshot.updatedAt);
+        window.clearTimeout(cartDraftSaveTimer);
+        cartDraftSaveTimer = window.setTimeout(() => void sendCartDraftToServer(draft), 650);
+      };
+
+      const restoreCartDraftItems = (draft) => {
+        const restored = (draft?.items || []).map((saved) => {
+          const product = productData.find((item) => item.id === saved.productId);
+          if (!product) {
+            if (!saved.localCustomProduct) return null;
+            return {
+              id: saved.productId,
+              cartId: saved.cartId,
+              color: saved.color,
+              size: saved.size,
+              qty: Math.max(1, Number(saved.quantity) || 1),
+              ...saved.localCustomProduct
+            };
+          }
+          const classificationIndexById = (product.classifications || []).findIndex((item) => item.id === saved.classificationId);
+          const classificationIndex = classificationIndexById >= 0
+            ? classificationIndexById
+            : Math.min(Math.max(0, Number(saved.classificationIndex) || 0), Math.max(0, (product.classifications || []).length - 1));
+          const classification = activeClassification(product, classificationIndex);
+          const colors = variantSwatches(product, classificationIndex);
+          const color = colors.includes(saved.color) ? saved.color : colors[0];
+          const sizes = Array.isArray(product.sizes) && product.sizes.length ? product.sizes : [saved.size || "M"];
+          const size = sizes.includes(saved.size) ? saved.size : sizes[0];
+          const row = inventoryRowFor(product, classification?.id || saved.classificationId || "", color, size);
+          const quantity = Math.max(1, Math.min(999, Number(saved.quantity) || 1));
+          const amount = saved.wholesale
+            ? Math.round(product.amount * (1 - wholesaleDiscount(quantity)) / 1000) * 1000
+            : product.amount;
+          return {
+            ...product,
+            cartId: saved.cartId || `${product.id}-${classification?.id || ""}-${color}-${size}`,
+            color,
+            size,
+            qty: quantity,
+            amount,
+            price: saved.wholesale ? `${formatMoney(amount)} sỉ` : product.price,
+            wholesale: saved.wholesale === true,
+            classificationId: classification?.id || saved.classificationId || "",
+            classificationName: classification?.name || saved.classificationName || "",
+            classificationIndex,
+            inventoryKey: row?.key || saved.inventoryKey || "",
+            sku: row?.sku || saved.sku || "",
+            pancakeSku: row?.pancakeSku || saved.pancakeSku || "",
+            pancakeProductId: row?.pancakeProductId || saved.pancakeProductId || "",
+            pancakeVariationId: row?.pancakeVariationId || saved.pancakeVariationId || "",
+            message: saved.message || product.message || ""
+          };
+        }).filter(Boolean);
+        cart.splice(0, cart.length, ...restored);
+        orderNote = String(draft?.note || "");
+        orderVoucherCode = String(draft?.voucherCode || "");
+        selectedVoucherCode = orderVoucherCode;
+        selectedShippingMethod = draft?.shippingMethod === "express" && expressShippingEnabled ? "express" : "fast";
+        cartNote.value = orderNote;
+        voucherCode.value = orderVoucherCode;
+        renderShippingMethod();
+        renderCart(false);
+      };
+
+      const restoreCartDraft = async () => {
+        await siteContentLoadPromise.catch(() => undefined);
+        let selectedDraft = readLocalCartDraft();
+        if (selectedDraft) restoreCartDraftItems(selectedDraft);
+        cartDraftHydrated = true;
+        try {
+          await customerSessionReady;
+          const response = await fetch("/api/customer/cart", { credentials: "same-origin", cache: "no-store" });
+          const result = await response.json();
+          const serverDraft = response.ok ? result.draft : null;
+          const latestLocalDraft = readLocalCartDraft();
+          selectedDraft = latestLocalDraft || selectedDraft;
+          if (serverDraft && Number(serverDraft.updatedAt || 0) > Number(latestLocalDraft?.updatedAt || 0)) {
+            selectedDraft = serverDraft;
+            restoreCartDraftItems(serverDraft);
+            writeLocalCartDraft(Number(serverDraft.updatedAt) || Date.now());
+          }
+        } catch {
+          // Bản local đã được khôi phục, không làm gián đoạn mua hàng.
+        }
+        lastCartDraftSignature = cartDraftContentSignature(selectedDraft || createCartDraft(false));
+      };
+
+      const clearCartDraftAfterCheckout = async () => {
+        window.clearTimeout(cartDraftSaveTimer);
+        const emptyDraft = {
+          version: 1,
+          updatedAt: Date.now(),
+          items: [],
+          note: "",
+          voucherCode: "",
+          shippingMethod: "fast"
+        };
+        try { localStorage.setItem(cartDraftStorageKey, JSON.stringify(emptyDraft)); } catch { /* Đơn đã lưu ở database. */ }
+        lastCartDraftSignature = cartDraftContentSignature(emptyDraft);
+        await Promise.race([
+          sendCartDraftToServer(emptyDraft),
+          new Promise((resolve) => window.setTimeout(resolve, 1800))
+        ]);
+      };
+
+      window.addEventListener("pagehide", () => {
+        if (!cartDraftHydrated) return;
+        const draft = writeLocalCartDraft();
+        void sendCartDraftToServer(draft);
+      });
       let checkoutSubmissionPending = false;
       let checkoutRequestState = { fingerprint: "", id: "" };
       const parseStoredOrders = (key) => {
@@ -3187,7 +3423,7 @@
         return `Với chiều cao ${height}cm và cân nặng ${weight}kg, size ${base} sẽ lên form gọn và sạch. Nếu cậu thích mặc rộng nhẹ thì ${relaxed} sẽ đẹp hơn nha. Mặc ${base} thì clean, mặc ${relaxed} thì thoải mái và street hơn.`;
       }
 
-      function renderCart() {
+      function renderCart(persistDraft = true) {
         document.getElementById("cartCount").textContent = cartCount();
         if (!cart.length) {
           cartItems.innerHTML = `<div class="empty">Giỏ hàng đang trống.</div>`;
@@ -3219,6 +3455,7 @@
           `).join("");
         }
         renderCartTotals();
+        if (persistDraft) scheduleCartDraftSave();
       }
 
       function renderCartTotals() {
@@ -4253,13 +4490,17 @@
             item.qty = Math.min(qty, stock === Infinity ? 999 : Math.max(1, stock));
             document.getElementById("cartCount").textContent = cartCount();
             renderCartTotals();
+            scheduleCartDraftSave();
           }
           return;
         }
         const messageField = event.target.closest("[data-cart-message]");
         if (!messageField) return;
         const item = cart.find((entry) => entry.cartId === messageField.dataset.cartMessage);
-        if (item) item.message = messageField.value;
+        if (item) {
+          item.message = messageField.value;
+          scheduleCartDraftSave();
+        }
       });
       cartItems.addEventListener("change", (event) => {
         const quantityField = event.target.closest("[data-cart-qty]");
@@ -4272,6 +4513,7 @@
       });
       cartNote.addEventListener("input", () => {
         orderNote = cartNote.value;
+        scheduleCartDraftSave();
       });
       document.getElementById("shippingTrigger").addEventListener("click", () => {
         shippingOptions.classList.toggle("open");
@@ -4283,10 +4525,12 @@
         selectedShippingMethod = option.dataset.shippingMethod;
         shippingOptions.classList.remove("open");
         renderShippingMethod();
+        scheduleCartDraftSave();
         if (selectedShippingMethod === "express") void captureExpressCoordinates().then(refreshExpressShippingQuote);
       });
       voucherCode.addEventListener("input", () => {
         orderVoucherCode = voucherCode.value.trim();
+        scheduleCartDraftSave();
       });
       document.getElementById("openVoucherPage").addEventListener("click", openVoucherPage);
       document.getElementById("closeVoucherPage").addEventListener("click", closeVoucherPage);
@@ -4298,6 +4542,7 @@
         voucherCode.value = selectedVoucherCode;
         renderVoucherPage();
         renderCartTotals();
+        scheduleCartDraftSave();
       });
 
       searchToggle.addEventListener("click", () => {
@@ -4953,6 +5198,7 @@
           });
           rememberCustomerIdentity(order.customer);
           saveOrders([order, ...loadOrders()]);
+          await clearCartDraftAfterCheckout();
           checkoutRequestState = { fingerprint: "", id: "" };
           cart.length = 0;
           orderNote = "";
@@ -4963,7 +5209,7 @@
           expressRecipientCoordinates = { latitude: "", longitude: "" };
           cartNote.value = "";
           voucherCode.value = "";
-          renderCart();
+          renderCart(false);
           checkoutModal.classList.remove("open");
           checkoutForm.reset();
           if (result.redirectUrl) {
@@ -5000,6 +5246,7 @@
       loadAvailablePaymentMethods();
       renderCart();
       renderShippingMethod();
+      void restoreCartDraft();
       syncCustomerOrderStatuses().then(renderOrders);
       const initialParams = new URLSearchParams(window.location.search);
       if (window.location.hash === "#orders" || initialParams.has("orderCode") || initialParams.get("orders") === "1") {
