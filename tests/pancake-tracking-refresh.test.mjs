@@ -55,6 +55,71 @@ test("20 lần mã xuất hiện chậm đều được đọc đúng và chỉ 
   }
 });
 
+test("mô phỏng 100 đơn từ lúc đặt đến khi trang khách nhận đủ mã vận đơn Pancake", async () => {
+  const customerPage = await readFile(new URL("../public/preview.html", import.meta.url), "utf8");
+  assert.match(customerPage, /<strong>\$\{order\.trackingCode \|\| "Đang cập nhật"\}<\/strong>/);
+
+  const database = new Map();
+  const expectedTrackingByOrder = new Map();
+  const carriers = ["SPX Express", "ViettelPost", "Giao Hàng Nhanh", "Giao Hàng Tiết Kiệm", "VNPost"];
+
+  for (let index = 1; index <= 100; index += 1) {
+    const orderCode = `BLW-TEST-${String(index).padStart(3, "0")}`;
+    database.set(orderCode, {
+      code: orderCode,
+      status: "pending",
+      paymentMethod: "cod",
+      shippingStatus: "not_created",
+      trackingCode: "",
+      total: 1_500_000 + index,
+      items: [{ name: `Sản phẩm test ${index}`, quantity: (index % 3) + 1 }]
+    });
+  }
+
+  // Giả lập Pancake cấp mã theo 10 đợt, mỗi đợt 10 đơn.
+  for (let batchStart = 1; batchStart <= 100; batchStart += 10) {
+    for (let index = batchStart; index < batchStart + 10; index += 1) {
+      const orderCode = `BLW-TEST-${String(index).padStart(3, "0")}`;
+      const carrierIndex = (index - 1) % carriers.length;
+      const serial = String(index).padStart(12, "0");
+      const trackingCode = [
+        `SPXVN${serial}`,
+        `VTP${serial}`,
+        `GHN${serial}`,
+        `GHTK${serial}`,
+        `VNPOST${serial}`
+      ][carrierIndex];
+      const payload = [
+        { data: { partner: { partner_name: "Shopee Express" }, shipment: { tracking_code: trackingCode } } },
+        { DATA: { partner_name: "Viettel Post", ORDER_NUMBER: trackingCode } },
+        { tracking_lookup: { carrier_name: "GHN", tracking_url: `https://tracking.example/?tracking_no=${trackingCode}` } },
+        { result: { shipping_partner: "GHTK", logistics: { waybill_code: trackingCode } } },
+        { data: { carrier_name: "VN Post", shipment: { label_id: trackingCode } } }
+      ][carrierIndex];
+      const current = database.get(orderCode);
+      const patch = buildTrackingOnlyPatch(current, extractPancakeTracking(payload));
+      assert.ok(patch, `${orderCode} phải nhận được bản vá mã vận đơn`);
+      database.set(orderCode, { ...current, ...patch });
+      expectedTrackingByOrder.set(orderCode, trackingCode);
+    }
+  }
+
+  const customerOrders = Array.from(database.values());
+  assert.equal(customerOrders.length, 100);
+  assert.equal(new Set(customerOrders.map((order) => order.code)).size, 100);
+  assert.equal(new Set(customerOrders.map((order) => order.trackingCode)).size, 100);
+  assert.equal(customerOrders.filter((order) => !order.trackingCode).length, 0);
+
+  for (const order of customerOrders) {
+    assert.equal(order.trackingCode, expectedTrackingByOrder.get(order.code), `${order.code} không được gắn nhầm mã`);
+    assert.equal(order.shippingStatus, "ready_to_ship");
+    assert.equal(order.shippingCarrier, carriers[(Number(order.code.slice(-3)) - 1) % carriers.length]);
+    assert.equal(order.status, "pending");
+    assert.equal(order.paymentMethod, "cod");
+    assert.equal(order.items.length, 1);
+  }
+});
+
 test("webhook, trang khách và cron đều nối vào đồng bộ tracking chuyên biệt", async () => {
   const webhook = await readFile(new URL("../app/api/webhooks/pancake/route.ts", import.meta.url), "utf8");
   const orders = await readFile(new URL("../app/api/orders/route.ts", import.meta.url), "utf8");
