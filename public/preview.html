@@ -412,6 +412,10 @@
       .order-lookup-form button, .order-lookup-reset { height: 42px; border: 1px solid #111; background: #111; color: #fff; padding: 0 14px; font-size: 11px; font-weight: 800; text-transform: uppercase; cursor: pointer; }
       .order-lookup-reset { margin-top: 8px; background: #fff; color: #111; }
       .order-lookup-message { min-height: 18px; margin: 8px 0 0; color: #777; font-size: 11px; line-height: 1.45; }
+      .order-share { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+      .order-share button { width: 100%; min-height: 42px; border: 1px solid #111; background: #fff; color: #111; padding: 8px 12px; font-size: 11px; font-weight: 800; text-transform: uppercase; cursor: pointer; }
+      .order-share-note, .order-share-message { margin: 7px 0 0; color: #777; font-size: 11px; line-height: 1.45; }
+      .order-share-message { color: #111; }
       .order-expired-note { display: block; margin-top: 6px; color: #999; font-size: 11px; font-weight: 500; text-transform: none; }
       .order-card { border: 1px solid var(--line); background: #fff; }
       .order-card-summary { min-height: 92px; padding: 14px 16px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; align-items: center; cursor: pointer; list-style: none; }
@@ -1007,6 +1011,11 @@
         </form>
         <button class="order-lookup-reset" id="orderLookupReset" type="button" hidden>Xem đơn trên thiết bị này</button>
         <p class="order-lookup-message" id="orderLookupMessage">Tên và địa chỉ trong kết quả sẽ được che để bảo vệ khách hàng.</p>
+        <div class="order-share">
+          <button id="copyCustomerOrdersLink" type="button">Sao chép link xem đơn</button>
+          <p class="order-share-note">(Nếu bạn cần xem đơn ở thiết bị khác hoặc trình duyệt khác)</p>
+          <p class="order-share-message" id="customerOrdersLinkMessage" role="status"></p>
+        </div>
       </div>
       <div class="order-list" id="orderList"></div>
     </aside>
@@ -2181,7 +2190,37 @@
         document.cookie = `${customerDeviceStorageKey}=${encodeURIComponent(deviceId)}; Max-Age=31536000; Path=/; SameSite=Lax`;
         return deviceId;
       };
-      const customerDeviceId = ensureCustomerDeviceId();
+      let customerDeviceId = ensureCustomerDeviceId();
+      let customerOrderClaimUrl = "";
+      const initializeCustomerSession = async () => {
+        const controller = new AbortController();
+        const timeout = window.setTimeout(() => controller.abort(), 5000);
+        try {
+          const response = await fetch("/api/customer/session", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "same-origin",
+            cache: "no-store",
+            signal: controller.signal,
+            body: JSON.stringify({ deviceId: customerDeviceId })
+          });
+          if (!response.ok) return customerDeviceId;
+          const result = await response.json();
+          const serverDeviceId = String(result.deviceId || "").trim();
+          if (serverDeviceId) {
+            customerDeviceId = serverDeviceId;
+            try { localStorage.setItem(customerDeviceStorageKey, customerDeviceId); } catch { /* Phiên HttpOnly vẫn giữ mã khách. */ }
+            document.cookie = `${customerDeviceStorageKey}=${encodeURIComponent(customerDeviceId)}; Max-Age=31536000; Path=/; SameSite=Lax`;
+          }
+          customerOrderClaimUrl = String(result.claimUrl || "");
+          return customerDeviceId;
+        } catch {
+          return customerDeviceId;
+        } finally {
+          window.clearTimeout(timeout);
+        }
+      };
+      const customerSessionReady = initializeCustomerSession();
       let checkoutSubmissionPending = false;
       let checkoutRequestState = { fingerprint: "", id: "" };
       const parseStoredOrders = (key) => {
@@ -3490,6 +3529,7 @@
 
       async function syncCustomerOrderStatuses() {
         if (cancellingOrderCodes.size) return loadOrders();
+        await customerSessionReady;
         let orders = loadOrders();
         const identities = loadCustomerIdentities();
         if (identities.length || customerDeviceId) {
@@ -4575,6 +4615,40 @@
       });
       cartButton.addEventListener("click", openCart);
       document.getElementById("ordersLink").addEventListener("click", openOrders);
+      document.getElementById("copyCustomerOrdersLink").addEventListener("click", async (event) => {
+        const button = event.currentTarget;
+        const message = document.getElementById("customerOrdersLinkMessage");
+        const originalLabel = button.textContent;
+        button.disabled = true;
+        button.textContent = "Đang tạo link...";
+        try {
+          await customerSessionReady;
+          if (!customerOrderClaimUrl) {
+            const response = await fetch("/api/customer/session", { method: "POST", credentials: "same-origin", cache: "no-store" });
+            const result = await response.json();
+            if (!response.ok || !result.claimUrl) throw new Error("Không tạo được link.");
+            customerOrderClaimUrl = result.claimUrl;
+          }
+          if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(customerOrderClaimUrl);
+          } else {
+            const input = document.createElement("textarea");
+            input.value = customerOrderClaimUrl;
+            input.style.position = "fixed";
+            input.style.opacity = "0";
+            document.body.appendChild(input);
+            input.select();
+            document.execCommand("copy");
+            input.remove();
+          }
+          message.textContent = "Đã sao chép link xem đơn.";
+        } catch {
+          message.textContent = "Chưa sao chép được. Vui lòng thử lại.";
+        } finally {
+          button.disabled = false;
+          button.textContent = originalLabel;
+        }
+      });
       orderLookupForm.addEventListener("submit", async (event) => {
         event.preventDefault();
         const phone = String(orderLookupPhone.value || "").replace(/\D/g, "");
@@ -4711,6 +4785,7 @@
         }
         if (checkoutSubmissionPending) return;
         checkoutSubmissionPending = true;
+        await customerSessionReady;
         const selectedPay = document.querySelector("input[name='pay']:checked")?.value || "cod";
         const paymentMethod = paymentMethodMap[selectedPay] || "cod";
         const submitButton = checkoutForm.querySelector("button[type='submit']");
@@ -4926,9 +5001,16 @@
       renderShippingMethod();
       syncCustomerOrderStatuses().then(renderOrders);
       const initialParams = new URLSearchParams(window.location.search);
-      if (window.location.hash === "#orders" || initialParams.has("orderCode")) {
+      if (window.location.hash === "#orders" || initialParams.has("orderCode") || initialParams.get("orders") === "1") {
         window.setTimeout(() => {
           openOrders();
+          if (initialParams.has("orders") || initialParams.has("claimError")) {
+            if (initialParams.get("claimError") === "1") document.getElementById("customerOrdersLinkMessage").textContent = "Link xem đơn không hợp lệ hoặc đã hết hạn.";
+            initialParams.delete("orders");
+            initialParams.delete("claimError");
+            const cleanQuery = initialParams.toString();
+            history.replaceState(null, "", `${window.location.pathname}${cleanQuery ? `?${cleanQuery}` : ""}#orders`);
+          }
         }, 350);
       }
       setInterval(() => {

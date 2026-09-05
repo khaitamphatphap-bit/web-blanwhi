@@ -8,6 +8,7 @@ import { BankTransferConfirm } from "./BankTransferConfirm";
 import { shortOrderCode } from "@/lib/order-code";
 import { DemoPaymentActions } from "./DemoPaymentActions";
 import { PaymentResultRecovery } from "./PaymentResultRecovery";
+import { CustomerOrderLink } from "./CustomerOrderLink";
 
 type PageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -125,6 +126,7 @@ export default async function PaymentResultPage({ searchParams }: PageProps) {
           </div>
         )}
         <PaymentResultRecovery orderCode={orderCode} shouldRecover={shouldRecoverMissingZaloPayOrder} />
+        {!fromAdmin && orderCode && <CustomerOrderLink />}
       </section>
       <div className="mt-8 flex flex-wrap gap-3">
         {fromAdmin ? (
