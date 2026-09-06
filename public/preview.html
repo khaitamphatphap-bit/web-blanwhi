@@ -2533,17 +2533,43 @@
         localStorage.setItem(orderStorageKey, JSON.stringify(remaining));
         localStorage.setItem(orderBackupStorageKey, JSON.stringify(remaining));
       };
-      const loadSavedAddresses = () => {
+      let serverSavedAddresses = [];
+      let customerAddressHydrationPromise = null;
+      let customerAddressesHydrated = false;
+      const normalizeSavedAddress = (customer) => ({
+        name: String(customer?.name || "").trim(),
+        phone: String(customer?.phone || "").replace(/\D/g, "").slice(0, 15),
+        province: String(customer?.province || "").trim(),
+        provinceId: String(customer?.provinceId || "").trim(),
+        district: String(customer?.district || "").trim(),
+        districtId: String(customer?.districtId || "").trim(),
+        ward: String(customer?.ward || "").trim(),
+        wardId: String(customer?.wardId || "").trim(),
+        house: String(customer?.house || "").trim(),
+        address: String(customer?.address || "").trim(),
+        updatedAt: Math.max(0, Number(customer?.updatedAt) || 0)
+      });
+      const savedAddressIdentity = (item) => `${String(item?.phone || "").replace(/\D/g, "")}|${String(item?.address || "").trim().toLocaleLowerCase("vi-VN")}`;
+      const readLocalSavedAddresses = () => {
         try {
           const saved = JSON.parse(localStorage.getItem("blanwhiSavedAddresses") || "[]");
+          return Array.isArray(saved) ? saved : [];
+        } catch {
+          return [];
+        }
+      };
+      const loadSavedAddresses = () => {
+        try {
           const orders = JSON.parse(localStorage.getItem("blanwhiOrders") || "[]");
-          const savedAddresses = Array.isArray(saved) ? saved : [];
+          const savedAddresses = readLocalSavedAddresses();
           const orderAddresses = Array.isArray(orders) ? orders.map((order) => order?.customer).filter(Boolean) : [];
           const seen = new Set();
-          return [...savedAddresses, ...orderAddresses]
+          return [...serverSavedAddresses, ...savedAddresses, ...orderAddresses]
             .filter((item) => item?.address)
+            .map(normalizeSavedAddress)
+            .sort((left, right) => right.updatedAt - left.updatedAt)
             .filter((item) => {
-              const key = [item.phone, item.address].map((value) => String(value || "").trim().toLowerCase()).join("|");
+              const key = savedAddressIdentity(item);
               if (seen.has(key)) return false;
               seen.add(key);
               return true;
@@ -2554,24 +2580,86 @@
         }
       };
       const saveCustomerAddress = (customer) => {
-        const normalized = {
-          name: String(customer.name || "").trim(),
-          phone: String(customer.phone || "").trim(),
-          province: String(customer.province || "").trim(),
-          provinceId: String(customer.provinceId || "").trim(),
-          district: String(customer.district || "").trim(),
-          districtId: String(customer.districtId || "").trim(),
-          ward: String(customer.ward || "").trim(),
-          wardId: String(customer.wardId || "").trim(),
-          house: String(customer.house || "").trim(),
-          address: String(customer.address || "").trim()
-        };
-        if (!normalized.address) return;
+        const normalized = normalizeSavedAddress({ ...customer, updatedAt: customer?.updatedAt || Date.now() });
+        if (normalized.phone.length < 10 || !normalized.address) return null;
         const previous = loadSavedAddresses().filter((item) =>
-          String(item.address || "").trim().toLowerCase() !== normalized.address.toLowerCase()
-          || String(item.phone || "").trim() !== normalized.phone
+          savedAddressIdentity(item) !== savedAddressIdentity(normalized)
         );
-        localStorage.setItem("blanwhiSavedAddresses", JSON.stringify([normalized, ...previous].slice(0, 5)));
+        const next = [normalized, ...previous].slice(0, 5);
+        try { localStorage.setItem("blanwhiSavedAddresses", JSON.stringify(next)); } catch { /* Database giữ bản dự phòng theo phiên khách. */ }
+        return normalized;
+      };
+      const sendCustomerAddressToServer = async (address) => {
+        if (!address) return;
+        await customerSessionReady;
+        const controller = new AbortController();
+        const timeout = window.setTimeout(() => controller.abort(), 5000);
+        try {
+          const response = await fetch("/api/customer/addresses", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "same-origin",
+            cache: "no-store",
+            keepalive: true,
+            signal: controller.signal,
+            body: JSON.stringify({ address })
+          });
+          if (!response.ok) return;
+          const result = await response.json();
+          if (Array.isArray(result.addresses)) serverSavedAddresses = result.addresses.map(normalizeSavedAddress);
+        } catch {
+          // Bản trên thiết bị đã được lưu; lần đặt hàng sau sẽ thử đồng bộ lại.
+        } finally {
+          window.clearTimeout(timeout);
+        }
+      };
+      const hydrateCustomerAddresses = () => {
+        if (customerAddressHydrationPromise) return customerAddressHydrationPromise;
+        customerAddressHydrationPromise = (async () => {
+          await customerSessionReady;
+          const controller = new AbortController();
+          const timeout = window.setTimeout(() => controller.abort(), 5000);
+          try {
+            const localAddresses = readLocalSavedAddresses().map((item, index) => normalizeSavedAddress({
+              ...item,
+              updatedAt: item?.updatedAt || Math.max(1, 5 - index)
+            }));
+            const response = await fetch("/api/customer/addresses", {
+              credentials: "same-origin",
+              cache: "no-store",
+              signal: controller.signal
+            });
+            if (!response.ok) return;
+            const result = await response.json();
+            if (!Array.isArray(result.addresses)) return;
+            serverSavedAddresses = result.addresses.map(normalizeSavedAddress);
+            customerAddressesHydrated = true;
+            const serverKeys = new Set(serverSavedAddresses.map(savedAddressIdentity));
+            const addressesToMigrate = localAddresses.filter((address) =>
+              address.phone.length >= 10 && address.address && !serverKeys.has(savedAddressIdentity(address))
+            );
+            const merged = loadSavedAddresses();
+            try { localStorage.setItem("blanwhiSavedAddresses", JSON.stringify(merged)); } catch { /* Cookie và database vẫn giữ phiên khách. */ }
+            if (addressesToMigrate.length) {
+              void (async () => {
+                for (const address of addressesToMigrate.slice(0, 5)) await sendCustomerAddressToServer(address);
+              })();
+            }
+            const checkoutIsUntouched = !checkoutName.value.trim()
+              && !checkoutPhone.value.trim()
+              && !checkoutAddress.value.trim()
+              && !checkoutProvince.value
+              && !checkoutDistrict.value
+              && !checkoutWard.value;
+            if (checkoutModal.classList.contains("open") && checkoutIsUntouched && merged.length) renderSavedAddresses();
+          } catch {
+            // Tiếp tục dùng địa chỉ đã lưu trên thiết bị khi mạng chậm.
+          } finally {
+            window.clearTimeout(timeout);
+            if (!customerAddressesHydrated) customerAddressHydrationPromise = null;
+          }
+        })();
+        return customerAddressHydrationPromise;
       };
       const geoCache = new Map();
       const selectedGeoName = (select) => select.selectedOptions[0]?.dataset.name || select.selectedOptions[0]?.textContent || "";
@@ -4021,6 +4109,10 @@
           openCart();
           return;
         }
+        await Promise.race([
+          hydrateCustomerAddresses(),
+          new Promise((resolve) => window.setTimeout(resolve, 900))
+        ]);
         renderSavedAddresses();
         if (checkoutProvince.options.length <= 1) void loadProvinces().catch((error) => alert(error.message));
         document.querySelector(".checkout-card").classList.add("quick-checkout");
@@ -5114,6 +5206,10 @@
           total: next.total,
           updatedAt: new Date().toLocaleString("vi-VN")
         };
+        if (saveCheckoutAddress.checked) {
+          const addressToRemember = saveCustomerAddress({ ...order.customer, house: checkoutAddress.value });
+          void sendCustomerAddressToServer(addressToRemember);
+        }
         const checkoutFingerprint = JSON.stringify({
           customerDeviceId,
           paymentMethod,
@@ -5192,10 +5288,10 @@
           order.rawStatus = result.order?.status || "pending";
           order.createdAt = result.order?.createdAt || order.createdAt || new Date().toISOString();
           order.status = selectedShippingMethod === "express" ? "Chờ tạo vận đơn" : paymentMethod === "cod" ? "Chờ vận chuyển" : result.order?.status === "pending" ? "Chờ thanh toán" : result.order?.status === "paid" ? "Đã thanh toán" : order.status;
-          if (saveCheckoutAddress.checked) saveCustomerAddress({
-            ...order.customer,
-            house: checkoutAddress.value
-          });
+          if (saveCheckoutAddress.checked) {
+            const savedAddress = saveCustomerAddress({ ...order.customer, house: checkoutAddress.value });
+            void sendCustomerAddressToServer(savedAddress);
+          }
           rememberCustomerIdentity(order.customer);
           saveOrders([order, ...loadOrders()]);
           await clearCartDraftAfterCheckout();
@@ -5244,6 +5340,7 @@
         placeOrderButton.disabled = !policyAgreement.checked;
       });
       loadAvailablePaymentMethods();
+      void hydrateCustomerAddresses();
       renderCart();
       renderShippingMethod();
       void restoreCartDraft();
