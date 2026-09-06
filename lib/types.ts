@@ -142,6 +142,9 @@ export type ShopOrder = {
   refundMessage?: string;
   refundedAt?: string;
   paymentExpiredAt?: string;
+  paymentLastCheckedAt?: string;
+  paymentVerificationAttempts?: number;
+  paymentVerificationStatus?: "pending" | "processing" | "verified" | "not_paid" | "unavailable";
   cancellationReason?: string;
   pancakeStatus?: "pending_confirmation" | "confirmed" | "packing" | "shipping" | "completed" | "cancelled" | "returned";
   externalSync?: {

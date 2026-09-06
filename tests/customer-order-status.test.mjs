@@ -8,8 +8,8 @@ const apiSource = await readFile(new URL("../app/api/orders/route.ts", import.me
 const customerPage = await readFile(new URL("../public/preview.html", import.meta.url), "utf8");
 
 test("refundStatus not_required không được biến đơn mới thành đơn hủy", () => {
-  assert.doesNotMatch(ordersSource, /Boolean\(normalizedOrder\.refundStatus\)/);
-  assert.match(ordersSource, /normalizedOrder\.pancakeStatus === "cancelled"/);
+  assert.doesNotMatch(ordersSource, /Boolean\(baseOrder\.refundStatus\)/);
+  assert.match(ordersSource, /baseOrder\.pancakeStatus === "cancelled"/);
 });
 
 test("API trạng thái luôn trả giá trị vận chuyển rõ ràng", () => {

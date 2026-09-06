@@ -4,6 +4,8 @@ type ReservationOrder = {
   inventoryReservationApplied?: boolean;
   inventoryReservationReleased?: boolean;
   inventoryReservationExpiresAt?: string;
+  cancellationReason?: string;
+  paymentExpiredAt?: string;
 };
 
 export const zaloPayReservationLifetimeMs = 5 * 60 * 1000;
@@ -20,4 +22,10 @@ export function isExpiredPendingZaloPayReservation(order: ReservationOrder, now 
     && order.inventoryReservationReleased !== true
     && Number.isFinite(expiresAt)
     && expiresAt <= now;
+}
+
+export function isLegacyAutoCancelledZaloPayOrder(order: ReservationOrder) {
+  return order.paymentMethod === "zalopay"
+    && order.status === "cancelled"
+    && order.cancellationReason === "Hết hạn thanh toán";
 }

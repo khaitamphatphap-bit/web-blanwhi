@@ -37,6 +37,9 @@ export function mergeOrderPatch(current: ShopOrder, patch: Partial<ShopOrder>, u
     externalSync: { ...current.externalSync, ...patch.externalSync },
     updatedAt
   };
+  if (current.status === "paid" && (patch.status === "pending" || patch.status === "failed")) {
+    updated.status = "paid";
+  }
   if (current.status === "cancelled") {
     updated = {
       ...updated,

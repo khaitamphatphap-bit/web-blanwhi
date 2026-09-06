@@ -4,7 +4,8 @@ import { ExceptionHandler } from "@/lib/pancake/exception-handler";
 import { InventoryService } from "@/lib/pancake/inventory-service";
 import { OrderSyncService } from "@/lib/pancake/order-sync-service";
 import { QueueHandler } from "@/lib/pancake/queue-handler";
-import { expireStaleZaloPayReservations } from "@/lib/zalopay-reservation";
+import { expireStaleZaloPayReservations, reconcilePendingZaloPayPayments } from "@/lib/zalopay-reservation";
+import { reconcileUnappliedZaloPayReceipts } from "@/lib/zalopay-payment-receipts";
 
 export async function GET(request: Request) {
   const auth = request.headers.get("authorization") || "";
@@ -13,9 +14,11 @@ export async function GET(request: Request) {
   if (secret && !isVercelCron && auth !== `Bearer ${secret}`) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
     const paymentReservations = await expireStaleZaloPayReservations();
+    const paymentReceipts = await reconcileUnappliedZaloPayReceipts();
+    const pendingPayments = await reconcilePendingZaloPayPayments();
     const cancelOnly = new URL(request.url).searchParams.get("cancelOnly") === "1";
     const cancellations = await new OrderSyncService().reconcileCancellations();
-    if (cancelOnly) return NextResponse.json({ ok: true, paymentReservations, cancellations });
+    if (cancelOnly) return NextResponse.json({ ok: true, paymentReservations, paymentReceipts, pendingPayments, cancellations });
     const inventory = await new InventoryService().sync();
     const orders = await new OrderSyncService().pollStatuses();
     const queue = await QueueHandler.process(async (job) => {
@@ -34,7 +37,7 @@ export async function GET(request: Request) {
         await new InventoryService().sync();
       }
     });
-    return NextResponse.json({ ok: true, paymentReservations, cancellations, inventory, orders, queue });
+    return NextResponse.json({ ok: true, paymentReservations, paymentReceipts, pendingPayments, cancellations, inventory, orders, queue });
   } catch (error) {
     const normalized = ExceptionHandler.normalize(error);
     return NextResponse.json({ error: normalized.message, code: normalized.code }, { status: normalized.status });

@@ -5,6 +5,7 @@ import { PancakeService } from "@/lib/pancake/pancake-service";
 import { queryZaloPayPayment } from "@/lib/payment";
 import { markVerifiedPayment } from "@/lib/payment-confirmation";
 import type { ShopOrder } from "@/lib/types";
+import { isLegacyAutoCancelledZaloPayOrder } from "@/lib/zalopay-reservation-policy";
 
 type RefreshOptions = {
   source?: string;
@@ -161,7 +162,8 @@ async function verifyWithPancakeReadOnly(order: ShopOrder) {
 }
 
 export async function refreshCustomerVisiblePaymentStatus(order: ShopOrder, options: RefreshOptions = {}) {
-  if (order.paymentMethod !== "zalopay" || order.status !== "pending") return order;
+  const needsVerification = order.status === "pending" || isLegacyAutoCancelledZaloPayOrder(order);
+  if (order.paymentMethod !== "zalopay" || !needsVerification) return order;
   let current = await verifyWithZaloPay(order).catch(async (error) => {
     await PancakeLogger.write("warning", "payment.customer.zalopay", error instanceof Error ? error.message : "Không kiểm tra được ZaloPay.", order.code);
     return order;

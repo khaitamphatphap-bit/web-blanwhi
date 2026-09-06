@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { readOrders } from "@/lib/orders";
 import { refreshMissingPancakeTracking } from "@/lib/pancake/tracking-refresh";
+import { refreshCustomerVisiblePaymentStatuses } from "@/lib/customer-payment-status";
 
 export async function GET(request: Request) {
   const orders = await readOrders();
@@ -13,10 +14,11 @@ export async function GET(request: Request) {
 
   if (codes.length) {
     const allowed = new Set(codes);
-    const requested = await refreshMissingPancakeTracking(
+    const trackingRefreshed = await refreshMissingPancakeTracking(
       orders.filter((order) => allowed.has(order.code)),
       { limit: 3, minIntervalMs: 10_000, timeoutMs: 3500, source: "Khách xem đơn" }
     );
+    const requested = await refreshCustomerVisiblePaymentStatuses(trackingRefreshed, { source: "Khách xem đơn bằng mã" });
     return NextResponse.json({
       orders: requested
         .map((order) => ({

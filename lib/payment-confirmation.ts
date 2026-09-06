@@ -4,18 +4,42 @@ import { queryZaloPayPayment, queryZaloPayRefund } from "@/lib/payment";
 import { InventoryService } from "@/lib/pancake/inventory-service";
 import type { IntegrationConfig } from "@/lib/integrations";
 import type { ShopOrder } from "@/lib/types";
+import { isLegacyAutoCancelledZaloPayOrder } from "@/lib/zalopay-reservation-policy";
 
 type VerifiedPayment = Partial<Pick<ShopOrder, "transactionId" | "providerOrderId" | "paymentProviderOrderId" | "providerMessage">>;
 
 export async function markVerifiedPayment(orderCode: string, payment: VerifiedPayment) {
   const current = await findOrderByCode(orderCode);
   if (!current) throw new Error("Không tìm thấy đơn hàng.");
-  if (current.status === "cancelled") throw new Error("Đơn hàng đã hủy nên không thể xác nhận thanh toán.");
   if (current.status === "paid") return current;
+  if (current.status === "cancelled" && !isLegacyAutoCancelledZaloPayOrder(current)) {
+    throw new Error("Đơn hàng đã được khách hoặc shop hủy nên không thể tự khôi phục thanh toán.");
+  }
+
+  if (isLegacyAutoCancelledZaloPayOrder(current)) {
+    const recovered = await updateOrderStatus(orderCode, "paid", {
+      ...payment,
+      shippingStatus: "not_created",
+      pancakeStatus: undefined,
+      trackingCode: "",
+      cancellationReason: undefined,
+      paymentExpiredAt: undefined,
+      refundStatus: "not_required",
+      refundMessage: "",
+      paymentVerificationStatus: "verified",
+      paymentLastCheckedAt: new Date().toISOString()
+    });
+    if (!recovered) throw new Error("Không khôi phục được đơn đã thanh toán.");
+    return recovered;
+  }
 
   const updated = current.paymentMethod === "zalopay" && current.inventoryReservationApplied
     ? await new InventoryService().confirmReservedPayment(orderCode, payment)
-    : await updateOrderStatus(orderCode, "paid", payment);
+    : await updateOrderStatus(orderCode, "paid", {
+      ...payment,
+      paymentVerificationStatus: "verified",
+      paymentLastCheckedAt: new Date().toISOString()
+    });
   if (!updated) throw new Error("Không cập nhật được trạng thái thanh toán.");
   return updated;
 }
@@ -37,7 +61,7 @@ export async function syncVerifiedOrderToPos(order: ShopOrder) {
 }
 
 export async function reconcileZaloPayPayment(order: ShopOrder, paymentConfig: IntegrationConfig["payment"], options: { syncPos?: boolean } = {}) {
-  if (order.paymentMethod !== "zalopay" || order.status !== "pending") return order;
+  if (order.paymentMethod !== "zalopay" || (order.status !== "pending" && !isLegacyAutoCancelledZaloPayOrder(order))) return order;
   const result = await queryZaloPayPayment(order, paymentConfig);
   if (Number(result.return_code) !== 1) return order;
   if (!result.zp_trans_id) throw new Error("ZaloPay xác nhận thành công nhưng thiếu mã giao dịch.");

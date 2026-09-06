@@ -89,3 +89,16 @@ test("giá đã chốt của đơn không đổi khi bản vá dùng giá sản 
   assert.equal(result.total, 1_030_000);
   assert.equal(result.pancakeStatus, "packing");
 });
+
+test("đơn đã thanh toán không bị bản đồng bộ cũ kéo lùi trạng thái", () => {
+  const paidOrder = {
+    ...cancelledOrder,
+    status: "paid",
+    shippingStatus: "not_created",
+    pancakeStatus: "confirmed",
+    cancellationReason: undefined
+  };
+  assert.equal(mergeOrderPatch(paidOrder, { status: "pending" }).status, "paid");
+  assert.equal(mergeOrderPatch(paidOrder, { status: "failed" }).status, "paid");
+  assert.equal(mergeOrderPatch(paidOrder, { status: "cancelled" }).status, "cancelled");
+});

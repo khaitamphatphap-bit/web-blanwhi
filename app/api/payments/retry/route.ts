@@ -5,6 +5,8 @@ import { findOrderByCode, updateOrder } from "@/lib/orders";
 import { createMomoPayment, createVnpayUrl, createZaloPayPayment, fallbackPaymentUrl } from "@/lib/payment";
 import type { PaymentMethod } from "@/lib/types";
 import { reconcileZaloPayPayment } from "@/lib/payment-confirmation";
+import { InventoryService } from "@/lib/pancake/inventory-service";
+import { zaloPayReservationExpiresAt } from "@/lib/zalopay-reservation";
 
 const payableMethods = new Set<PaymentMethod>(["zalopay"]);
 
@@ -51,18 +53,31 @@ export async function POST(request: Request) {
       });
     }
     if (order.paymentMethod === "zalopay") {
-      const zalopay = await createZaloPayPayment(order, request, integrations.payment, { retry: true });
-      if (!zalopay.order_url) {
-        return NextResponse.json({ error: zalopay.sub_return_message || zalopay.return_message || "ZaloPay chưa trả link thanh toán." }, { status: 400 });
+      const inventory = new InventoryService();
+      const needsReservation = Boolean(order.inventoryReservationApplied && order.inventoryReservationReleased);
+      if (needsReservation) order = await inventory.reserveOrder(order);
+      try {
+        const zalopay = await createZaloPayPayment(order, request, integrations.payment, { retry: true });
+        if (!zalopay.order_url) {
+          if (needsReservation) await inventory.releaseOrder(order);
+          return NextResponse.json({ error: zalopay.sub_return_message || zalopay.return_message || "ZaloPay chưa trả link thanh toán." }, { status: 400 });
+        }
+        await updateOrder(order.code, {
+          paymentProviderOrderId: zalopay.app_trans_id,
+          providerMessage: "ZaloPay payment link created",
+          inventoryReservationExpiresAt: zaloPayReservationExpiresAt(),
+          paymentVerificationStatus: "pending",
+          paymentVerificationAttempts: 0,
+          paymentLastCheckedAt: undefined
+        });
+        return NextResponse.json({
+          redirectUrl: zalopay.order_url,
+          token: zalopay.zp_trans_token || zalopay.order_token
+        });
+      } catch (error) {
+        if (needsReservation) await inventory.releaseOrder(order).catch(() => undefined);
+        throw error;
       }
-      await updateOrder(order.code, {
-        paymentProviderOrderId: zalopay.app_trans_id,
-        providerMessage: "ZaloPay payment link created"
-      });
-      return NextResponse.json({
-        redirectUrl: zalopay.order_url,
-        token: zalopay.zp_trans_token || zalopay.order_token
-      });
     }
 
     return NextResponse.json({ redirectUrl: fallbackPaymentUrl(order, order.paymentMethod, request) });

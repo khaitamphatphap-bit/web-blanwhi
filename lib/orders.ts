@@ -17,12 +17,12 @@ import {
 import { OrderStatus, PaymentMethod, ShopOrder } from "@/lib/types";
 import { shortOrderCode } from "@/lib/order-code";
 import { mergeOrderPatch } from "@/lib/order-state";
+import { isLegacyAutoCancelledZaloPayOrder } from "@/lib/zalopay-reservation-policy";
 
 const paymentMethods = new Set<PaymentMethod>(["cod", "bank_transfer", "vnpay", "onepay", "alepay", "momo", "zalopay"]);
 const deletedOrdersStore = "deleted-orders.json";
 const orderRecordsStore = "order-records";
 const deletedOrderRecordsStore = "deleted-order-records";
-export const unpaidOrderLifetimeMs = 24 * 60 * 60 * 1000;
 
 type DeletedOrderRecord = {
   code: string;
@@ -99,30 +99,25 @@ function compactOrders(orders: ShopOrder[], deletedKeys: Set<string>) {
 
 function normalizeOrder(order: ShopOrder): ShopOrder {
   const paymentMethod = normalizePaymentMethod(order.paymentMethod || order.paymentProvider);
-  const createdAt = new Date(order.createdAt).getTime();
-  const paymentDeadline = Number.isFinite(createdAt) ? createdAt + unpaidOrderLifetimeMs : Number.POSITIVE_INFINITY;
-  const paymentExpired = order.status === "pending"
-    && paymentMethod !== "cod"
-    && !order.transactionId
-    && Date.now() >= paymentDeadline;
-  const normalizedOrder: ShopOrder = paymentExpired ? {
-    ...order,
-    status: "cancelled",
-    shippingStatus: "cancelled",
+  const normalizedPayment = { ...order, paymentMethod };
+  const baseOrder: ShopOrder = isLegacyAutoCancelledZaloPayOrder(normalizedPayment) ? {
+    ...normalizedPayment,
+    status: "pending",
+    shippingStatus: "not_created",
+    pancakeStatus: undefined,
+    cancellationReason: undefined,
+    paymentExpiredAt: undefined,
     refundStatus: "not_required",
-    refundMessage: "",
-    paymentExpiredAt: order.paymentExpiredAt || new Date(paymentDeadline).toISOString(),
-    cancellationReason: "Hết hạn thanh toán",
-    updatedAt: order.paymentExpiredAt || new Date(paymentDeadline).toISOString()
-  } : order;
-  const cancellationRecorded = normalizedOrder.status === "cancelled"
-    || normalizedOrder.shippingStatus === "cancelled"
-    || normalizedOrder.pancakeStatus === "cancelled";
+    refundMessage: ""
+  } : normalizedPayment;
+  const cancellationRecorded = baseOrder.status === "cancelled"
+    || baseOrder.shippingStatus === "cancelled"
+    || baseOrder.pancakeStatus === "cancelled";
   return {
-    ...normalizedOrder,
-    status: cancellationRecorded ? "cancelled" : normalizedOrder.status,
+    ...baseOrder,
+    status: cancellationRecorded ? "cancelled" : baseOrder.status,
     paymentMethod,
-    paymentProvider: String(normalizedOrder.paymentProvider || paymentMethod).trim().toLowerCase()
+    paymentProvider: String(baseOrder.paymentProvider || paymentMethod).trim().toLowerCase()
   };
 }
 
@@ -258,7 +253,7 @@ export async function findOrderByCode(code: string) {
 export async function updateOrderStatus(
   code: string,
   status: OrderStatus,
-  patch: Partial<Pick<ShopOrder, "transactionId" | "providerOrderId" | "paymentProviderOrderId" | "providerMessage">> = {}
+  patch: Partial<ShopOrder> = {}
 ): Promise<ShopOrder | null> {
   return withDataStoreLock(`order-update:${orderRecordKey(code)}`, async () => {
     if (hasDatabase() && !(await readKeyedJsonStoreDatabaseStatus<ShopOrder>(orderRecordsStore)).ok) {
@@ -269,7 +264,8 @@ export async function updateOrderStatus(
     let updated: ShopOrder | null = null;
     const next = orders.map((order) => {
       if (orderRecordKey(order.code) !== orderRecordKey(code)) return order;
-      updated = { ...order, ...patch, status, updatedAt: new Date().toISOString() };
+      const nextStatus = order.status === "paid" && (status === "pending" || status === "failed") ? "paid" : status;
+      updated = { ...order, ...patch, status: nextStatus, updatedAt: new Date().toISOString() };
       return updated;
     });
     const updatedOrder = updated as ShopOrder | null;

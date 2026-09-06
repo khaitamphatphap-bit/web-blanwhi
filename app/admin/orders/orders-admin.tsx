@@ -746,6 +746,11 @@ export function OrdersAdmin({
                   <div className="text-xs uppercase text-neutral-500">Thanh toán</div>
                   <div className="mt-1 uppercase">{order.paymentMethod}</div>
                   <span className={`mt-2 inline-flex border px-2 py-1 text-xs uppercase ${paymentStatusClass(order.status, order.paymentMethod)}`}>{paymentLabel(order.status, order.paymentMethod)}</span>
+                  {order.paymentMethod === "zalopay" && order.status === "pending" && (
+                    <p className={`mt-2 text-xs ${order.paymentVerificationStatus === "unavailable" ? "font-semibold text-red-700" : "text-amber-700"}`}>
+                      {order.paymentVerificationStatus === "unavailable" ? "ZaloPay tạm chưa phản hồi, hệ thống sẽ tự kiểm tra lại" : "Đang tự đối soát ZaloPay"}
+                    </p>
+                  )}
                 </div>
                 <div className="flex flex-wrap gap-2 lg:justify-end">
                   <button onClick={() => setExpandedOrderCode(isOpen ? "" : order.code)} className="h-9 border border-black px-3 text-xs uppercase">{isOpen ? "Đóng" : "Chi tiết"}</button>
@@ -785,6 +790,9 @@ export function OrdersAdmin({
                       <p><b>Ship:</b> {order.shippingFeeLabel || money(order.shipping)}</p>
                       <p><b>Tổng:</b> {money(order.total)}</p>
                       <p><b>Mã giao dịch:</b> {order.transactionId || "Chưa có"}</p>
+                      {order.paymentMethod === "zalopay" && order.paymentLastCheckedAt && (
+                        <p><b>Kiểm tra ZaloPay gần nhất:</b> {new Date(order.paymentLastCheckedAt).toLocaleString("vi-VN")} · {order.paymentVerificationStatus || "pending"}</p>
+                      )}
                       {order.paymentMethod === "zalopay" && (
                         <div className="border border-neutral-200 bg-white p-3">
                           <p><b>Hoàn tiền ZaloPay:</b> {refundStatusLabel(order.refundStatus)}</p>
