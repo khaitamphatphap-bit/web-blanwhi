@@ -33,3 +33,33 @@ test("dịch vụ hoàn tiền gọi ZaloPay và admin có route thử lại", a
   assert.match(service, /refundZaloPayPayment\(current, config\.payment, reason\)/);
   assert.match(adminRoute, /requestAutomaticZaloPayRefund\(order, await readIntegrationConfig\(\)/);
 });
+
+test("hoàn giao dịch thất lạc được khóa theo app_trans_id và lưu trước khi gọi ZaloPay", async () => {
+  const route = await readFile(new URL("../app/api/admin/zalopay/orphan-refund/route.ts", import.meta.url), "utf8");
+  const lockIndex = route.indexOf("withDataStoreLock(`zalopay-orphan-refund:${appTransId}`");
+  const pendingIndex = route.indexOf("let refund: OrphanRefundAudit = await saveAudit");
+  const refundIndex = route.indexOf("const result = await refundZaloPayPayment");
+  assert.ok(lockIndex >= 0, "phải có khóa riêng theo giao dịch");
+  assert.ok(pendingIndex > lockIndex, "phải lưu trạng thái pending trong khóa");
+  assert.ok(refundIndex > pendingIndex, "phải lưu audit trước khi gọi ZaloPay");
+  assert.match(route, /if \(!hasDatabase\(\)\).*công cụ hoàn tiền/);
+  assert.match(route, /verifyConfirmationToken\(token, appTransId, zpTransId, amount, config\)/);
+});
+
+test("ZaloPay báo đã hoàn thì khóa hoàn trùng và chỉ cập nhật audit riêng", async () => {
+  const route = await readFile(new URL("../app/api/admin/zalopay/orphan-refund/route.ts", import.meta.url), "utf8");
+  assert.match(route, /if \(paymentRefundStatus === 1\)/);
+  assert.match(route, /status: "succeeded"/);
+  assert.match(route, /Hệ thống đã khóa hoàn lần nữa/);
+  assert.match(route, /queryZaloPayRefund\(audit\.mRefundId, config\.payment\)/);
+  assert.doesNotMatch(route, /updateOrder|schedulePosSync|QueueHandler|changePublishQuantity/);
+});
+
+test("giao diện admin bắt buộc tra cứu rồi xác nhận lần hai", async () => {
+  const page = await readFile(new URL("../app/admin/zalopay-refund/zalopay-refund-admin.tsx", import.meta.url), "utf8");
+  assert.match(page, /Tra cứu ZaloPay/);
+  assert.match(page, /Bạn có chắc chắn muốn hoàn toàn bộ/);
+  assert.match(page, /Đồng ý hoàn tiền/);
+  assert.match(page, /confirmationToken: lookup\.confirmationToken/);
+  assert.match(page, /refundable: false/);
+});

@@ -1,101 +1,26 @@
-import { readIntegrationConfig } from "@/lib/integrations";
-import { readKeyedJsonStore } from "@/lib/data-store";
-import { queryZaloPayPayment, queryZaloPayRefund } from "@/lib/payment";
-import type { ShopOrder } from "@/lib/types";
-
-type Props = { searchParams: Promise<{ appTransId?: string }> };
-
-type RefundAudit = {
-  status?: string;
-  amount?: number;
-  mRefundId?: string;
-  refundId?: string;
-  message?: string;
-  updatedAt?: string;
-};
+import Link from "next/link";
+import { ZaloPayRefundAdmin } from "./zalopay-refund-admin";
 
 export const dynamic = "force-dynamic";
 
-function queryOrder(appTransId: string): ShopOrder {
-  const now = new Date().toISOString();
-  const code = appTransId.includes("_") ? appTransId.slice(appTransId.indexOf("_") + 1) : appTransId;
-  return {
-    id: `zalopay-query-${appTransId}`,
-    code,
-    status: "pending",
-    paymentMethod: "zalopay",
-    paymentProvider: "zalopay",
-    paymentProviderOrderId: appTransId,
-    customer: { name: "Tra cứu ZaloPay", phone: "", address: "" },
-    items: [],
-    subtotal: 0,
-    discount: 0,
-    shipping: 0,
-    total: 0,
-    createdAt: now,
-    updatedAt: now
-  };
-}
-
-export default async function ZaloPayRefundLookupPage({ searchParams }: Props) {
-  const appTransId = String((await searchParams).appTransId || "").trim();
-  let result: Awaited<ReturnType<typeof queryZaloPayPayment>> | null = null;
-  let refund: RefundAudit | null = null;
-  let liveRefund: Awaited<ReturnType<typeof queryZaloPayRefund>> | null = null;
-  let error = "";
-  if (appTransId) {
-    try {
-      const config = await readIntegrationConfig();
-      const [payment, refunds] = await Promise.all([
-        queryZaloPayPayment(queryOrder(appTransId), config.payment),
-        readKeyedJsonStore<RefundAudit>("zalopay-orphan-refunds", {})
-      ]);
-      result = payment;
-      refund = refunds[appTransId] || null;
-      if (refund?.mRefundId) {
-        liveRefund = await queryZaloPayRefund(refund.mRefundId, config.payment).catch(() => null);
-      }
-    } catch (cause) {
-      error = cause instanceof Error ? cause.message : "Không tra cứu được giao dịch.";
-    }
-  }
-
+export default function ZaloPayRefundPage() {
   return (
-    <main className="mx-auto max-w-3xl px-6 py-12">
-      <p className="text-sm text-neutral-500">BLANWHI ADMIN</p>
-      <h1 className="mt-3 text-3xl font-semibold">Tra cứu giao dịch ZaloPay thất lạc</h1>
-      <div className="mt-8 border border-neutral-300 p-6">
-        <p><b>app_trans_id:</b> {appTransId || "Chưa nhập"}</p>
-        {error && <p className="mt-4 text-red-700"><b>Lỗi:</b> {error}</p>}
-        {result && (
-          <div className="mt-4 space-y-2">
-            <p><b>Trạng thái:</b> {Number(result.return_code || 0) === 1 ? "Đã thanh toán" : result.return_message || "Chưa xác nhận"}</p>
-            <p><b>Số tiền:</b> {Number(result.amount || 0).toLocaleString("vi-VN")} đ</p>
-            <p><b>zp_trans_id:</b> {result.zp_trans_id || "Không có"}</p>
-            <p><b>Mã phản hồi:</b> {result.return_code || 0}</p>
-            <p><b>Thông báo:</b> {result.sub_return_message || result.return_message || "-"}</p>
-            {refund && (
-              <div className="mt-5 border border-neutral-300 p-4">
-                <p><b>Hoàn tiền:</b> {refund.status || "-"}</p>
-                <p><b>Mã yêu cầu hoàn:</b> {refund.mRefundId || "-"}</p>
-                <p><b>Phản hồi:</b> {refund.message || "-"}</p>
-                {liveRefund && (
-                  <p><b>Kết quả ZaloPay mới nhất:</b> {Number(liveRefund.refund_status || 0) === 1 ? "Đã hoàn tiền" : liveRefund.sub_return_message || liveRefund.return_message || "Đang xử lý"}</p>
-                )}
-              </div>
-            )}
-            {!refund && Number(result.return_code || 0) === 1 && Number(result.amount || 0) > 0 && (
-              <form method="post" action="/api/admin/zalopay/orphan-refund" className="pt-5">
-                <input type="hidden" name="appTransId" value={appTransId} />
-                <input type="hidden" name="expectedAmount" value={String(Math.floor(Number(result.amount)))} />
-                <button type="submit" className="border border-red-700 px-5 py-3 font-semibold text-red-700">
-                  Hoàn {Number(result.amount).toLocaleString("vi-VN")} đ qua ZaloPay
-                </button>
-              </form>
-            )}
-          </div>
-        )}
-      </div>
+    <main className="mx-auto min-h-screen max-w-4xl bg-white px-6 py-10 md:my-12 md:px-10">
+      <header className="flex flex-wrap items-end justify-between gap-4 border-b border-neutral-200 pb-6">
+        <div>
+          <Link href="/admin/orders" className="text-xs uppercase text-neutral-500">BLANWHI ADMIN</Link>
+          <h1 className="mt-3 text-3xl font-medium">Hoàn tiền giao dịch ZaloPay thất lạc</h1>
+        </div>
+        <Link href="/admin/orders" className="h-10 border border-neutral-300 px-4 pt-2 text-xs uppercase">
+          Quản trị đơn hàng
+        </Link>
+      </header>
+
+      <p className="mt-6 max-w-3xl text-sm leading-6 text-neutral-600">
+        Chỉ sử dụng khi giao dịch đã thanh toán nhưng đơn bị thất lạc và khách không thể tự hủy.
+        Đơn khách tự hủy vẫn dùng cơ chế hoàn tiền tự động hiện tại.
+      </p>
+      <ZaloPayRefundAdmin />
     </main>
   );
 }

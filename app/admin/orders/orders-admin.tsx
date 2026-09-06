@@ -482,6 +482,7 @@ export function OrdersAdmin({
           <h1 className="mt-3 text-4xl font-medium">Quản trị đơn hàng</h1>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Link href="/admin/zalopay-refund" className="h-10 border border-neutral-300 px-4 pt-2 text-xs uppercase">Hoàn tiền ZaloPay thất lạc</Link>
           <Link href="/admin/site" className="h-10 border border-neutral-300 px-4 pt-2 text-xs uppercase">Admin website</Link>
           <button onClick={() => updateAllShipping()} disabled={busyCode === "all-shipping"} className="h-10 border border-black bg-black px-4 text-xs uppercase text-white disabled:opacity-50">Cập nhật tất cả VC</button>
           <button onClick={() => refreshOrders()} className="h-10 border border-black px-4 text-xs uppercase">Tải lại đơn</button>

@@ -402,6 +402,7 @@ export async function queryZaloPayRefund(mRefundId: string, paymentConfig?: Paym
     sub_return_code?: number;
     sub_return_message?: string;
     refund_status?: number;
+    refund_id?: string | number;
   }>(zaloPayProductionEndpoint("query_refund"), {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
