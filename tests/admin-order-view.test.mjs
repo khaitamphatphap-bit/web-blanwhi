@@ -46,12 +46,32 @@ test("admin khôi phục đúng bản chốt và thanh toán ZaloPay từ lịch
 
   assert.equal(view.adminPaymentStatus, "paid");
   assert.equal(adminPaymentLabel(view), "Đã thanh toán");
+  assert.equal(view.adminPaymentSource, "Lịch sử database đã xác minh");
   assert.equal(view.total, 707000);
   assert.equal(view.items[0].unitPrice, 677000);
   assert.equal(view.transactionId, "260901004609905");
   assert.equal(view.adminRecoveredFromHistory, true);
   assert.equal(view.adminNeedsReconciliation, true);
   assert.equal(JSON.stringify(current), before, "lớp admin không được sửa đơn gốc");
+});
+
+test("nguồn pending cũ không được che nguồn thanh toán đã xác minh trong lịch sử", () => {
+  const current = order();
+  const history = order({
+    status: "paid",
+    transactionId: "zp-history",
+    total: 707000,
+    createdAt: "2026-09-01T08:55:27.000Z",
+    updatedAt: "2026-09-01T09:00:00.000Z"
+  });
+  const view = buildAdminOrderView(current, [history], {
+    orderCode: current.code,
+    paymentStatus: "pending",
+    paymentSource: "ZaloPay chưa xác nhận",
+    updatedAt: "2026-09-07T00:00:00.000Z"
+  });
+  assert.equal(view.adminPaymentStatus, "paid");
+  assert.equal(view.adminPaymentSource, "Lịch sử database đã xác minh");
 });
 
 test("bản chốt admin đã lưu vẫn ổn định khi lịch sử gần nhất không còn chứa đơn", () => {

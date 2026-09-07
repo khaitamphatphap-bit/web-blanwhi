@@ -184,8 +184,14 @@ export function buildAdminOrderView(current: ShopOrder, histories: ShopOrder[] =
     .sort((left, right) => timestamp(right.updatedAt) - timestamp(left.updatedAt))[0] || null;
   const shippingStatus = strongestShippingStatus(base, histories, observation);
   const resolvedPaymentStatus = paymentStatus(base, paidEvidence, shippingStatus, observation);
-  const paymentSource = observation?.paymentSource
-    || (paidEvidence && paidEvidence !== current ? "Lịch sử database đã xác minh" : resolvedPaymentStatus === "cod_collected" ? "Pancake/ĐVVC đã giao thành công" : "Database hiện tại");
+  const inferredPaymentSource = paidEvidence && paidEvidence !== current
+    ? "Lịch sử database đã xác minh"
+    : resolvedPaymentStatus === "cod_collected"
+      ? "Pancake/ĐVVC đã giao thành công"
+      : "Database hiện tại";
+  const paymentSource = observation?.paymentStatus === resolvedPaymentStatus && observation.paymentSource
+    ? observation.paymentSource
+    : inferredPaymentSource;
   const trackingCode = text(observation?.trackingCode) || text(base.trackingCode) || text(canonical?.trackingCode);
   const pancakeStatus = observation?.pancakeStatus || base.pancakeStatus || canonical?.pancakeStatus;
   const pancakeOrderId = text(observation?.pancakeOrderId) || text(base.pancakeOrderId) || text(canonical?.pancakeOrderId);
