@@ -388,7 +388,9 @@ export async function POST(request: Request) {
       shippingBaseFee,
       shippingDiscount,
       shippingMethod: payload.shipping?.method || "Giao tiêu chuẩn",
-      shippingFeeLabel: payload.shipping?.feeLabel,
+      shippingFeeLabel: isExpressShipping
+        ? payload.shipping?.feeLabel
+        : `${new Intl.NumberFormat("vi-VN").format(totals.shipping)}đ`,
       shippingCarrier: payload.shipping?.type === "express" ? "" : "SPX Express",
       trackingCode: "",
       shippingStatus: payload.shipping?.type === "express" ? "awaiting_creation" : "not_created",
@@ -396,7 +398,9 @@ export async function POST(request: Request) {
       deliveryType: payload.shipping?.type || "standard",
       deliveryProvider: payload.shipping?.provider,
       deliveryQuotationId: payload.shipping?.quotationId,
-      deliveryFeeEstimated: payload.shipping?.estimatedFee ?? totals.shipping,
+      deliveryFeeEstimated: isExpressShipping
+        ? payload.shipping?.estimatedFee ?? totals.shipping
+        : totals.shipping,
       total: totals.total,
       createdAt: now,
       updatedAt: now
