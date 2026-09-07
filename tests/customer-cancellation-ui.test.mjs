@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import vm from "node:vm";
 import { carrierHasAcceptedCustomerOrder } from "../lib/order-state.ts";
+import { buildTrackingOnlyPatch, extractPancakeTracking } from "../lib/pancake/tracking.ts";
 
 const customerPage = await readFile(new URL("../public/preview.html", import.meta.url), "utf8");
 const cancellationApi = await readFile(new URL("../app/api/orders/[code]/cancel/route.ts", import.meta.url), "utf8");
@@ -23,10 +24,22 @@ function extractFunction(source, name) {
 const lockedSource = extractFunction(customerPage, "customerCancellationLocked");
 const canCancelSource = extractFunction(customerPage, "canCustomerCancel");
 const mergeSource = extractFunction(customerPage, "mergeCustomerOrderFromServer");
+const statusSource = extractFunction(customerPage, "customerOrderStatus");
 const cancelSource = extractFunction(customerPage, "cancelCustomerOrder");
-const context = { customerOrderStep: () => 0 };
+const context = {
+  customerOrderStep: () => 0,
+  customerShippingLabels: {
+    not_created: "Đơn mới đặt",
+    ready_to_ship: "Đã giao cho đơn vị vận chuyển",
+    shipping: "Đang giao hàng",
+    delivered: "Đã giao hàng cho khách",
+    cancelled: "Đơn hủy",
+    unknown: "Đang cập nhật"
+  },
+  customerPancakeLabels: { packing: "Đóng gói", shipping: "Đang giao" }
+};
 vm.createContext(context);
-vm.runInContext(`${lockedSource}; ${canCancelSource}; ${mergeSource}; this.locked = customerCancellationLocked; this.canCancel = canCustomerCancel; this.merge = mergeCustomerOrderFromServer;`, context);
+vm.runInContext(`${lockedSource}; ${canCancelSource}; ${mergeSource}; ${statusSource}; this.locked = customerCancellationLocked; this.canCancel = canCustomerCancel; this.merge = mergeCustomerOrderFromServer; this.customerStatus = customerOrderStatus;`, context);
 
 test("đơn có mã vận đơn hiện nút hủy bị khóa và lời hướng dẫn", () => {
   assert.match(customerPage, /order-cancel order-cancel-locked[^>]*disabled>Hủy đơn<\/button>/);
@@ -128,4 +141,87 @@ test("mô phỏng 1000 lần hủy thành công: chỉ phản hồi server cance
     assert.equal(confirmed.shippingStatus, "cancelled");
     assert.equal(context.canCancel(confirmed), false);
   }
+});
+
+test("flow 1000 đơn: Pancake cấp mã, trang khách thấy đúng mã và khóa hủy trước khi gửi API", () => {
+  assert.match(customerPage, /<strong>\$\{order\.trackingCode \|\| "Đang cập nhật"\}<\/strong>/);
+  const seenTrackingCodes = new Set();
+
+  for (let index = 1; index <= 1000; index += 1) {
+    const serial = String(index).padStart(12, "0");
+    const variants = [
+      {
+        trackingCode: `SPXVN${serial}`,
+        carrier: "SPX Express",
+        payload: { data: { partner: { partner_name: "Shopee Express" }, shipment: { tracking_code: `SPXVN${serial}` } } }
+      },
+      {
+        trackingCode: `VTP${serial}`,
+        carrier: "ViettelPost",
+        payload: { DATA: { partner_name: "Viettel Post", ORDER_NUMBER: `VTP${serial}` } }
+      },
+      {
+        trackingCode: `GHN${serial}`,
+        carrier: "Giao Hàng Nhanh",
+        payload: { tracking_lookup: { carrier_name: "GHN", tracking_url: `https://tracking.example/?tracking_no=GHN${serial}` } }
+      },
+      {
+        trackingCode: `GHTK${serial}`,
+        carrier: "Giao Hàng Tiết Kiệm",
+        payload: { result: { shipping_partner: "GHTK", logistics: { waybill_code: `GHTK${serial}` } } }
+      },
+      {
+        trackingCode: `VNPOST${serial}`,
+        carrier: "VNPost",
+        payload: { data: { carrier_name: "VN Post", shipment: { label_id: `VNPOST${serial}` } } }
+      }
+    ];
+    const variant = variants[(index - 1) % variants.length];
+    const localOrder = {
+      code: `BLW-FLOW-${String(index).padStart(4, "0")}`,
+      rawStatus: "pending",
+      status: "Chờ vận chuyển",
+      paymentMethod: "cod",
+      trackingCode: "",
+      shippingStatus: "not_created",
+      pancakeStatus: "packing",
+      updatedAt: "2026-09-07T00:00:00.000Z"
+    };
+
+    assert.equal(context.canCancel(localOrder), true, `${localOrder.code} được phép hủy trước khi bàn giao`);
+    for (let delayedAttempt = 0; delayedAttempt < index % 4; delayedAttempt += 1) {
+      assert.equal(buildTrackingOnlyPatch(localOrder, extractPancakeTracking({ data: { system_id: `${index}-${delayedAttempt}` } })), null);
+    }
+
+    const trackingPatch = buildTrackingOnlyPatch(localOrder, extractPancakeTracking(variant.payload));
+    assert.ok(trackingPatch, `${localOrder.code} phải nhận được mã Pancake`);
+    const databaseOrder = { ...localOrder, ...trackingPatch };
+    const customerOrder = context.merge({
+      code: databaseOrder.code,
+      status: "pending",
+      paymentMethod: "cod",
+      trackingCode: databaseOrder.trackingCode,
+      shippingCarrier: databaseOrder.shippingCarrier,
+      shippingStatus: databaseOrder.shippingStatus,
+      shippingMessage: databaseOrder.shippingMessage,
+      pancakeStatus: databaseOrder.pancakeStatus,
+      updatedAt: "2026-09-07T00:01:00.000Z"
+    }, localOrder);
+
+    assert.equal(customerOrder.trackingCode, variant.trackingCode, `${localOrder.code} hiển thị đúng mã`);
+    assert.equal(customerOrder.shippingCarrier, variant.carrier, `${localOrder.code} hiển thị đúng đơn vị vận chuyển`);
+    assert.equal(context.customerStatus(customerOrder), "Đã giao cho đơn vị vận chuyển");
+    assert.equal(carrierHasAcceptedCustomerOrder(customerOrder), true, `${localOrder.code} bị server chặn hủy`);
+    assert.equal(context.locked(customerOrder), true, `${localOrder.code} hiện nút hủy khóa`);
+    assert.equal(context.canCancel(customerOrder), false, `${localOrder.code} không được gọi API hủy`);
+
+    let cancellationRequests = 0;
+    if (context.canCancel(customerOrder)) cancellationRequests += 1;
+    assert.equal(cancellationRequests, 0, `${localOrder.code} không phát sinh hủy giả`);
+    assert.equal(customerOrder.rawStatus, "pending");
+    assert.notEqual(customerOrder.status, "Đơn hủy");
+    seenTrackingCodes.add(customerOrder.trackingCode);
+  }
+
+  assert.equal(seenTrackingCodes.size, 1000, "đủ 1000 đơn nhận mã riêng, không gắn nhầm hoặc mất mã");
 });
