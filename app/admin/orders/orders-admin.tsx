@@ -6,7 +6,10 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import type { IntegrationConfig, ShippingProvider } from "@/lib/integrations";
 import { money } from "@/lib/pricing";
 import type { PaymentOrphan } from "@/lib/payment-orphans";
-import type { OrderStatus, ShippingStatus, ShopOrder } from "@/lib/types";
+import { adminPaymentLabel, paginateAdminOrders, type AdminShopOrder } from "@/lib/admin-order-view";
+import type { ShippingStatus, ShopOrder } from "@/lib/types";
+
+const adminPageSize = 50;
 
 type OrderStage =
   | "new"
@@ -156,13 +159,13 @@ export function OrdersAdmin({
   initialIntegrations,
   deliveryConfig
 }: {
-  initialOrders: ShopOrder[];
+  initialOrders: AdminShopOrder[];
   initialPaymentOrphans: PaymentOrphan[];
   initialIntegrations: IntegrationConfig;
   deliveryConfig: { provider: "ahamove" | "lalamove"; configured: boolean; senderReady: boolean };
 }) {
   const [orders, setOrders] = useState(initialOrders);
-  const [paymentOrphans] = useState(initialPaymentOrphans);
+  const [paymentOrphans, setPaymentOrphans] = useState(initialPaymentOrphans);
   const [integrations, setIntegrations] = useState(initialIntegrations);
   const [message, setMessage] = useState("");
   const [busyCode, setBusyCode] = useState("");
@@ -173,10 +176,13 @@ export function OrdersAdmin({
   const [orderSearch, setOrderSearch] = useState("");
   const [selectedOrderCodes, setSelectedOrderCodes] = useState<string[]>([]);
   const [expandedOrderCode, setExpandedOrderCode] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   const [storageHealth, setStorageHealth] = useState<StorageHealthReport | null>(null);
   const [storageHealthBusy, setStorageHealthBusy] = useState(false);
   const orderListRef = useRef<HTMLElement | null>(null);
   const shippingSyncInFlight = useRef(false);
+  const adminReconciliationInFlight = useRef(false);
+  const ordersRef = useRef(orders);
   const filteredOrders = useMemo(() => {
     const search = normalizeSearch(orderSearch);
     return orders.filter((order) => {
@@ -186,31 +192,74 @@ export function OrdersAdmin({
         order.code,
         shortOrderCode(order.code),
         order.customer.name,
-        order.customer.phone
+        order.customer.phone,
+        order.customer.address,
+        order.trackingCode,
+        order.pancakeOrderId,
+        order.transactionId,
+        order.items.map((item) => `${item.name} ${item.sku || ""} ${item.color} ${item.size}`).join(" ")
       ].join(" ")).includes(search);
     });
   }, [orders, stageFilter, orderSearch]);
   const sortedOrders = useMemo(() => [...filteredOrders].sort((left, right) => {
     return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
   }), [filteredOrders]);
+  const paginatedOrders = useMemo(() => paginateAdminOrders(sortedOrders, currentPage, adminPageSize), [sortedOrders, currentPage]);
+  const visibleOrders = paginatedOrders.items;
   const totals = useMemo(() => ({
-    revenue: orders.filter((order) => order.status === "paid").reduce((sum, order) => sum + order.total, 0)
+    revenue: orders
+      .filter((order) => order.adminPaymentStatus === "paid" || order.adminPaymentStatus === "cod_collected")
+      .reduce((sum, order) => sum + order.adminPaymentAmount, 0)
   }), [orders]);
-  const selectedVisibleCount = sortedOrders.filter((order) => selectedOrderCodes.includes(order.code)).length;
-  const allVisibleSelected = sortedOrders.length > 0 && selectedVisibleCount === sortedOrders.length;
+  const selectedVisibleCount = visibleOrders.filter((order) => selectedOrderCodes.includes(order.code)).length;
+  const allVisibleSelected = visibleOrders.length > 0 && selectedVisibleCount === visibleOrders.length;
   const storageLevel = storageHealthLevel(storageHealth);
 
   async function refreshOrders({ silent = false }: { silent?: boolean } = {}) {
     if (silent) setIsBackgroundRefreshing(true);
     try {
-      const response = await fetch("/api/orders", { cache: "no-store" });
-      const data = await response.json();
-      const nextOrders = data.orders || [];
+      const response = await fetch("/api/admin/orders", { cache: "no-store" });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !Array.isArray(data.orders)) throw new Error(data.error || "Không tải được danh sách đơn quản trị.");
+      const nextOrders = data.orders as AdminShopOrder[];
       setOrders(nextOrders);
-      setSelectedOrderCodes((current) => current.filter((code) => nextOrders.some((order: ShopOrder) => order.code === code)));
+      ordersRef.current = nextOrders;
+      if (Array.isArray(data.paymentOrphans)) setPaymentOrphans(data.paymentOrphans);
+      setSelectedOrderCodes((current) => current.filter((code) => nextOrders.some((order) => order.code === code)));
       if (silent) setLastBackgroundRefresh(new Date());
+    } catch (error) {
+      if (!silent) setMessage(error instanceof Error ? error.message : "Không tải được danh sách đơn quản trị.");
     } finally {
       if (silent) setIsBackgroundRefreshing(false);
+    }
+  }
+
+  async function reconcileAdminData() {
+    if (adminReconciliationInFlight.current) return;
+    const candidates = ordersRef.current
+      .filter((order) => order.adminNeedsReconciliation)
+      .sort((left, right) => new Date(left.adminReconciledAt || 0).getTime() - new Date(right.adminReconciledAt || 0).getTime())
+      .slice(0, 12);
+    if (!candidates.length) return;
+    adminReconciliationInFlight.current = true;
+    try {
+      const response = await fetch("/api/admin/orders/reconcile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ codes: candidates.map((order) => order.code) })
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !Array.isArray(data.orders)) throw new Error(data.error || "Không đối soát được dữ liệu quản trị.");
+      const updates = new Map<string, AdminShopOrder>(data.orders.map((order: AdminShopOrder) => [order.code, order]));
+      setOrders((current) => {
+        const next = current.map((order) => updates.get(order.code) || order);
+        ordersRef.current = next;
+        return next;
+      });
+    } catch (error) {
+      setAutoSyncText(`Tự động đối soát quản trị: ${error instanceof Error ? error.message : "tạm thời chưa thực hiện được"}`);
+    } finally {
+      adminReconciliationInFlight.current = false;
     }
   }
 
@@ -257,6 +306,7 @@ export function OrdersAdmin({
 
   function selectStage(stage: OrderStage | "all") {
     setStageFilter(stage);
+    setCurrentPage(1);
     setExpandedOrderCode("");
     window.requestAnimationFrame(() => {
       orderListRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -268,7 +318,7 @@ export function OrdersAdmin({
   }
 
   function toggleVisibleSelection() {
-    const visibleCodes = sortedOrders.map((order) => order.code);
+    const visibleCodes = visibleOrders.map((order) => order.code);
     setSelectedOrderCodes((current) => {
       if (allVisibleSelected) return current.filter((code) => !visibleCodes.includes(code));
       return Array.from(new Set([...current, ...visibleCodes]));
@@ -388,7 +438,7 @@ export function OrdersAdmin({
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Không hủy được đơn.");
-      setOrders((current) => current.map((item) => item.code === order.code ? data.order : item));
+      await refreshOrders();
       setMessage(`Đã hủy đơn ${shortOrderCode(order.code)}.`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Không hủy được đơn.");
@@ -405,7 +455,7 @@ export function OrdersAdmin({
       const response = await fetch(`/api/admin/orders/${encodeURIComponent(order.code)}/refund`, { method: "POST" });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Không gửi được yêu cầu hoàn tiền ZaloPay.");
-      setOrders((current) => current.map((item) => item.code === order.code ? data.order : item));
+      await refreshOrders();
       setMessage(`Đã gửi yêu cầu hoàn tiền ZaloPay cho đơn ${shortOrderCode(order.code)}.`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Không gửi được yêu cầu hoàn tiền ZaloPay.");
@@ -431,7 +481,7 @@ export function OrdersAdmin({
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Không xóa được đơn.");
-      setOrders(data.orders || []);
+      await refreshOrders();
       setSelectedOrderCodes((current) => current.filter((code) => !uniqueCodes.includes(code)));
       if (uniqueCodes.includes(expandedOrderCode)) setExpandedOrderCode("");
       setMessage(`Đã xóa ${data.deletedCount || uniqueCodes.length} đơn khỏi trang admin.`);
@@ -443,18 +493,32 @@ export function OrdersAdmin({
   }
 
   useEffect(() => {
+    ordersRef.current = orders;
+  }, [orders]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [orderSearch]);
+
+  useEffect(() => {
     updateAllShipping(true, true).catch(() => undefined);
+    reconcileAdminData().catch(() => undefined);
     const refreshTimer = window.setInterval(() => {
       if (document.visibilityState === "hidden") return;
       refreshOrders({ silent: true }).catch(() => undefined);
-    }, 10000);
+    }, 30000);
     const shippingTimer = window.setInterval(() => {
       if (document.visibilityState === "hidden") return;
       updateAllShipping(true).catch(() => undefined);
-    }, 15000);
+    }, 60000);
+    const reconciliationTimer = window.setInterval(() => {
+      if (document.visibilityState === "hidden") return;
+      reconcileAdminData().catch(() => undefined);
+    }, 30000);
     return () => {
       window.clearInterval(refreshTimer);
       window.clearInterval(shippingTimer);
+      window.clearInterval(reconciliationTimer);
     };
   }, []);
 
@@ -524,7 +588,7 @@ export function OrdersAdmin({
         </section>
       )}
       <p className="mt-4 border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
-        {autoSyncText}. Dữ liệu đơn được cập nhật nền mỗi 10 giây, không reload trang, không tự cuộn và không đóng đơn đang mở.
+        {autoSyncText}. Dữ liệu quản trị được tải lại mỗi 30 giây và đối soát nền; trang không reload, không tự cuộn và không đóng đơn đang mở.
         {lastBackgroundRefresh && <span> Lần cập nhật gần nhất: {lastBackgroundRefresh.toLocaleTimeString("vi-VN")}.</span>}
         {isBackgroundRefreshing && <span> Đang kiểm tra dữ liệu mới...</span>}
       </p>
@@ -594,7 +658,7 @@ export function OrdersAdmin({
         <input
           value={orderSearch}
           onChange={(event) => setOrderSearch(event.target.value)}
-          placeholder="Tìm theo tên khách hoặc mã đơn"
+          placeholder="Tìm mã đơn, tên, SĐT, địa chỉ, sản phẩm, mã vận đơn hoặc giao dịch"
           className="h-10 min-w-72 flex-1 border border-neutral-300 px-3 text-sm"
         />
         {stageFilter !== "all" && (
@@ -717,10 +781,10 @@ export function OrdersAdmin({
       </form>
 
       <section ref={orderListRef} className="mt-8 scroll-mt-6 space-y-3">
-        {sortedOrders.map((order) => {
+        {visibleOrders.map((order) => {
           const isOpen = expandedOrderCode === order.code;
           return (
-            <article key={order.id} className="border border-neutral-200 bg-white">
+            <article key={order.code} className="border border-neutral-200 bg-white">
               <div className="grid gap-4 p-4 lg:grid-cols-[1.15fr_1fr_1fr_.8fr_auto] lg:items-center">
                 <div>
                   <label className="mb-2 flex items-center gap-2 text-xs uppercase text-neutral-500">
@@ -745,12 +809,9 @@ export function OrdersAdmin({
                 <div>
                   <div className="text-xs uppercase text-neutral-500">Thanh toán</div>
                   <div className="mt-1 uppercase">{order.paymentMethod}</div>
-                  <span className={`mt-2 inline-flex border px-2 py-1 text-xs uppercase ${paymentStatusClass(order.status, order.paymentMethod)}`}>{paymentLabel(order.status, order.paymentMethod)}</span>
-                  {order.paymentMethod === "zalopay" && order.status === "pending" && (
-                    <p className={`mt-2 text-xs ${order.paymentVerificationStatus === "unavailable" ? "font-semibold text-red-700" : "text-amber-700"}`}>
-                      {order.paymentVerificationStatus === "unavailable" ? "ZaloPay tạm chưa phản hồi, hệ thống sẽ tự kiểm tra lại" : "Đang tự đối soát ZaloPay"}
-                    </p>
-                  )}
+                  <span className={`mt-2 inline-flex border px-2 py-1 text-xs uppercase ${paymentStatusClass(order)}`}>{adminPaymentLabel(order)}</span>
+                  <p className="mt-2 text-xs text-neutral-500">Nguồn: {order.adminPaymentSource}</p>
+                  {order.adminPaymentStatus === "pending" && <p className="mt-1 text-xs text-amber-700">Chờ lần đối soát tiếp theo</p>}
                 </div>
                 <div className="flex flex-wrap gap-2 lg:justify-end">
                   <button onClick={() => setExpandedOrderCode(isOpen ? "" : order.code)} className="h-9 border border-black px-3 text-xs uppercase">{isOpen ? "Đóng" : "Chi tiết"}</button>
@@ -790,9 +851,11 @@ export function OrdersAdmin({
                       <p><b>Ship:</b> {order.shippingFeeLabel || money(order.shipping)}</p>
                       <p><b>Tổng:</b> {money(order.total)}</p>
                       <p><b>Mã giao dịch:</b> {order.transactionId || "Chưa có"}</p>
-                      {order.paymentMethod === "zalopay" && order.paymentLastCheckedAt && (
-                        <p><b>Kiểm tra ZaloPay gần nhất:</b> {new Date(order.paymentLastCheckedAt).toLocaleString("vi-VN")} · {order.paymentVerificationStatus || "pending"}</p>
+                      {order.paymentMethod === "zalopay" && order.adminPaymentCheckedAt && (
+                        <p><b>Đối soát thanh toán gần nhất:</b> {new Date(order.adminPaymentCheckedAt).toLocaleString("vi-VN")} · {adminPaymentLabel(order)}</p>
                       )}
+                      {order.adminRecoveredFromHistory && <p className="border border-amber-300 bg-amber-50 p-2 text-amber-900">Đang hiển thị bản chốt gốc lấy từ lịch sử database.</p>}
+                      {order.adminDataWarning && <p className="text-amber-800">{order.adminDataWarning}</p>}
                       {order.paymentMethod === "zalopay" && (
                         <div className="border border-neutral-200 bg-white p-3">
                           <p><b>Hoàn tiền ZaloPay:</b> {refundStatusLabel(order.refundStatus)}</p>
@@ -812,7 +875,7 @@ export function OrdersAdmin({
                       )}
                       <p><b>Vận chuyển:</b> {order.shippingCarrier || "Chưa chọn"} · {order.shippingMethod || "Giao nhanh"}</p>
                       <p><b>Mã vận đơn:</b> {order.trackingCode || "Chưa có"}</p>
-                      <span className={`inline-flex border px-2 py-1 text-xs uppercase ${shippingStatusClass(order.shippingStatus || "not_created")}`}>
+                      <span className={`inline-flex border px-2 py-1 text-xs uppercase ${shippingStatusClass(order.adminShippingStatus)}`}>
                         {shippingLabelForOrder(order)}
                       </span>
                       {order.shippingMessage && <p className="text-neutral-600">{order.shippingMessage}</p>}
@@ -852,8 +915,17 @@ export function OrdersAdmin({
             </article>
           );
         })}
-        {!sortedOrders.length && (
+        {!visibleOrders.length && (
           <div className="border border-neutral-200 py-10 text-center text-neutral-500">Không có đơn phù hợp.</div>
+        )}
+        {sortedOrders.length > adminPageSize && (
+          <div className="flex flex-wrap items-center justify-between gap-3 border border-neutral-200 bg-neutral-50 p-4">
+            <span className="text-sm text-neutral-600">Trang {paginatedOrders.page}/{paginatedOrders.totalPages} · đang hiện {visibleOrders.length}/{sortedOrders.length} đơn</span>
+            <div className="flex gap-2">
+              <button onClick={() => setCurrentPage((page) => Math.max(1, page - 1))} disabled={paginatedOrders.page <= 1} className="h-9 border border-black px-4 text-xs uppercase disabled:opacity-40">Trang trước</button>
+              <button onClick={() => setCurrentPage((page) => Math.min(paginatedOrders.totalPages, page + 1))} disabled={paginatedOrders.page >= paginatedOrders.totalPages} className="h-9 border border-black px-4 text-xs uppercase disabled:opacity-40">Trang sau</button>
+            </div>
+          </div>
         )}
       </section>
     </main>
@@ -868,11 +940,11 @@ function normalizeSearch(value: string) {
     .trim();
 }
 
-function canCancelOrder(order: ShopOrder) {
+function canCancelOrder(order: AdminShopOrder) {
   if (order.status === "cancelled") return false;
   const hasTrackingCode = Boolean(String(order.trackingCode || "").trim());
-  if (["driver_assigned", "shipping", "delivered", "delivery_failed", "returning", "returned", "cancelled"].includes(order.shippingStatus || "")) return false;
-  if (order.shippingStatus === "ready_to_ship" && hasTrackingCode) return false;
+  if (["driver_assigned", "shipping", "delivered", "delivery_failed", "returning", "returned", "cancelled"].includes(order.adminShippingStatus)) return false;
+  if (order.adminShippingStatus === "ready_to_ship" && hasTrackingCode) return false;
   if (["shipping", "completed", "returned", "cancelled"].includes(order.pancakeStatus || "")) return false;
   return true;
 }
@@ -886,22 +958,22 @@ function Metric({ active = false, label, value, onClick }: { active?: boolean; l
   );
 }
 
-function getOrderStage(order: ShopOrder): OrderStage {
-  const shippingStatus = order.shippingStatus || "not_created";
+function getOrderStage(order: AdminShopOrder): OrderStage {
+  const shippingStatus = order.adminShippingStatus || "not_created";
   const paymentMethod = String(order.paymentMethod || "cod").trim().toLowerCase();
   const hasTrackingCode = Boolean(String(order.trackingCode || "").trim());
-  const isReadyForShipment = order.status === "paid" || (order.status === "pending" && paymentMethod === "cod");
+  const isReadyForShipment = ["paid", "cod_pending", "cod_collected"].includes(order.adminPaymentStatus);
 
-  if (order.status === "cancelled" || shippingStatus === "cancelled" || order.pancakeStatus === "cancelled") return "cancelled";
-  if (order.status === "pending" && paymentMethod !== "cod") return "payment_pending";
+  if (order.adminPaymentStatus === "cancelled" || shippingStatus === "cancelled" || order.pancakeStatus === "cancelled") return "cancelled";
   if (order.pancakeStatus === "returned") return "returning";
   if (order.pancakeStatus === "completed") return "delivered";
   if (order.pancakeStatus === "shipping") return "shipping";
-  if (!hasTrackingCode) return isReadyForShipment ? "paid" : "new";
   if (shippingStatus === "returning" || shippingStatus === "returned") return "returning";
   if (shippingStatus === "delivery_failed") return "delivery_failed";
   if (shippingStatus === "delivered") return "delivered";
   if (shippingStatus === "shipping" || shippingStatus === "driver_assigned" || shippingStatus === "ready_to_ship" || hasTrackingCode) return "shipping";
+  if (order.adminPaymentStatus === "pending" && paymentMethod !== "cod") return "payment_pending";
+  if (!hasTrackingCode) return isReadyForShipment ? "paid" : "new";
   if (isReadyForShipment) return "paid";
   return "new";
 }
@@ -910,8 +982,8 @@ function orderStageLabel(stage: OrderStage) {
   return orderStages.find((item) => item.value === stage)?.label || "Đơn mới đặt";
 }
 
-function shippingLabelForOrder(order: ShopOrder) {
-  const status = order.shippingStatus || "not_created";
+function shippingLabelForOrder(order: AdminShopOrder) {
+  const status = order.adminShippingStatus || "not_created";
   const hasTrackingCode = Boolean(String(order.trackingCode || "").trim());
   if (status === "ready_to_ship" && !hasTrackingCode) return "Chưa có mã vận đơn, chờ giao hàng";
   return shippingLabels[status];
@@ -924,7 +996,7 @@ function orderSummary(order: ShopOrder) {
     .join(" · ") + (order.items.length > 2 ? " · ..." : "");
 }
 
-function orderStageNote(order: ShopOrder) {
+function orderStageNote(order: AdminShopOrder) {
   const stage = getOrderStage(order);
   if (stage === "cancelled") return "Khách hủy khi đơn chưa giao cho đơn vị vận chuyển.";
   if (stage === "returning") return "Đơn đã giao đi nhưng đang hoàn về shop.";
@@ -1000,19 +1072,11 @@ function PaymentMerchantBox({
   );
 }
 
-function paymentLabel(status: OrderStatus, paymentMethod?: ShopOrder["paymentMethod"]) {
-  if (status === "paid") return "Đã thanh toán";
-  if (status === "pending" && paymentMethod === "cod") return "COD - chờ giao hàng";
-  if (status === "pending") return "Chờ thanh toán";
-  if (status === "failed") return "Thất bại";
-  return "Đã hủy";
-}
-
-function paymentStatusClass(status: OrderStatus, paymentMethod?: ShopOrder["paymentMethod"]) {
-  if (status === "paid") return "border-emerald-600 bg-emerald-50 text-emerald-700";
-  if (status === "pending" && paymentMethod === "cod") return "border-emerald-600 bg-emerald-50 text-emerald-700";
-  if (status === "pending") return "border-amber-500 bg-amber-50 text-amber-700";
-  if (status === "failed") return "border-red-500 bg-red-50 text-red-700";
+function paymentStatusClass(order: AdminShopOrder) {
+  if (["paid", "cod_collected"].includes(order.adminPaymentStatus)) return "border-emerald-600 bg-emerald-50 text-emerald-700";
+  if (["pending", "cod_pending"].includes(order.adminPaymentStatus)) return "border-amber-500 bg-amber-50 text-amber-700";
+  if (order.adminPaymentStatus === "failed") return "border-red-500 bg-red-50 text-red-700";
+  if (order.adminPaymentStatus === "refunded") return "border-blue-500 bg-blue-50 text-blue-700";
   return "border-neutral-400 bg-neutral-100 text-neutral-700";
 }
 
