@@ -39,6 +39,9 @@
       .nav-icon-button { width: 34px; height: 34px; display: grid; place-items: center; padding: 0; color: #111; cursor: pointer; }
       .nav-icon-button svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.85; stroke-linecap: round; stroke-linejoin: round; }
       .nav-icon-button:hover, .search-toggle:hover { background: #111; color: #fff; }
+      .orders-link { width: auto; display: inline-flex; align-items: center; gap: 7px; border: 0; background: transparent; padding: 0 8px; }
+      .orders-link-label { font-size: 10px; font-weight: 800; text-transform: uppercase; white-space: nowrap; }
+      .orders-link-label-mobile { display: none; }
       .cart {
         position: fixed;
         right: 24px;
@@ -652,6 +655,9 @@
       @media (max-width: 900px) {
         .page { overflow-x: clip; }
         .nav-right { gap: 8px; }
+        .orders-link { position: static; height: 34px; padding: 0 6px; border: 0; background: transparent; box-shadow: none; transform: none; }
+        .orders-link-label-desktop { display: none; }
+        .orders-link-label-mobile { display: inline; font-size: 9px; }
         .hero { min-height: auto; padding-bottom: 238px; }
         .stack-scene { overflow: hidden; }
         .benefits { grid-template-columns: repeat(2, minmax(0, 1fr)); border: 1px solid #e7e7e7; border-radius: 20px; box-shadow: 0 14px 30px rgba(0,0,0,.1); }
@@ -715,6 +721,8 @@
             </button>
             <button class="orders-link nav-icon-button" id="ordersLink" aria-label="Tra cứu đơn hàng" title="Tra cứu đơn hàng">
               <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/><path d="M3 4h2l2.2 11.2a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 1.9-1.4L21 8H6.1"/><path d="m9.5 12.4 1.7 1.7 3.4-3.7"/></svg>
+              <span class="orders-link-label orders-link-label-desktop">Đơn hàng của tôi</span>
+              <span class="orders-link-label orders-link-label-mobile" aria-hidden="true">Đơn hàng</span>
             </button>
             <button class="cart nav-icon-button" aria-label="Giỏ hàng">
               <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/><path d="M3 4h2l2.2 11.2a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 1.9-1.4L21 8H6.1"/></svg>
