@@ -50,7 +50,10 @@ export async function POST(request: Request, { params }: Params) {
       }
     }
     if (carrierHasAcceptedCustomerOrder(current)) {
-      return NextResponse.json({ error: "Đơn đã giao cho đơn vị vận chuyển hoặc đang giao hàng nên không thể hủy trực tuyến." }, { status: 409 });
+      return NextResponse.json({
+        error: "Đơn đã giao cho đơn vị vận chuyển hoặc đang giao hàng nên không thể hủy trực tuyến.",
+        order: current
+      }, { status: 409 });
     }
     const cancellationAlreadyRecorded = current.status === "cancelled";
     const wasPaid = current.status === "paid" || Boolean(current.transactionId);

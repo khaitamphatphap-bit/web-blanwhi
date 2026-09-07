@@ -441,6 +441,9 @@
       .order-cancel { min-height: 40px; border: 1px solid #d43d32; background: #fff; color: #b42318; padding: 0 16px; font: inherit; font-size: 12px; font-weight: 700; text-transform: uppercase; cursor: pointer; }
       .order-cancel:hover { background: #fff3f2; }
       .order-cancel:disabled { cursor: wait; opacity: .55; }
+      .order-cancel.order-cancel-locked,
+      .order-cancel.order-cancel-locked:hover { border-color: #bdbdbd; background: #ededed; color: #777; cursor: not-allowed; opacity: 1; }
+      .order-cancel-locked-note { margin: 8px 0 0; color: #666; font-size: 11px; line-height: 1.45; text-align: right; }
       .order-pay { min-height: 40px; border: 1px solid #111; background: #111; color: #fff; padding: 0 16px; font: inherit; font-size: 12px; font-weight: 800; text-transform: uppercase; cursor: pointer; }
       .order-pay:hover { background: #333; }
       .order-pay:disabled { cursor: wait; opacity: .55; }
@@ -3634,9 +3637,18 @@
         return order.status || "Đã đặt";
       }
 
+      function customerCancellationLocked(order) {
+        if (["Đơn hủy", "Thanh toán thất bại"].includes(order.status)) return false;
+        if (order.rawStatus === "cancelled" || order.shippingStatus === "cancelled") return false;
+        if (String(order.trackingCode || "").trim()) return true;
+        if (["shipping", "delivered", "returning", "returned"].includes(order.shippingStatus || "")) return true;
+        return ["shipping", "completed", "returned"].includes(order.pancakeStatus || "");
+      }
+
       function canCustomerCancel(order) {
         if (["Đơn hủy", "Thanh toán thất bại"].includes(order.status)) return false;
-        if (["delivered", "returning", "returned", "cancelled"].includes(order.shippingStatus || "")) return false;
+        if (order.rawStatus === "cancelled" || order.shippingStatus === "cancelled") return false;
+        if (customerCancellationLocked(order)) return false;
         return !["completed", "cancelled", "returned"].includes(order.pancakeStatus || "");
       }
 
@@ -3722,6 +3734,36 @@
         }
       }
 
+      function mergeCustomerOrderFromServer(serverOrder, fallbackOrder) {
+        const merged = {
+          ...fallbackOrder,
+          ...serverOrder,
+          rawStatus: serverOrder.status,
+          status: serverOrder.status === "paid" ? "Đã thanh toán" : serverOrder.status === "failed" ? "Thanh toán thất bại" : serverOrder.status === "cancelled" ? "Đơn hủy" : serverOrder.paymentMethod === "cod" ? "Chờ vận chuyển" : "Chờ thanh toán",
+          paymentMethod: serverOrder.paymentMethod || fallbackOrder.paymentMethod,
+          paymentProvider: serverOrder.paymentProvider || fallbackOrder.paymentProvider,
+          transactionId: serverOrder.transactionId || "",
+          refundStatus: serverOrder.refundStatus || null,
+          refundMessage: serverOrder.refundMessage || "",
+          refundAmount: serverOrder.refundAmount || 0,
+          refundedAt: serverOrder.refundedAt || "",
+          paymentExpiredAt: serverOrder.paymentExpiredAt || "",
+          cancellationReason: serverOrder.cancellationReason || "",
+          shippingCarrier: serverOrder.shippingCarrier || "",
+          trackingCode: serverOrder.trackingCode || "",
+          shippingStatus: serverOrder.shippingStatus || "not_created",
+          shippingMessage: serverOrder.shippingMessage || "",
+          pancakeStatus: serverOrder.pancakeStatus || null,
+          updatedAt: serverOrder.updatedAt ? new Date(serverOrder.updatedAt).toLocaleString("vi-VN") : fallbackOrder.updatedAt
+        };
+        return { ...merged, step: customerOrderStep(merged) };
+      }
+
+      function replaceCustomerOrderSnapshot(code, nextOrder, previousOrders, hasStoredOrder) {
+        if (hasStoredOrder) saveOrders(previousOrders.map((order) => order.code === code ? nextOrder : order));
+        if (Array.isArray(lookedUpOrders)) lookedUpOrders = lookedUpOrders.map((order) => order.code === code ? nextOrder : order);
+      }
+
       const requestOrderPayment = (code, phone) => fetch("/api/payments/retry", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -3750,12 +3792,16 @@
       }
 
       async function cancelCustomerOrder(code, phone, button) {
-        if (!confirm("Bạn có chắc chắn muốn huỷ đơn này không? Cảm ơn bạn nhiều nha và chúc bạn một ngày tốt lành")) return;
         const previousOrders = loadOrders();
         const storedOrder = previousOrders.find((order) => order.code === code);
         const lookupOrder = Array.isArray(lookedUpOrders) ? lookedUpOrders.find((order) => order.code === code) : null;
-        const previousOrder = storedOrder || lookupOrder;
+        const previousOrder = lookupOrder || storedOrder;
         if (!previousOrder) return;
+        if (customerCancellationLocked(previousOrder)) {
+          alert("Đơn đã giao cho đơn vị vận chuyển hoặc đang giao hàng nên không thể hủy trực tuyến.");
+          return;
+        }
+        if (!confirm("Bạn có chắc chắn muốn huỷ đơn này không? Cảm ơn bạn nhiều nha và chúc bạn một ngày tốt lành")) return;
         if (cancellingOrderCodes.has(code)) return;
         cancellingOrderCodes.add(code);
         if (button) {
@@ -3763,22 +3809,6 @@
           button.textContent = "Đang huỷ...";
         }
         const paidBeforeCancel = isPaidOrder(previousOrder) || hasRefundProcess(previousOrder);
-        const optimisticOrder = {
-          ...previousOrder,
-          rawStatus: "cancelled",
-          wasPaidBeforeCancel: paidBeforeCancel,
-          statusBeforeCancel: previousOrder.status,
-          status: "Đơn hủy",
-          trackingCode: "",
-          shippingStatus: "cancelled",
-          shippingMessage: "Đang đồng bộ yêu cầu hủy với SPX và POS...",
-          refundStatus: paidBeforeCancel ? (previousOrder.refundStatus || "pending") : "not_required",
-          refundMessage: paidBeforeCancel ? (previousOrder.refundMessage || "Đang gửi yêu cầu hoàn tiền...") : "",
-          updatedAt: new Date().toLocaleString("vi-VN")
-        };
-        const optimisticOrders = previousOrders.map((order) => order.code === code ? optimisticOrder : order);
-        if (storedOrder) saveOrders(optimisticOrders);
-        if (Array.isArray(lookedUpOrders)) lookedUpOrders = lookedUpOrders.map((order) => order.code === code ? optimisticOrder : order);
         renderOrders();
         try {
           let response = await requestOrderCancellation(code, phone);
@@ -3789,24 +3819,22 @@
           if (!response.ok) {
             const cancellationError = new Error(result.error || "Không thể hủy đơn.");
             cancellationError.status = response.status;
+            cancellationError.order = result.order || null;
             throw cancellationError;
           }
+          let serverOrder = result.order || null;
+          if (serverOrder?.status !== "cancelled" && serverOrder?.shippingStatus !== "cancelled") {
+            serverOrder = await fetchServerOrderByCode(code);
+          }
+          if (serverOrder?.status !== "cancelled" && serverOrder?.shippingStatus !== "cancelled") {
+            throw new Error("Database chưa xác nhận trạng thái hủy đơn.");
+          }
           const confirmedOrder = {
-            ...optimisticOrder,
-            ...(result.order || {}),
-            rawStatus: result.order?.status || "cancelled",
+            ...mergeCustomerOrderFromServer(serverOrder, previousOrder),
             wasPaidBeforeCancel: paidBeforeCancel,
             statusBeforeCancel: previousOrder.status,
-            status: "Đơn hủy",
-            trackingCode: "",
-            shippingStatus: "cancelled",
-            shippingMessage: result.order?.shippingMessage || "Khách yêu cầu hủy đơn",
-            updatedAt: new Date().toLocaleString("vi-VN")
           };
-          const nextOrders = optimisticOrders.map((order) => order.code === code ? confirmedOrder : order);
-          if (storedOrder) saveOrders(nextOrders);
-          if (Array.isArray(lookedUpOrders)) lookedUpOrders = lookedUpOrders.map((order) => order.code === code ? confirmedOrder : order);
-          renderOrders();
+          replaceCustomerOrderSnapshot(code, confirmedOrder, previousOrders, Boolean(storedOrder));
           const cancellationMessage = result.pancakeCancellationPending
             ? "Website đã ghi nhận yêu cầu hủy. Pancake đang được tự động thử lại, vui lòng kiểm tra trạng thái sau ít phút."
             : paidBeforeCancel
@@ -3814,42 +3842,25 @@
               : `Đã hủy đơn ${code} thành công trên website và Pancake.`;
           alert(cancellationMessage);
         } catch (error) {
-          if ([403, 409].includes(Number(error.status || 0))) {
-            if (storedOrder) saveOrders(previousOrders);
-            if (Array.isArray(lookedUpOrders)) lookedUpOrders = lookedUpOrders.map((order) => order.code === code ? previousOrder : order);
-            renderOrders();
-            alert(error.message || "Đơn không còn đủ điều kiện hủy.");
-            return;
-          }
-          const serverOrder = await fetchServerOrderByCode(code);
+          const serverOrder = error.order || await fetchServerOrderByCode(code);
           if (serverOrder?.status === "cancelled" || serverOrder?.shippingStatus === "cancelled") {
             const confirmedOrder = {
-              ...optimisticOrder,
-              ...serverOrder,
-              rawStatus: "cancelled",
+              ...mergeCustomerOrderFromServer(serverOrder, previousOrder),
               wasPaidBeforeCancel: paidBeforeCancel,
               statusBeforeCancel: previousOrder.status,
-              status: "Đơn hủy",
-              trackingCode: "",
-              shippingStatus: "cancelled",
-              shippingMessage: serverOrder.shippingMessage || "Khách yêu cầu hủy đơn",
-              updatedAt: new Date().toLocaleString("vi-VN")
             };
-            const nextOrders = optimisticOrders.map((order) => order.code === code ? confirmedOrder : order);
-            if (storedOrder) saveOrders(nextOrders);
-            if (Array.isArray(lookedUpOrders)) lookedUpOrders = lookedUpOrders.map((order) => order.code === code ? confirmedOrder : order);
-            renderOrders();
+            replaceCustomerOrderSnapshot(code, confirmedOrder, previousOrders, Boolean(storedOrder));
             alert("Website đã ghi nhận hủy đơn. Pancake sẽ tự động đồng bộ trạng thái hủy, vui lòng kiểm tra lại sau ít phút.");
             return;
           }
-          // Không báo hủy thành công khi database cũng chưa xác nhận trạng thái hủy.
-          if (storedOrder) saveOrders(previousOrders);
-          if (Array.isArray(lookedUpOrders)) lookedUpOrders = lookedUpOrders.map((order) => order.code === code ? previousOrder : order);
-          renderOrders();
-          alert("Chưa xác nhận được việc hủy đơn. Vui lòng kiểm tra lại trạng thái đơn rồi thử lại.");
-          void syncCustomerOrderStatuses();
+          if (serverOrder) {
+            const authoritativeOrder = mergeCustomerOrderFromServer(serverOrder, previousOrder);
+            replaceCustomerOrderSnapshot(code, authoritativeOrder, previousOrders, Boolean(storedOrder));
+          }
+          alert(error.message || "Chưa xác nhận được việc hủy đơn. Vui lòng kiểm tra lại trạng thái đơn rồi thử lại.");
         } finally {
           cancellingOrderCodes.delete(code);
+          renderOrders();
         }
       }
 
@@ -4020,7 +4031,8 @@
             </div>
             <p class="muted">Cập nhật gần nhất: ${order.updatedAt}</p>
             ${order.status === "Đơn hủy" || order.shippingStatus === "cancelled" ? `<p class="order-cancelled-note">${escapeMarkup(refundNotice(order) || "Đơn hàng đã được hủy thành công.")}</p>` : ""}
-            ${(canCustomerPay(order) || canCustomerCancel(order)) ? `<div class="order-actions">${canCustomerPay(order) ? `<button class="order-pay" type="button" data-pay-order="${escapeMarkup(order.code)}" data-order-phone="${escapeMarkup(order.lookupPhone || order.customer.phone)}">Thanh toán</button>` : ""}${canCustomerCancel(order) ? `<button class="order-cancel" type="button" data-cancel-order="${escapeMarkup(order.code)}" data-order-phone="${escapeMarkup(order.lookupPhone || order.customer.phone)}"${cancellingOrderCodes.has(order.code) ? " disabled" : ""}>${cancellingOrderCodes.has(order.code) ? "Đang huỷ..." : "Hủy đơn"}</button>` : ""}</div>` : ""}
+            ${(canCustomerPay(order) || canCustomerCancel(order) || customerCancellationLocked(order)) ? `<div class="order-actions">${canCustomerPay(order) ? `<button class="order-pay" type="button" data-pay-order="${escapeMarkup(order.code)}" data-order-phone="${escapeMarkup(order.lookupPhone || order.customer.phone)}">Thanh toán</button>` : ""}${canCustomerCancel(order) ? `<button class="order-cancel" type="button" data-cancel-order="${escapeMarkup(order.code)}" data-order-phone="${escapeMarkup(order.lookupPhone || order.customer.phone)}"${cancellingOrderCodes.has(order.code) ? " disabled" : ""}>${cancellingOrderCodes.has(order.code) ? "Đang huỷ..." : "Hủy đơn"}</button>` : customerCancellationLocked(order) ? `<button class="order-cancel order-cancel-locked" type="button" disabled>Hủy đơn</button>` : ""}</div>` : ""}
+            ${customerCancellationLocked(order) ? `<p class="order-cancel-locked-note">Đơn hàng đã gửi đi, vui lòng liên hệ shop để huỷ đơn.</p>` : ""}
             </div>
           </details>
         `).join("");

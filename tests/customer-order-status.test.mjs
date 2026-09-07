@@ -35,8 +35,8 @@ test("mã vận đơn được ưu tiên hơn nhãn đóng gói Pancake", () => 
 });
 
 test("hiển thị đúng nhiều trạng thái đơn khác nhau ở trang khách", () => {
-  const functionSource = customerPage.match(/function customerOrderStatus\(order\) \{[\s\S]*?\n      \}\n\n      function canCustomerCancel/)?.[0]
-    .replace(/\n\n      function canCustomerCancel[\s\S]*$/, "");
+  const functionSource = customerPage.match(/function customerOrderStatus\(order\) \{[\s\S]*?\n      \}\n\n      function customerCancellationLocked/)?.[0]
+    .replace(/\n\n      function customerCancellationLocked[\s\S]*$/, "");
   assert.ok(functionSource);
   const context = {
     customerShippingLabels: {

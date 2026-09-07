@@ -18,8 +18,8 @@ function seededRandom(seed = 260904) {
 }
 
 const customerPage = await readFile(new URL("../public/preview.html", import.meta.url), "utf8");
-const customerStatusSource = customerPage.match(/function customerOrderStatus\(order\) \{[\s\S]*?\n      \}\n\n      function canCustomerCancel/)?.[0]
-  .replace(/\n\n      function canCustomerCancel[\s\S]*$/, "");
+const customerStatusSource = customerPage.match(/function customerOrderStatus\(order\) \{[\s\S]*?\n      \}\n\n      function customerCancellationLocked/)?.[0]
+  .replace(/\n\n      function customerCancellationLocked[\s\S]*$/, "");
 assert.ok(customerStatusSource);
 const customerStatusContext = {
   customerShippingLabels: {
