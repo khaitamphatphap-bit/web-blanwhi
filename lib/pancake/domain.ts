@@ -61,6 +61,13 @@ export type PancakeOrderSource = {
   account?: string;
 };
 
+export function pancakeOrderDiscount(order: { discount: number; shippingBaseFee?: number; shippingDiscount?: number }) {
+  const productDiscount = Math.max(0, Math.floor(Number(order.discount) || 0));
+  const shippingBaseFee = Math.max(0, Math.floor(Number(order.shippingBaseFee) || 0));
+  const shippingDiscount = Math.max(0, Math.min(shippingBaseFee, Math.floor(Number(order.shippingDiscount) || 0)));
+  return productDiscount + shippingDiscount;
+}
+
 export function buildPancakeOrderPayload(order: {
   code: string;
   customer: { name: string; phone: string; email?: string; address: string; house?: string; ward?: string; wardId?: string; district?: string; districtId?: string; province?: string; provinceId?: string; note?: string };
@@ -77,6 +84,11 @@ export function buildPancakeOrderPayload(order: {
   const prepaidAmount = cashOnDelivery ? 0 : order.total;
   const shippingBaseFee = Math.max(0, Math.floor(Number(order.shippingBaseFee ?? order.shipping) || 0));
   const shippingDiscount = Math.max(0, Math.min(shippingBaseFee, Math.floor(Number(order.shippingDiscount) || 0)));
+  const totalDiscount = pancakeOrderDiscount({
+    discount: order.discount,
+    shippingBaseFee,
+    shippingDiscount
+  });
   const paymentLabel = cashOnDelivery
     ? "COD - thu tiền khi giao hàng"
     : `Đã thanh toán online ${normalizedPaymentMethod(order.paymentMethod).toUpperCase()}`;
@@ -145,7 +157,11 @@ export function buildPancakeOrderPayload(order: {
       }
     })),
     shipping_fee: shippingBaseFee,
-    total_discount: order.discount + shippingDiscount,
+    // Pancake accepts `discount` as the order-discount input. `total_discount`
+    // is retained for compatibility, but Pancake calculates it in responses.
+    discount: totalDiscount,
+    total_discount: totalDiscount,
+    is_discount_percent: false,
     total_price: order.total,
     cod,
     cash: prepaidAmount,

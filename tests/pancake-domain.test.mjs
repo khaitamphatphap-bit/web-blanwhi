@@ -83,7 +83,9 @@ test("đơn được hỗ trợ phí ship vẫn ghi phí ship gốc và giảm �
 
   assert.equal(payload.shipping_fee, 11000);
   assert.equal(payload.partner.total_fee, 11000);
+  assert.equal(payload.discount, 41000);
   assert.equal(payload.total_discount, 41000);
+  assert.equal(payload.is_discount_percent, false);
   assert.equal(payload.total_price, 270000);
   assert.equal(payload.cod, 270000);
   assert.equal(payload.is_free_shipping, false);

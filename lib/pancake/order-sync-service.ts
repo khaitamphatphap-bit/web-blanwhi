@@ -7,7 +7,7 @@ import { PancakeLogger } from "@/lib/pancake/logger";
 import { PancakeService } from "@/lib/pancake/pancake-service";
 import { QueueHandler } from "@/lib/pancake/queue-handler";
 import type { ShippingStatus, ShopOrder } from "@/lib/types";
-import { mapPancakeStatus } from "@/lib/pancake/domain";
+import { mapPancakeStatus, pancakeOrderDiscount } from "@/lib/pancake/domain";
 import { shortOrderCode } from "@/lib/order-code";
 
 function validPancakeOrderId(value: unknown) {
@@ -77,6 +77,11 @@ function value(payload: Record<string, unknown>, keys: string[]) {
   const order = (nested.order && typeof nested.order === "object" ? nested.order : nested) as Record<string, unknown>;
   for (const key of keys) if (order[key] !== undefined && order[key] !== null) return String(order[key]);
   return "";
+}
+
+function numericValue(payload: Record<string, unknown>, keys: string[]) {
+  const candidate = Number(value(payload, keys));
+  return Number.isFinite(candidate) ? Math.max(0, Math.floor(candidate)) : null;
 }
 
 function deepValue(payload: unknown, keys: string[], depth = 0): string {
@@ -260,6 +265,39 @@ function hasTrackingCode(payload: unknown) {
 export class OrderSyncService {
   constructor(private readonly pancake = new PancakeService()) {}
 
+  private async reconcileFreeShippingDiscount(order: ShopOrder, providerOrderId: string, remote: Record<string, unknown>) {
+    const shippingDiscount = Math.max(0, Math.floor(Number(order.shippingDiscount) || 0));
+    if (!shippingDiscount) return remote;
+    const remoteStatus = mapPancakeStatus(value(remote, ["status", "order_status", "state"])).pancakeStatus;
+    if (["shipping", "completed", "cancelled", "returned"].includes(remoteStatus || "")) return remote;
+
+    const expectedDiscount = pancakeOrderDiscount(order);
+    const expectedTotal = Math.max(0, Math.floor(Number(order.total) || 0));
+    const pricingMatches = (payload: Record<string, unknown>) => (
+      numericValue(payload, ["total_discount"]) === expectedDiscount
+      && numericValue(payload, ["total_price_after_sub_discount"]) === expectedTotal
+    );
+    if (pricingMatches(remote)) return remote;
+
+    let verified = await this.pancake.updateOrderDiscount(providerOrderId, expectedDiscount);
+    for (let attempt = 0; attempt < 3 && !pricingMatches(verified); attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 200 * (attempt + 1)));
+      verified = await this.pancake.order(providerOrderId);
+    }
+    const verifiedDiscount = numericValue(verified, ["total_discount"]);
+    const verifiedTotal = numericValue(verified, ["total_price_after_sub_discount"]);
+    if (verifiedDiscount !== expectedDiscount || verifiedTotal !== expectedTotal) {
+      throw new PancakeIntegrationError(
+        `Pancake chưa ghi nhận đúng giảm phí ship: giảm ${verifiedDiscount ?? "không rõ"}/${expectedDiscount}, tổng ${verifiedTotal ?? "không rõ"}/${expectedTotal}.`,
+        "PANCAKE_PRICING_MISMATCH",
+        502,
+        true
+      );
+    }
+    await PancakeLogger.write("info", "order.pricing", `Đã xác minh Pancake giảm ${expectedDiscount}đ và tổng cuối ${expectedTotal}đ.`, order.code);
+    return verified;
+  }
+
   private async refreshItemLinks(order: ShopOrder) {
     if (order.items.every((item) => item.pancakeVariationId || item.pancakeProductId || item.pancakeSku)) return order;
     const availability = await new InventoryService().availability();
@@ -304,6 +342,7 @@ export class OrderSyncService {
         await PancakeLogger.write("error", "order.detail", `Chưa đọc được chi tiết đơn Pancake: ${ExceptionHandler.message(error)}`, order.code);
       }
     }
+    if (existingId) remotePayload = await this.reconcileFreeShippingDiscount(order, existingId, remotePayload);
     const systemId = deepValue(remotePayload, ["system_id"]);
     if (systemId && !hasTrackingCode(remotePayload)) {
       try {
@@ -379,7 +418,7 @@ export class OrderSyncService {
         }
       }) || latest || order;
     }
-    if (pancakeOrderId(current)) return current;
+    if (pancakeOrderId(current)) return this.reconcileExisting(current);
     try {
       const existing = await this.pancake.findOrder(current.code, current.customer.phone);
       if (existing) {
@@ -399,6 +438,10 @@ export class OrderSyncService {
           lastSyncedAt: new Date().toISOString()
         }
       });
+      if (createdPancakeOrderId) {
+        const remote = await this.pancake.order(createdPancakeOrderId);
+        await this.reconcileFreeShippingDiscount(current, createdPancakeOrderId, remote);
+      }
       await PancakeLogger.write("info", "order.create", "Đã tạo đơn trên Pancake.", order.code);
       const latestAfterCreate = await findOrderByCode(order.code);
       if (latestAfterCreate?.status === "cancelled") {

@@ -326,6 +326,18 @@ export class PancakeService {
     });
   }
 
+  async updateOrderDiscount(providerOrderId: string, discount: number) {
+    const id = Validator.required(providerOrderId, "Pancake Order ID");
+    const amount = Math.max(0, Math.floor(Number(discount) || 0));
+    return this.client.request<Record<string, unknown>>(`/shops/${encodeURIComponent(this.shopId())}/orders/${encodeURIComponent(id)}`, {
+      method: "PUT",
+      body: {
+        discount: amount,
+        is_discount_percent: false
+      }
+    });
+  }
+
   async orders(search = "", pageNumber = 1) {
     return this.client.request<unknown>(`/shops/${encodeURIComponent(this.shopId())}/orders`, {
       query: { page_number: pageNumber, page_size: 100, search: search || undefined }

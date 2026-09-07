@@ -65,6 +65,7 @@ test("mô phỏng 2000 đơn với phí và ngưỡng admin thay đổi liên t�
     });
 
     assert.equal(payload.shipping_fee, pricing.baseFee);
+    assert.equal(payload.discount, productDiscount + pricing.discount);
     assert.equal(payload.total_discount, productDiscount + pricing.discount);
     assert.equal(payload.total_price, total);
     assert.equal(payload.cod, index % 2 === 0 ? total : 0);
