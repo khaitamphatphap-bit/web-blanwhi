@@ -460,6 +460,16 @@ export class OrderSyncService {
     }
   }
   async cancel(order: ShopOrder, enqueueOnFailure = true) {
+    const persisted = await findOrderByCode(order.code);
+    if (!persisted || persisted.status !== "cancelled") {
+      throw new PancakeIntegrationError(
+        "Website chưa ghi nhận hủy đơn nên không gửi lệnh hủy sang Pancake.",
+        "ORDER_CANCELLATION_NOT_COMMITTED",
+        409,
+        false
+      );
+    }
+    order = persisted;
     const knownId = pancakeOrderId(order);
     let lastError: unknown;
     const cancelRemoteOrder = async (remoteOrderId: string) => {

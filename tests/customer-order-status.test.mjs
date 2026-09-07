@@ -9,7 +9,8 @@ const customerPage = await readFile(new URL("../public/preview.html", import.met
 
 test("refundStatus not_required không được biến đơn mới thành đơn hủy", () => {
   assert.doesNotMatch(ordersSource, /Boolean\(baseOrder\.refundStatus\)/);
-  assert.match(ordersSource, /baseOrder\.pancakeStatus === "cancelled"/);
+  assert.match(ordersSource, /baseOrder\.shippingStatus === "cancelled"/);
+  assert.doesNotMatch(ordersSource, /baseOrder\.pancakeStatus === "cancelled"/);
 });
 
 test("API trạng thái luôn trả giá trị vận chuyển rõ ràng", () => {

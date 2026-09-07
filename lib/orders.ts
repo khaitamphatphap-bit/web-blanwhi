@@ -111,8 +111,7 @@ function normalizeOrder(order: ShopOrder): ShopOrder {
     refundMessage: ""
   } : normalizedPayment;
   const cancellationRecorded = baseOrder.status === "cancelled"
-    || baseOrder.shippingStatus === "cancelled"
-    || baseOrder.pancakeStatus === "cancelled";
+    || baseOrder.shippingStatus === "cancelled";
   return {
     ...baseOrder,
     status: cancellationRecorded ? "cancelled" : baseOrder.status,

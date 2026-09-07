@@ -32,6 +32,7 @@ export async function GET(request: Request) {
         const orderCode = String(job.payload.orderCode || "");
         const order = await findOrderByCode(orderCode);
         if (!order) throw new Error(`Chưa đọc được đơn ${orderCode}; giữ job để thử lại.`);
+        if (order.status !== "cancelled") return;
         await new OrderSyncService().cancel(order, false);
       } else if (job.type === "inventory.sync") {
         await new InventoryService().sync();

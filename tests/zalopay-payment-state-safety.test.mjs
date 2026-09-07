@@ -15,6 +15,7 @@ const receiptStore = await readFile(new URL("../lib/zalopay-payment-receipts.ts"
 const cron = await readFile(new URL("../app/api/admin/pancake/poll/route.ts", import.meta.url), "utf8");
 const orderState = await readFile(new URL("../lib/order-state.ts", import.meta.url), "utf8");
 const retryPayment = await readFile(new URL("../app/api/payments/retry/route.ts", import.meta.url), "utf8");
+const orderSync = await readFile(new URL("../lib/pancake/order-sync-service.ts", import.meta.url), "utf8");
 
 test("đơn ZaloPay chờ thanh toán không còn tự hủy sau 24 giờ", () => {
   assert.doesNotMatch(orders, /unpaidOrderLifetimeMs/);
@@ -82,4 +83,13 @@ test("khách thanh toán lại đơn pending sẽ giữ lại tồn kho trong 5 
   assert.match(retryPayment, /inventory\.reserveOrder\(order\)/);
   assert.match(retryPayment, /inventoryReservationExpiresAt:\s*zaloPayReservationExpiresAt\(\)/);
   assert.match(retryPayment, /inventory\.releaseOrder\(order\)/);
+});
+
+test("job hủy cũ không thể hủy Pancake nếu database không còn ghi nhận đơn hủy", () => {
+  assert.match(cron, /job\.type === "order\.cancel"[\s\S]*?if \(order\.status !== "cancelled"\) return;[\s\S]*?\.cancel\(order, false\)/);
+  assert.match(orderSync, /async cancel\(order:[\s\S]*?persisted\.status !== "cancelled"[\s\S]*?ORDER_CANCELLATION_NOT_COMMITTED/);
+});
+
+test("cờ Pancake cancelled cũ không tự biến trạng thái website thành cancelled", () => {
+  assert.doesNotMatch(orders, /baseOrder\.pancakeStatus === "cancelled"/);
 });
