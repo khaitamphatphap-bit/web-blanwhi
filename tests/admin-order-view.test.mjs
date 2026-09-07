@@ -170,6 +170,7 @@ test("mô phỏng 2.000 đơn admin không mất, không trùng và phân trang 
 
 test("đối soát admin chỉ đọc Pancake, không gọi thao tác ghi", async () => {
   const source = await readFile(new URL("../lib/admin-orders.ts", import.meta.url), "utf8");
+  assert.match(source, /readJsonStoreHistory<ShopOrder\[]>\("orders\.json", 100\)/);
   assert.doesNotMatch(source, /\.createOrder\s*\(/);
   assert.doesNotMatch(source, /\.updateOrderStatus\s*\(/);
   assert.doesNotMatch(source, /\.cancelOrder\s*\(/);

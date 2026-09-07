@@ -1,5 +1,5 @@
-import { buildAdminOrderView, selectAuthoritativeAdminHistory, type AdminOrderObservation, type AdminShopOrder } from "./admin-order-view";
-import { readKeyedJsonStore, readKeyedJsonStoreHistory, writeKeyedJsonRecord } from "./data-store";
+import { adminOrderLooksRecovered, buildAdminOrderView, selectAuthoritativeAdminHistory, type AdminOrderObservation, type AdminShopOrder } from "./admin-order-view";
+import { readJsonStoreHistory, readKeyedJsonStore, readKeyedJsonStoreHistory, writeKeyedJsonRecord } from "./data-store";
 import { readIntegrationConfig } from "./integrations";
 import { readOrders } from "./orders";
 import { queryZaloPayPayment } from "./payment";
@@ -190,13 +190,25 @@ export async function reconcileAdminOrders(codes: string[]) {
     readKeyedJsonStore<AdminOrderObservation>(observationStore, {})
   ]);
   const byCode = new Map(orders.map((order) => [order.code.toUpperCase(), order]));
+  const requestedCodes = new Set(normalized);
+  const needsLegacyHistory = normalized.some((code) => {
+    const order = byCode.get(code);
+    return Boolean(order && adminOrderLooksRecovered(order) && !observations[code]?.canonicalOrder);
+  });
+  const legacySnapshots = needsLegacyHistory
+    ? await readJsonStoreHistory<ShopOrder[]>("orders.json", 100)
+    : [];
+  const legacyByCode = historyByCode(legacySnapshots
+    .flatMap((snapshot) => Array.isArray(snapshot) ? snapshot : [])
+    .filter((order) => requestedCodes.has(text(order?.code).toUpperCase())));
   const results: AdminShopOrder[] = [];
   for (let index = 0; index < normalized.length; index += 3) {
     const batch = normalized.slice(index, index + 3);
     const reconciled = await Promise.all(batch.map(async (code) => {
       const order = byCode.get(code);
       if (!order) return null;
-      const histories = await readKeyedJsonStoreHistory<ShopOrder>("order-records", code, 100);
+      const keyedHistories = await readKeyedJsonStoreHistory<ShopOrder>("order-records", code, 100);
+      const histories = [...keyedHistories, ...(legacyByCode.get(code) || [])];
       return reconcileOne(order, histories, observations[code]);
     }));
     results.push(...reconciled.filter((order): order is AdminShopOrder => Boolean(order)));
