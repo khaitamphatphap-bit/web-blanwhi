@@ -26,6 +26,7 @@ const canCancelSource = extractFunction(customerPage, "canCustomerCancel");
 const mergeSource = extractFunction(customerPage, "mergeCustomerOrderFromServer");
 const statusSource = extractFunction(customerPage, "customerOrderStatus");
 const cancelSource = extractFunction(customerPage, "cancelCustomerOrder");
+const syncSource = extractFunction(customerPage, "syncCustomerOrderStatuses");
 const context = {
   customerOrderStep: () => 0,
   customerShippingLabels: {
@@ -42,9 +43,16 @@ vm.createContext(context);
 vm.runInContext(`${lockedSource}; ${canCancelSource}; ${mergeSource}; ${statusSource}; this.locked = customerCancellationLocked; this.canCancel = canCustomerCancel; this.merge = mergeCustomerOrderFromServer; this.customerStatus = customerOrderStatus;`, context);
 
 test("đơn có mã vận đơn hiện nút hủy bị khóa và lời hướng dẫn", () => {
-  assert.match(customerPage, /order-cancel order-cancel-locked[^>]*disabled>Hủy đơn<\/button>/);
+  assert.match(customerPage, /order-cancel order-cancel-locked[^>]*disabled aria-disabled="true">Hủy đơn<\/button>/);
   assert.match(customerPage, /Đơn hàng đã gửi đi, vui lòng liên hệ shop để huỷ đơn\./);
   assert.match(customerPage, /order-cancel\.order-cancel-locked[\s\S]*cursor: not-allowed/);
+});
+
+test("đơn tra cứu bằng số điện thoại nhận trạng thái mã vận đơn mới trong lúc bảng đang mở", () => {
+  assert.match(syncSource, /const lookupOrders = Array\.isArray\(lookedUpOrders\) \? lookedUpOrders : \[\]/);
+  assert.match(syncSource, /new Set\(\[\.\.\.orders, \.\.\.lookupOrders\]/);
+  assert.match(syncSource, /lookedUpOrders = lookedUpOrders\.map/);
+  assert.match(syncSource, /mergeCustomerOrderFromServer\(serverOrder, order\)/);
 });
 
 test("không ghi trạng thái hủy giả trước khi API và database xác nhận", () => {

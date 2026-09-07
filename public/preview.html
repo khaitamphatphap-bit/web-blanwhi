@@ -442,8 +442,8 @@
       .order-cancel:hover { background: #fff3f2; }
       .order-cancel:disabled { cursor: wait; opacity: .55; }
       .order-cancel.order-cancel-locked,
-      .order-cancel.order-cancel-locked:hover { border-color: #bdbdbd; background: #ededed; color: #777; cursor: not-allowed; opacity: 1; }
-      .order-cancel-locked-note { margin: 8px 0 0; color: #666; font-size: 11px; line-height: 1.45; text-align: right; }
+      .order-cancel.order-cancel-locked:hover { border-color: #b8b8b8; background: #d9d9d9; color: #707070; cursor: not-allowed; opacity: 1; }
+      .order-cancel-locked-note { margin: 8px 0 0; color: #555; font-size: 11px; font-weight: 600; line-height: 1.45; text-align: right; }
       .order-pay { min-height: 40px; border: 1px solid #111; background: #111; color: #fff; padding: 0 16px; font: inherit; font-size: 12px; font-weight: 800; text-transform: uppercase; cursor: pointer; }
       .order-pay:hover { background: #333; }
       .order-pay:disabled { cursor: wait; opacity: .55; }
@@ -3901,7 +3901,8 @@
             // Giữ lịch sử cục bộ nếu mạng tạm thời chưa sẵn sàng.
           }
         }
-        const codes = orders.map((order) => order.code).filter(Boolean);
+        const lookupOrders = Array.isArray(lookedUpOrders) ? lookedUpOrders : [];
+        const codes = Array.from(new Set([...orders, ...lookupOrders].map((order) => order.code).filter(Boolean)));
         if (!codes.length) return orders;
         try {
           const fetchStatusPages = async () => {
@@ -3962,6 +3963,13 @@
             return { ...merged, step: customerOrderStep(merged) };
           });
           if (changed) saveOrders(nextOrders);
+          if (Array.isArray(lookedUpOrders)) {
+            lookedUpOrders = lookedUpOrders.map((order) => {
+              const serverOrder = serverOrders.get(order.code);
+              if (!serverOrder) return order;
+              return mergeCustomerOrderFromServer(serverOrder, order);
+            });
+          }
           return nextOrders;
         } catch {
           return orders;
@@ -4031,7 +4039,7 @@
             </div>
             <p class="muted">Cập nhật gần nhất: ${order.updatedAt}</p>
             ${order.status === "Đơn hủy" || order.shippingStatus === "cancelled" ? `<p class="order-cancelled-note">${escapeMarkup(refundNotice(order) || "Đơn hàng đã được hủy thành công.")}</p>` : ""}
-            ${(canCustomerPay(order) || canCustomerCancel(order) || customerCancellationLocked(order)) ? `<div class="order-actions">${canCustomerPay(order) ? `<button class="order-pay" type="button" data-pay-order="${escapeMarkup(order.code)}" data-order-phone="${escapeMarkup(order.lookupPhone || order.customer.phone)}">Thanh toán</button>` : ""}${canCustomerCancel(order) ? `<button class="order-cancel" type="button" data-cancel-order="${escapeMarkup(order.code)}" data-order-phone="${escapeMarkup(order.lookupPhone || order.customer.phone)}"${cancellingOrderCodes.has(order.code) ? " disabled" : ""}>${cancellingOrderCodes.has(order.code) ? "Đang huỷ..." : "Hủy đơn"}</button>` : customerCancellationLocked(order) ? `<button class="order-cancel order-cancel-locked" type="button" disabled>Hủy đơn</button>` : ""}</div>` : ""}
+            ${(canCustomerPay(order) || canCustomerCancel(order) || customerCancellationLocked(order)) ? `<div class="order-actions">${canCustomerPay(order) ? `<button class="order-pay" type="button" data-pay-order="${escapeMarkup(order.code)}" data-order-phone="${escapeMarkup(order.lookupPhone || order.customer.phone)}">Thanh toán</button>` : ""}${canCustomerCancel(order) ? `<button class="order-cancel" type="button" data-cancel-order="${escapeMarkup(order.code)}" data-order-phone="${escapeMarkup(order.lookupPhone || order.customer.phone)}"${cancellingOrderCodes.has(order.code) ? " disabled" : ""}>${cancellingOrderCodes.has(order.code) ? "Đang huỷ..." : "Hủy đơn"}</button>` : customerCancellationLocked(order) ? `<button class="order-cancel order-cancel-locked" type="button" disabled aria-disabled="true">Hủy đơn</button>` : ""}</div>` : ""}
             ${customerCancellationLocked(order) ? `<p class="order-cancel-locked-note">Đơn hàng đã gửi đi, vui lòng liên hệ shop để huỷ đơn.</p>` : ""}
             </div>
           </details>
