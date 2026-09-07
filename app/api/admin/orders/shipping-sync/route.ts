@@ -15,7 +15,9 @@ function hasPancakeSyncSignal(order: Awaited<ReturnType<typeof readOrders>>[numb
 }
 
 async function syncShippingOrders(request: Request) {
-  const fullSync = new URL(request.url).searchParams.get("full") === "1" || request.headers.get("x-vercel-cron") === "1";
+  const cronSecret = process.env.CRON_SECRET || "";
+  const isAuthorizedCron = Boolean(cronSecret && request.headers.get("authorization") === `Bearer ${cronSecret}`);
+  const fullSync = new URL(request.url).searchParams.get("full") === "1" || isAuthorizedCron;
   const config = await readIntegrationConfig();
   const orders = await readOrders();
   if (fullSync) {

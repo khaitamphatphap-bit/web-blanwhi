@@ -6,6 +6,7 @@ import { verifyZaloPayBody } from "@/lib/payment";
 import { markVerifiedPayment, syncVerifiedOrderToPos } from "@/lib/payment-confirmation";
 import { recordPaymentOrphan } from "@/lib/payment-orphans";
 import { recordVerifiedZaloPayReceipt, updateZaloPayReceipt } from "@/lib/zalopay-payment-receipts";
+import { QueueHandler } from "@/lib/pancake/queue-handler";
 
 export async function POST(request: Request) {
   let receiptId = "";
@@ -78,7 +79,13 @@ export async function POST(request: Request) {
       attempts: receipt.attempts + 1,
       message: "Đã cập nhật đơn sang trạng thái đã thanh toán."
     });
-    after(() => syncVerifiedOrderToPos(paid));
+    const queued = await QueueHandler.enqueue("order.create", { orderCode: paid.code }).catch(() => null);
+    after(async () => {
+      const synced = await syncVerifiedOrderToPos(paid);
+      if (queued && (synced.pancakeOrderId || synced.pancakeStatus === "packing")) {
+        await QueueHandler.remove(queued.id);
+      }
+    });
 
     return NextResponse.json({ return_code: 1, return_message: "success" });
   } catch (error) {

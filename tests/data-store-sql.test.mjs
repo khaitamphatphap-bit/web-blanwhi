@@ -4,11 +4,16 @@ import test from "node:test";
 
 test("ghi database ưu tiên lưu bản chính trước backup để tránh deadlock", async () => {
   const source = await readFile(new URL("../lib/data-store.ts", import.meta.url), "utf8");
-  assert.match(source, /insert into blanwhi_keyed_store \(namespace, item_key, item_value, updated_at\)[\s\S]*?on conflict \(namespace, item_key\)/);
-  assert.match(source, /item_value is distinct from excluded\.item_value[\s\S]*?if \(!saved\.rows\.length\) return value/);
-  assert.match(source, /write database history/);
-  assert.match(source, /queue database backup/);
-  assert.match(source, /must never reject checkout or cancellation/);
+  const writeRecord = source.slice(
+    source.indexOf("export async function writeKeyedJsonRecord"),
+    source.indexOf("export async function readKeyedJsonStoreHistory")
+  );
+  assert.match(writeRecord, /with saved as \([\s\S]*?insert into blanwhi_keyed_store[\s\S]*?on conflict \(namespace, item_key\)/);
+  assert.match(writeRecord, /history as \([\s\S]*?insert into blanwhi_keyed_store_history[\s\S]*?'after-write'/);
+  assert.match(writeRecord, /backup as \([\s\S]*?insert into blanwhi_backup_outbox/);
+  assert.match(writeRecord, /select 1 as changed from saved/);
+  assert.match(source, /R2 mirroring is drained by cron, never checkout/);
+  assert.doesNotMatch(writeRecord, /mirrorDatabaseKeyedRecordToR2/);
 });
 
 test("ghi nhiều record theo lô nhỏ để không làm nghẽn pool Neon", async () => {

@@ -5346,7 +5346,7 @@
           }
           rememberCustomerIdentity(order.customer);
           saveOrders([order, ...loadOrders()]);
-          await clearCartDraftAfterCheckout();
+          void clearCartDraftAfterCheckout();
           checkoutRequestState = { fingerprint: "", id: "" };
           cart.length = 0;
           orderNote = "";

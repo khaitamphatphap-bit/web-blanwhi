@@ -20,7 +20,7 @@ test("khôi phục giỏ dùng catalog hiện tại và xóa bản nháp sau khi
   assert.match(customerPage, /productData\.find\(\(item\) => item\.id === saved\.productId\)/);
   assert.match(customerPage, /amount,[\s\S]*?price: saved\.wholesale \?/);
   assert.match(customerPage, /const latestLocalDraft = readLocalCartDraft\(\);[\s\S]*?serverDraft\.updatedAt[\s\S]*?latestLocalDraft\?\.updatedAt/);
-  assert.match(customerPage, /saveOrders\(\[order, \.\.\.loadOrders\(\)\]\);\s*await clearCartDraftAfterCheckout\(\)/);
+  assert.match(customerPage, /saveOrders\(\[order, \.\.\.loadOrders\(\)\]\);\s*void clearCartDraftAfterCheckout\(\)/);
   assert.match(customerPage, /cart\.length = 0;[\s\S]*?renderCart\(false\)/);
 });
 

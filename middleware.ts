@@ -54,7 +54,11 @@ export function middleware(request: NextRequest) {
   const cronPath =
     pathname === "/api/admin/orders/shipping-sync" ||
     pathname === "/api/admin/pancake/poll";
-  if (cronPath && request.headers.get("x-vercel-cron") === "1") return NextResponse.next();
+  const cronSecret = process.env.CRON_SECRET;
+  const cronAuthorization = request.headers.get("authorization");
+  if (cronPath && cronSecret && cronAuthorization === `Bearer ${cronSecret}`) {
+    return NextResponse.next();
+  }
 
   const protectedPath =
     pathname.startsWith("/admin") ||

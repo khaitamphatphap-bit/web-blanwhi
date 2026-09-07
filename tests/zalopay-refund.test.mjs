@@ -21,9 +21,17 @@ test("luôn dùng lại mã hoàn tiền đã lưu", () => {
   assert.equal(buildZaloPayRefundRequestId({ ...order, refundTransactionId: saved }, "2553"), saved);
 });
 
-test("route huỷ đơn khách gọi API hoàn tiền tự động", async () => {
+test("route huỷ đơn khách ghi job hoàn tiền bền vững và worker chống hoàn trùng", async () => {
   const source = await readFile(new URL("../app/api/orders/[code]/cancel/route.ts", import.meta.url), "utf8");
-  assert.match(source, /requestAutomaticZaloPayRefund\(cancelled, config, reason\)/);
+  const worker = await readFile(new URL("../lib/zalopay-cancel-refund.ts", import.meta.url), "utf8");
+  const backgroundJobs = await readFile(new URL("../lib/order-background-jobs.ts", import.meta.url), "utf8");
+  assert.match(source, /QueueHandler\.enqueue\("zalopay\.refund"/);
+  assert.doesNotMatch(source, /requestAutomaticZaloPayRefund|queryZaloPayPayment/);
+  assert.match(source, /preserveExistingRefundState[\s\S]*?\["succeeded", "pending", "failed"\]/);
+  assert.match(source, /preserveExistingRefundState \? \{\} : prepareZaloPayRefund/);
+  assert.match(backgroundJobs, /job\.type === "zalopay\.refund"[\s\S]*?processCancelledZaloPayRefund/);
+  assert.match(worker, /refundStatus === "succeeded" \|\| order\.refundStatus === "not_required"/);
+  assert.match(worker, /requestAutomaticZaloPayRefund\(order, config, reason\)/);
   assert.match(source, /Liên hệ Zalo 0866561480 để được hỗ trợ thêm/);
 });
 

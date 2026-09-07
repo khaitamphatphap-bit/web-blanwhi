@@ -8,6 +8,9 @@ import {
 import { buildPancakeOrderPayload as buildPayloadAgain } from "../lib/pancake/domain.ts";
 import { buildTrackingOnlyPatch, extractPancakeTracking } from "../lib/pancake/tracking.ts";
 import { buildZaloPayRefundRequestId } from "../lib/zalopay-refund-id.ts";
+import { mergeOrderPatch } from "../lib/order-state.ts";
+import { adminPaymentLabel, buildAdminOrderView } from "../lib/admin-order-view.ts";
+import { createCustomerToken, verifyCustomerToken } from "../lib/customer-session.ts";
 
 const durationMs = Math.max(1_000, Number(process.env.SOAK_DURATION_MS || 60 * 60 * 1000));
 const tickMs = Math.max(1, Number(process.env.SOAK_TICK_MS || 50));
@@ -32,16 +35,27 @@ async function verifyRuntimeContracts() {
   const orders = await readFile(new URL("../lib/orders.ts", import.meta.url), "utf8");
   const paymentResult = await readFile(new URL("../app/payment-result/page.tsx", import.meta.url), "utf8");
   const payment = await readFile(new URL("../lib/payment.ts", import.meta.url), "utf8");
+  const backgroundJobs = await readFile(new URL("../lib/order-background-jobs.ts", import.meta.url), "utf8");
+  const middleware = await readFile(new URL("../middleware.ts", import.meta.url), "utf8");
+  const dataStore = await readFile(new URL("../lib/data-store.ts", import.meta.url), "utf8");
 
-  assert.match(createRoute, /createReservedOrder\(\{ \.\.\.order, checkoutCompletedAt: now \}\)[\s\S]*?schedulePosSync\(order\)/);
+  assert.match(createRoute, /createReservedOrder\(\{ \.\.\.order, checkoutCompletedAt: now \}\)[\s\S]*?queuePosSync\(order\)[\s\S]*?schedulePosSync\(order, queued\?\.id\)/);
   assert.match(createRoute, /createZaloPayPayment\(pendingZaloPayOrder[\s\S]*?if \(!zalopay\.order_url\)[\s\S]*?createReservedOrder/);
   assert.match(createRoute, /findOrderByCheckoutRequestId\(checkoutRequestId, customerDeviceId\)/);
+  assert.doesNotMatch(createRoute, /expireStaleZaloPayReservations/);
   assert.match(ipnRoute, /verifyZaloPayBody/);
   assert.match(ipnRoute, /order\.total !== amount/);
   assert.match(ipnRoute, /recordPaymentOrphan/);
-  assert.match(cancelRoute, /updateOrder\(code,[\s\S]*?status: "cancelled"[\s\S]*?QueueHandler\.enqueue\("order\.cancel"/);
+  assert.match(cancelRoute, /timing\.measure\("database_cancel"[\s\S]*?status: "cancelled"[\s\S]*?QueueHandler\.enqueue\("order\.cancel"/);
+  assert.doesNotMatch(cancelRoute, /withTimeout|await orderSync\.cancel|requestAutomaticZaloPayRefund/);
+  assert.match(backgroundJobs, /job\.type === "inventory\.release"[\s\S]*?releaseOrder\(order\)/);
+  assert.match(backgroundJobs, /job\.type === "zalopay\.refund"[\s\S]*?processCancelledZaloPayRefund/);
   assert.match(queue, /const attempts = job\.attempts \+ 1/);
   assert.match(queue, /Math\.min\(60, 2 \*\* attempts\) \* 60_000/);
+  assert.match(queue, /const limit = Math\.max\(1, Math\.min\(100/);
+  assert.match(middleware, /cronAuthorization === `Bearer \$\{cronSecret\}`/);
+  assert.doesNotMatch(middleware, /cronPath && request\.headers\.get\("x-vercel-cron"\)/);
+  assert.match(dataStore, /R2 mirroring is drained by cron, never checkout/);
   assert.match(orders, /Hệ thống đã dừng tạo đơn để tránh tạo trùng hoặc mất đơn/);
   assert.match(customerPage, /checkoutController\.abort\(\), 25000/);
   assert.match(customerPage, /Kết nối đang chậm\. Vui lòng bấm Đặt hàng lại; hệ thống sẽ kiểm tra giao dịch cũ và không tạo trùng đơn/);
@@ -85,10 +99,17 @@ class SoakHarness {
       trackingWebhookMissesRecovered: 0,
       customerDeviceReads: 0,
       customerPhoneReads: 0,
+      customerClaimReads: 0,
+      adminViewsVerified: 0,
+      cancellationLocksVerified: 0,
       cancellations: 0,
       refundsSucceeded: 0,
       refundFailuresExplained: 0,
-      outOfStockRejected: 0
+      outOfStockRejected: 0,
+      paymentStatesVerified: 0,
+      pancakePaymentStatesVerified: 0,
+      stalePaymentDowngradesRejected: 0,
+      priceSnapshotsVerified: 0
     };
   }
 
@@ -166,6 +187,13 @@ class SoakHarness {
     }
     assert.equal(this.orders.has(order.code), false, `không được ghi đè ${order.code}`);
     order.inventoryReservationReleased = false;
+    order.financialSnapshot = {
+      subtotal: order.subtotal,
+      discount: order.discount,
+      shipping: order.shipping,
+      total: order.total,
+      itemPrices: order.items.map((item) => item.unitPrice)
+    };
     this.orders.set(order.code, order);
     this.checkoutIndex.set(order.checkoutRequestId, order.code);
     if (!this.deviceIndex.has(order.customerDeviceId)) this.deviceIndex.set(order.customerDeviceId, new Set());
@@ -213,6 +241,7 @@ class SoakHarness {
       assert.equal(payload.cod, 0);
       assert.equal(payload.payment_status, "paid");
     }
+    this.metrics.pancakePaymentStatesVerified += 1;
     return order;
   }
 
@@ -254,8 +283,39 @@ class SoakHarness {
   customerCanRead(order) {
     assert.ok(this.deviceIndex.get(order.customerDeviceId)?.has(order.code));
     assert.ok(this.phoneIndex.get(order.customer.phone)?.has(order.code));
+    const now = Date.now();
+    const sessionToken = createCustomerToken(order.customerDeviceId, "session", now);
+    const claimToken = createCustomerToken(order.customerDeviceId, "claim", now);
+    assert.equal(verifyCustomerToken(sessionToken, "session", now), order.customerDeviceId);
+    const claimedDeviceId = verifyCustomerToken(claimToken, "claim", now);
+    assert.equal(claimedDeviceId, order.customerDeviceId);
+    assert.ok(this.deviceIndex.get(claimedDeviceId)?.has(order.code), `${order.code} phải xem được sau khi chuyển từ TikTok sang trình duyệt`);
+    if (order.paymentMethod === "zalopay") {
+      assert.equal(order.status, "paid", `${order.code} phải hiển thị đã thanh toán cho khách`);
+      assert.ok(order.transactionId, `${order.code} đã thanh toán phải có mã giao dịch`);
+    } else {
+      assert.equal(order.status, "pending", `${order.code} COD phải hiển thị chờ vận chuyển`);
+    }
+    assert.equal(order.subtotal, order.financialSnapshot.subtotal);
+    assert.equal(order.discount, order.financialSnapshot.discount);
+    assert.equal(order.shipping, order.financialSnapshot.shipping);
+    assert.equal(order.total, order.financialSnapshot.total);
+    assert.deepEqual(order.items.map((item) => item.unitPrice), order.financialSnapshot.itemPrices);
+    const adminView = buildAdminOrderView(order, [structuredClone(order)]);
+    assert.equal(adminView.total, order.financialSnapshot.total);
+    assert.deepEqual(adminView.items.map((item) => item.unitPrice), order.financialSnapshot.itemPrices);
+    assert.equal(
+      adminPaymentLabel(adminView),
+      order.paymentMethod === "zalopay" ? "Đã thanh toán" : "COD - chưa thu",
+      `${order.code} trang admin phải hiện đúng trạng thái thanh toán`
+    );
+    if (order.trackingCode) assert.equal(adminView.adminShippingStatus, "shipping");
     this.metrics.customerDeviceReads += 1;
     this.metrics.customerPhoneReads += 1;
+    this.metrics.customerClaimReads += 1;
+    this.metrics.adminViewsVerified += 1;
+    this.metrics.paymentStatesVerified += 1;
+    this.metrics.priceSnapshotsVerified += 1;
   }
 
   addTracking(order, webhookMiss = false) {
@@ -326,6 +386,19 @@ class SoakHarness {
     if (scenario === 8) this.metrics.callbackLossRecoveredByQuery += 1;
     saved.status = "paid";
     saved.transactionId = transaction.transactionId;
+    const stalePaymentUpdate = mergeOrderPatch(saved, {
+      status: "pending",
+      total: saved.total + 999_000,
+      items: saved.items.map((item) => ({ ...item, unitPrice: item.unitPrice + 999_000 }))
+    });
+    assert.equal(stalePaymentUpdate.status, "paid", "trạng thái paid không được bị kéo lùi");
+    assert.equal(stalePaymentUpdate.total, saved.total, "tổng đã chốt không được đổi");
+    assert.deepEqual(
+      stalePaymentUpdate.items.map((item) => item.unitPrice),
+      saved.items.map((item) => item.unitPrice),
+      "giá từng sản phẩm đã chốt không được đổi"
+    );
+    this.metrics.stalePaymentDowngradesRejected += 1;
     if (scenario === 9) this.setRemoteFailures("pancake-create", saved.code, 2);
     this.syncPancake(saved);
     this.customerCanRead(saved);
@@ -357,6 +430,10 @@ class SoakHarness {
         this.metrics.refundsSucceeded += 1;
       }
     }
+    const adminView = buildAdminOrderView(order, [structuredClone(order)]);
+    assert.equal(adminView.adminShippingStatus, "cancelled");
+    assert.ok(["Đơn đã hủy", "Đã hoàn tiền"].includes(adminPaymentLabel(adminView)));
+    this.metrics.adminViewsVerified += 1;
     return true;
   }
 
@@ -400,7 +477,15 @@ class SoakHarness {
     if (scenario % 3 === 0) {
       this.processQueue(20);
       if (this.pancake.has(pancakeOrderKey(order.code))) this.addTracking(order, scenario === 6);
-      if (order.trackingCode) this.customerCanRead(order);
+      if (order.trackingCode) {
+        this.customerCanRead(order);
+        const statusBeforeCancel = order.status;
+        const remoteStatusBeforeCancel = this.pancake.get(pancakeOrderKey(order.code))?.status;
+        assert.equal(this.cancel(order), false, `${order.code} có mã vận đơn không được hủy`);
+        assert.equal(order.status, statusBeforeCancel);
+        assert.equal(this.pancake.get(pancakeOrderKey(order.code))?.status, remoteStatusBeforeCancel);
+        this.metrics.cancellationLocksVerified += 1;
+      }
     } else {
       this.cancel(order, scenario === 2 || scenario === 9, scenario === 7);
     }
@@ -423,6 +508,21 @@ class SoakHarness {
       if (order.paymentMethod === "zalopay" && order.status === "pending") {
         assert.equal(this.pancake.has(pancakeOrderKey(order.code)), false, "ZaloPay chưa trả tiền không được sang Pancake");
       }
+      const remote = this.pancake.get(pancakeOrderKey(order.code));
+      if (remote && order.paymentMethod === "zalopay" && order.status !== "cancelled") {
+        assert.equal(order.status, "paid", `${order.code} Pancake không được nhận đơn ZaloPay chưa thanh toán`);
+        assert.equal(remote.payment_status, "paid");
+        assert.equal(remote.cod, 0);
+      }
+      if (remote && order.paymentMethod === "cod") {
+        assert.equal(remote.payment_status, "unpaid");
+        assert.equal(remote.cod, order.total);
+      }
+      assert.equal(order.subtotal, order.financialSnapshot.subtotal);
+      assert.equal(order.discount, order.financialSnapshot.discount);
+      assert.equal(order.shipping, order.financialSnapshot.shipping);
+      assert.equal(order.total, order.financialSnapshot.total);
+      assert.deepEqual(order.items.map((item) => item.unitPrice), order.financialSnapshot.itemPrices);
       if (this.expectedTracking.has(order.code)) assert.equal(order.trackingCode, this.expectedTracking.get(order.code));
     }
     for (const [variantId, available] of this.stock) {
@@ -487,7 +587,14 @@ assert.ok(report.callbackLossRecoveredByQuery > 0);
 assert.ok(report.trackingWebhookMissesRecovered > 0);
 assert.ok(report.customerDeviceReads > 0);
 assert.ok(report.customerPhoneReads > 0);
+assert.ok(report.customerClaimReads > 0);
+assert.ok(report.adminViewsVerified > 0);
+assert.ok(report.cancellationLocksVerified > 0);
 assert.ok(report.cancellations > 0);
 assert.ok(report.outOfStockRejected > 0);
+assert.ok(report.paymentStatesVerified > 0);
+assert.ok(report.pancakePaymentStatesVerified > 0);
+assert.ok(report.stalePaymentDowngradesRejected > 0);
+assert.ok(report.priceSnapshotsVerified > 0);
 await writeFile(reportPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
 process.stdout.write(`SOAK_RESULT ${JSON.stringify(report)}\n`);

@@ -5,6 +5,7 @@ import { InventoryService } from "@/lib/pancake/inventory-service";
 import type { IntegrationConfig } from "@/lib/integrations";
 import type { ShopOrder } from "@/lib/types";
 import { isLegacyAutoCancelledZaloPayOrder } from "@/lib/zalopay-reservation-policy";
+import { QueueHandler } from "@/lib/pancake/queue-handler";
 
 type VerifiedPayment = Partial<Pick<ShopOrder, "transactionId" | "providerOrderId" | "paymentProviderOrderId" | "providerMessage">>;
 
@@ -50,13 +51,15 @@ export async function syncVerifiedOrderToPos(order: ShopOrder) {
     return await new POSSyncService().confirmOrder(order);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Không gửi được đơn sang Pancake";
-    return await updateOrder(order.code, {
+    const updated = await updateOrder(order.code, {
       externalSync: {
         ...order.externalSync,
         pancake: `Đã thanh toán - chờ gửi lại Pancake: ${message}`,
         lastSyncedAt: new Date().toISOString()
       }
     }) || order;
+    await QueueHandler.enqueue("order.create", { orderCode: order.code }).catch(() => undefined);
+    return updated;
   }
 }
 

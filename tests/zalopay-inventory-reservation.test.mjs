@@ -35,13 +35,13 @@ test("luồng ZaloPay giữ tồn trước khi trả link và dùng chung khóa 
   const inventory = await readFile(new URL("../lib/pancake/inventory-service.ts", import.meta.url), "utf8");
 
   assert.match(payment, /expire_duration_seconds: "300"/);
-  assert.match(createRoute, /if \(paymentMethod === "zalopay"\)[\s\S]*?createZaloPayPayment[\s\S]*?inventoryService\.createReservedOrder[\s\S]*?return json/);
+  assert.match(createRoute, /if \(paymentMethod === "zalopay"\)[\s\S]*?createZaloPayPayment[\s\S]*?inventoryService\.createReservedOrder[\s\S]*?return respond/);
   assert.match(inventory, /confirmReservedPayment[\s\S]*?withDataStoreLock\("website-inventory"/);
   assert.match(inventory, /expireZaloPayReservation[\s\S]*?withDataStoreLock\("website-inventory"/);
 });
 
 test("luồng COD vẫn giữ nguyên cơ chế tạo đơn đã giữ tồn", async () => {
   const createRoute = await readFile(new URL("../app/api/payments/create/route.ts", import.meta.url), "utf8");
-  assert.match(createRoute, /order = await inventoryService\.createReservedOrder\(\{ \.\.\.order, checkoutCompletedAt: now \}\)/);
-  assert.match(createRoute, /pancakeConfigured && paymentMethod === "cod"[\s\S]*?schedulePosSync\(order\)/);
+  assert.match(createRoute, /order = await timing\.measure\("database", \(\) => inventoryService\.createReservedOrder\(\{ \.\.\.order, checkoutCompletedAt: now \}\)\)/);
+  assert.match(createRoute, /pancakeConfigured && paymentMethod === "cod"[\s\S]*?queuePosSync\(order\)[\s\S]*?schedulePosSync\(order, queued\?\.id\)/);
 });

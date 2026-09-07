@@ -10,7 +10,8 @@ import { readSiteContent, type SiteContent } from "@/lib/site-content";
 import { POSSyncService } from "@/lib/services/pos-sync-service";
 import { QueueHandler } from "@/lib/pancake/queue-handler";
 import { calculateStandardShipping } from "@/lib/shipping-pricing";
-import { expireStaleZaloPayReservations, zaloPayReservationExpiresAt } from "@/lib/zalopay-reservation";
+import { zaloPayReservationExpiresAt } from "@/lib/zalopay-reservation";
+import { ServerTiming } from "@/lib/server-timing";
 
 type CheckoutPayload = {
   customerDeviceId?: string;
@@ -80,8 +81,7 @@ const corsHeaders = {
 
 async function queuePosSync(order: ShopOrder) {
   try {
-    await QueueHandler.enqueue("order.create", { orderCode: order.code });
-    return true;
+    return await QueueHandler.enqueue("order.create", { orderCode: order.code });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Không ghi được hàng đợi Pancake.";
     await updateOrder(order.code, {
@@ -91,14 +91,15 @@ async function queuePosSync(order: ShopOrder) {
         lastSyncedAt: new Date().toISOString()
       }
     });
-    return false;
+    return null;
   }
 }
 
-function schedulePosSync(order: ShopOrder) {
+function schedulePosSync(order: ShopOrder, queuedJobId?: string) {
   after(async () => {
     try {
       await new POSSyncService().confirmOrder(order);
+      if (queuedJobId) await QueueHandler.remove(queuedJobId);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Không thể đồng bộ đơn sang Pancake.";
       await updateOrder(order.code, {
@@ -109,8 +110,8 @@ function schedulePosSync(order: ShopOrder) {
         }
       });
       // The database order is already safe. Queue a retry only when the direct
-      // Pancake request fails, so a slow R2 queue never delays a successful sync.
-      await queuePosSync(order);
+      // Pancake request fails and no durable job was written before the response.
+      if (!queuedJobId) await queuePosSync(order);
     }
   });
 }
@@ -256,6 +257,11 @@ export async function OPTIONS() {
 }
 
 export async function POST(request: Request) {
+  const timing = new ServerTiming();
+  const respond = (body: unknown, init?: ResponseInit) => json(body, {
+    ...init,
+    headers: { ...init?.headers, ...timing.headers("checkout") }
+  });
   try {
     const payload = (await request.json()) as CheckoutPayload;
     const items = payload.items ?? [];
@@ -265,40 +271,37 @@ export async function POST(request: Request) {
     const checkoutRequestId = String(payload.checkoutRequestId || "").trim().slice(0, 120);
     // COD must not wait for merchant configuration stored outside Postgres.
     // Only online payment methods need those credentials.
-    const [integrations, siteContent] = await Promise.all([
+    const [integrations, siteContent] = await timing.measure("bootstrap", () => Promise.all([
       onlineMethods.has(paymentMethod) ? readIntegrationConfig() : Promise.resolve(null),
       readSiteContent()
-    ]);
+    ]));
     const now = new Date().toISOString();
     const inventoryService = new InventoryService();
     const pancakeConfigured = inventoryService.configured();
 
     if (!enabledCheckoutMethods.has(paymentMethod)) {
-      return json({ error: "Phương thức thanh toán này không còn được hỗ trợ. Vui lòng chọn COD hoặc Zalopay." }, { status: 400 });
+      return respond({ error: "Phương thức thanh toán này không còn được hỗ trợ. Vui lòng chọn COD hoặc Zalopay." }, { status: 400 });
     }
 
     if (!customer.name || !customer.phone || !customer.address) {
-      return json({ error: "Vui lòng nhập đủ họ tên, số điện thoại và địa chỉ." }, { status: 400 });
+      return respond({ error: "Vui lòng nhập đủ họ tên, số điện thoại và địa chỉ." }, { status: 400 });
     }
     if (phoneDigitCount(customer.phone) < 10) {
-      return json({ error: "Số điện thoại bạn nhập chưa đủ số. Vui lòng nhập đủ số điện thoại để thanh toán bình thường." }, { status: 400 });
+      return respond({ error: "Số điện thoại bạn nhập chưa đủ số. Vui lòng nhập đủ số điện thoại để thanh toán bình thường." }, { status: 400 });
     }
     if (!customer.provinceId || !customer.districtId || !customer.wardId || !customer.house) {
-      return json({ error: "Vui lòng chọn đủ Tỉnh/Thành, Quận/Huyện, Phường/Xã và nhập số nhà để đồng bộ địa chỉ sang POS." }, { status: 400 });
+      return respond({ error: "Vui lòng chọn đủ Tỉnh/Thành, Quận/Huyện, Phường/Xã và nhập số nhà để đồng bộ địa chỉ sang POS." }, { status: 400 });
     }
     if (!items.length) {
-      return json({ error: "Giỏ hàng đang trống." }, { status: 400 });
+      return respond({ error: "Giỏ hàng đang trống." }, { status: 400 });
     }
     if (onlineMethods.has(paymentMethod)) {
       const configError = paymentConfigError(paymentMethod, integrations!.payment);
-      if (configError) return json({ error: configError }, { status: 400 });
+      if (configError) return respond({ error: configError }, { status: 400 });
     }
 
-    // Trả các lượt giữ ZaloPay đã hết hạn trước khi kiểm tra tồn cho khách mới.
-    await expireStaleZaloPayReservations(Date.now(), { limit: 4, queryTimeoutMs: 2500, syncPos: false }).catch(() => undefined);
-
     if (checkoutRequestId) {
-      const existing = await findOrderByCheckoutRequestId(checkoutRequestId, customerDeviceId);
+      const existing = await timing.measure("idempotency", () => findOrderByCheckoutRequestId(checkoutRequestId, customerDeviceId));
       if (existing) {
         if (paymentMethod === "cod" && existing.status === "pending") {
           const completed = existing.checkoutCompletedAt ? existing : await updateOrder(existing.code, {
@@ -309,33 +312,34 @@ export async function POST(request: Request) {
               lastSyncedAt: now
             } } : {})
           }) || existing;
-          const accepted = await inventoryService.reserveOrder(completed);
+          const accepted = await timing.measure("database", () => inventoryService.reserveOrder(completed));
           let syncQueued = false;
           if (pancakeConfigured) {
-            schedulePosSync(accepted);
-            syncQueued = true;
+            const queued = await timing.measure("outbox", () => queuePosSync(accepted));
+            schedulePosSync(accepted, queued?.id);
+            syncQueued = Boolean(queued);
           }
-          return json({ order: accepted, syncQueued, deduplicated: true });
+          return respond({ order: accepted, syncQueued, deduplicated: true });
         }
         if (paymentMethod === "zalopay" && existing.status === "pending") {
-          const zalopay = await createZaloPayPayment(existing, request, integrations!.payment);
+          const zalopay = await timing.measure("zalopay", () => createZaloPayPayment(existing, request, integrations!.payment));
           if (zalopay.order_url) {
-            const refreshed = await inventoryService.renewZaloPayReservation(existing.code, {
+            const refreshed = await timing.measure("database", () => inventoryService.renewZaloPayReservation(existing.code, {
               paymentProviderOrderId: zalopay.app_trans_id,
               providerMessage: "ZaloPay payment link recreated for idempotent checkout",
               inventoryReservationExpiresAt: zaloPayReservationExpiresAt()
-            });
-            return json({ order: refreshed, redirectUrl: zalopay.order_url, token: zalopay.zp_trans_token || zalopay.order_token, deduplicated: true });
+            }));
+            return respond({ order: refreshed, redirectUrl: zalopay.order_url, token: zalopay.zp_trans_token || zalopay.order_token, deduplicated: true });
           }
         }
-        return json({ order: existing, deduplicated: true });
+        return respond({ order: existing, deduplicated: true });
       }
     }
 
     const defaultShippingFee = Math.max(0, Math.floor(Number(siteContent.shipping?.defaultFee ?? 30000) || 0));
     const isExpressShipping = payload.shipping?.type === "express";
     if (isExpressShipping && siteContent.shipping?.expressEnabled !== true) {
-      return json({ error: "Giao hỏa tốc hiện đang tắt. Vui lòng chọn giao tiêu chuẩn." }, { status: 400 });
+      return respond({ error: "Giao hỏa tốc hiện đang tắt. Vui lòng chọn giao tiêu chuẩn." }, { status: 400 });
     }
     const orderItems = await hydratePancakeLinks(normalizeItems(items), siteContent);
     const subtotal = orderItems.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
@@ -413,20 +417,20 @@ export async function POST(request: Request) {
           ? { ...order.externalSync, pancake: "Chờ ZaloPay xác nhận - chưa gửi Pancake", lastSyncedAt: now }
           : order.externalSync
       };
-      const zalopay = await createZaloPayPayment(pendingZaloPayOrder, request, integrations!.payment);
+      const zalopay = await timing.measure("zalopay", () => createZaloPayPayment(pendingZaloPayOrder, request, integrations!.payment));
       if (!zalopay.order_url) {
-        return json({
+        return respond({
           error: zalopay.return_message || "ZaloPay chưa trả link thanh toán. Vui lòng kiểm tra App ID, Key 1, Key 2 production trong trang admin."
         }, { status: 400 });
       }
-      const saved = await inventoryService.createReservedOrder({
+      const saved = await timing.measure("database", () => inventoryService.createReservedOrder({
         ...pendingZaloPayOrder,
         paymentProviderOrderId: zalopay.app_trans_id,
         providerMessage: "ZaloPay payment link created",
         inventoryReservationExpiresAt: zaloPayReservationExpiresAt(),
         checkoutCompletedAt: now
-      });
-      return json({
+      }));
+      return respond({
         order: saved,
         redirectUrl: zalopay.order_url,
         token: zalopay.zp_trans_token || zalopay.order_token,
@@ -442,19 +446,20 @@ export async function POST(request: Request) {
         lastSyncedAt: now
       };
     }
-    order = await inventoryService.createReservedOrder({ ...order, checkoutCompletedAt: now });
+    order = await timing.measure("database", () => inventoryService.createReservedOrder({ ...order, checkoutCompletedAt: now }));
     if (pancakeConfigured && paymentMethod === "cod") {
-      schedulePosSync(order);
-      return json({ order, syncQueued: true });
+      const queued = await timing.measure("outbox", () => queuePosSync(order));
+      schedulePosSync(order, queued?.id);
+      return respond({ order, syncQueued: Boolean(queued) });
     }
 
     if (paymentMethod === "vnpay") {
-      return json({ order, redirectUrl: createVnpayUrl(order, request, integrations!.payment) });
+      return respond({ order, redirectUrl: createVnpayUrl(order, request, integrations!.payment) });
     }
 
     if (paymentMethod === "momo") {
       const momo = await createMomoPayment(order, request, integrations!.payment);
-      return json({
+      return respond({
         order,
         redirectUrl: momo.payUrl || fallbackPaymentUrl(order, paymentMethod, request),
         qrCodeUrl: momo.qrCodeUrl,
@@ -465,9 +470,9 @@ export async function POST(request: Request) {
 
     if (paymentMethod === "onepay" || paymentMethod === "alepay") {
       if (!demoPaymentsAllowed()) {
-        return json({ error: "OnePay/AlePay chưa có cấu hình merchant thật." }, { status: 400 });
+        return respond({ error: "OnePay/AlePay chưa có cấu hình merchant thật." }, { status: 400 });
       }
-      return json({
+      return respond({
         order,
         redirectUrl: fallbackPaymentUrl(order, paymentMethod, request),
         demo: true,
@@ -475,13 +480,13 @@ export async function POST(request: Request) {
       });
     }
 
-    return json({
+    return respond({
       order,
       redirectUrl: fallbackPaymentUrl(order, paymentMethod, request)
     });
   } catch (error) {
     const response = jsonError(error);
     const body = await response.json();
-    return json(body, { status: response.status });
+    return respond(body, { status: response.status });
   }
 }

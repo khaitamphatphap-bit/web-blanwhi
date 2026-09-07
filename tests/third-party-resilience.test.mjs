@@ -8,13 +8,15 @@ const paymentResult = await readFile(new URL("../app/payment-result/page.tsx", i
 const payment = await readFile(new URL("../lib/payment.ts", import.meta.url), "utf8");
 const cancelRoute = await readFile(new URL("../app/api/orders/[code]/cancel/route.ts", import.meta.url), "utf8");
 const queue = await readFile(new URL("../lib/pancake/queue-handler.ts", import.meta.url), "utf8");
+const backgroundJobs = await readFile(new URL("../lib/order-background-jobs.ts", import.meta.url), "utf8");
 const customerPage = await readFile(new URL("../public/preview.html", import.meta.url), "utf8");
 
 test("COD lưu database trước và Pancake lỗi được đưa vào hàng đợi", () => {
-  assert.match(createRoute, /createReservedOrder\(\{ \.\.\.order, checkoutCompletedAt: now \}\)[\s\S]*?schedulePosSync\(order\)/);
+  assert.match(createRoute, /createReservedOrder\(\{ \.\.\.order, checkoutCompletedAt: now \}\)[\s\S]*?queuePosSync\(order\)[\s\S]*?schedulePosSync\(order, queued\?\.id\)/);
   assert.match(createRoute, /Đã lưu đơn, chờ gửi Pancake/);
   assert.match(queue, /const attempts = job\.attempts \+ 1/);
   assert.match(queue, /Math\.min\(60, 2 \*\* attempts\) \* 60_000/);
+  assert.match(queue, /options: \{ limit\?: number; concurrency\?: number \}/);
 });
 
 test("ZaloPay lỗi hoặc treo có timeout và thông báo tường minh", () => {
@@ -35,9 +37,11 @@ test("redirect ZaloPay không thể tự đánh dấu paid nếu API ZaloPay ch�
 });
 
 test("hủy đơn lưu database trước khi gọi Pancake và vẫn retry khi POS lỗi", () => {
-  const saveIndex = cancelRoute.indexOf("let cancelled = await updateOrder(code");
+  const saveIndex = cancelRoute.indexOf('let cancelled = await timing.measure("database_cancel"');
   const queueIndex = cancelRoute.indexOf('QueueHandler.enqueue("order.cancel"');
   assert.ok(saveIndex >= 0);
   assert.ok(queueIndex > saveIndex);
-  assert.match(cancelRoute, /Website đã ghi nhận; yêu cầu hủy POS đang được tự động thử lại/);
+  assert.doesNotMatch(cancelRoute, /withTimeout|await orderSync\.cancel|requestAutomaticZaloPayRefund/);
+  assert.match(backgroundJobs, /job\.type === "order\.cancel"[\s\S]*?order\.status !== "cancelled"[\s\S]*?\.cancel\(order, false\)/);
+  assert.match(cancelRoute, /QueueHandler\.enqueue\("inventory\.release"/);
 });

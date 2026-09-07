@@ -19,12 +19,26 @@ export class QueueHandler {
     });
   }
 
-  static async process(processor: (job: PancakeQueueJob) => Promise<void>) {
+  static async remove(jobId: string) {
+    return withDataStoreLock("pancake-queue", async () => {
+      const queue = await this.list();
+      const next = queue.filter((job) => job.id !== jobId);
+      if (next.length !== queue.length) await writeJsonStore("pancake-queue.json", next);
+      return next.length;
+    });
+  }
+
+  static async process(
+    processor: (job: PancakeQueueJob) => Promise<void>,
+    options: { limit?: number; concurrency?: number } = {}
+  ) {
     const leaseMs = 2 * 60_000;
+    const limit = Math.max(1, Math.min(100, Math.floor(options.limit || 20)));
+    const concurrency = Math.max(1, Math.min(10, Math.floor(options.concurrency || 4)));
     const claimed = await withDataStoreLock("pancake-queue", async () => {
       const queue = await this.list();
       const now = Date.now();
-      const ready = queue.filter((job) => new Date(job.availableAt).getTime() <= now);
+      const ready = queue.filter((job) => new Date(job.availableAt).getTime() <= now).slice(0, limit);
       if (!ready.length) return [];
       const readyIds = new Set(ready.map((job) => job.id));
       await writeJsonStore("pancake-queue.json", queue.map((job) => readyIds.has(job.id)
@@ -37,19 +51,21 @@ export class QueueHandler {
 
     const completedIds = new Set<string>();
     const failedJobs = new Map<string, PancakeQueueJob>();
-    for (const job of claimed) {
-      try {
-        await processor(job);
-        completedIds.add(job.id);
-      } catch (error) {
-        const attempts = job.attempts + 1;
-        failedJobs.set(job.id, {
-          ...job,
-          attempts,
-          lastError: ExceptionHandler.message(error),
-          availableAt: new Date(Date.now() + Math.min(60, 2 ** attempts) * 60_000).toISOString()
-        });
-      }
+    for (let index = 0; index < claimed.length; index += concurrency) {
+      await Promise.all(claimed.slice(index, index + concurrency).map(async (job) => {
+        try {
+          await processor(job);
+          completedIds.add(job.id);
+        } catch (error) {
+          const attempts = job.attempts + 1;
+          failedJobs.set(job.id, {
+            ...job,
+            attempts,
+            lastError: ExceptionHandler.message(error),
+            availableAt: new Date(Date.now() + Math.min(60, 2 ** attempts) * 60_000).toISOString()
+          });
+        }
+      }));
     }
 
     const remaining = await withDataStoreLock("pancake-queue", async () => {

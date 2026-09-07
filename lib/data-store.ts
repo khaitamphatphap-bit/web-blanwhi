@@ -307,15 +307,7 @@ async function mirrorDatabaseKeyedRecordToR2<T>(namespace: string, itemKey: stri
   }
 }
 
-async function waitForDatabaseBackupMirror<T>(namespace: string, itemKey: string, value: T) {
-  const mirror = mirrorDatabaseKeyedRecordToR2(namespace, itemKey, value);
-  await Promise.race([
-    mirror,
-    new Promise<void>((resolve) => setTimeout(resolve, 1200))
-  ]);
-}
-
-async function flushDatabaseBackupOutbox(limit = 100) {
+export async function flushDatabaseBackupOutbox(limit = 100) {
   if (!hasDatabase() || !hasR2Store()) return 0;
   await ensureDatabaseSchema();
   const pool = await getPool();
@@ -509,36 +501,34 @@ async function ensureDatabaseSchema() {
   if (!pool) return;
   if (!schemaReadyPromise) {
     const schemaRequest = (async () => {
+      // One round trip keeps cold starts from delaying the first checkout with
+      // a sequence of independent CREATE IF NOT EXISTS statements.
       await pool.query(`
         create table if not exists blanwhi_store (
           store_key text primary key,
           store_value jsonb not null,
           updated_at timestamptz not null default now()
-        )
-      `);
-      await pool.query(`
+        );
+
         create table if not exists blanwhi_store_history (
           id bigserial primary key,
           store_key text not null,
           store_value jsonb not null,
           reason text not null default 'before-write',
           created_at timestamptz not null default now()
-        )
-      `);
-      await pool.query(`
+        );
+
         create index if not exists blanwhi_store_history_key_created_idx
-        on blanwhi_store_history (store_key, created_at desc)
-      `);
-      await pool.query(`
+        on blanwhi_store_history (store_key, created_at desc);
+
         create table if not exists blanwhi_keyed_store (
           namespace text not null,
           item_key text not null,
           item_value jsonb not null,
           updated_at timestamptz not null default now(),
           primary key (namespace, item_key)
-        )
-      `);
-      await pool.query(`
+        );
+
         create table if not exists blanwhi_keyed_store_history (
           id bigserial primary key,
           namespace text not null,
@@ -546,13 +536,15 @@ async function ensureDatabaseSchema() {
           item_value jsonb not null,
           reason text not null default 'before-write',
           created_at timestamptz not null default now()
-        )
-      `);
-      await pool.query(`
+        );
+
         create index if not exists blanwhi_keyed_store_history_lookup_idx
-        on blanwhi_keyed_store_history (namespace, item_key, created_at desc)
-      `);
-      await pool.query(`
+        on blanwhi_keyed_store_history (namespace, item_key, created_at desc);
+
+        create index if not exists blanwhi_order_checkout_request_idx
+        on blanwhi_keyed_store ((item_value ->> 'checkoutRequestId'))
+        where namespace = 'order-records';
+
         create table if not exists blanwhi_backup_outbox (
           namespace text not null,
           item_key text not null,
@@ -561,9 +553,8 @@ async function ensureDatabaseSchema() {
           last_error text,
           updated_at timestamptz not null default now(),
           primary key (namespace, item_key)
-        )
-      `);
-      await pool.query(`
+        );
+
         create table if not exists blanwhi_ephemeral_store (
           namespace text not null,
           item_key text not null,
@@ -572,11 +563,10 @@ async function ensureDatabaseSchema() {
           updated_at timestamptz not null default now(),
           expires_at timestamptz not null,
           primary key (namespace, item_key)
-        )
-      `);
-      await pool.query(`
+        );
+
         create index if not exists blanwhi_ephemeral_store_expiry_idx
-        on blanwhi_ephemeral_store (expires_at)
+        on blanwhi_ephemeral_store (expires_at);
       `);
     })();
     schemaReadyPromise = schemaRequest.catch((error) => {
@@ -1105,32 +1095,28 @@ export async function writeKeyedJsonRecord<T>(namespace: string, itemKey: string
     if (pool) {
       const serialized = JSON.stringify(value);
       const saved = await retryDatabaseWrite(() => pool.query(
-        `insert into blanwhi_keyed_store (namespace, item_key, item_value, updated_at)
-         values ($1, $2, $3::jsonb, now())
-         on conflict (namespace, item_key)
-         do update set item_value = excluded.item_value, updated_at = now()
-         where blanwhi_keyed_store.item_value is distinct from excluded.item_value
-         returning 1 as changed`,
+        `with saved as (
+           insert into blanwhi_keyed_store (namespace, item_key, item_value, updated_at)
+           values ($1, $2, $3::jsonb, now())
+           on conflict (namespace, item_key)
+           do update set item_value = excluded.item_value, updated_at = now()
+           where blanwhi_keyed_store.item_value is distinct from excluded.item_value
+           returning namespace, item_key, item_value
+         ), history as (
+           insert into blanwhi_keyed_store_history (namespace, item_key, item_value, reason)
+           select namespace, item_key, item_value, 'after-write' from saved
+         ), backup as (
+           insert into blanwhi_backup_outbox (namespace, item_key, item_value, attempts, last_error, updated_at)
+           select namespace, item_key, item_value, 0, null, now() from saved
+           on conflict (namespace, item_key)
+           do update set item_value = excluded.item_value, attempts = 0, last_error = null, updated_at = now()
+         )
+         select 1 as changed from saved`,
         [namespace, itemKey, serialized]
       ), 6);
-      // Polling and retry paths can submit an identical snapshot repeatedly.
-      // Keep the durable row, history and backup unchanged for true no-op writes.
+      // The primary row, immutable history and durable backup outbox commit in
+      // one database statement. R2 mirroring is drained by cron, never checkout.
       if (!saved.rows.length) return value;
-      await retryDatabaseWrite(() => pool.query(
-        `insert into blanwhi_keyed_store_history (namespace, item_key, item_value, reason)
-         values ($1, $2, $3::jsonb, 'after-write')`,
-        [namespace, itemKey, serialized]
-      ), 3).catch((error) => warnBlobFallback("write database history " + namespace, error));
-      await retryDatabaseWrite(() => pool.query(
-        `insert into blanwhi_backup_outbox (namespace, item_key, item_value, attempts, last_error, updated_at)
-         values ($1, $2, $3::jsonb, 0, null, now())
-         on conflict (namespace, item_key)
-         do update set item_value = excluded.item_value, attempts = 0, last_error = null, updated_at = now()`,
-        [namespace, itemKey, serialized]
-      ), 3).catch((error) => warnBlobFallback("queue database backup " + namespace, error));
-      // The main database record is persisted first. R2 history/outbox failures
-      // must never reject checkout or cancellation after the order row is safe.
-      await waitForDatabaseBackupMirror(namespace, itemKey, value);
       return value;
     }
   }

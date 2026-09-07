@@ -577,8 +577,13 @@ export class OrderSyncService {
     return this.create(order, false);
   }
 
-  async reconcileCancellations() {
-    const candidates = (await readOrders()).filter((order) => order.status === "cancelled");
+  async reconcileCancellations(options: { limit?: number } = {}) {
+    const limit = Math.max(1, Math.min(100, Math.floor(options.limit || 20)));
+    const candidates = (await readOrders())
+      .filter((order) => order.status === "cancelled"
+        && order.pancakeStatus !== "cancelled"
+        && Boolean(pancakeOrderId(order) || order.paymentMethod === "cod" || order.transactionId))
+      .slice(0, limit);
     let found = 0;
     let cancelled = 0;
     let alreadyCancelled = 0;
