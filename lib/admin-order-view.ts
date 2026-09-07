@@ -189,9 +189,11 @@ export function buildAdminOrderView(current: ShopOrder, histories: ShopOrder[] =
     : resolvedPaymentStatus === "cod_collected"
       ? "Pancake/ĐVVC đã giao thành công"
       : "Database hiện tại";
-  const paymentSource = observation?.paymentStatus === resolvedPaymentStatus && observation.paymentSource
-    ? observation.paymentSource
-    : inferredPaymentSource;
+  const paymentSource = paidEvidence && paidEvidence !== current
+    ? inferredPaymentSource
+    : observation?.paymentStatus === resolvedPaymentStatus && observation.paymentSource
+      ? observation.paymentSource
+      : inferredPaymentSource;
   const trackingCode = text(observation?.trackingCode) || text(base.trackingCode) || text(canonical?.trackingCode);
   const pancakeStatus = observation?.pancakeStatus || base.pancakeStatus || canonical?.pancakeStatus;
   const pancakeOrderId = text(observation?.pancakeOrderId) || text(base.pancakeOrderId) || text(canonical?.pancakeOrderId);
