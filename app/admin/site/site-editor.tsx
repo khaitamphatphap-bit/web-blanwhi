@@ -608,8 +608,8 @@ export function SiteEditor() {
               <span>{content.shipping?.expressEnabled ? "Giao hỏa tốc đang BẬT" : "Giao hỏa tốc đang TẮT"}</span>
             </label>
             <p className="mt-2 text-xs leading-5 text-neutral-500">Chỉ khi bật và lưu thay đổi, khách mới thấy và đặt được giao hỏa tốc.</p>
-            <p className="mt-2 text-xs leading-5 text-neutral-500">Áp dụng cho giao nhanh trên trang khách. Để 0 nếu muốn miễn phí ship mặc định.</p>
-            <label className="mt-3 block text-xs uppercase text-neutral-500">Phí ship giao nhanh</label>
+            <p className="mt-2 text-xs leading-5 text-neutral-500">Áp dụng cho giao tiêu chuẩn trên trang khách. Để 0 nếu muốn miễn phí ship cho mọi đơn.</p>
+            <label className="mt-3 block text-xs uppercase text-neutral-500">Phí ship tiêu chuẩn</label>
             <input
               type="number"
               min="0"
@@ -621,6 +621,38 @@ export function SiteEditor() {
               })}
               className="mt-1 h-10 w-full border px-3"
             />
+            <label className="mt-4 flex cursor-pointer items-center gap-3 border border-neutral-200 p-3 text-sm font-semibold">
+              <input
+                type="checkbox"
+                checked={content.shipping?.freeShippingEnabled === true}
+                onChange={(event) => updateContent({
+                  ...content,
+                  shipping: { ...content.shipping, freeShippingEnabled: event.target.checked }
+                })}
+                className="h-5 w-5"
+              />
+              <span>{content.shipping?.freeShippingEnabled ? "Miễn phí vận chuyển theo giá trị đơn đang BẬT" : "Miễn phí vận chuyển theo giá trị đơn đang TẮT"}</span>
+            </label>
+            {content.shipping?.freeShippingEnabled === true && (
+              <>
+                <label className="mt-3 block text-xs uppercase text-neutral-500">Miễn phí vận chuyển cho đơn từ</label>
+                <input
+                  type="number"
+                  min="1000"
+                  step="1000"
+                  value={content.shipping?.freeShippingThreshold ?? 300000}
+                  onChange={(event) => updateContent({
+                    ...content,
+                    shipping: {
+                      ...content.shipping,
+                      freeShippingThreshold: Math.max(1000, Math.floor(Number(event.target.value) || 0))
+                    }
+                  })}
+                  className="mt-1 h-10 w-full border px-3"
+                />
+                <p className="mt-2 text-xs leading-5 text-neutral-500">Đơn giao tiêu chuẩn đạt mức này sẽ có phí vận chuyển 0đ trên website.</p>
+              </>
+            )}
           </div>
         </aside>
 

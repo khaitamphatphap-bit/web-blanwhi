@@ -157,6 +157,8 @@ export type SiteContent = {
   shipping: {
     defaultFee: number;
     expressEnabled: boolean;
+    freeShippingEnabled: boolean;
+    freeShippingThreshold: number;
   };
   policies?: CmsPolicyDocument[];
   products: CmsProduct[];
@@ -231,7 +233,9 @@ export const defaultSiteContent: SiteContent = {
   },
   shipping: {
     defaultFee: 30000,
-    expressEnabled: false
+    expressEnabled: false,
+    freeShippingEnabled: false,
+    freeShippingThreshold: 300000
   },
   policies: policyData as CmsPolicyDocument[],
   products: [
@@ -365,7 +369,9 @@ async function loadSiteContent(): Promise<SiteContent> {
       ...defaultSiteContent.shipping,
       ...saved.shipping,
       defaultFee: Math.max(0, Math.floor(Number(saved.shipping?.defaultFee ?? defaultSiteContent.shipping.defaultFee) || 0)),
-      expressEnabled: saved.shipping?.expressEnabled === true
+      expressEnabled: saved.shipping?.expressEnabled === true,
+      freeShippingEnabled: saved.shipping?.freeShippingEnabled === true,
+      freeShippingThreshold: Math.max(1000, Math.floor(Number(saved.shipping?.freeShippingThreshold ?? defaultSiteContent.shipping.freeShippingThreshold) || defaultSiteContent.shipping.freeShippingThreshold))
     },
     policies: Array.isArray(saved.policies) && saved.policies.length
       ? saved.policies

@@ -68,6 +68,44 @@ test("payload đơn đã thanh toán online gửi Pancake không thu COD", () =>
   assert.match(payload.note, /Đã thanh toán online ZALOPAY/);
 });
 
+test("đơn được hỗ trợ phí ship vẫn ghi phí ship gốc và giảm đúng số đó ở Pancake", () => {
+  const payload = buildPancakeOrderPayload({
+    code: "BLW-FREE-SHIP",
+    customer: { name: "Khách miễn ship", phone: "0900000002", address: "12 Đường A, TP.HCM" },
+    items: [{ name: "Áo", quantity: 1, unitPrice: 300000 }],
+    discount: 30000,
+    shipping: 0,
+    shippingBaseFee: 11000,
+    shippingDiscount: 11000,
+    total: 270000,
+    paymentMethod: "cod"
+  }, "1546106", { id: 3, name: "SPX Express", shopPartnerId: 10932 });
+
+  assert.equal(payload.shipping_fee, 11000);
+  assert.equal(payload.partner.total_fee, 11000);
+  assert.equal(payload.total_discount, 41000);
+  assert.equal(payload.total_price, 270000);
+  assert.equal(payload.cod, 270000);
+  assert.equal(payload.is_free_shipping, false);
+  assert.match(payload.note, /Hỗ trợ phí vận chuyển: 11\.000đ/);
+});
+
+test("đơn cũ chưa có snapshot phí ship vẫn giữ nguyên dữ liệu Pancake", () => {
+  const payload = buildPancakeOrderPayload({
+    code: "BLW-OLD",
+    customer: { name: "Khách cũ", phone: "0900000003", address: "12 Đường A, TP.HCM" },
+    items: [{ name: "Áo", quantity: 1, unitPrice: 300000 }],
+    discount: 0,
+    shipping: 11000,
+    total: 311000,
+    paymentMethod: "cod"
+  });
+
+  assert.equal(payload.shipping_fee, 11000);
+  assert.equal(payload.total_discount, 0);
+  assert.equal(payload.total_price, 311000);
+});
+
 test("đồng bộ trạng thái hoàn tất, hủy và hoàn hàng", () => {
   assert.deepEqual(mapPancakeStatus("completed"), { pancakeStatus: "completed", status: "paid", shippingStatus: "delivered" });
   assert.deepEqual(mapPancakeStatus("cancelled"), { pancakeStatus: "cancelled", status: "cancelled", shippingStatus: "cancelled", release: true });

@@ -109,6 +109,8 @@ export type ShopOrder = {
   subtotal: number;
   discount: number;
   shipping: number;
+  shippingBaseFee?: number;
+  shippingDiscount?: number;
   shippingMethod?: string;
   shippingFeeLabel?: string;
   shippingCarrier?: string;

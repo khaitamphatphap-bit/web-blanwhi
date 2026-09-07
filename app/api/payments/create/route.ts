@@ -9,6 +9,7 @@ import { buildProductInventory } from "@/lib/product-inventory";
 import { readSiteContent, type SiteContent } from "@/lib/site-content";
 import { POSSyncService } from "@/lib/services/pos-sync-service";
 import { QueueHandler } from "@/lib/pancake/queue-handler";
+import { calculateStandardShipping } from "@/lib/shipping-pricing";
 import { expireStaleZaloPayReservations, zaloPayReservationExpiresAt } from "@/lib/zalopay-reservation";
 
 type CheckoutPayload = {
@@ -336,11 +337,18 @@ export async function POST(request: Request) {
     if (isExpressShipping && siteContent.shipping?.expressEnabled !== true) {
       return json({ error: "Giao hỏa tốc hiện đang tắt. Vui lòng chọn giao tiêu chuẩn." }, { status: 400 });
     }
-    const standardShippingFor = (subtotal: number) => subtotal === 0 || subtotal >= 2000000 ? 0 : defaultShippingFee;
     const orderItems = await hydratePancakeLinks(normalizeItems(items), siteContent);
     const subtotal = orderItems.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
     const discount = Math.max(0, Math.min(subtotal, Math.floor(Number(payload.totals?.discount) || 0)));
-    const shipping = isExpressShipping ? 0 : standardShippingFor(subtotal);
+    const standardShipping = calculateStandardShipping({
+      subtotal,
+      defaultFee: defaultShippingFee,
+      freeShippingEnabled: siteContent.shipping?.freeShippingEnabled === true,
+      freeShippingThreshold: siteContent.shipping?.freeShippingThreshold ?? 300000
+    });
+    const shippingBaseFee = isExpressShipping ? 0 : standardShipping.baseFee;
+    const shippingDiscount = isExpressShipping ? 0 : standardShipping.discount;
+    const shipping = isExpressShipping ? 0 : standardShipping.chargedFee;
     const totals = {
       subtotal,
       discount,
@@ -377,6 +385,8 @@ export async function POST(request: Request) {
       subtotal: totals.subtotal,
       discount: totals.discount,
       shipping: totals.shipping,
+      shippingBaseFee,
+      shippingDiscount,
       shippingMethod: payload.shipping?.method || "Giao tiêu chuẩn",
       shippingFeeLabel: payload.shipping?.feeLabel,
       shippingCarrier: payload.shipping?.type === "express" ? "" : "SPX Express",

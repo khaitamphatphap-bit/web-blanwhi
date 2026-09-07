@@ -17,7 +17,7 @@ export function getVouchers(items: CartItem[]): Voucher[] {
   const rules = [
     { id: "v500", title: "Từ 500k", description: "Giảm 5% cho đơn đạt 500k.", min: 500000, qty: 0, discount: 0.05 },
     { id: "v1m", title: "Từ 1 triệu", description: "Giảm 10% cho đơn đạt 1 triệu.", min: 1000000, qty: 0, discount: 0.1 },
-    { id: "v2m", title: "Từ 2 triệu", description: "Freeship + giảm 15%.", min: 2000000, qty: 0, discount: 0.15, freeship: true },
+    { id: "v2m", title: "Từ 2 triệu", description: "Giảm 15% cho đơn đạt 2 triệu.", min: 2000000, qty: 0, discount: 0.15 },
     { id: "q2", title: "Mua 2 sản phẩm", description: "Giảm 5% khi giỏ có 2 món.", min: 0, qty: 2, discount: 0.05 },
     { id: "q3", title: "Mua 3 sản phẩm", description: "Giảm 10% khi giỏ có 3 món.", min: 0, qty: 3, discount: 0.1 },
     { id: "q5", title: "Mua 5 sản phẩm", description: "Mở gợi ý combo đồng giá.", min: 0, qty: 5, discount: 0.12 }

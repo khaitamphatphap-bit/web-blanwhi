@@ -67,12 +67,16 @@ export function buildPancakeOrderPayload(order: {
   items: Array<{ name: string; pancakeVariationId?: string; pancakeProductId?: string; pancakeSku?: string; sku?: string; quantity: number; unitPrice: number }>;
   discount: number;
   shipping: number;
+  shippingBaseFee?: number;
+  shippingDiscount?: number;
   total: number;
   paymentMethod: string;
 }, shopId?: string, shippingPartner?: { id: number; name: string; shopPartnerId?: number }, orderSource?: PancakeOrderSource) {
   const cashOnDelivery = isCashOnDeliveryOrder(order);
   const cod = cashOnDelivery ? order.total : 0;
   const prepaidAmount = cashOnDelivery ? 0 : order.total;
+  const shippingBaseFee = Math.max(0, Math.floor(Number(order.shippingBaseFee ?? order.shipping) || 0));
+  const shippingDiscount = Math.max(0, Math.min(shippingBaseFee, Math.floor(Number(order.shippingDiscount) || 0)));
   const paymentLabel = cashOnDelivery
     ? "COD - thu tiền khi giao hàng"
     : `Đã thanh toán online ${normalizedPaymentMethod(order.paymentMethod).toUpperCase()}`;
@@ -118,11 +122,11 @@ export function buildPancakeOrderPayload(order: {
       ...(order.customer.district ? { district_name: order.customer.district } : {}),
       ...(order.customer.province ? { province_name: order.customer.province } : {})
     },
-    note: [customerNote, paymentLabel].filter(Boolean).join(" · "),
-    note_print: [customerNote, paymentLabel].filter(Boolean).join(" · "),
+    note: [customerNote, paymentLabel, shippingDiscount > 0 ? `Hỗ trợ phí vận chuyển: ${shippingDiscount.toLocaleString("vi-VN")}đ` : ""].filter(Boolean).join(" · "),
+    note_print: [customerNote, paymentLabel, shippingDiscount > 0 ? `Hỗ trợ phí vận chuyển: ${shippingDiscount.toLocaleString("vi-VN")}đ` : ""].filter(Boolean).join(" · "),
     merge_order: false,
     received_at_shop: false,
-    is_free_shipping: order.shipping === 0,
+    is_free_shipping: shippingBaseFee === 0 && order.shipping === 0,
     items: order.items.map((item) => ({
       variation_id: item.pancakeVariationId || item.pancakeSku || undefined,
       product_id: item.pancakeProductId || undefined,
@@ -140,8 +144,8 @@ export function buildPancakeOrderPayload(order: {
         retail_price: item.unitPrice
       }
     })),
-    shipping_fee: order.shipping,
-    total_discount: order.discount,
+    shipping_fee: shippingBaseFee,
+    total_discount: order.discount + shippingDiscount,
     total_price: order.total,
     cod,
     cash: prepaidAmount,
@@ -162,7 +166,7 @@ export function buildPancakeOrderPayload(order: {
         cash: prepaidAmount,
         prepaid: prepaidAmount,
         prepaid_amount: prepaidAmount,
-        total_fee: order.shipping
+        total_fee: shippingBaseFee
       }
     } : {})
   };

@@ -79,7 +79,9 @@
   },
   "shipping": {
     "defaultFee": 11000,
-    "expressEnabled": false
+    "expressEnabled": false,
+    "freeShippingEnabled": false,
+    "freeShippingThreshold": 300000
   },
   "policies": [
     {

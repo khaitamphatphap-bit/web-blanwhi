@@ -33,6 +33,8 @@ export function mergeOrderPatch(current: ShopOrder, patch: Partial<ShopOrder>, u
     subtotal: current.subtotal,
     discount: current.discount,
     shipping: current.shipping,
+    shippingBaseFee: current.shippingBaseFee,
+    shippingDiscount: current.shippingDiscount,
     total: current.total,
     externalSync: { ...current.externalSync, ...patch.externalSync },
     updatedAt
