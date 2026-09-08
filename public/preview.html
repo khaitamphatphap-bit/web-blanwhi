@@ -392,7 +392,12 @@
       .save-address-check { display: flex; align-items: center; gap: 9px; font-size: 12px; color: #555; cursor: pointer; }
       .save-address-check input { width: 17px; min-height: 17px; margin: 0; accent-color: #111; }
       .pay-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
-      .pay-grid label { border: 1px solid var(--line); padding: 12px; font-size: 13px; }
+      .pay-grid > label { min-height: 64px; border: 1px solid var(--line); padding: 12px; font-size: 13px; display: flex; align-items: center; gap: 10px; cursor: pointer; }
+      .pay-grid > label:has(input:checked) { border-color: #111; background: #f7f7f7; }
+      .pay-grid > label > input { width: 18px; min-height: 18px; margin: 0; padding: 0; flex: 0 0 auto; accent-color: #111; }
+      .pay-option-copy { display: grid; gap: 3px; }
+      .pay-option-copy strong { font-size: 13px; }
+      .pay-option-copy small { color: #666; font-size: 11px; line-height: 1.35; }
       .order-box { background: #f7f7f7; padding: 16px; display: grid; gap: 10px; align-content: start; }
       .custom-confirm-area { display: grid; gap: 10px; }
       .custom-confirm-title { margin: 4px 0 0; font-size: 13px; text-transform: uppercase; }
@@ -495,6 +500,11 @@
       .zoom-size-chart-percent { min-width: 48px; text-align: center; font-size: 12px; font-weight: 800; }
       .payment-extra { display: none; gap: 8px; padding: 12px; border: 1px solid var(--line); background: #fafafa; }
       .payment-extra.open { display: grid; }
+      .payment-gateway-title { color: #666; font-size: 10px; font-weight: 800; text-transform: uppercase; }
+      .payment-gateway-option { min-height: 48px; border: 1px solid #111; background: #fff; padding: 10px 12px; display: flex; align-items: center; gap: 10px; }
+      .payment-gateway-option input { width: 18px; min-height: 18px; margin: 0; padding: 0; flex: 0 0 auto; accent-color: #111; }
+      .payment-gateway-option span { display: grid; gap: 2px; }
+      .payment-gateway-option small { color: #666; font-size: 10px; }
       .bank-account-link { min-height: 44px; border: 1px solid #111; background: #111; color: #fff; font-size: 13px; font-weight: 800; cursor: pointer; text-align: left; padding: 0 12px; }
       .bank-account-link:hover { background: #fff; color: #111; }
       .bank-transfer-modal { position: fixed; inset: 0; z-index: 41; display: none; background: #f5f5f3; overflow: auto; }
@@ -1054,8 +1064,14 @@
             </div>
             <div class="custom-confirm-area" id="customConfirmArea"></div>
             <div class="pay-grid">
-              <label data-payment-option="cod"><input type="radio" name="pay" value="cod" checked /> COD</label>
-              <label data-payment-option="zalopay"><input type="radio" name="pay" value="zalopay" /> Zalopay</label>
+              <label data-payment-option="cod">
+                <input type="radio" name="pay" value="cod" checked />
+                <span class="pay-option-copy"><strong>COD</strong><small>Thanh toán khi nhận hàng</small></span>
+              </label>
+              <label data-payment-option="zalopay">
+                <input type="radio" name="pay" value="zalopay" />
+                <span class="pay-option-copy"><strong>Thanh toán trước</strong><small>Thanh toán trực tuyến</small></span>
+              </label>
             </div>
             <div class="payment-extra" id="cardPaymentFields">
               <span class="muted">Website sẽ chuyển khách sang cổng thanh toán VNPAY/OnePay/AlePay. BLANWHI không lưu số thẻ, CVV hoặc OTP của khách.</span>
@@ -1064,7 +1080,12 @@
               <span class="muted">Website sẽ tạo giao dịch MoMo và chuyển khách sang ứng dụng/cổng MoMo để xác nhận thanh toán.</span>
             </div>
             <div class="payment-extra" id="zalopayPaymentFields">
-              <span class="muted">Website sẽ tạo giao dịch ZaloPay và chuyển khách sang ứng dụng/cổng ZaloPay để xác nhận thanh toán.</span>
+              <span class="payment-gateway-title">Cổng thanh toán</span>
+              <label class="payment-gateway-option">
+                <input type="radio" name="prepayGateway" value="zalopay" checked />
+                <span><strong>ZaloPay (chuyển khoản, quét mã QR)</strong><small>Đã chọn</small></span>
+              </label>
+              <span class="muted">Bạn có thể chuyển khoản hoặc quét mã QR theo lựa chọn trên cổng ZaloPay, không bắt buộc cài ứng dụng ZaloPay.</span>
             </div>
             <div class="payment-extra" id="transferPaymentFields">
               <span class="muted">Thông tin chuyển khoản</span>
@@ -2822,6 +2843,11 @@
         if (addresses.length) addressSelectionReady = applySavedAddress("0");
       }
       const paymentMethodMap = { zalopay: "zalopay" };
+      function checkoutButtonLabel() {
+        return document.querySelector("input[name='pay']:checked")?.value === "zalopay"
+          ? "Thanh toán qua ZaloPay"
+          : "Đặt hàng";
+      }
       async function loadAvailablePaymentMethods() {
         try {
           const response = await fetch(`${paymentApiBase}/api/payments/methods?t=${Date.now()}`, { cache: "no-store" });
@@ -5184,7 +5210,7 @@
         if (!await validateCartAvailability()) {
           checkoutSubmissionPending = false;
           submitButton.disabled = !document.getElementById("policyAgreement").checked;
-          submitButton.textContent = "Đặt hàng";
+          submitButton.textContent = checkoutButtonLabel();
           return;
         }
         submitButton.textContent = "Đang tạo giao dịch...";
@@ -5373,7 +5399,7 @@
           clearTimeout(checkoutTimeout);
           checkoutSubmissionPending = false;
           submitButton.disabled = !document.getElementById("policyAgreement").checked;
-          submitButton.textContent = "Đặt hàng";
+          submitButton.textContent = checkoutButtonLabel();
         }
       });
       document.querySelectorAll("input[name='pay']").forEach((input) => {
@@ -5383,6 +5409,7 @@
           document.getElementById("walletPaymentFields").classList.toggle("open", selectedPay === "wallet");
           document.getElementById("zalopayPaymentFields").classList.toggle("open", selectedPay === "zalopay");
           document.getElementById("transferPaymentFields").classList.toggle("open", selectedPay === "transfer");
+          document.getElementById("placeOrderButton").textContent = checkoutButtonLabel();
         });
       });
       const policyAgreement = document.getElementById("policyAgreement");
