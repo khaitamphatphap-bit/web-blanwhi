@@ -1299,6 +1299,7 @@
       let defaultShippingFee = 30000;
       let freeShippingEnabled = false;
       let freeShippingThreshold = 300000;
+      let shippingConfigReady = false;
       let siteContentLoading = false;
       let siteContentReady = false;
       function productSkeletonMarkup(count = productsPerPage) {
@@ -1954,6 +1955,7 @@
       function applySiteContent(content, options = {}) {
         if (!content) return;
         const shouldRenderProducts = options.renderProducts !== false;
+        const shouldApplyShipping = options.applyShipping !== false;
         const setText = (selector, value) => {
           document.querySelectorAll(selector).forEach((node) => node.textContent = value || "");
         };
@@ -2061,11 +2063,12 @@
           const transferOption = document.querySelector('[data-payment-option="transfer"]');
           if (transferOption) transferOption.hidden = !bankReady;
         }
-        if (content.shipping) {
+        if (content.shipping && shouldApplyShipping) {
           defaultShippingFee = Math.max(0, Math.floor(Number(content.shipping.defaultFee ?? 30000) || 0));
           freeShippingEnabled = content.shipping.freeShippingEnabled === true;
           freeShippingThreshold = Math.max(1000, Math.floor(Number(content.shipping.freeShippingThreshold ?? 300000) || 300000));
           expressShippingEnabled = content.shipping.expressEnabled === true;
+          shippingConfigReady = true;
           const expressOption = document.querySelector('[data-shipping-method="express"]');
           if (expressOption) expressOption.hidden = !expressShippingEnabled;
           if (!expressShippingEnabled && selectedShippingMethod === "express") selectedShippingMethod = "fast";
@@ -2186,10 +2189,16 @@
       }
 
       if (initialSiteContent) {
-        applySiteContent(initialSiteContent, { renderProducts: false });
+        applySiteContent(initialSiteContent, { renderProducts: false, applyShipping: false });
       }
       renderProductSkeletons();
       const siteContentLoadPromise = loadSiteContent();
+      async function ensureShippingConfigReady() {
+        if (selectedShippingMethod === "express" || shippingConfigReady) return true;
+        await siteContentLoadPromise.catch(() => undefined);
+        if (!shippingConfigReady) await loadSiteContent();
+        return shippingConfigReady;
+      }
       const refreshContentWhenIdle = () => {
         if (document.visibilityState !== "visible") return;
         if (document.querySelector(".cart-drawer.open, .orders-drawer.open, .detail-modal.open, .variant-modal.open, .checkout-modal.open, .wholesale-modal.open")) return;
@@ -2994,8 +3003,9 @@
         const voucher = bestVoucher(retailSub);
         const discount = Math.round(retailSub * voucher.rate);
         const express = selectedShippingMethod === "express";
+        const shippingPending = !express && sub > 0 && !shippingConfigReady;
         const shippingBaseFee = sub > 0
-          ? (express ? Math.max(0, Number(expressShippingQuote.fee || 50000)) : defaultShippingFee)
+          ? (express ? Math.max(0, Number(expressShippingQuote.fee || 50000)) : (shippingPending ? 0 : defaultShippingFee))
           : 0;
         const qualifiesForFreeShipping = !express
           && sub > 0
@@ -3005,7 +3015,7 @@
           && sub >= freeShippingThreshold;
         const shippingDiscount = qualifiesForFreeShipping ? shippingBaseFee : 0;
         const shipping = Math.max(0, shippingBaseFee - shippingDiscount);
-        return { sub, voucher, discount, shippingBaseFee, shippingDiscount, shipping, qualifiesForFreeShipping, shippingPending: false, shippingEstimated: express && expressShippingQuote.estimated, total: Math.max(sub - discount + shipping, 0) };
+        return { sub, voucher, discount, shippingBaseFee, shippingDiscount, shipping, qualifiesForFreeShipping, shippingPending, shippingEstimated: express && expressShippingQuote.estimated, total: Math.max(sub - discount + shipping, 0) };
       };
       const bankOptions = [
         ["vcb", "Vietcombank"],
@@ -3696,12 +3706,13 @@
         voucherNote.textContent = next.voucher.rate ? `Đã áp dụng ${next.voucher.code}: ${next.voucher.title}.` : "Nhấn ÁP VOUCHER để xem các ưu đãi hiện có.";
         subtotalText.textContent = formatMoney(next.sub);
         discountText.textContent = "-" + formatMoney(next.discount);
-        shippingText.textContent = next.shippingPending ? "Theo app" : formatMoney(next.shipping);
-        shippingPromotionNote.hidden = selectedShippingMethod === "express" || !freeShippingEnabled;
+        shippingText.textContent = next.shippingPending ? "Đang tính..." : formatMoney(next.shipping);
+        shippingPromotionNote.hidden = next.shippingPending || selectedShippingMethod === "express" || !freeShippingEnabled;
         shippingPromotionNote.textContent = next.qualifiesForFreeShipping
           ? "Đơn hàng đã được miễn phí vận chuyển."
           : `Miễn phí vận chuyển cho đơn từ ${formatMoney(freeShippingThreshold)}.`;
-        totalText.textContent = formatMoney(next.total);
+        totalText.textContent = next.shippingPending ? "Đang tính..." : formatMoney(next.total);
+        document.getElementById("checkoutBtn").disabled = !cart.length || next.shippingPending;
         renderCheckoutSummary();
       }
 
@@ -3721,9 +3732,9 @@
           ${cart.length ? cart.map((item) => `<div class="line"><span class="checkout-item-copy"><b>${Math.max(1, Number(item.qty ?? item.quantity) || 1)}× ${escapeMarkup(item.name)}</b><small>${item.classificationName ? `${escapeMarkup(item.classificationName)} · ` : ""}${escapeMarkup(colorLabel(item.color, item, item.classificationIndex || 0))}${item.kind.startsWith("gift-") ? "" : ` · Size ${escapeMarkup(item.size)}`}</small></span><strong>${formatMoney(item.amount * item.qty)}</strong></div>`).join("") : `<p class="muted">Chưa có sản phẩm.</p>`}
           <div class="line"><span>Giá trị đơn hàng</span><strong>${formatMoney(next.sub)}</strong></div>
           <div class="line"><span>${next.voucher.title}</span><strong>-${formatMoney(next.discount)}</strong></div>
-          <div class="line"><span>Vận chuyển · ${selectedShippingMethod === "express" ? "Hỏa tốc" : "SPX Express"}</span><strong>${formatMoney(next.shipping)}</strong></div>
-          ${selectedShippingMethod !== "express" && freeShippingEnabled ? `<p class="shipping-promotion-note">${next.qualifiesForFreeShipping ? "Đơn hàng đã được miễn phí vận chuyển." : `Miễn phí vận chuyển cho đơn từ ${formatMoney(freeShippingThreshold)}.`}</p>` : ""}
-          <div class="line" style="font-size:18px"><span>Tổng</span><strong>${formatMoney(next.total)}</strong></div>
+          <div class="line"><span>Vận chuyển · ${selectedShippingMethod === "express" ? "Hỏa tốc" : "SPX Express"}</span><strong>${next.shippingPending ? "Đang tính..." : formatMoney(next.shipping)}</strong></div>
+          ${!next.shippingPending && selectedShippingMethod !== "express" && freeShippingEnabled ? `<p class="shipping-promotion-note">${next.qualifiesForFreeShipping ? "Đơn hàng đã được miễn phí vận chuyển." : `Miễn phí vận chuyển cho đơn từ ${formatMoney(freeShippingThreshold)}.`}</p>` : ""}
+          <div class="line" style="font-size:18px"><span>Tổng</span><strong>${next.shippingPending ? "Đang tính..." : formatMoney(next.total)}</strong></div>
         `;
       }
 
@@ -4271,6 +4282,11 @@
       }
 
       async function openCheckout() {
+        if (!await ensureShippingConfigReady()) {
+          renderCartTotals();
+          alert("Chưa tải được phí vận chuyển mới nhất. Vui lòng kiểm tra mạng rồi thử lại.");
+          return;
+        }
         closeCart();
         if (!await validateCartAvailability()) {
           openCart();
@@ -5284,6 +5300,11 @@
       document.getElementById("checkoutForm").addEventListener("submit", async (event) => {
         event.preventDefault();
         const checkoutForm = event.currentTarget;
+        if (!await ensureShippingConfigReady()) {
+          renderCartTotals();
+          alert("Chưa tải được phí vận chuyển mới nhất. Vui lòng kiểm tra mạng rồi thử lại.");
+          return;
+        }
         const next = totals();
         if (!document.getElementById("policyAgreement").checked) {
           alert("Vui lòng đồng ý với Chính sách hoạt động của website trước khi đặt hàng.");

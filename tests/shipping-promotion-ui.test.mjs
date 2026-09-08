@@ -93,3 +93,14 @@ test("server chốt nhãn và phí ước tính từ cấu hình mới nhất th
   assert.match(paymentRoute, /shippingFeeLabel:\s*isExpressShipping[\s\S]*Intl\.NumberFormat\("vi-VN"\)\.format\(totals\.shipping\)/);
   assert.match(paymentRoute, /deliveryFeeEstimated:\s*isExpressShipping[\s\S]*:\s*totals\.shipping/);
 });
+
+test("giỏ hàng không hiển thị phí ship nhúng cũ trước khi tải cấu hình admin", () => {
+  assert.match(customerPage, /let shippingConfigReady = false/);
+  assert.match(customerPage, /applySiteContent\(initialSiteContent, \{ renderProducts: false, applyShipping: false \}\)/);
+  assert.match(customerPage, /content\.shipping && shouldApplyShipping/);
+  assert.match(customerPage, /shippingConfigReady = true/);
+  assert.match(customerPage, /const shippingPending = !express && sub > 0 && !shippingConfigReady/);
+  assert.match(customerPage, /shippingText\.textContent = next\.shippingPending \? "Đang tính\.\.\."/);
+  assert.match(customerPage, /document\.getElementById\("checkoutBtn"\)\.disabled = !cart\.length \|\| next\.shippingPending/);
+  assert.match(customerPage, /if \(!await ensureShippingConfigReady\(\)\)/);
+});
