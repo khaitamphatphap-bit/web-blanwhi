@@ -4,10 +4,12 @@ import { readFile } from "node:fs/promises";
 import { calculateStandardShipping } from "../lib/shipping-pricing.ts";
 import { buildPancakeOrderPayload } from "../lib/pancake/domain.ts";
 
-const [customerPage, adminEditor, paymentRoute] = await Promise.all([
+const [customerPage, adminEditor, paymentRoute, shippingRoute, dataStore] = await Promise.all([
   readFile(new URL("../public/preview.html", import.meta.url), "utf8"),
   readFile(new URL("../app/admin/site/site-editor.tsx", import.meta.url), "utf8"),
-  readFile(new URL("../app/api/payments/create/route.ts", import.meta.url), "utf8")
+  readFile(new URL("../app/api/payments/create/route.ts", import.meta.url), "utf8"),
+  readFile(new URL("../app/api/site/shipping/route.ts", import.meta.url), "utf8"),
+  readFile(new URL("../lib/data-store.ts", import.meta.url), "utf8")
 ]);
 
 test("admin có công tắc và chỉ hiện ô nhập ngưỡng khi bật", () => {
@@ -103,4 +105,16 @@ test("giỏ hàng không hiển thị phí ship nhúng cũ trước khi tải c�
   assert.match(customerPage, /shippingText\.textContent = next\.shippingPending \? "Đang tính\.\.\."/);
   assert.match(customerPage, /document\.getElementById\("checkoutBtn"\)\.disabled = !cart\.length \|\| next\.shippingPending/);
   assert.match(customerPage, /if \(!await ensureShippingConfigReady\(\)\)/);
+});
+
+test("giao diện và server chốt đơn chỉ lấy phí ship từ database chính", () => {
+  assert.match(customerPage, /fetch\(`\$\{paymentApiBase\}\/api\/site\/shipping\?t=/);
+  assert.match(customerPage, /applySiteContent\(content, \{ applyShipping: false \}\)/);
+  assert.match(customerPage, /ensureShippingConfigReady\(true\)/);
+  assert.match(shippingRoute, /readAuthoritativeShippingConfig/);
+  assert.match(shippingRoute, /Cache-Control": "no-store, no-cache, must-revalidate, max-age=0/);
+  assert.match(paymentRoute, /readAuthoritativeShippingConfig\(\)/);
+  assert.match(paymentRoute, /shippingConfig\.defaultFee/);
+  assert.match(dataStore, /export async function readAuthoritativeJsonStore/);
+  assert.match(dataStore, /for \(let attempt = 0; attempt < 3; attempt \+= 1\)/);
 });

@@ -1300,6 +1300,7 @@
       let freeShippingEnabled = false;
       let freeShippingThreshold = 300000;
       let shippingConfigReady = false;
+      let shippingConfigRequest = null;
       let siteContentLoading = false;
       let siteContentReady = false;
       function productSkeletonMarkup(count = productsPerPage) {
@@ -2098,7 +2099,7 @@
           }
           siteContentSignature = signature;
           siteContentReady = true;
-          applySiteContent(content);
+          applySiteContent(content, { applyShipping: false });
           document.body.classList.remove("cms-loading", "cms-error");
         } catch (error) {
           console.warn("Không tải được nội dung admin", error);
@@ -2109,6 +2110,28 @@
           document.body.classList.add("cms-error");
         } finally {
           siteContentLoading = false;
+        }
+      }
+
+      async function loadShippingConfig() {
+        if (shippingConfigRequest) return shippingConfigRequest;
+        const request = (async () => {
+          const response = await fetch(`${paymentApiBase}/api/site/shipping?t=${Date.now()}`, { cache: "no-store" });
+          if (!response.ok) throw new Error(`Không tải được phí vận chuyển (${response.status})`);
+          const content = await response.json();
+          if (!content?.shipping) throw new Error("Dữ liệu phí vận chuyển không hợp lệ");
+          applySiteContent({ shipping: content.shipping }, { renderProducts: false });
+          return content.shipping;
+        })();
+        shippingConfigRequest = request;
+        try {
+          return await request;
+        } catch (error) {
+          shippingConfigReady = false;
+          queueMicrotask(() => renderCartTotals());
+          throw error;
+        } finally {
+          if (shippingConfigRequest === request) shippingConfigRequest = null;
         }
       }
 
@@ -2193,16 +2216,20 @@
       }
       renderProductSkeletons();
       const siteContentLoadPromise = loadSiteContent();
-      async function ensureShippingConfigReady() {
-        if (selectedShippingMethod === "express" || shippingConfigReady) return true;
-        await siteContentLoadPromise.catch(() => undefined);
-        if (!shippingConfigReady) await loadSiteContent();
+      const shippingConfigLoadPromise = loadShippingConfig();
+      void shippingConfigLoadPromise.catch((error) => console.warn("Không tải được phí vận chuyển admin", error));
+      async function ensureShippingConfigReady(refresh = false) {
+        if (selectedShippingMethod === "express") return true;
+        if (!refresh && shippingConfigReady) return true;
+        if (!refresh) await shippingConfigLoadPromise.catch(() => undefined);
+        if (!shippingConfigReady || refresh) await loadShippingConfig().catch(() => undefined);
         return shippingConfigReady;
       }
       const refreshContentWhenIdle = () => {
         if (document.visibilityState !== "visible") return;
         if (document.querySelector(".cart-drawer.open, .orders-drawer.open, .detail-modal.open, .variant-modal.open, .checkout-modal.open, .wholesale-modal.open")) return;
         void loadSiteContent();
+        void loadShippingConfig().catch((error) => console.warn("Không làm mới được phí vận chuyển admin", error));
       };
       window.setInterval(refreshContentWhenIdle, 60000);
       document.addEventListener("visibilitychange", () => {
@@ -4282,7 +4309,7 @@
       }
 
       async function openCheckout() {
-        if (!await ensureShippingConfigReady()) {
+        if (!await ensureShippingConfigReady(true)) {
           renderCartTotals();
           alert("Chưa tải được phí vận chuyển mới nhất. Vui lòng kiểm tra mạng rồi thử lại.");
           return;

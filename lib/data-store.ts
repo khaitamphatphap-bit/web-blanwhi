@@ -884,6 +884,30 @@ export async function readJsonStore<T>(filename: string, fallback: T): Promise<T
   }
 }
 
+export async function readAuthoritativeJsonStore<T>(filename: string): Promise<T> {
+  if (!shouldUseDatabaseJsonStore(filename)) {
+    throw new Error(`DATABASE_STORE_REQUIRED:${toStoreKey(filename)}`);
+  }
+
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      await ensureDatabaseSchema();
+      const pool = await getPool();
+      if (!pool) throw new Error("DATABASE_UNAVAILABLE");
+      const key = toStoreKey(filename);
+      const result = await pool.query("select store_value from blanwhi_store where store_key = $1", [key]);
+      if (result.rows[0]?.store_value === undefined) throw new Error(`DATABASE_STORE_MISSING:${key}`);
+      return result.rows[0].store_value as T;
+    } catch (error) {
+      lastError = error;
+      if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 75 * (attempt + 1)));
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error("DATABASE_STORE_UNAVAILABLE");
+}
+
 export async function readJsonStoreFallbackStores<T>(filename: string, fallback: T): Promise<T> {
   if (hasR2Store() && filename === "site-content.json") {
     try {

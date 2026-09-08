@@ -6,7 +6,7 @@ import { createMomoPayment, createVnpayUrl, createZaloPayPayment, fallbackPaymen
 import { CartItem, PaymentMethod, ShopOrder } from "@/lib/types";
 import { InventoryService } from "@/lib/pancake/inventory-service";
 import { buildProductInventory } from "@/lib/product-inventory";
-import { readSiteContent, type SiteContent } from "@/lib/site-content";
+import { readAuthoritativeShippingConfig, readSiteContent, type SiteContent } from "@/lib/site-content";
 import { POSSyncService } from "@/lib/services/pos-sync-service";
 import { QueueHandler } from "@/lib/pancake/queue-handler";
 import { calculateStandardShipping } from "@/lib/shipping-pricing";
@@ -271,9 +271,10 @@ export async function POST(request: Request) {
     const checkoutRequestId = String(payload.checkoutRequestId || "").trim().slice(0, 120);
     // COD must not wait for merchant configuration stored outside Postgres.
     // Only online payment methods need those credentials.
-    const [integrations, siteContent] = await timing.measure("bootstrap", () => Promise.all([
+    const [integrations, siteContent, shippingConfig] = await timing.measure("bootstrap", () => Promise.all([
       onlineMethods.has(paymentMethod) ? readIntegrationConfig() : Promise.resolve(null),
-      readSiteContent()
+      readSiteContent(),
+      readAuthoritativeShippingConfig()
     ]));
     const now = new Date().toISOString();
     const inventoryService = new InventoryService();
@@ -336,9 +337,9 @@ export async function POST(request: Request) {
       }
     }
 
-    const defaultShippingFee = Math.max(0, Math.floor(Number(siteContent.shipping?.defaultFee ?? 30000) || 0));
+    const defaultShippingFee = Math.max(0, Math.floor(Number(shippingConfig.defaultFee ?? 30000) || 0));
     const isExpressShipping = payload.shipping?.type === "express";
-    if (isExpressShipping && siteContent.shipping?.expressEnabled !== true) {
+    if (isExpressShipping && shippingConfig.expressEnabled !== true) {
       return respond({ error: "Giao hỏa tốc hiện đang tắt. Vui lòng chọn giao tiêu chuẩn." }, { status: 400 });
     }
     const orderItems = await hydratePancakeLinks(normalizeItems(items), siteContent);
@@ -347,8 +348,8 @@ export async function POST(request: Request) {
     const standardShipping = calculateStandardShipping({
       subtotal,
       defaultFee: defaultShippingFee,
-      freeShippingEnabled: siteContent.shipping?.freeShippingEnabled === true,
-      freeShippingThreshold: siteContent.shipping?.freeShippingThreshold ?? 300000
+      freeShippingEnabled: shippingConfig.freeShippingEnabled === true,
+      freeShippingThreshold: shippingConfig.freeShippingThreshold ?? 300000
     });
     const shippingBaseFee = isExpressShipping ? 0 : standardShipping.baseFee;
     const shippingDiscount = isExpressShipping ? 0 : standardShipping.discount;
