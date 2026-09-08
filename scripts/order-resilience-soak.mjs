@@ -14,6 +14,7 @@ import { createCustomerToken, verifyCustomerToken } from "../lib/customer-sessio
 
 const durationMs = Math.max(1_000, Number(process.env.SOAK_DURATION_MS || 60 * 60 * 1000));
 const tickMs = Math.max(1, Number(process.env.SOAK_TICK_MS || 50));
+const scenarioLimit = Math.max(0, Math.floor(Number(process.env.SOAK_SCENARIOS || 0)));
 const reportPath = process.env.SOAK_REPORT_PATH || "/tmp/blanwhi-order-resilience-soak.json";
 
 function seededRandom(seed = 260905) {
@@ -561,7 +562,7 @@ const startedAt = Date.now();
 let nextProgressAt = startedAt + Math.min(60_000, durationMs);
 let number = 1;
 
-while (Date.now() - startedAt < durationMs) {
+while (scenarioLimit > 0 ? number <= scenarioLimit : Date.now() - startedAt < durationMs) {
   harness.runScenario(number);
   if (number % 250 === 0) harness.assertInvariants();
   number += 1;
@@ -576,6 +577,7 @@ harness.drainRetries();
 harness.assertInvariants();
 const report = harness.report(startedAt);
 assert.ok(report.scenarios > 0);
+if (scenarioLimit > 0) assert.equal(report.scenarios, scenarioLimit);
 assert.equal(report.acknowledgedOrders, report.ordersInSimulatedDatabase);
 assert.ok(report.databaseFailures > 0);
 assert.ok(report.gatewayFailures > 0);

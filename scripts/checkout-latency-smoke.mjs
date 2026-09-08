@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 
 const baseUrl = process.env.SMOKE_BASE_URL || "http://127.0.0.1:3021";
-const iterations = Math.max(1, Math.min(200, Math.floor(Number(process.env.SMOKE_ITERATIONS || 30))));
+const iterations = Math.max(1, Math.min(2_000, Math.floor(Number(process.env.SMOKE_ITERATIONS || 30))));
 const parsedBaseUrl = new URL(baseUrl);
 if (!["127.0.0.1", "localhost", "::1"].includes(parsedBaseUrl.hostname) && process.env.ALLOW_REMOTE_SMOKE !== "true") {
   throw new Error("Smoke test chỉ được chạy trên localhost nếu chưa bật ALLOW_REMOTE_SMOKE=true.");
