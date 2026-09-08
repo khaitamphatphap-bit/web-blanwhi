@@ -59,6 +59,9 @@
       .cart:hover { background: #fff; color: #111; transform: translateY(-2px); }
       .cart-count { position: absolute; right: -6px; top: -6px; min-width: 20px; height: 20px; padding: 0 5px; display: grid; place-items: center; border: 2px solid #fff; border-radius: 999px; background: #fff; color: #111; font-size: 10px; font-weight: 800; line-height: 1; box-shadow: 0 3px 10px rgba(0,0,0,.18); }
       .cart:hover .cart-count { background: #111; color: #fff; }
+      .cart-fly-item { position: fixed; z-index: 120; overflow: hidden; border: 1px solid rgba(17,17,17,.16); background: #fff; object-fit: cover; pointer-events: none; box-shadow: 0 12px 28px rgba(0,0,0,.2); will-change: transform, opacity; }
+      .cart-add-toast { position: fixed; z-index: 121; max-width: min(250px, calc(100vw - 24px)); padding: 9px 12px; border: 1px solid #111; background: #111; color: #fff; font-size: 11px; font-weight: 700; line-height: 1.4; opacity: 0; transform: translateY(6px); pointer-events: none; transition: opacity .18s ease, transform .18s ease; }
+      .cart-add-toast.show { opacity: 1; transform: translateY(0); }
       .home-shortcut { position: fixed; left: 24px; bottom: 24px; z-index: 18; min-height: 44px; padding: 0 16px; border: 1px solid #111; background: #fff; color: #111; display: inline-flex; align-items: center; gap: 9px; font-size: 11px; font-weight: 800; text-transform: uppercase; cursor: pointer; box-shadow: 0 10px 24px rgba(0,0,0,.12); }
       .home-shortcut:hover { background: #111; color: #fff; }
       .home-shortcut svg { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
@@ -2215,6 +2218,94 @@
 
       const cartCount = () => cart.reduce((sum, item) => sum + item.qty, 0);
       const subtotal = () => cart.reduce((sum, item) => sum + item.amount * item.qty, 0);
+      let cartAddedToastTimer = null;
+      function captureCartFlySource(productId, preferredRoot = null) {
+        const productVisual = Array.from(document.querySelectorAll("[data-swipe]")).find((element) => element.dataset.swipe === productId);
+        const source = preferredRoot?.querySelector?.("img, .mock, .product-visual")
+          || preferredRoot
+          || productVisual?.querySelector("img, .mock")
+          || productVisual;
+        if (!source?.getBoundingClientRect) return null;
+        const rect = source.getBoundingClientRect();
+        if (rect.width <= 0 || rect.height <= 0) return null;
+        const image = source.matches?.("img") ? source : source.querySelector?.("img");
+        const product = productData.find((item) => item.id === productId);
+        return {
+          left: rect.left,
+          top: rect.top,
+          width: rect.width,
+          height: rect.height,
+          src: image?.currentSrc || image?.src || product?.image || ""
+        };
+      }
+      function showCartAdded(productName) {
+        const target = document.querySelector("button.cart");
+        if (!target) return;
+        target.animate?.([
+          { transform: "scale(1)" },
+          { transform: "scale(1.14)" },
+          { transform: "scale(1)" }
+        ], { duration: 360, easing: "ease-out" });
+        let toast = document.getElementById("cartAddToast");
+        if (!toast) {
+          toast = document.createElement("div");
+          toast.id = "cartAddToast";
+          toast.className = "cart-add-toast";
+          toast.setAttribute("role", "status");
+          toast.setAttribute("aria-live", "polite");
+          document.body.appendChild(toast);
+        }
+        const targetRect = target.getBoundingClientRect();
+        toast.textContent = `${productName || "Sản phẩm"} đã được thêm vào giỏ`;
+        toast.style.right = `${Math.max(12, window.innerWidth - targetRect.right)}px`;
+        toast.style.bottom = `${Math.max(12, window.innerHeight - targetRect.top + 10)}px`;
+        toast.classList.add("show");
+        window.clearTimeout(cartAddedToastTimer);
+        cartAddedToastTimer = window.setTimeout(() => toast.classList.remove("show"), 1500);
+      }
+      function animateProductToCart(productId, snapshot = null) {
+        const product = productData.find((item) => item.id === productId);
+        const target = document.querySelector("button.cart");
+        const source = snapshot || captureCartFlySource(productId);
+        showCartAdded(product?.name || "Sản phẩm");
+        if (!target || !source || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+        const targetRect = target.getBoundingClientRect();
+        const size = Math.min(96, Math.max(54, Math.min(source.width, source.height)));
+        const startLeft = source.left + (source.width - size) / 2;
+        const startTop = source.top + (source.height - size) / 2;
+        const endX = targetRect.left + targetRect.width / 2 - startLeft - size / 2;
+        const endY = targetRect.top + targetRect.height / 2 - startTop - size / 2;
+        const flyer = source.src ? document.createElement("img") : document.createElement("div");
+        if (source.src) {
+          flyer.src = source.src;
+          flyer.alt = "";
+        }
+        flyer.className = "cart-fly-item";
+        Object.assign(flyer.style, {
+          left: `${startLeft}px`,
+          top: `${startTop}px`,
+          width: `${size}px`,
+          height: `${size}px`
+        });
+        document.body.appendChild(flyer);
+        const animation = flyer.animate?.([
+          { transform: "translate3d(0,0,0) scale(1)", opacity: 1 },
+          { transform: `translate3d(${endX * .55}px,${endY * .35}px,0) scale(.72)`, opacity: .95, offset: .58 },
+          { transform: `translate3d(${endX}px,${endY}px,0) scale(.14)`, opacity: .15 }
+        ], { duration: 680, easing: "cubic-bezier(.22,.75,.3,1)" });
+        if (!animation) {
+          flyer.remove();
+          return;
+        }
+        animation.onfinish = () => flyer.remove();
+        animation.oncancel = () => flyer.remove();
+      }
+      async function addToCartAndStay(id, options = {}, preferredRoot = null) {
+        const snapshot = captureCartFlySource(id, preferredRoot);
+        const added = await addToCart(id, options);
+        if (added) animateProductToCart(id, snapshot);
+        return added;
+      }
       let variantState = { productId: null, mode: "cart", originalCartId: "", classificationIndex: 0, colorIndex: 0, size: "M", qty: 1, colorTouched: false, availabilityLoading: false, confirming: false };
       let wholesaleState = { productId: null, qty: 10 };
       const orderStorageKey = "blanwhiOrders";
@@ -3544,9 +3635,7 @@
           renderCart();
           openCart();
         } else if (variantState.mode === "buy") await buyNow(product.id, purchaseOptions);
-        else {
-          if (await addToCart(product.id, purchaseOptions)) openCart();
-        }
+        else await addToCartAndStay(product.id, purchaseOptions);
         } finally {
           variantState.confirming = false;
           variantState.availabilityLoading = false;
@@ -4366,9 +4455,10 @@
             pancakeProductId: row?.pancakeProductId || "",
             pancakeVariationId: row?.pancakeVariationId || ""
           });
+          const flySource = captureCartFlySource(product.id, wholesaleContent.querySelector(".wholesale-product"));
           closeWholesale();
           renderCart();
-          openCart();
+          animateProductToCart(product.id, flySource);
         }
       });
       wholesaleContent.addEventListener("change", (event) => {
@@ -4488,8 +4578,7 @@
         const suggestAdd = event.target.closest("[data-suggest-add]");
         if (suggestAdd) {
           const [id, color] = suggestAdd.dataset.suggestAdd.split(":");
-          addToCart(id, { color, size: "M", qty: 1 });
-          openCart();
+          await addToCartAndStay(id, { color, size: "M", qty: 1 }, suggestAdd.closest(".suggestion-card"));
           return;
         }
         const suggestBuy = event.target.closest("[data-suggest-buy]");
@@ -4957,6 +5046,7 @@
         updateCustomPrice();
       });
       document.getElementById("customAdd").addEventListener("click", () => {
+        const flySource = captureCartFlySource("custom-tee", document.getElementById("customShirtView"));
         const discount = wholesaleDiscount(customState.qty);
         const customUnitAmount = Math.round(customState.unitPrice * (1 - discount) / 1000) * 1000;
         const cartId = `custom-${customState.color}-${customState.size}-${Date.now()}`;
@@ -4983,7 +5073,7 @@
           }
         });
         renderCart();
-        openCart();
+        animateProductToCart("custom-tee", flySource);
       });
       renderCustomSide();
       updateCustomPrice();
