@@ -31,6 +31,13 @@ type StorageHealthReport = {
     limitBytes?: number;
     usedPercent?: number;
     backupPending?: number;
+    relations?: Array<{
+      name: string;
+      rows: number;
+      tableBytes: number;
+      indexBytes: number;
+      totalBytes: number;
+    }>;
     warning?: string;
     error?: string;
   };
@@ -629,6 +636,19 @@ export function OrdersAdmin({
             <span className="mt-1 block text-xs opacity-80">Mới nhất: {formatHealthTime(storageHealth?.orders?.lastCreatedAt || orders[0]?.createdAt)}</span>
           </div>
         </div>
+        {!!storageHealth?.database.relations?.length && (
+          <div className="mt-3 border-t border-current/20 pt-3">
+            <p className="text-xs uppercase opacity-70">Bảng dùng nhiều dung lượng nhất</p>
+            <div className="mt-2 grid gap-2 text-xs md:grid-cols-3">
+              {storageHealth.database.relations.slice(0, 3).map((relation) => (
+                <div key={relation.name} className="flex items-center justify-between gap-3 border-b border-current/15 py-1">
+                  <span>{relation.name}</span>
+                  <strong>{formatBytes(relation.totalBytes)}</strong>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         {(storageHealth?.database.warning || storageHealth?.database.error || storageHealth?.r2.warning || storageHealth?.r2.error || storageHealth?.primaryStore === "local_file") && (
           <div className="mt-3 space-y-1 text-sm">
             {storageHealth.primaryStore === "local_file" && <p>Đang dùng file local tạm. Khi chạy production phải cấu hình database URL để đơn không phụ thuộc server tạm.</p>}

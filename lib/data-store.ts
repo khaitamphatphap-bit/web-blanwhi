@@ -20,6 +20,13 @@ export type StoreHealthReport = {
     limitBytes?: number;
     usedPercent?: number;
     backupPending?: number;
+    relations?: Array<{
+      name: string;
+      rows: number;
+      tableBytes: number;
+      indexBytes: number;
+      totalBytes: number;
+    }>;
     warning?: string;
     error?: string;
   };
@@ -35,6 +42,18 @@ export type StoreHealthReport = {
     sizeBytes?: number;
     error?: string;
   };
+};
+
+export type InventoryEventWrite = {
+  operationId: string;
+  orderCode?: string;
+  source: "checkout" | "order-release" | "payment" | "reservation-expiry" | "pancake-sync" | "rollback" | "manual";
+  direction: "decrease" | "restore" | "sync";
+  changes: Array<Record<string, unknown>>;
+};
+
+type JsonStoreWriteOptions = {
+  inventoryEvent?: InventoryEventWrite;
 };
 
 let poolPromise: Promise<PgPool> | null = null;
@@ -567,6 +586,25 @@ async function ensureDatabaseSchema() {
 
         create index if not exists blanwhi_ephemeral_store_expiry_idx
         on blanwhi_ephemeral_store (expires_at);
+
+        create table if not exists blanwhi_inventory_events (
+          id bigserial primary key,
+          operation_id text not null,
+          order_code text,
+          source text not null,
+          direction text not null,
+          changes jsonb not null,
+          created_at timestamptz not null default now()
+        );
+
+        create index if not exists blanwhi_inventory_events_order_idx
+        on blanwhi_inventory_events (order_code, created_at desc);
+
+        create index if not exists blanwhi_inventory_events_operation_idx
+        on blanwhi_inventory_events (operation_id, created_at desc);
+
+        create index if not exists blanwhi_inventory_events_created_idx
+        on blanwhi_inventory_events (created_at desc);
       `);
     })();
     schemaReadyPromise = schemaRequest.catch((error) => {
@@ -705,15 +743,33 @@ export async function getStoreHealthReport(): Promise<StoreHealthReport> {
       await ensureDatabaseSchema();
       const pool = await getPool();
       if (pool) {
-        const [ping, size] = await Promise.all([
+        const [ping, size, relations] = await Promise.all([
           pool.query("select 1 as ok"),
-          pool.query("select pg_database_size(current_database()) as size_bytes").catch(() => ({ rows: [] }))
+          pool.query("select pg_database_size(current_database()) as size_bytes").catch(() => ({ rows: [] })),
+          pool.query(
+            `select
+               relname as name,
+               coalesce(n_live_tup, 0)::bigint as rows,
+               pg_relation_size(relid) as table_bytes,
+               pg_indexes_size(relid) as index_bytes,
+               pg_total_relation_size(relid) as total_bytes
+             from pg_stat_user_tables
+             where schemaname = 'public' and relname like 'blanwhi_%'
+             order by pg_total_relation_size(relid) desc`
+          ).catch(() => ({ rows: [] }))
         ]);
         report.database.ok = Number(ping.rows[0]?.ok) === 1;
         report.database.backupPending = await flushDatabaseBackupOutbox(100);
         const rawSize = size.rows[0]?.size_bytes;
         const sizeBytes = typeof rawSize === "bigint" ? Number(rawSize) : Number(rawSize || 0);
         if (Number.isFinite(sizeBytes) && sizeBytes > 0) report.database.sizeBytes = sizeBytes;
+        report.database.relations = relations.rows.map((row) => ({
+          name: String(row.name || ""),
+          rows: Number(row.rows || 0),
+          tableBytes: Number(row.table_bytes || 0),
+          indexBytes: Number(row.index_bytes || 0),
+          totalBytes: Number(row.total_bytes || 0)
+        })).filter((row) => Boolean(row.name));
         const limitMb = Number(process.env.DATABASE_STORAGE_LIMIT_MB || 0);
         if (limitMb > 0) {
           report.database.limitBytes = limitMb * 1024 * 1024;
@@ -1376,13 +1432,45 @@ export async function readJsonStoreHistory<T>(filename: string, limit = 100): Pr
   }
 }
 
-export async function writeJsonStore<T>(filename: string, value: T) {
+export async function writeJsonStore<T>(filename: string, value: T, options: JsonStoreWriteOptions = {}) {
   if (shouldUseDatabaseJsonStore(filename)) {
     await ensureDatabaseSchema();
     const pool = await getPool();
     if (pool) {
       const key = toStoreKey(filename);
       try {
+        if (filename === "site-content.json" && options.inventoryEvent) {
+          const event = options.inventoryEvent;
+          await pool.query(
+            `with incoming as (
+               select $6::text as store_key, $7::jsonb as store_value
+             ), saved as (
+               insert into blanwhi_store (store_key, store_value, updated_at)
+               select store_key, store_value, now()
+               from incoming
+               on conflict (store_key)
+               do update set store_value = excluded.store_value, updated_at = now()
+               returning store_key
+             ), inventory_event as (
+               insert into blanwhi_inventory_events
+                 (operation_id, order_code, source, direction, changes, created_at)
+               select $1, $2, $3, $4, $5::jsonb, now()
+               from saved
+               returning id
+             )
+             select 1 as changed from saved`,
+            [
+              event.operationId,
+              event.orderCode || null,
+              event.source,
+              event.direction,
+              JSON.stringify(event.changes),
+              key,
+              JSON.stringify(value)
+            ]
+          );
+          return value;
+        }
         await pool.query(
           `with incoming as (
              select $1::text as store_key, $2::jsonb as store_value

@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import { PancakeIntegrationError } from "@/lib/pancake/exception-handler";
 import { PancakeLogger } from "@/lib/pancake/logger";
 import { PancakeService } from "@/lib/pancake/pancake-service";
@@ -7,8 +8,18 @@ import { availableQuantity, changePublishQuantity } from "@/lib/pancake/domain";
 import { buildProductInventory } from "@/lib/product-inventory";
 import { readSiteContent, writeSiteContent } from "@/lib/site-content";
 import { createOrder, findOrderByCheckoutRequestId, findOrderByCode, updateOrder } from "@/lib/orders";
-import { withDataStoreLock } from "@/lib/data-store";
+import { withDataStoreLock, type InventoryEventWrite } from "@/lib/data-store";
 import type { OrderItem, ShopOrder } from "@/lib/types";
+
+type InventoryMutationContext = Omit<InventoryEventWrite, "direction" | "changes">;
+
+function inventoryMutation(operationId: string, source: InventoryEventWrite["source"], orderCode?: string): InventoryMutationContext {
+  return {
+    operationId: `${operationId}:${randomUUID()}`,
+    ...(orderCode ? { orderCode } : {}),
+    source
+  };
+}
 
 function sameProduct(item: OrderItem, row: PancakeAvailabilityItem & { productId: string }) {
   return !item.productId || item.productId === row.productId;
@@ -41,6 +52,7 @@ export class InventoryService {
     const byProductId = new Map(variations.filter((item) => item.productId).map((item) => [item.productId, item]));
     const now = new Date().toISOString();
     let linked = 0;
+    const changes: Array<Record<string, unknown>> = [];
     const saved = await withDataStoreLock("website-inventory", async () => {
       const content = await readSiteContent();
       const products = content.products.map((product) => ({
@@ -51,7 +63,7 @@ export class InventoryService {
             || (item.pancakeProductId ? byProductId.get(item.pancakeProductId) : undefined);
           if (!variation) return item;
           linked += 1;
-          return {
+          const next = {
             ...item,
             pancakeProductId: item.pancakeProductId || variation.productId,
             pancakeVariationId: variation.id,
@@ -60,9 +72,32 @@ export class InventoryService {
             quantity: variation.quantity,
             lastSyncedAt: now
           };
+          if (
+            item.pancakeProductId !== next.pancakeProductId
+            || item.pancakeVariationId !== next.pancakeVariationId
+            || item.pancakeSku !== next.pancakeSku
+            || item.pancakeQuantity !== next.pancakeQuantity
+            || item.quantity !== next.quantity
+          ) {
+            changes.push({
+              productId: product.id,
+              inventoryKey: item.key,
+              sku: item.sku,
+              publishQuantityBefore: item.publishQuantity,
+              publishQuantityAfter: next.publishQuantity,
+              pancakeQuantityBefore: item.pancakeQuantity,
+              pancakeQuantityAfter: next.pancakeQuantity
+            });
+          }
+          return next;
         })
       }));
-      return writeSiteContent({ ...content, products });
+      return writeSiteContent({ ...content, products }, {
+        operationId: `pancake-sync:${now}`,
+        source: "pancake-sync",
+        direction: "sync",
+        changes
+      });
     });
     await PancakeLogger.write("info", "inventory.sync", `Đã đọc ${variations.length} biến thể Pancake, khớp ${linked} dòng website.`);
     return { content: saved, remoteCount: variations.length, linkedCount: linked, syncedAt: now };
@@ -119,9 +154,14 @@ export class InventoryService {
     }
   }
 
-  private async reserveUnlocked(items: OrderItem[], direction: "decrease" | "restore") {
+  private async reserveUnlocked(
+    items: OrderItem[],
+    direction: "decrease" | "restore",
+    mutation: InventoryMutationContext
+  ) {
     const content = await readSiteContent();
     const matched = new Set<number>();
+    const changes: Array<Record<string, unknown>> = [];
     const products = content.products.map((product) => ({
       ...product,
       inventory: buildProductInventory(product).map((row) => {
@@ -133,35 +173,53 @@ export class InventoryService {
         if (!matchedItems.length) return row;
         matchedItems.forEach(({ index }) => matched.add(index));
         const quantity = matchedItems.reduce((sum, { candidate }) => sum + Math.max(0, Math.floor(Number(candidate.quantity) || 0)), 0);
-        if (direction === "decrease" && changePublishQuantity(row.publishQuantity, quantity, direction) !== Number(row.publishQuantity) - quantity) {
+        const before = Math.max(0, Math.floor(Number(row.publishQuantity) || 0));
+        const after = changePublishQuantity(before, quantity, direction);
+        if (direction === "decrease" && after !== before - quantity) {
           throw new PancakeIntegrationError(`${matchedItems[0].candidate.name} không còn đủ tồn kho để đặt.`, "OUT_OF_STOCK", 409);
         }
-        return { ...row, publishQuantity: changePublishQuantity(row.publishQuantity, quantity, direction) };
+        changes.push({
+          productId: product.id,
+          inventoryKey: row.key,
+          sku: row.sku,
+          quantity,
+          before,
+          after
+        });
+        return { ...row, publishQuantity: after };
       })
     }));
     if (matched.size !== items.length) {
       const missing = items.find((_, index) => !matched.has(index));
       throw new PancakeIntegrationError(`${missing?.name || "Sản phẩm"} chưa khớp phân loại tồn kho trên website.`, "PRODUCT_NOT_LINKED", 409);
     }
-    return writeSiteContent({ ...content, products });
+    return writeSiteContent({ ...content, products }, {
+      ...mutation,
+      direction,
+      changes
+    });
   }
 
   async reserve(items: OrderItem[], direction: "decrease" | "restore") {
-    return withDataStoreLock("website-inventory", () => this.reserveUnlocked(items, direction));
+    return withDataStoreLock("website-inventory", () => this.reserveUnlocked(
+      items,
+      direction,
+      inventoryMutation("manual-inventory", "manual")
+    ));
   }
 
   async reserveOrder(order: ShopOrder) {
     return withDataStoreLock("website-inventory", async () => {
       const current = await findOrderByCode(order.code) || order;
       if (current.inventoryReservationApplied && !current.inventoryReservationReleased) return current;
-      await this.reserveUnlocked(current.items, "decrease");
+      await this.reserveUnlocked(current.items, "decrease", inventoryMutation(`${current.code}:reserve`, "checkout", current.code));
       try {
         return await updateOrder(current.code, {
           inventoryReservationApplied: true,
           inventoryReservationReleased: false
         }) || { ...current, inventoryReservationApplied: true, inventoryReservationReleased: false };
       } catch (error) {
-        await this.reserveUnlocked(current.items, "restore");
+        await this.reserveUnlocked(current.items, "restore", inventoryMutation(`${current.code}:reserve-rollback`, "rollback", current.code));
         throw error;
       }
     });
@@ -178,7 +236,7 @@ export class InventoryService {
       }
       if (current.inventoryReservationReleased) {
         try {
-          await this.reserveUnlocked(current.items, "decrease");
+          await this.reserveUnlocked(current.items, "decrease", inventoryMutation(`${current.code}:payment-reserve`, "payment", current.code));
         } catch (error) {
           if (!(error instanceof PancakeIntegrationError) || error.code !== "OUT_OF_STOCK") throw error;
           return await updateOrder(current.code, {
@@ -203,7 +261,7 @@ export class InventoryService {
             paymentLastCheckedAt: new Date().toISOString()
           }) || { ...current, ...payment, status: "paid" as const, inventoryReservationReleased: false };
         } catch (error) {
-          await this.reserveUnlocked(current.items, "restore");
+          await this.reserveUnlocked(current.items, "restore", inventoryMutation(`${current.code}:payment-reserve-rollback`, "rollback", current.code));
           throw error;
         }
       }
@@ -246,7 +304,7 @@ export class InventoryService {
         && expiresAt <= now.getTime();
       if (!canExpire) return current;
 
-      await this.reserveUnlocked(current.items, "restore");
+      await this.reserveUnlocked(current.items, "restore", inventoryMutation(`${current.code}:reservation-expiry`, "reservation-expiry", current.code));
       try {
         return await updateOrder(current.code, {
           inventoryReservationReleased: true,
@@ -256,7 +314,7 @@ export class InventoryService {
           providerMessage: "Đã hết thời gian giữ tồn kho; đơn vẫn chờ ZaloPay xác nhận thanh toán"
         }) || { ...current, inventoryReservationReleased: true };
       } catch (error) {
-        await this.reserveUnlocked(current.items, "decrease");
+        await this.reserveUnlocked(current.items, "decrease", inventoryMutation(`${current.code}:reservation-expiry-rollback`, "rollback", current.code));
         throw error;
       }
     });
@@ -268,20 +326,20 @@ export class InventoryService {
         const existing = await findOrderByCheckoutRequestId(order.checkoutRequestId, order.customerDeviceId);
         if (existing) {
           if (existing.inventoryReservationApplied && !existing.inventoryReservationReleased) return existing;
-          await this.reserveUnlocked(existing.items, "decrease");
+          await this.reserveUnlocked(existing.items, "decrease", inventoryMutation(`${existing.code}:checkout-retry`, "checkout", existing.code));
           try {
             return await updateOrder(existing.code, {
               inventoryReservationApplied: true,
               inventoryReservationReleased: false
             }) || existing;
           } catch (error) {
-            await this.reserveUnlocked(existing.items, "restore");
+            await this.reserveUnlocked(existing.items, "restore", inventoryMutation(`${existing.code}:checkout-retry-rollback`, "rollback", existing.code));
             throw error;
           }
         }
       }
 
-      await this.reserveUnlocked(order.items, "decrease");
+      await this.reserveUnlocked(order.items, "decrease", inventoryMutation(`${order.code}:checkout`, "checkout", order.code));
       try {
         return await createOrder({
           ...order,
@@ -289,7 +347,7 @@ export class InventoryService {
           inventoryReservationReleased: false
         });
       } catch (error) {
-        await this.reserveUnlocked(order.items, "restore");
+        await this.reserveUnlocked(order.items, "restore", inventoryMutation(`${order.code}:checkout-rollback`, "rollback", order.code));
         throw error;
       }
     });
@@ -299,12 +357,12 @@ export class InventoryService {
     return withDataStoreLock("website-inventory", async () => {
       const current = await findOrderByCode(order.code) || order;
       if (!current.inventoryReservationApplied || current.inventoryReservationReleased) return current;
-      await this.reserveUnlocked(current.items, "restore");
+      await this.reserveUnlocked(current.items, "restore", inventoryMutation(`${current.code}:release`, "order-release", current.code));
       try {
         return await updateOrder(current.code, { inventoryReservationReleased: true })
           || { ...current, inventoryReservationReleased: true };
       } catch (error) {
-        await this.reserveUnlocked(current.items, "decrease");
+        await this.reserveUnlocked(current.items, "decrease", inventoryMutation(`${current.code}:release-rollback`, "rollback", current.code));
         throw error;
       }
     });

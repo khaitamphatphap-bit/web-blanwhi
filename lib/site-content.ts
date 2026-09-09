@@ -1,4 +1,4 @@
-import { readAuthoritativeJsonStore, readJsonStore, readKeyedJsonStore, withDataStoreLock, writeJsonStore, writeKeyedJsonRecord } from "@/lib/data-store";
+import { readAuthoritativeJsonStore, readJsonStore, readKeyedJsonStore, withDataStoreLock, writeJsonStore, writeKeyedJsonRecord, type InventoryEventWrite } from "@/lib/data-store";
 import { buildProductInventory } from "@/lib/product-inventory";
 import policyData from "@/app/chinh-sach/policies-data.json";
 
@@ -399,8 +399,8 @@ export async function readSiteContent(): Promise<SiteContent> {
   return loadSiteContent();
 }
 
-export async function writeSiteContent(content: SiteContent) {
-  const saved = await writeJsonStore("site-content.json", content);
+export async function writeSiteContent(content: SiteContent, inventoryEvent?: InventoryEventWrite) {
+  const saved = await writeJsonStore("site-content.json", content, { inventoryEvent });
   return saved;
 }
 
