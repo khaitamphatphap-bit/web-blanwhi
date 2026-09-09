@@ -108,6 +108,7 @@ export type ShopOrder = {
   items: OrderItem[];
   subtotal: number;
   discount: number;
+  voucherCode?: string;
   shipping: number;
   shippingBaseFee?: number;
   shippingDiscount?: number;

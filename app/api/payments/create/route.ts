@@ -12,6 +12,7 @@ import { QueueHandler } from "@/lib/pancake/queue-handler";
 import { calculateStandardShipping } from "@/lib/shipping-pricing";
 import { zaloPayReservationExpiresAt } from "@/lib/zalopay-reservation";
 import { ServerTiming } from "@/lib/server-timing";
+import { resolveCheckoutDiscount } from "@/lib/checkout-discount";
 
 type CheckoutPayload = {
   customerDeviceId?: string;
@@ -33,6 +34,7 @@ type CheckoutPayload = {
     longitude?: string;
   };
   paymentMethod?: PaymentMethod;
+  voucherCode?: string;
   items?: Array<CartItem | PreviewCheckoutItem>;
   totals?: {
     subtotal?: number;
@@ -344,7 +346,15 @@ export async function POST(request: Request) {
     }
     const orderItems = await hydratePancakeLinks(normalizeItems(items), siteContent);
     const subtotal = orderItems.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
-    const discount = Math.max(0, Math.min(subtotal, Math.floor(Number(payload.totals?.discount) || 0)));
+    const checkoutDiscount = resolveCheckoutDiscount(subtotal, payload.voucherCode);
+    if (!checkoutDiscount.valid) {
+      return respond({ error: checkoutDiscount.message }, { status: 400 });
+    }
+    const requestedDiscount = Math.max(0, Math.floor(Number(payload.totals?.discount) || 0));
+    if (requestedDiscount !== checkoutDiscount.discount) {
+      return respond({ error: "Giảm giá của đơn hàng vừa được cập nhật. Vui lòng kiểm tra lại giỏ hàng rồi đặt lại." }, { status: 409 });
+    }
+    const discount = checkoutDiscount.discount;
     const standardShipping = calculateStandardShipping({
       subtotal,
       defaultFee: defaultShippingFee,
@@ -389,6 +399,7 @@ export async function POST(request: Request) {
       items: orderItems,
       subtotal: totals.subtotal,
       discount: totals.discount,
+      voucherCode: checkoutDiscount.voucherCode || undefined,
       shipping: totals.shipping,
       shippingBaseFee,
       shippingDiscount,
