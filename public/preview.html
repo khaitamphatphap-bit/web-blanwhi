@@ -1012,7 +1012,7 @@
         </div>
         <div class="voucher-note" id="voucherNote" hidden>Voucher sẽ tự gợi ý theo tổng đơn và số lượng sản phẩm.</div>
         <div class="line"><span>Giá trị đơn hàng</span><strong id="subtotalText">0đ</strong></div>
-        <div class="line"><span>Giảm giá</span><strong id="discountText">-0đ</strong></div>
+        <div class="line" hidden><span>Giảm giá</span><strong id="discountText">-0đ</strong></div>
         <div class="line"><span>Ship</span><strong id="shippingText">0đ</strong></div>
         <p class="shipping-promotion-note" id="shippingPromotionNote" hidden></p>
         <div class="line" style="font-size:18px"><span>Tổng</span><strong id="totalText">0đ</strong></div>
@@ -2434,7 +2434,7 @@
         updatedAt,
         items: cart.map((item) => compactCartDraftItem(item, includeLocalOnly)),
         note: orderNote,
-        voucherCode: orderVoucherCode,
+        voucherCode: "",
         shippingMethod: selectedShippingMethod === "express" ? "express" : "fast"
       });
 
@@ -2482,7 +2482,7 @@
           wholesale: item.wholesale === true
         })),
         note: draft.note || "",
-        voucherCode: draft.voucherCode || "",
+        voucherCode: "",
         shippingMethod: draft.shippingMethod === "express" ? "express" : "fast"
       });
 
@@ -2573,8 +2573,8 @@
         }).filter(Boolean);
         cart.splice(0, cart.length, ...restored);
         orderNote = String(draft?.note || "");
-        orderVoucherCode = String(draft?.voucherCode || "");
-        selectedVoucherCode = orderVoucherCode;
+        orderVoucherCode = "";
+        selectedVoucherCode = "";
         selectedShippingMethod = draft?.shippingMethod === "express" && expressShippingEnabled ? "express" : "fast";
         cartNote.value = orderNote;
         voucherCode.value = orderVoucherCode;
@@ -3014,16 +3014,8 @@
         momo: "MoMo",
         zalopay: "Zalopay"
       };
-      const customerVouchers = [
-        { code: "BLANWHI5", title: "Giảm 5%", description: "Giảm 5% cho sản phẩm bán lẻ.", min: 500000, rate: .05, freeship: false, label: "-5%" },
-        { code: "BLANWHI10", title: "Giảm 10%", description: "Giảm 10% cho sản phẩm bán lẻ.", min: 1000000, rate: .1, freeship: false, label: "-10%" },
-        { code: "BLANWHI15", title: "Giảm 15%", description: "Giảm 15% cho sản phẩm bán lẻ.", min: 2000000, rate: .15, freeship: false, label: "-15%" }
-      ];
-      const bestVoucher = (sub = subtotal()) => {
-        const selected = customerVouchers.find((voucher) => voucher.code === selectedVoucherCode && sub >= voucher.min);
-        if (selected) return selected;
-        return { code: "", title: "Chưa chọn voucher", rate: 0, freeship: false };
-      };
+      const customerVouchers = [];
+      const bestVoucher = () => ({ code: "", title: "Giảm giá", rate: 0, freeship: false });
       const totals = () => {
         const sub = subtotal();
         const retailSub = cart.filter((item) => !item.wholesale).reduce((sum, item) => sum + item.amount * item.qty, 0);
@@ -3758,7 +3750,7 @@
           <h3 style="margin:0 0 8px">Đơn hàng</h3>
           ${cart.length ? cart.map((item) => `<div class="line"><span class="checkout-item-copy"><b>${Math.max(1, Number(item.qty ?? item.quantity) || 1)}× ${escapeMarkup(item.name)}</b><small>${item.classificationName ? `${escapeMarkup(item.classificationName)} · ` : ""}${escapeMarkup(colorLabel(item.color, item, item.classificationIndex || 0))}${item.kind.startsWith("gift-") ? "" : ` · Size ${escapeMarkup(item.size)}`}</small></span><strong>${formatMoney(item.amount * item.qty)}</strong></div>`).join("") : `<p class="muted">Chưa có sản phẩm.</p>`}
           <div class="line"><span>Giá trị đơn hàng</span><strong>${formatMoney(next.sub)}</strong></div>
-          <div class="line"><span>${next.voucher.title}</span><strong>-${formatMoney(next.discount)}</strong></div>
+          ${next.discount > 0 ? `<div class="line"><span>${next.voucher.title}</span><strong>-${formatMoney(next.discount)}</strong></div>` : ""}
           <div class="line"><span>Vận chuyển · ${selectedShippingMethod === "express" ? "Hỏa tốc" : "SPX Express"}</span><strong>${next.shippingPending ? "Đang tính..." : formatMoney(next.shipping)}</strong></div>
           ${!next.shippingPending && selectedShippingMethod !== "express" && freeShippingEnabled ? `<p class="shipping-promotion-note">${next.qualifiesForFreeShipping ? "Đơn hàng đã được miễn phí vận chuyển." : `Miễn phí vận chuyển cho đơn từ ${formatMoney(freeShippingThreshold)}.`}</p>` : ""}
           <div class="line" style="font-size:18px"><span>Tổng</span><strong>${next.shippingPending ? "Đang tính..." : formatMoney(next.total)}</strong></div>
@@ -5418,7 +5410,7 @@
           note: orderNote,
           shippingMethod: selectedShippingMethod === "express" ? "Hỏa tốc" : "SPX Express",
           shippingFee: next.shipping,
-          voucherCode: orderVoucherCode,
+          voucherCode: "",
           total: next.total,
           updatedAt: new Date().toLocaleString("vi-VN")
         };
@@ -5452,7 +5444,7 @@
               customerDeviceId,
               checkoutRequestId: checkoutRequestState.id,
               paymentMethod,
-              voucherCode: orderVoucherCode,
+              voucherCode: "",
               customer: order.customer,
               items: order.items,
               totals: {

@@ -16,19 +16,16 @@ test("không có voucher thì server không giảm giá sản phẩm", () => {
   });
 });
 
-test("server tự tính đúng các voucher hợp lệ", () => {
-  assert.equal(resolveCheckoutDiscount(500_000, "blanwhi5").discount, 25_000);
-  assert.equal(resolveCheckoutDiscount(1_000_000, "BLANWHI10").discount, 100_000);
-  assert.equal(resolveCheckoutDiscount(2_000_000, "BLANWHI15").discount, 300_000);
-});
-
-test("server từ chối voucher sai hoặc chưa đủ điều kiện", () => {
+test("server từ chối toàn bộ voucher cũ và mã gửi thủ công", () => {
   assert.equal(resolveCheckoutDiscount(176_000, "BLANWHI5").valid, false);
+  assert.equal(resolveCheckoutDiscount(1_000_000, "BLANWHI10").valid, false);
+  assert.equal(resolveCheckoutDiscount(2_000_000, "BLANWHI15").valid, false);
   assert.equal(resolveCheckoutDiscount(176_000, "GIAMHET").valid, false);
 });
 
 test("server không còn tin số giảm giá do trình duyệt gửi", () => {
-  assert.match(customerPage, /voucherCode:\s*orderVoucherCode/);
+  assert.doesNotMatch(customerPage, /voucherCode:\s*orderVoucherCode/);
+  assert.match(customerPage, /voucherCode:\s*""/);
   assert.match(checkoutRoute, /resolveCheckoutDiscount\(subtotal, payload\.voucherCode\)/);
   assert.match(checkoutRoute, /requestedDiscount !== checkoutDiscount\.discount/);
   assert.doesNotMatch(checkoutRoute, /Math\.min\(subtotal, Math\.floor\(Number\(payload\.totals\?\.discount\)/);
@@ -37,4 +34,8 @@ test("server không còn tin số giảm giá do trình duyệt gửi", () => {
   for (const forgedDiscount of [50_000, 100_000, 176_000]) {
     assert.notEqual(forgedDiscount, authoritative.discount);
   }
+});
+
+test("giao diện không còn công khai voucher cũ", () => {
+  assert.doesNotMatch(customerPage, /BLANWHI5|BLANWHI10|BLANWHI15/);
 });
