@@ -229,13 +229,17 @@
       .swatches button.swatch-loaded img { opacity: 1; }
       .swatches button.active { outline: 2px solid #111; outline-offset: 2px; }
       .sizes { display: flex; gap: 4px; margin-top: 10px; }
-      .sizes button { position: relative; border: 1px solid var(--line); background: #fff; min-width: 27px; height: 27px; display: grid; place-items: center; overflow: hidden; font-size: 11px; }
+      .sizes button { position: relative; border: 1px solid #aaa; background: #fff; min-width: 27px; height: 27px; display: grid; place-items: center; overflow: hidden; font-size: 11px; }
       .selection-loading .sizes button, .selection-loading .swatches button, .grid.inventory-checking .sizes button, .grid.inventory-checking .swatches button { color: transparent; pointer-events: none; }
       .selection-loading #variantConfirm { pointer-events: none; opacity: .55; }
       .sizes button.active { border-color: #000; background: #000; color: #fff; }
       .selection-loading .sizes button.active, .selection-loading .swatches button.active, .grid.inventory-checking .sizes button.active, .grid.inventory-checking .swatches button.active { outline: 0; border-color: var(--line); background: #fff; color: transparent; }
-      .sizes button.out-of-stock, .swatches button.out-of-stock { color: #aaa; border-color: #ddd; background: #f4f4f4; opacity: .55; cursor: not-allowed; filter: grayscale(1); }
-      .sizes button.out-of-stock.active { border-color: #bbb; background: #eee; color: #888; }
+      .sizes button.out-of-stock, .swatches button.out-of-stock { color: #aaa; background: #f4f4f4; cursor: pointer; filter: grayscale(1); }
+      .sizes button.out-of-stock.alternative-stock { border-color: #aaa; }
+      .swatches button.out-of-stock.alternative-stock { border-color: #aaa; }
+      .sizes button.out-of-stock.fully-out, .swatches button.out-of-stock.fully-out { border-color: #ddd; cursor: not-allowed; }
+      .swatches button.out-of-stock .swatch-photo { opacity: .55; }
+      .sizes button.out-of-stock.active { border-color: #bbb; background: #eee; color: #aaa; }
       .stock-note { margin-top: 10px; color: #777; font-size: 12px; font-weight: 700; text-transform: uppercase; }
       .stock-note.sold-out { color: #b00020; }
       .primary:disabled, .secondary:disabled, .quick:disabled { opacity: .45; cursor: not-allowed; }
@@ -1428,6 +1432,48 @@
       const hasStock = (product, options = {}) => stockFor(product, options) > 0;
       const colorHasStock = (product, color, classificationIndex = product.classificationIndex || 0) =>
         !inventoryIsManaged(product) || (product.sizes || ["S", "M", "L", "XL"]).some((size) => hasStock(product, { classificationIndex, color, size }));
+      const sizeHasStock = (product, size, classificationIndex = product.classificationIndex || 0) =>
+        !inventoryIsManaged(product) || variantSwatches(product, classificationIndex).some((color) => hasStock(product, { classificationIndex, color, size }));
+      const colorHasSelectedSize = (product, color, size, classificationIndex = product.classificationIndex || 0) =>
+        !inventoryIsManaged(product) || hasStock(product, { classificationIndex, color, size });
+      const firstColorIndexForSize = (product, size, classificationIndex = product.classificationIndex || 0) =>
+        Math.max(0, variantSwatches(product, classificationIndex).findIndex((color) => colorHasSelectedSize(product, color, size, classificationIndex)));
+      const firstSizeForColor = (product, color, classificationIndex = product.classificationIndex || 0) =>
+        (product.sizes || ["S", "M", "L", "XL"]).find((size) => colorHasSelectedSize(product, color, size, classificationIndex)) || product.size;
+      const selectSizeAndMatchColor = (product, size, classificationIndex = product.classificationIndex || 0) => {
+        const swatches = variantSwatches(product, classificationIndex);
+        let colorIndex = Math.max(0, Math.min(product.colorIndex || 0, swatches.length - 1));
+        if (!colorHasSelectedSize(product, swatches[colorIndex], size, classificationIndex)) {
+          colorIndex = firstColorIndexForSize(product, size, classificationIndex);
+        }
+        product.size = size;
+        product.colorIndex = colorIndex;
+        product.color = swatches[colorIndex] || product.color;
+        product.selectionAxis = "size";
+      };
+      const selectColorAndMatchSize = (product, colorIndex, classificationIndex = product.classificationIndex || 0) => {
+        const swatches = variantSwatches(product, classificationIndex);
+        const normalizedColorIndex = Math.max(0, Math.min(colorIndex, swatches.length - 1));
+        const color = swatches[normalizedColorIndex] || product.color;
+        product.colorIndex = normalizedColorIndex;
+        product.color = color;
+        if (!colorHasSelectedSize(product, color, product.size, classificationIndex)) {
+          product.size = firstSizeForColor(product, color, classificationIndex);
+        }
+        product.selectionAxis = "color";
+      };
+      const ensureValidProductSelection = (product, classificationIndex = product.classificationIndex || 0) => {
+        const swatches = variantSwatches(product, classificationIndex);
+        const selectedColor = swatches[product.colorIndex || 0] || swatches[0];
+        if (selectedColor && hasStock(product, { classificationIndex, color: selectedColor, size: product.size })) return;
+        const available = swatches.flatMap((color, colorIndex) =>
+          (product.sizes || ["M"]).map((size) => ({ color, colorIndex, size }))
+        ).find((selection) => hasStock(product, { classificationIndex, color: selection.color, size: selection.size }));
+        if (!available) return;
+        product.color = available.color;
+        product.colorIndex = available.colorIndex;
+        product.size = available.size;
+      };
       const classificationHasStock = (product, classificationIndex = product.classificationIndex || 0) =>
         !inventoryIsManaged(product) || variantSwatches(product, classificationIndex).some((color) => colorHasStock(product, color, classificationIndex));
       const showSoldOut = () => alert("Phân loại này đã hết hàng.");
@@ -1549,7 +1595,7 @@
         if ("requestIdleCallback" in window) window.requestIdleCallback(warmRest, { timeout: 1200 });
         else window.setTimeout(warmRest, 300);
       };
-      const swatchMarkup = (product, color, index, attribute, classificationIndex = product.classificationIndex || 0) => {
+      const swatchMarkup = (product, color, index, attribute, classificationIndex = product.classificationIndex || 0, selectedSize = "") => {
         const rawImage = activeVariant(product, classificationIndex).colorImages?.[color] || product.colorImages?.[color] || "";
         const image = (() => {
           try {
@@ -1560,8 +1606,14 @@
         })();
         const label = colorLabel(color, product, classificationIndex);
         const content = image ? `<img class="swatch-photo" src="${escapeMarkup(image)}" alt="${escapeMarkup(label)}" loading="eager" decoding="async" fetchpriority="low" />` : escapeMarkup(label.slice(0, 1));
-        const out = !colorHasStock(product, color, classificationIndex);
-        return `<button type="button" class="${index === product.colorIndex ? "active" : ""}${out ? " out-of-stock" : ""}${image ? " swatch-loading" : " swatch-loaded"}" ${attribute} data-stock-state="${out ? "out" : "in"}" aria-label="Chọn màu ${escapeMarkup(label)} cho ${escapeMarkup(product.name)}${out ? " - hết hàng" : ""}" title="${escapeMarkup(label)}${out ? " - hết hàng" : ""}">${content}</button>`;
+        const unavailableForSize = Boolean(selectedSize) && !colorHasSelectedSize(product, color, selectedSize, classificationIndex);
+        const fullyOut = !colorHasStock(product, color, classificationIndex);
+        const out = selectedSize ? unavailableForSize : fullyOut;
+        const alternativeStock = out && !fullyOut;
+        const availabilityHint = out
+          ? fullyOut ? " - hết hàng" : ` - không có với size ${selectedSize}, bấm để xem size còn hàng`
+          : "";
+        return `<button type="button" class="${index === product.colorIndex ? "active" : ""}${out ? " out-of-stock" : ""}${alternativeStock ? " alternative-stock" : ""}${fullyOut ? " fully-out" : ""}${image ? " swatch-loading" : " swatch-loaded"}" ${attribute} data-stock-state="${out ? "out" : "in"}" aria-label="Chọn màu ${escapeMarkup(label)} cho ${escapeMarkup(product.name)}${escapeMarkup(availabilityHint)}" title="${escapeMarkup(label)}${escapeMarkup(availabilityHint)}">${content}</button>`;
       };
       const productVisualMedia = (product, color = product.color, classificationIndex = product.classificationIndex || 0) => {
         const image = productImageUrl(product, color, classificationIndex);
@@ -1640,13 +1692,17 @@
           <span class="sold-count">Đã bán ${compactSoldCount(product.sold)}</span>
         </span>
       `;
-      const sizeButtonsMarkup = (product, selectedSize = product.size, attributeFactory = (size) => `data-size="${product.id}:${size}"`, classificationIndex = product.classificationIndex || 0, color = product.color) => `
+      const sizeButtonsMarkup = (product, selectedSize = product.size, attributeFactory = (size) => `data-size="${product.id}:${size}"`, classificationIndex = product.classificationIndex || 0, color = product.color, filterByColor = false) => `
         ${(product.sizes || ["S", "M", "L", "XL"]).map(size => {
-          const out = !hasStock(product, { classificationIndex, color, size });
-          return `<button class="${size === selectedSize ? "active" : ""}${out ? " out-of-stock" : ""}" ${attributeFactory(size)} data-stock-state="${out ? "out" : "in"}">${size}</button>`;
+          const fullyOut = !sizeHasStock(product, size, classificationIndex);
+          const unavailableForColor = filterByColor && !colorHasSelectedSize(product, color, size, classificationIndex);
+          const out = filterByColor ? unavailableForColor : fullyOut;
+          const alternativeStock = out && !fullyOut;
+          return `<button class="${size === selectedSize ? "active" : ""}${out ? " out-of-stock" : ""}${alternativeStock ? " alternative-stock" : ""}${fullyOut ? " fully-out" : ""}" ${attributeFactory(size)} data-stock-state="${out ? "out" : "in"}">${size}</button>`;
         }).join("")}
       `;
       const productCardMarkup = (product) => {
+        ensureValidProductSelection(product);
         const swatches = variantSwatches(product);
         const linkedRows = (product.inventory || []).filter((row) => row.pancakeProductId || row.pancakeVariationId || row.pancakeSku);
         const productAvailable = linkedRows.reduce((sum, row) => sum + stockFromInventoryRow(row), 0);
@@ -1661,11 +1717,11 @@
           <div class="meta"><div><b>${product.name}</b></div>${priceMarkup(product)}</div>
           ${product.kind.startsWith("gift-") ? `<div class="muted">Gói quà tiêu chuẩn BLANWHI</div>` : `
             <div class="sizes" data-size-group="${product.id}">
-              ${sizeButtonsMarkup(product)}
+              ${sizeButtonsMarkup(product, product.size, undefined, product.classificationIndex || 0, product.color, product.selectionAxis === "color")}
             </div>
           `}
           ${classificationMarkup(product, "data-card-classification")}
-          <div class="swatches" data-swatches="${product.id}">${swatches.map((color, index) => swatchMarkup(product, color, index, `data-card-color="${product.id}:${index}"`)).join("")}</div>
+          <div class="swatches" data-swatches="${product.id}">${swatches.map((color, index) => swatchMarkup(product, color, index, `data-card-color="${product.id}:${index}"`, product.classificationIndex || 0, product.selectionAxis === "size" ? product.size : "")).join("")}</div>
           <div class="card-actions">
             <button class="quick" data-buy="${product.id}">Mua ngay</button>
             <button class="quick" data-add="${product.id}">Thêm giỏ</button>
@@ -1830,6 +1886,7 @@
           swatches,
           color: swatches[0],
           colorIndex: 0,
+          selectionAxis: "all",
           image: primaryImage,
           galleryImages,
           galleryIndex: 0,
@@ -2342,7 +2399,7 @@
         if (added) animateProductToCart(id, snapshot);
         return added;
       }
-      let variantState = { productId: null, mode: "cart", originalCartId: "", classificationIndex: 0, colorIndex: 0, size: "M", qty: 1, colorTouched: false, availabilityLoading: false, confirming: false };
+      let variantState = { productId: null, mode: "cart", originalCartId: "", classificationIndex: 0, colorIndex: 0, size: "M", qty: 1, colorTouched: false, selectionAxis: "all", availabilityLoading: false, confirming: false };
       let wholesaleState = { productId: null, qty: 10 };
       const orderStorageKey = "blanwhiOrders";
       const orderBackupStorageKey = "blanwhiOrdersBackup";
@@ -3349,6 +3406,7 @@
       function openDetail(id) {
         const product = productData.find((item) => item.id === id);
         if (!product) return;
+        ensureValidProductSelection(product);
         const swatches = variantSwatches(product);
         if (!swatches.includes(product.color)) {
           product.colorIndex = 0;
@@ -3363,11 +3421,11 @@
                 <div class="product-visual">${productVisualMedia(product)}</div>
               </button>
               ${isGift ? "" : `<div class="sizes" data-size-group="${product.id}" style="margin-top:14px">
-                ${sizeButtonsMarkup(product)}
+                ${sizeButtonsMarkup(product, product.size, undefined, product.classificationIndex || 0, product.color, product.selectionAxis === "color")}
               </div>`}
               ${classificationMarkup(product, "data-detail-classification")}
               <div class="swatches" data-detail-swatches="${product.id}" style="margin-top:14px">
-                ${swatches.map((color, index) => swatchMarkup(product, color, index, `data-detail-color="${product.id}:${index}"`)).join("")}
+                ${swatches.map((color, index) => swatchMarkup(product, color, index, `data-detail-color="${product.id}:${index}"`, product.classificationIndex || 0, product.selectionAxis === "size" ? product.size : "")).join("")}
               </div>
               <button class="quick" data-buy="${product.id}">Mua ngay</button>
             </div>
@@ -3421,14 +3479,14 @@
               ${product.kind.startsWith("gift-") ? `<div><p class="muted">Loại</p><strong>Gift Packaging</strong></div>` : `<div>
                 <p class="muted">Size</p>
                 <div class="sizes" data-variant-sizes>
-                  ${sizeButtonsMarkup(product, variantState.size, (size) => `data-variant-size="${size}"`, variantState.classificationIndex, color)}
+                  ${sizeButtonsMarkup(product, variantState.size, (size) => `data-variant-size="${size}"`, variantState.classificationIndex, color, variantState.selectionAxis === "color")}
                 </div>
               </div>
               ${product.classifications?.length ? `<div><p class="muted">Phân loại form / dáng</p>${classificationMarkup(product, "data-variant-classification", variantState.classificationIndex)}</div>` : ""}
               <div>
                 <p class="muted">Màu sắc</p>
                 <div class="swatches" data-variant-colors>
-                  ${swatches.map((swatch, index) => swatchMarkup({ ...product, colorIndex: variantState.colorIndex }, swatch, index, `data-variant-color="${index}"`, variantState.classificationIndex)).join("")}
+                  ${swatches.map((swatch, index) => swatchMarkup({ ...product, colorIndex: variantState.colorIndex }, swatch, index, `data-variant-color="${index}"`, variantState.classificationIndex, variantState.selectionAxis === "size" ? variantState.size : "")).join("")}
                 </div>
               </div>
               <div class="detail-section">
@@ -3481,7 +3539,7 @@
       function openVariant(id, mode) {
         const product = productData.find((item) => item.id === id);
         if (!product) return;
-        variantState = { productId: id, mode, ...preferredVariantSelection(product), qty: Math.max(1, Number(product.orderQty) || 1), colorTouched: false, availabilityLoading: true, confirming: false };
+        variantState = { productId: id, mode, ...preferredVariantSelection(product), qty: Math.max(1, Number(product.orderQty) || 1), colorTouched: false, selectionAxis: "all", availabilityLoading: true, confirming: false };
         renderVariantModal();
         variantModal.classList.add("open");
         variantContent.classList.add("selection-loading");
@@ -3526,6 +3584,7 @@
           size: item.size,
           qty: Math.max(1, Number(item.qty) || 1),
           colorTouched: true,
+          selectionAxis: "color",
           availabilityLoading: true,
           confirming: false
         };
@@ -4358,6 +4417,7 @@
             product.classificationIndex = Number(index);
             product.colorIndex = 0;
             product.color = variantSwatches(product)[0];
+            product.selectionAxis = "all";
             product.useColorImage = true;
             renderProductCard(product);
           }
@@ -4378,8 +4438,7 @@
             }
           }
           if (product) {
-            product.colorIndex = Number(index);
-            product.color = variantSwatches(product)[product.colorIndex];
+            selectColorAndMatchSize(product, Number(index), product.classificationIndex || 0);
             product.useColorImage = true;
             renderProductCard(product);
           }
@@ -4405,14 +4464,15 @@
           let product = productData.find((item) => item.id === id);
           if (sizeButton.dataset.stockState === "out") {
             product = await refreshProductStockNow(id);
-            if (!product || !hasStock(product, { classificationIndex: product.classificationIndex || 0, color: product.color, size })) {
+            if (!product || !sizeHasStock(product, size, product.classificationIndex || 0)) {
               showSoldOut();
               return;
             }
           }
-          if (product) product.size = size;
-          document.querySelectorAll(`[data-size-group="${id}"] button`).forEach((button) => button.classList.remove("active"));
-          sizeButton.classList.add("active");
+          if (product) {
+            selectSizeAndMatchColor(product, size, product.classificationIndex || 0);
+            renderProductCard(product);
+          }
           return;
         }
         const button = event.target.closest("[data-add]");
@@ -4537,6 +4597,7 @@
             product.classificationIndex = Number(index);
             product.colorIndex = 0;
             product.color = variantSwatches(product)[0];
+            product.selectionAxis = "all";
             product.useColorImage = true;
             openDetail(id);
           }
@@ -4555,8 +4616,7 @@
             }
           }
           if (product) {
-            product.colorIndex = Number(index);
-            product.color = variantSwatches(product)[product.colorIndex];
+            selectColorAndMatchSize(product, Number(index), product.classificationIndex || 0);
             product.useColorImage = true;
             openDetail(id);
           }
@@ -4574,14 +4634,15 @@
           let product = productData.find((item) => item.id === id);
           if (sizeButton.dataset.stockState === "out") {
             product = await refreshProductStockNow(id);
-            if (!product || !hasStock(product, { classificationIndex: product.classificationIndex || 0, color: product.color, size })) {
+            if (!product || !sizeHasStock(product, size, product.classificationIndex || 0)) {
               showSoldOut();
               return;
             }
           }
-          if (product) product.size = size;
-          detailContent.querySelectorAll(`[data-size-group="${id}"] button`).forEach((button) => button.classList.remove("active"));
-          sizeButton.classList.add("active");
+          if (product) {
+            selectSizeAndMatchColor(product, size, product.classificationIndex || 0);
+            openDetail(id);
+          }
           return;
         }
         const toggle = event.target.closest("[data-detail-toggle]");
@@ -4661,7 +4722,14 @@
             renderVariantModal();
           }
           variantState.classificationIndex = Number(index);
-          variantState.colorIndex = 0;
+          const product = productData.find((item) => item.id === variantState.productId);
+          const nextSwatches = product ? variantSwatches(product, variantState.classificationIndex) : [];
+          const nextSelection = product ? nextSwatches.flatMap((nextColor, nextColorIndex) =>
+            (product.sizes || ["M"]).map((nextSize) => ({ color: nextColor, colorIndex: nextColorIndex, size: nextSize }))
+          ).find((selection) => hasStock(product, { classificationIndex: variantState.classificationIndex, color: selection.color, size: selection.size })) : null;
+          variantState.colorIndex = nextSelection?.colorIndex || 0;
+          variantState.size = nextSelection?.size || variantState.size;
+          variantState.selectionAxis = "all";
           renderVariantModal();
           return;
         }
@@ -4680,7 +4748,14 @@
           variantState.colorIndex = nextColorIndex;
           variantState.colorTouched = true;
           const product = productData.find((item) => item.id === variantState.productId);
-          if (product) product.useColorImage = true;
+          if (product) {
+            const nextColor = variantSwatches(product, variantState.classificationIndex)[nextColorIndex];
+            if (!colorHasSelectedSize(product, nextColor, variantState.size, variantState.classificationIndex)) {
+              variantState.size = firstSizeForColor(product, nextColor, variantState.classificationIndex);
+            }
+            variantState.selectionAxis = "color";
+            product.useColorImage = true;
+          }
           renderVariantModal();
           return;
         }
@@ -4689,15 +4764,22 @@
           const nextSize = size.dataset.variantSize;
           if (size.dataset.stockState === "out") {
             const product = await refreshProductStockNow(variantState.productId);
-            const swatches = product ? variantSwatches(product, variantState.classificationIndex) : [];
-            const nextColor = swatches[variantState.colorIndex] || swatches[0];
-            if (!product || !hasStock(product, { classificationIndex: variantState.classificationIndex, color: nextColor, size: nextSize })) {
+            if (!product || !sizeHasStock(product, nextSize, variantState.classificationIndex)) {
               showSoldOut();
               return;
             }
             renderVariantModal();
           }
           variantState.size = nextSize;
+          const product = productData.find((item) => item.id === variantState.productId);
+          if (product) {
+            const swatches = variantSwatches(product, variantState.classificationIndex);
+            const selectedColor = swatches[variantState.colorIndex] || swatches[0];
+            if (!colorHasSelectedSize(product, selectedColor, nextSize, variantState.classificationIndex)) {
+              variantState.colorIndex = firstColorIndexForSize(product, nextSize, variantState.classificationIndex);
+            }
+            variantState.selectionAxis = "size";
+          }
           renderVariantModal();
           return;
         }
