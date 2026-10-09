@@ -27,6 +27,14 @@ export type StoreHealthReport = {
       indexBytes: number;
       totalBytes: number;
     }>;
+    historyBreakdown?: Array<{
+      storeKey: string;
+      reason: string;
+      rows: number;
+      oldestAt: string;
+      newestAt: string;
+      estimatedAverageValueBytes: number;
+    }>;
     warning?: string;
     error?: string;
   };
@@ -42,6 +50,14 @@ export type StoreHealthReport = {
     sizeBytes?: number;
     error?: string;
   };
+};
+
+const boundedStoreHistoryRetention: Record<string, number> = {
+  "site-content": 250,
+  "pancake-logs": 10,
+  "pancake-queue": 50,
+  "pancake-routing": 50,
+  "pancake-links-shop-2": 50
 };
 
 export type InventoryEventWrite = {
@@ -743,7 +759,7 @@ export async function getStoreHealthReport(): Promise<StoreHealthReport> {
       await ensureDatabaseSchema();
       const pool = await getPool();
       if (pool) {
-        const [ping, size, relations] = await Promise.all([
+        const [ping, size, relations, historyBreakdown] = await Promise.all([
           pool.query("select 1 as ok"),
           pool.query("select pg_database_size(current_database()) as size_bytes").catch(() => ({ rows: [] })),
           pool.query(
@@ -756,6 +772,28 @@ export async function getStoreHealthReport(): Promise<StoreHealthReport> {
              from pg_stat_user_tables
              where schemaname = 'public' and relname like 'blanwhi_%'
              order by pg_total_relation_size(relid) desc`
+          ).catch(() => ({ rows: [] })),
+          pool.query(
+            `with grouped as (
+               select store_key, reason, count(*)::bigint as rows,
+                      min(created_at) as oldest_at, max(created_at) as newest_at
+               from blanwhi_store_history
+               group by store_key, reason
+             )
+             select grouped.*,
+                    coalesce((
+                      select avg(pg_column_size(sample.store_value))::bigint
+                      from (
+                        select store_value
+                        from blanwhi_store_history recent
+                        where recent.store_key = grouped.store_key
+                          and recent.reason = grouped.reason
+                        order by recent.created_at desc
+                        limit 10
+                      ) sample
+                    ), 0) as estimated_average_value_bytes
+             from grouped
+             order by rows desc`
           ).catch(() => ({ rows: [] }))
         ]);
         report.database.ok = Number(ping.rows[0]?.ok) === 1;
@@ -770,6 +808,14 @@ export async function getStoreHealthReport(): Promise<StoreHealthReport> {
           indexBytes: Number(row.index_bytes || 0),
           totalBytes: Number(row.total_bytes || 0)
         })).filter((row) => Boolean(row.name));
+        report.database.historyBreakdown = historyBreakdown.rows.map((row) => ({
+          storeKey: String(row.store_key || ""),
+          reason: String(row.reason || ""),
+          rows: Number(row.rows || 0),
+          oldestAt: row.oldest_at ? new Date(String(row.oldest_at)).toISOString() : "",
+          newestAt: row.newest_at ? new Date(String(row.newest_at)).toISOString() : "",
+          estimatedAverageValueBytes: Number(row.estimated_average_value_bytes || 0)
+        })).filter((row) => Boolean(row.storeKey));
         const limitMb = Number(process.env.DATABASE_STORAGE_LIMIT_MB || 0);
         if (limitMb > 0) {
           report.database.limitBytes = limitMb * 1024 * 1024;
@@ -810,6 +856,85 @@ export async function getStoreHealthReport(): Promise<StoreHealthReport> {
   }
 
   return report;
+}
+
+export async function pruneRedundantStoreHistory() {
+  if (!hasDatabase()) throw new Error("Database chưa được cấu hình.");
+  await ensureDatabaseSchema();
+  const pool = await getPool();
+  if (!pool) throw new Error("Không kết nối được database.");
+  const client = await pool.connect();
+  const keys = Object.keys(boundedStoreHistoryRetention);
+  try {
+    await client.query("begin");
+    await client.query("set local lock_timeout = '12s'");
+    await client.query("select pg_advisory_xact_lock(hashtext('blanwhi-history-prune-v1'))");
+    const before = await client.query("select count(*)::bigint as rows from blanwhi_store_history");
+
+    // Keep a named recovery point for every live store touched by this cleanup.
+    await client.query(
+      `insert into blanwhi_store_history (store_key, store_value, reason, created_at)
+       select store_key, store_value, 'pre-history-cleanup-current', now()
+       from blanwhi_store
+       where store_key = any($1::text[])`,
+      [keys]
+    );
+
+    await client.query(
+      `create temporary table blanwhi_retained_store_history on commit drop as
+       with ranked as (
+         select history.*,
+                row_number() over (partition by store_key order by created_at desc, id desc) as position
+         from blanwhi_store_history history
+         where store_key = any($1::text[]) and reason = 'before-write'
+       )
+       select id, store_key, store_value, reason, created_at
+       from blanwhi_store_history
+       where store_key <> all($1::text[]) or reason <> 'before-write'
+       union all
+       select id, store_key, store_value, reason, created_at
+       from ranked
+       where position <= case store_key
+         when 'site-content' then 250
+         when 'pancake-logs' then 10
+         when 'pancake-queue' then 50
+         when 'pancake-routing' then 50
+         when 'pancake-links-shop-2' then 50
+         else 250
+       end`,
+      [keys]
+    );
+    const retained = await client.query("select count(*)::bigint as rows from blanwhi_retained_store_history");
+    await client.query("truncate table blanwhi_store_history");
+    await client.query(
+      `insert into blanwhi_store_history (id, store_key, store_value, reason, created_at)
+       select id, store_key, store_value, reason, created_at
+       from blanwhi_retained_store_history
+       order by id`
+    );
+    await client.query(
+      `select setval(
+         pg_get_serial_sequence('blanwhi_store_history', 'id'),
+         greatest(coalesce((select max(id) from blanwhi_store_history), 1), 1),
+         true
+       )`
+    );
+    await client.query("commit");
+    const after = await pool.query("select count(*)::bigint as rows from blanwhi_store_history");
+    return {
+      beforeRows: Number(before.rows[0]?.rows || 0),
+      retainedRows: Number(retained.rows[0]?.rows || 0),
+      afterRows: Number(after.rows[0]?.rows || 0),
+      removedRows: Math.max(0, Number(before.rows[0]?.rows || 0) - Number(after.rows[0]?.rows || 0)),
+      protectedKeys: keys,
+      ordersAndKeyedHistoryUntouched: true
+    };
+  } catch (error) {
+    await client.query("rollback").catch(() => undefined);
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 export async function ensureJsonFile<T>(filename: string, fallback: T) {
@@ -1494,6 +1619,21 @@ export async function writeJsonStore<T>(filename: string, value: T, options: Jso
            do update set store_value = excluded.store_value, updated_at = now()`,
           [key, JSON.stringify(value)]
         );
+        const retention = boundedStoreHistoryRetention[key];
+        if (retention) {
+          await pool.query(
+            `delete from blanwhi_store_history
+             where id in (
+               select id
+               from blanwhi_store_history
+               where store_key = $1 and reason = 'before-write'
+               order by created_at desc, id desc
+               offset $2
+               limit 500
+             )`,
+            [key, retention]
+          ).catch((cleanupError) => warnBlobFallback(`prune bounded history ${key}`, cleanupError));
+        }
       } catch (error) {
         throwStoreWriteError(error);
       }
