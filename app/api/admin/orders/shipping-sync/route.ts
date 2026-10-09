@@ -5,7 +5,6 @@ import { readOrders, updateOrder } from "@/lib/orders";
 import { fetchShippingStatus } from "@/lib/shipping-providers";
 import { OrderService } from "@/lib/services/order-service";
 import { OrderSyncService } from "@/lib/pancake/order-sync-service";
-import { createJsonStoreBackup } from "@/lib/data-store";
 import { refreshMissingPancakeTracking } from "@/lib/pancake/tracking-refresh";
 import { connectionConfigured, pancakeConnection, pancakeConnectionForOrder } from "@/lib/pancake/connections";
 import { PancakeService } from "@/lib/pancake/pancake-service";
@@ -22,9 +21,6 @@ async function syncShippingOrders(request: Request) {
   const fullSync = new URL(request.url).searchParams.get("full") === "1" || isAuthorizedCron;
   const config = await readIntegrationConfig();
   const orders = await readOrders();
-  if (fullSync) {
-    await createJsonStoreBackup("orders.json", orders, "before-full-shipping-sync");
-  }
   const candidates = orders.filter((order) => !finalShippingStatuses.has(order.shippingStatus || "") && order.status !== "cancelled" && (order.deliveryType === "express"
     ? Boolean(order.deliveryOrderId)
     : hasPancakeSyncSignal(order) || Boolean(order.trackingCode)));

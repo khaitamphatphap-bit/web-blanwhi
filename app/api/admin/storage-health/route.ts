@@ -31,8 +31,14 @@ export async function POST(request: Request) {
       if (body.confirmation !== "PRUNE_REDUNDANT_STORE_HISTORY_V1") {
         return NextResponse.json({ error: "Thiếu mã xác nhận dọn lịch sử." }, { status: 400 });
       }
+      const orders = await readOrders();
+      const recoveryBackup = await createJsonStoreBackup(
+        "orders.json",
+        orders,
+        "pre-history-cleanup-orders"
+      );
       const result = await pruneRedundantStoreHistory();
-      return NextResponse.json({ ok: true, result, health: await getStoreHealthReport() }, {
+      return NextResponse.json({ ok: true, recoveryBackup, result, health: await getStoreHealthReport() }, {
         headers: { "Cache-Control": "no-store, max-age=0" }
       });
     }

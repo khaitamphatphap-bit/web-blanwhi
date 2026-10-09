@@ -884,22 +884,27 @@ export async function pruneRedundantStoreHistory() {
       `create temporary table blanwhi_retained_store_history on commit drop as
        with ranked as (
          select history.*,
-                row_number() over (partition by store_key order by created_at desc, id desc) as position
+                row_number() over (partition by store_key, reason order by created_at desc, id desc) as position
          from blanwhi_store_history history
-         where store_key = any($1::text[]) and reason = 'before-write'
+         where (store_key = any($1::text[]) and reason = 'before-write')
+            or (store_key = 'orders' and reason = 'before-full-shipping-sync')
        )
        select id, store_key, store_value, reason, created_at
        from blanwhi_store_history
-       where store_key <> all($1::text[]) or reason <> 'before-write'
+       where not (
+         (store_key = any($1::text[]) and reason = 'before-write')
+         or (store_key = 'orders' and reason = 'before-full-shipping-sync')
+       )
        union all
        select id, store_key, store_value, reason, created_at
        from ranked
-       where position <= case store_key
-         when 'site-content' then 250
-         when 'pancake-logs' then 10
-         when 'pancake-queue' then 50
-         when 'pancake-routing' then 50
-         when 'pancake-links-shop-2' then 50
+       where position <= case
+         when store_key = 'orders' and reason = 'before-full-shipping-sync' then 3
+         when store_key = 'site-content' then 250
+         when store_key = 'pancake-logs' then 10
+         when store_key = 'pancake-queue' then 50
+         when store_key = 'pancake-routing' then 50
+         when store_key = 'pancake-links-shop-2' then 50
          else 250
        end`,
       [keys]
