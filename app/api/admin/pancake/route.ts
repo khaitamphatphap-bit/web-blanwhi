@@ -130,6 +130,12 @@ export async function POST(request: Request) {
       variationId?: string;
       providerOrderId?: string;
       variation?: { id?: string; productId?: string; sku?: string; quantity?: number };
+      links?: Array<{
+        productId?: string;
+        rowKey?: string;
+        variationId?: string;
+        variation?: { id?: string; productId?: string; sku?: string; quantity?: number };
+      }>;
       connectionId?: PancakeConnectionId;
     };
     if (body.action === "set-active-connection" && body.connectionId) {
@@ -143,6 +149,9 @@ export async function POST(request: Request) {
     }
     if (body.action === "link-product") {
       return NextResponse.json({ ok: true, result: await new ProductLinkService(selectedPancake).update(body) });
+    }
+    if (body.action === "bulk-link-products") {
+      return NextResponse.json({ ok: true, result: await new ProductLinkService(selectedPancake).updateMany(body) });
     }
     if (body.action === "cancel-linked-order" && body.orderCode && body.providerOrderId) {
       const order = await findOrderByCode(body.orderCode);

@@ -55,6 +55,27 @@ export async function writeConnectionProductLink(
   });
 }
 
+export async function writeConnectionProductLinks(
+  id: PancakeConnectionId,
+  links: Record<string, ConnectionProductLink>
+) {
+  if (id !== "shop-2") throw new Error("Chỉ hỗ trợ ghi liên kết hàng loạt cho Pancake Shop 2.");
+  return withDataStoreLock("pancake-links-shop-2", async () => {
+    const current = await readConnectionProductLinks("shop-2");
+    const next = { ...current, ...links };
+    await writeJsonStore(shop2Store, next);
+    const persisted = await readConnectionProductLinks("shop-2");
+    for (const [key, link] of Object.entries(links)) {
+      if (persisted[key]?.pancakeVariationId !== link.pancakeVariationId
+        || persisted[key]?.pancakeProductId !== link.pancakeProductId
+        || persisted[key]?.pancakeSku !== link.pancakeSku) {
+        throw new Error(`Liên kết Shop 2 chưa được lưu bền vững: ${key}`);
+      }
+    }
+    return links;
+  });
+}
+
 export async function productsForPancakeConnection(content: SiteContent, id: PancakeConnectionId) {
   const links = await readConnectionProductLinks(id, content);
   return content.products.map((product) => ({

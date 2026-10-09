@@ -7,7 +7,8 @@ import { readSiteContent, writePancakeProductLink, type SiteContent } from "@/li
 import {
   connectionProductLinkKey,
   readConnectionProductLinks,
-  writeConnectionProductLink
+  writeConnectionProductLink,
+  writeConnectionProductLinks
 } from "@/lib/pancake/connection-product-links";
 import { setPancakeProductSyncState } from "@/lib/pancake/connections";
 
@@ -21,6 +22,15 @@ export type ProductLinkInput = {
     sku?: string;
     quantity?: number;
   };
+};
+
+export type BulkProductLinkInput = {
+  links?: Array<{
+    productId?: string;
+    rowKey?: string;
+    variationId?: string;
+    variation?: { id?: string; productId?: string; sku?: string; quantity?: number };
+  }>;
 };
 
 export class ProductLinkService {
@@ -47,6 +57,50 @@ export class ProductLinkService {
 
   async variations() {
     return this.pancake.variations();
+  }
+
+  async updateMany(input: BulkProductLinkInput) {
+    if (this.pancake.connectionId() !== "shop-2") {
+      throw new PancakeIntegrationError("Ghi liên kết hàng loạt chỉ dành cho Pancake Shop 2.", "INVALID_CONNECTION", 400);
+    }
+    const requested = Array.isArray(input.links) ? input.links : [];
+    if (!requested.length || requested.length > 1000) {
+      throw new PancakeIntegrationError("Danh sách liên kết Shop 2 không hợp lệ.", "VALIDATION_ERROR", 400);
+    }
+    const content = await readSiteContent();
+    const products = new Map(content.products.map((product) => [product.id, product]));
+    const next: Record<string, {
+      pancakeProductId: string;
+      pancakeVariationId: string;
+      pancakeSku: string;
+      pancakeQuantity: number;
+      lastSyncedAt: string;
+    }> = {};
+    const now = new Date().toISOString();
+    for (const item of requested) {
+      const productId = Validator.required(item.productId, "mã sản phẩm website");
+      const rowKey = Validator.required(item.rowKey, "dòng phân loại/màu/size");
+      const variationId = Validator.required(item.variationId, "mã phân loại Pancake");
+      const product = products.get(productId);
+      if (!product || !buildProductInventory(product).some((row) => row.key === rowKey)) {
+        throw new PancakeIntegrationError(`Không tìm thấy dòng sản phẩm ${productId}/${rowKey}.`, "INVENTORY_ROW_NOT_FOUND", 404);
+      }
+      if (item.variation?.id !== variationId || !item.variation.productId || !item.variation.sku) {
+        throw new PancakeIntegrationError(`Thiếu dữ liệu phân loại Pancake cho ${productId}/${rowKey}.`, "VALIDATION_ERROR", 400);
+      }
+      const key = connectionProductLinkKey(productId, rowKey);
+      if (next[key]) throw new PancakeIntegrationError(`Liên kết bị trùng: ${key}.`, "VALIDATION_ERROR", 400);
+      next[key] = {
+        pancakeProductId: String(item.variation.productId),
+        pancakeVariationId: variationId,
+        pancakeSku: String(item.variation.sku).toUpperCase(),
+        pancakeQuantity: Validator.quantity(item.variation.quantity),
+        lastSyncedAt: now
+      };
+    }
+    await writeConnectionProductLinks("shop-2", next);
+    const sync = await this.refreshProductSyncState(`Đã lưu an toàn ${requested.length} liên kết sản phẩm Shop 2 trong một giao dịch.`);
+    return { updatedCount: requested.length, ...sync };
   }
 
   async recoverLinks() {
