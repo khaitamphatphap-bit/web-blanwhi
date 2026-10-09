@@ -4,6 +4,12 @@ import { PancakeIntegrationError } from "@/lib/pancake/exception-handler";
 import { PancakeService } from "@/lib/pancake/pancake-service";
 import { Validator } from "@/lib/pancake/validator";
 import { readSiteContent, writePancakeProductLink, type SiteContent } from "@/lib/site-content";
+import {
+  connectionProductLinkKey,
+  readConnectionProductLinks,
+  writeConnectionProductLink
+} from "@/lib/pancake/connection-product-links";
+import { setPancakeProductSyncState } from "@/lib/pancake/connections";
 
 export type ProductLinkInput = {
   productId?: string;
@@ -20,11 +26,62 @@ export type ProductLinkInput = {
 export class ProductLinkService {
   constructor(private readonly pancake = new PancakeService()) {}
 
+  private async refreshProductSyncState(message: string) {
+    const connectionId = this.pancake.connectionId();
+    const content = await readSiteContent();
+    const links = await readConnectionProductLinks(connectionId, content);
+    const rows = content.products.flatMap((product) => buildProductInventory(product).map((row) => ({ productId: product.id, row })));
+    const linkedCount = rows.filter(({ productId, row }) => {
+      const link = links[connectionProductLinkKey(productId, row.key)];
+      return Boolean(link?.pancakeProductId || link?.pancakeVariationId || link?.pancakeSku);
+    }).length;
+    await setPancakeProductSyncState(connectionId, {
+      status: linkedCount === rows.length && rows.length > 0 ? "ready" : "running",
+      linkedCount,
+      totalCount: rows.length,
+      lastSyncedAt: new Date().toISOString(),
+      message
+    });
+    return { linkedCount, totalCount: rows.length };
+  }
+
   async variations() {
     return this.pancake.variations();
   }
 
   async recoverLinks() {
+    if (this.pancake.connectionId() === "shop-2") {
+      const [content, variations] = await Promise.all([readSiteContent(), this.pancake.variations()]);
+      const remoteBySku = new Map<string, typeof variations>();
+      variations.filter((variation) => variation.sku).forEach((variation) => {
+        const sku = variation.sku.trim().toUpperCase();
+        remoteBySku.set(sku, [...(remoteBySku.get(sku) || []), variation]);
+      });
+      const websiteSkuCount = new Map<string, number>();
+      content.products.forEach((product) => buildProductInventory(product).forEach((row) => {
+        const sku = row.sku.trim().toUpperCase();
+        websiteSkuCount.set(sku, (websiteSkuCount.get(sku) || 0) + 1);
+      }));
+      let recoveredCount = 0;
+      for (const product of content.products) {
+        for (const row of buildProductInventory(product)) {
+          const sku = row.sku.trim().toUpperCase();
+          const candidates = remoteBySku.get(sku) || [];
+          const variation = websiteSkuCount.get(sku) === 1 && candidates.length === 1 ? candidates[0] : undefined;
+          if (!variation) continue;
+          await writeConnectionProductLink("shop-2", product.id, row.key, {
+            pancakeProductId: variation.productId,
+            pancakeVariationId: variation.id,
+            pancakeSku: variation.sku,
+            pancakeQuantity: variation.quantity,
+            lastSyncedAt: new Date().toISOString()
+          });
+          recoveredCount += 1;
+        }
+      }
+      const sync = await this.refreshProductSyncState(`Đã đối chiếu ${recoveredCount} SKU Shop 2 theo mã SKU.`);
+      return { recoveredCount, scannedBackups: 0, availablePancakeVariations: variations.length, ...sync };
+    }
     const [content, history, variations] = await Promise.all([
       readSiteContent(),
       readJsonStoreHistory<Partial<SiteContent>>("site-content.json", 250),
@@ -143,19 +200,21 @@ export class ProductLinkService {
       };
     }
 
-    await writePancakeProductLink(productId, rowKey, link);
+    const connectionId = this.pancake.connectionId();
+    if (connectionId === "shop-1") await writePancakeProductLink(productId, rowKey, link);
+    else await writeConnectionProductLink(connectionId, productId, rowKey, link);
 
-    const persistedProduct = (await readSiteContent()).products.find((item) => item.id === productId);
-    const persistedRow = persistedProduct && buildProductInventory(persistedProduct).find((item) => item.key === rowKey);
-    if (!persistedRow
-      || String(persistedRow.pancakeVariationId || "") !== String(link.pancakeVariationId || "")
-      || String(persistedRow.pancakeSku || "") !== String(link.pancakeSku || "")) {
+    const persistedLinks = await readConnectionProductLinks(connectionId);
+    const persistedLink = persistedLinks[connectionProductLinkKey(productId, rowKey)];
+    if (String(persistedLink?.pancakeVariationId || "") !== String(link.pancakeVariationId || "")
+      || String(persistedLink?.pancakeSku || "") !== String(link.pancakeSku || "")) {
       throw new PancakeIntegrationError(
         "Liên kết chưa được lưu bền vững. Vui lòng thử lại.",
         "PANCAKE_LINK_VERIFY_FAILED",
         503
       );
     }
+    await this.refreshProductSyncState(variationId ? "Đã cập nhật liên kết sản phẩm." : "Đã hủy một liên kết sản phẩm.");
 
     return {
       productId,

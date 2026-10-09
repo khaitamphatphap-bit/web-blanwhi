@@ -6,6 +6,7 @@ import type { PancakeVariation } from "@/lib/pancake/types";
 import { Validator } from "@/lib/pancake/validator";
 import { buildPancakeOrderPayload, type PancakeOrderSource } from "@/lib/pancake/domain";
 import { shortOrderCode } from "@/lib/order-code";
+import { pancakeConnection, type PancakeConnectionId, type PancakeConnectionRuntime } from "@/lib/pancake/connections";
 
 function records(payload: unknown): Record<string, unknown>[] {
   if (Array.isArray(payload)) return payload.filter((item): item is Record<string, unknown> => Boolean(item && typeof item === "object"));
@@ -85,22 +86,32 @@ function variationName(item: Record<string, unknown>) {
     .join(" · ");
 }
 
-let variationCache: { expiresAt: number; value: PancakeVariation[] } | null = null;
-let variationRequest: Promise<PancakeVariation[]> | null = null;
-let partnerCache: { expiresAt: number; value: PancakeShippingPartner[] } | null = null;
-let partnerRequest: Promise<PancakeShippingPartner[]> | null = null;
-let orderSourceCache: { expiresAt: number; value: PancakeOrderSource[] } | null = null;
-let orderSourceRequest: Promise<PancakeOrderSource[]> | null = null;
+const variationCache = new Map<PancakeConnectionId, { expiresAt: number; value: PancakeVariation[] }>();
+const variationRequest = new Map<PancakeConnectionId, Promise<PancakeVariation[]>>();
+const partnerCache = new Map<PancakeConnectionId, { expiresAt: number; value: PancakeShippingPartner[] }>();
+const partnerRequest = new Map<PancakeConnectionId, Promise<PancakeShippingPartner[]>>();
+const orderSourceCache = new Map<PancakeConnectionId, { expiresAt: number; value: PancakeOrderSource[] }>();
+const orderSourceRequest = new Map<PancakeConnectionId, Promise<PancakeOrderSource[]>>();
 
 export class PancakeService {
-  constructor(private readonly client = new ApiClient()) {}
+  private readonly connection: PancakeConnectionRuntime;
+  private readonly client: ApiClient;
+
+  constructor(connectionId: PancakeConnectionId = "shop-1", client?: ApiClient) {
+    this.connection = pancakeConnection(connectionId);
+    this.client = client || new ApiClient(this.connection);
+  }
 
   configured() {
-    return this.client.configured() && Boolean(process.env.PANCAKE_SHOP_ID);
+    return this.client.configured() && Boolean(this.connection.shopId);
+  }
+
+  connectionId() {
+    return this.connection.id;
   }
 
   shopId() {
-    return Validator.required(process.env.PANCAKE_SHOP_ID, "PANCAKE_SHOP_ID");
+    return Validator.required(this.connection.shopId, `${this.connection.id.toUpperCase()} SHOP ID`);
   }
 
   async testConnection() {
@@ -112,9 +123,11 @@ export class PancakeService {
   }
 
   async variations(): Promise<PancakeVariation[]> {
-    if (variationCache && variationCache.expiresAt > Date.now()) return variationCache.value;
-    if (variationRequest) return variationRequest;
-    variationRequest = (async () => {
+    const cached = variationCache.get(this.connection.id);
+    if (cached && cached.expiresAt > Date.now()) return cached.value;
+    const pending = variationRequest.get(this.connection.id);
+    if (pending) return pending;
+    const request = (async () => {
       const pageSize = 100;
       const maxPages = 100;
       const variationByKey = new Map<string, PancakeVariation>();
@@ -145,20 +158,23 @@ export class PancakeService {
       }
 
       const value = Array.from(variationByKey.values());
-      variationCache = { expiresAt: Date.now() + 30_000, value };
+      variationCache.set(this.connection.id, { expiresAt: Date.now() + 30_000, value });
       return value;
     })();
+    variationRequest.set(this.connection.id, request);
     try {
-      return await variationRequest;
+      return await request;
     } finally {
-      variationRequest = null;
+      variationRequest.delete(this.connection.id);
     }
   }
 
   async orderSources(): Promise<PancakeOrderSource[]> {
-    if (orderSourceCache && orderSourceCache.expiresAt > Date.now()) return orderSourceCache.value;
-    if (orderSourceRequest) return orderSourceRequest;
-    orderSourceRequest = (async () => {
+    const cached = orderSourceCache.get(this.connection.id);
+    if (cached && cached.expiresAt > Date.now()) return cached.value;
+    const pending = orderSourceRequest.get(this.connection.id);
+    if (pending) return pending;
+    const request = (async () => {
       const response = await this.client.request<unknown>(`/shops/${encodeURIComponent(this.shopId())}/order_source`);
       const value: PancakeOrderSource[] = records(response).map((source) => ({
         id: text(source, ["id", "_id", "source_id", "order_source_id", "page_id", "pageId"]),
@@ -167,19 +183,20 @@ export class PancakeService {
         key: deepText(source, ["key"]),
         account: deepText(source, ["account"])
       })).filter((source) => Boolean(source.id && source.name));
-      orderSourceCache = { expiresAt: Date.now() + 300_000, value };
+      orderSourceCache.set(this.connection.id, { expiresAt: Date.now() + 300_000, value });
       return value;
     })();
+    orderSourceRequest.set(this.connection.id, request);
     try {
-      return await orderSourceRequest;
+      return await request;
     } finally {
-      orderSourceRequest = null;
+      orderSourceRequest.delete(this.connection.id);
     }
   }
 
   async configuredOrderSource(): Promise<PancakeOrderSource | undefined> {
-    const configuredId = String(process.env.PANCAKE_ORDER_SOURCE_ID || "").trim();
-    const configuredName = String(process.env.PANCAKE_ORDER_SOURCE_NAME || "facebook").trim().toLowerCase();
+    const configuredId = this.connection.orderSourceId;
+    const configuredName = (this.connection.orderSourceName || "facebook").toLowerCase();
     const sources = await this.orderSources();
     if (configuredId) {
       return sources.find((source) => String(source.id).trim() === configuredId) || { id: configuredId, name: configuredName || "facebook" };
@@ -206,7 +223,7 @@ export class PancakeService {
     if (orderSource) {
       await PancakeLogger.write("info", "order.source", `Đã gắn nguồn đơn ${orderSource.name} (#${orderSource.id}) vào payload Pancake.`, order.code);
     } else {
-      await PancakeLogger.write("warning", "order.source", `Không tìm thấy nguồn đơn tên ${process.env.PANCAKE_ORDER_SOURCE_NAME || "facebook"} trên Pancake, tạo đơn không có nguồn cố định.`, order.code);
+      await PancakeLogger.write("warning", "order.source", `Không tìm thấy nguồn đơn tên ${this.connection.orderSourceName || "facebook"} trên ${this.connection.name}, tạo đơn không có nguồn cố định.`, order.code);
     }
     const payload = buildPancakeOrderPayload(order, this.shopId(), shippingPartner || undefined, orderSource);
     try {
@@ -219,15 +236,17 @@ export class PancakeService {
   }
 
   async shippingPartners(): Promise<PancakeShippingPartner[]> {
-    if (partnerCache && partnerCache.expiresAt > Date.now()) return partnerCache.value;
-    if (partnerRequest) return partnerRequest;
-    partnerRequest = (async () => {
+    const cached = partnerCache.get(this.connection.id);
+    if (cached && cached.expiresAt > Date.now()) return cached.value;
+    const pending = partnerRequest.get(this.connection.id);
+    if (pending) return pending;
+    const request = (async () => {
       const response = await this.client.request<unknown>(`/shops/${encodeURIComponent(this.shopId())}/partners`);
       const value = records(response).map((partner) => {
       const accounts = Array.isArray(partner.accounts)
         ? partner.accounts.filter((item): item is Record<string, unknown> => Boolean(item && typeof item === "object"))
         : [];
-      const preferredAccountId = String(process.env.PANCAKE_SPX_ACCOUNT_ID || "").trim();
+      const preferredAccountId = this.connection.spxAccountId;
       const account = accounts.find((item) => text(item, ["id"]) === preferredAccountId) || accounts[0];
       return {
         id: Number(text(partner, ["id", "partner_id"])) || 0,
@@ -235,19 +254,20 @@ export class PancakeService {
         ...(account ? { shopPartnerId: Number(text(account, ["id"])) || undefined, accountName: text(account, ["name"]) } : {})
       };
       }).filter((partner) => partner.id && partner.name);
-      partnerCache = { expiresAt: Date.now() + 60_000, value };
+      partnerCache.set(this.connection.id, { expiresAt: Date.now() + 60_000, value });
       return value;
     })();
+    partnerRequest.set(this.connection.id, request);
     try {
-      return await partnerRequest;
+      return await request;
     } finally {
-      partnerRequest = null;
+      partnerRequest.delete(this.connection.id);
     }
   }
 
   async spxPartner() {
     const partners = await this.shippingPartners();
-    const configuredPartnerId = Number(process.env.PANCAKE_SPX_PARTNER_ID || 0);
+    const configuredPartnerId = Number(this.connection.spxPartnerId || 0);
     return partners.find((partner) => configuredPartnerId > 0 && partner.id === configuredPartnerId)
       || partners.find((partner) => /(^|\b)(spx|shopee\s*x?press)(\b|$)/i.test(partner.name));
   }

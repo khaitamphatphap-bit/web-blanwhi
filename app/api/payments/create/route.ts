@@ -13,6 +13,8 @@ import { calculateStandardShipping } from "@/lib/shipping-pricing";
 import { zaloPayReservationExpiresAt } from "@/lib/zalopay-reservation";
 import { ServerTiming } from "@/lib/server-timing";
 import { resolveCheckoutDiscount } from "@/lib/checkout-discount";
+import { connectionConfigured, pancakeConnection, readPancakeRoutingState, stampPancakeConnection } from "@/lib/pancake/connections";
+import { applyConnectionProductLinks } from "@/lib/pancake/connection-product-links";
 
 type CheckoutPayload = {
   customerDeviceId?: string;
@@ -83,7 +85,7 @@ const corsHeaders = {
 
 async function queuePosSync(order: ShopOrder) {
   try {
-    return await QueueHandler.enqueue("order.create", { orderCode: order.code });
+    return await QueueHandler.enqueue("order.create", { orderCode: order.code, pancakeConnectionId: order.pancakeConnectionId || "shop-1" });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Không ghi được hàng đợi Pancake.";
     await updateOrder(order.code, {
@@ -273,14 +275,15 @@ export async function POST(request: Request) {
     const checkoutRequestId = String(payload.checkoutRequestId || "").trim().slice(0, 120);
     // COD must not wait for merchant configuration stored outside Postgres.
     // Only online payment methods need those credentials.
-    const [integrations, siteContent, shippingConfig] = await timing.measure("bootstrap", () => Promise.all([
+    const [integrations, siteContent, shippingConfig, pancakeRouting] = await timing.measure("bootstrap", () => Promise.all([
       onlineMethods.has(paymentMethod) ? readIntegrationConfig() : Promise.resolve(null),
       readSiteContent(),
-      readAuthoritativeShippingConfig()
+      readAuthoritativeShippingConfig(),
+      readPancakeRoutingState()
     ]));
     const now = new Date().toISOString();
     const inventoryService = new InventoryService();
-    const pancakeConfigured = inventoryService.configured();
+    const pancakeConfigured = connectionConfigured(pancakeConnection(pancakeRouting.activeNewOrders));
 
     if (!enabledCheckoutMethods.has(paymentMethod)) {
       return respond({ error: "Phương thức thanh toán này không còn được hỗ trợ. Vui lòng chọn COD hoặc Zalopay." }, { status: 400 });
@@ -309,10 +312,11 @@ export async function POST(request: Request) {
     if (checkoutRequestId) {
       const existing = await timing.measure("idempotency", () => findOrderByCheckoutRequestId(checkoutRequestId, customerDeviceId));
       if (existing) {
+        const existingPancakeConfigured = connectionConfigured(pancakeConnection(existing.pancakeConnectionId || "shop-1"));
         if (paymentMethod === "cod" && existing.status === "pending") {
           const completed = existing.checkoutCompletedAt ? existing : await updateOrder(existing.code, {
             checkoutCompletedAt: now,
-            ...(pancakeConfigured ? { externalSync: {
+            ...(existingPancakeConfigured ? { externalSync: {
               ...existing.externalSync,
               pancake: "Đang đồng bộ Pancake",
               lastSyncedAt: now
@@ -320,7 +324,7 @@ export async function POST(request: Request) {
           }) || existing;
           const accepted = await timing.measure("database", () => inventoryService.reserveOrder(completed));
           let syncQueued = false;
-          if (pancakeConfigured) {
+          if (existingPancakeConfigured) {
             const queued = await timing.measure("outbox", () => queuePosSync(accepted));
             schedulePosSync(accepted, queued?.id);
             syncQueued = Boolean(queued);
@@ -424,6 +428,8 @@ export async function POST(request: Request) {
       createdAt: now,
       updatedAt: now
     };
+    order = stampPancakeConnection(order, pancakeRouting);
+    order = await applyConnectionProductLinks(order, order.pancakeConnectionId || "shop-1");
 
     if (paymentMethod === "zalopay") {
       const pendingZaloPayOrder: ShopOrder = {

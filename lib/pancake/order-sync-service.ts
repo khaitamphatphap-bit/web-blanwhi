@@ -5,10 +5,12 @@ import { PancakeIntegrationError } from "@/lib/pancake/exception-handler";
 import { InventoryService } from "@/lib/pancake/inventory-service";
 import { PancakeLogger } from "@/lib/pancake/logger";
 import { PancakeService } from "@/lib/pancake/pancake-service";
+import { applyConnectionProductLinks } from "@/lib/pancake/connection-product-links";
 import { QueueHandler } from "@/lib/pancake/queue-handler";
 import type { ShippingStatus, ShopOrder } from "@/lib/types";
 import { mapPancakeStatus, pancakeOrderDiscount } from "@/lib/pancake/domain";
 import { shortOrderCode } from "@/lib/order-code";
+import { pancakeConnectionForOrder } from "@/lib/pancake/connections";
 
 function validPancakeOrderId(value: unknown) {
   const candidate = typeof value === "string" || typeof value === "number" ? String(value).trim() : "";
@@ -265,6 +267,21 @@ function hasTrackingCode(payload: unknown) {
 export class OrderSyncService {
   constructor(private readonly pancake = new PancakeService()) {}
 
+  private owns(order: ShopOrder) {
+    return pancakeConnectionForOrder(order) === this.pancake.connectionId();
+  }
+
+  private assertOwns(order: ShopOrder) {
+    if (!this.owns(order)) {
+      throw new PancakeIntegrationError(
+        `Đơn ${order.code} thuộc ${pancakeConnectionForOrder(order)}, không được xử lý bằng ${this.pancake.connectionId()}.`,
+        "PANCAKE_CONNECTION_MISMATCH",
+        409,
+        false
+      );
+    }
+  }
+
   private async reconcileFreeShippingDiscount(order: ShopOrder, providerOrderId: string, remote: Record<string, unknown>) {
     const shippingDiscount = Math.max(0, Math.floor(Number(order.shippingDiscount) || 0));
     if (!shippingDiscount) return remote;
@@ -299,29 +316,13 @@ export class OrderSyncService {
   }
 
   private async refreshItemLinks(order: ShopOrder) {
-    if (order.items.every((item) => item.pancakeVariationId || item.pancakeProductId || item.pancakeSku)) return order;
-    const availability = await new InventoryService().availability();
-    let changed = false;
-    const items = order.items.map((item) => {
-      if (item.pancakeVariationId || item.pancakeProductId || item.pancakeSku) return item;
-      const linked = availability.find((candidate) => candidate.linked && (
-        (item.productId === candidate.productId && item.inventoryKey === candidate.key)
-        || (item.inventoryKey === candidate.key && item.sku === candidate.sku)
-      ));
-      if (!linked) return item;
-      changed = true;
-      return {
-        ...item,
-        pancakeProductId: linked.pancakeProductId || undefined,
-        pancakeVariationId: linked.pancakeVariationId || undefined,
-        pancakeSku: linked.pancakeSku || undefined
-      };
-    });
-    if (!changed) return order;
-    return await updateOrder(order.code, { items }) || { ...order, items };
+    const routed = await applyConnectionProductLinks(order, this.pancake.connectionId());
+    if (JSON.stringify(routed.items) === JSON.stringify(order.items)) return order;
+    return await updateOrder(order.code, { items: routed.items }) || routed;
   }
 
   async reconcileExisting(order: ShopOrder) {
+    this.assertOwns(order);
     const knownId = pancakeOrderId(order);
     let existing: Record<string, unknown> | null = null;
     if (knownId) {
@@ -406,6 +407,7 @@ export class OrderSyncService {
   }
 
   async create(order: ShopOrder, enqueueOnFailure = true) {
+    this.assertOwns(order);
     const latest = await findOrderByCode(order.code);
     if (latest?.status === "cancelled") return latest;
     const current = await this.refreshItemLinks(latest || order);
@@ -467,7 +469,7 @@ export class OrderSyncService {
       await PancakeLogger.write("error", "order.create", message, order.code);
       await updateOrder(current.code, { externalSync: { ...current.externalSync, pancake: `Chờ gửi lại: ${message}`, lastSyncedAt: new Date().toISOString() } });
       if (enqueueOnFailure) {
-        try { await QueueHandler.enqueue("order.create", { orderCode: order.code }); } catch { /* Lỗi hàng đợi không che mất lỗi Pancake gốc. */ }
+        try { await QueueHandler.enqueue("order.create", { orderCode: order.code, pancakeConnectionId: this.pancake.connectionId() }); } catch { /* Lỗi hàng đợi không che mất lỗi Pancake gốc. */ }
       }
       throw error;
     }
@@ -503,6 +505,7 @@ export class OrderSyncService {
     }
   }
   async cancel(order: ShopOrder, enqueueOnFailure = true) {
+    this.assertOwns(order);
     const persisted = await findOrderByCode(order.code);
     if (!persisted || persisted.status !== "cancelled") {
       throw new PancakeIntegrationError(
@@ -565,7 +568,7 @@ export class OrderSyncService {
       await PancakeLogger.write("error", "order.cancel", message, order.code);
       await updateOrder(order.code, { externalSync: { ...order.externalSync, pancake: `Chờ gửi yêu cầu hủy: ${message}`, lastSyncedAt: new Date().toISOString() } });
       if (enqueueOnFailure && normalized.retryable) {
-        try { await QueueHandler.enqueue("order.cancel", { orderCode: order.code }); } catch { /* Lỗi hàng đợi không che mất lỗi Pancake gốc. */ }
+        try { await QueueHandler.enqueue("order.cancel", { orderCode: order.code, pancakeConnectionId: this.pancake.connectionId() }); } catch { /* Lỗi hàng đợi không che mất lỗi Pancake gốc. */ }
       }
       throw error;
     }
@@ -580,7 +583,8 @@ export class OrderSyncService {
   async reconcileCancellations(options: { limit?: number } = {}) {
     const limit = Math.max(1, Math.min(100, Math.floor(options.limit || 20)));
     const candidates = (await readOrders())
-      .filter((order) => order.status === "cancelled"
+      .filter((order) => this.owns(order)
+        && order.status === "cancelled"
         && order.pancakeStatus !== "cancelled"
         && Boolean(pancakeOrderId(order) || order.paymentMethod === "cod" || order.transactionId))
       .slice(0, limit);
@@ -628,7 +632,7 @@ export class OrderSyncService {
           errors.push(`${shortOrderCode(order.code)}: ${normalized.message}`);
           if (normalized.retryable) {
             try {
-              await QueueHandler.enqueue("order.cancel", { orderCode: order.code });
+              await QueueHandler.enqueue("order.cancel", { orderCode: order.code, pancakeConnectionId: this.pancake.connectionId() });
               queued += 1;
             } catch {
               // Queue errors are reported by the normal poller.
@@ -653,10 +657,12 @@ export class OrderSyncService {
     let order = matchedOrder || (code ? await findOrderByCode(code) : null);
     if (!order) {
       const remoteId = externalId(payload).trim().toUpperCase();
-      if (remoteId) order = (await readOrders()).find((candidate) => pancakeOrderId(candidate).trim().toUpperCase() === remoteId) || null;
+      if (remoteId) order = (await readOrders()).find((candidate) => this.owns(candidate)
+        && pancakeOrderId(candidate).trim().toUpperCase() === remoteId) || null;
     }
     if (!order && !code) throw new PancakeIntegrationError("Dữ liệu Pancake thiếu mã đơn website hoặc Pancake Order ID.", "REMOTE_ORDER_CODE_MISSING", 400);
     if (!order) throw new PancakeIntegrationError(`Không tìm thấy đơn ${code}.`, "ORDER_NOT_FOUND", 404);
+    this.assertOwns(order);
     const pancakeStatus = value(payload, ["status", "order_status", "state"]);
     const mapped = mapPancakeStatus(pancakeStatus);
     const logisticsStatus = logisticsShippingStatus(payload);
@@ -681,7 +687,7 @@ export class OrderSyncService {
 
   async pollStatuses(options: { detailLimit?: number } = {}) {
     const remote = remoteRecords(await this.pancake.allOrders());
-    const localOrders = await readOrders();
+    const localOrders = (await readOrders()).filter((order) => this.owns(order));
     const localByCode = new Map<string, ShopOrder>();
     const localByPancakeId = new Map<string, ShopOrder>();
     for (const order of localOrders) {
@@ -756,7 +762,7 @@ export class OrderSyncService {
         } catch (error) {
           const message = ExceptionHandler.message(error);
           await PancakeLogger.write("error", "order.cancel.reconcile", message, order.code);
-          try { await QueueHandler.enqueue("order.cancel", { orderCode: order.code }); } catch { /* Queue errors must not hide the POS error. */ }
+          try { await QueueHandler.enqueue("order.cancel", { orderCode: order.code, pancakeConnectionId: this.pancake.connectionId() }); } catch { /* Queue errors must not hide the POS error. */ }
           patches.set(order.code, {
             pancakeOrderId: remoteOrderId,
             externalSync: {

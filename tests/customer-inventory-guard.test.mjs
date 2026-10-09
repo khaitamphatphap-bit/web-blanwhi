@@ -4,6 +4,7 @@ import test from "node:test";
 
 const customerPage = await readFile(new URL("../public/preview.html", import.meta.url), "utf8");
 const availabilityRoute = await readFile(new URL("../app/api/inventory/availability/route.ts", import.meta.url), "utf8");
+const inventoryService = await readFile(new URL("../lib/pancake/inventory-service.ts", import.meta.url), "utf8");
 
 test("khóa nút mua cho đến khi tải xong tồn kho mới nhất", () => {
   assert.match(customerPage, /availabilityLoading: true/);
@@ -18,9 +19,11 @@ test("kiểm tra lại toàn bộ giỏ trước khi mở checkout và trước 
   assert.match(customerPage, /phân loại đã chọn hiện đã hết hàng/);
 });
 
-test("API khách đọc tồn website mà không phụ thuộc thời gian phản hồi Pancake", () => {
-  assert.match(availabilityRoute, /refreshPancake && service\.configured\(\)/);
-  assert.match(availabilityRoute, /url\.searchParams\.get\("refreshPancake"\) === "true"/);
+test("API khách chỉ đọc tồn website và không gọi tồn Pancake", () => {
+  assert.match(availabilityRoute, /service\.availability\(productId, false\)/);
+  assert.doesNotMatch(availabilityRoute, /refreshPancake/);
+  assert.match(inventoryService, /static available\(publishQuantity:[\s\S]*?Number\(publishQuantity\)/);
+  assert.doesNotMatch(inventoryService, /return availableQuantity\(publishQuantity, pancakeQuantity\)/);
 });
 
 test("trang khách chỉ tải lại toàn bộ tồn kho khi admin đã lưu phiên bản mới", () => {

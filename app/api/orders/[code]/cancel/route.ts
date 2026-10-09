@@ -3,6 +3,7 @@ import { findOrderByCode, updateOrder } from "@/lib/orders";
 import { InventoryService } from "@/lib/pancake/inventory-service";
 import { QueueHandler } from "@/lib/pancake/queue-handler";
 import type { PancakeQueueJob } from "@/lib/pancake/types";
+import { pancakeConnectionForOrder } from "@/lib/pancake/connections";
 import { jsonError } from "@/lib/api-errors";
 import { carrierHasAcceptedCustomerOrder } from "@/lib/order-state";
 import { processOrderBackgroundJob } from "@/lib/order-background-jobs";
@@ -103,7 +104,7 @@ export async function POST(request: Request, { params }: Params) {
     const jobs = await timing.measure("outbox", async () => {
       const queued = await Promise.all([
         mayExistOnPancake && current.pancakeStatus !== "cancelled"
-          ? QueueHandler.enqueue("order.cancel", { orderCode: current.code }).catch(() => null)
+          ? QueueHandler.enqueue("order.cancel", { orderCode: current.code, pancakeConnectionId: pancakeConnectionForOrder(current) }).catch(() => null)
           : Promise.resolve(null),
         expressNeedsCancellation
           ? QueueHandler.enqueue("express.cancel", { orderCode: current.code }).catch(() => null)

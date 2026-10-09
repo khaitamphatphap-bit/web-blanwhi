@@ -3,13 +3,10 @@ import { canCreatePancakeOrder } from "@/lib/order-readiness";
 import { InventoryService } from "@/lib/pancake/inventory-service";
 import { OrderSyncService } from "@/lib/pancake/order-sync-service";
 import type { ShopOrder } from "@/lib/types";
+import { pancakeConnectionForOrder } from "@/lib/pancake/connections";
+import { PancakeService } from "@/lib/pancake/pancake-service";
 
 export class POSSyncService {
-  constructor(
-    private readonly orderSync = new OrderSyncService(),
-    private readonly inventory = new InventoryService()
-  ) {}
-
   async confirmOrder(order: ShopOrder) {
     if (!canCreatePancakeOrder(order)) {
       return await updateOrder(order.code, {
@@ -20,7 +17,8 @@ export class POSSyncService {
         }
       }) || order;
     }
-    const reserved = await this.inventory.reserveOrder(order);
-    return this.orderSync.create(reserved);
+    const reserved = await new InventoryService().reserveOrder(order);
+    const orderSync = new OrderSyncService(new PancakeService(pancakeConnectionForOrder(reserved)));
+    return orderSync.create(reserved);
   }
 }

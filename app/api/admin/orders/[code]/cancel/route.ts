@@ -4,6 +4,8 @@ import { findOrderByCode, updateOrder } from "@/lib/orders";
 import { InventoryService } from "@/lib/pancake/inventory-service";
 import { OrderSyncService } from "@/lib/pancake/order-sync-service";
 import { QueueHandler } from "@/lib/pancake/queue-handler";
+import { pancakeConnectionForOrder } from "@/lib/pancake/connections";
+import { PancakeService } from "@/lib/pancake/pancake-service";
 import { OrderService } from "@/lib/services/order-service";
 import { ExceptionHandler } from "@/lib/pancake/exception-handler";
 
@@ -46,7 +48,7 @@ export async function POST(request: Request, { params }: Params) {
       cancellationReason: reason,
       shippingMessage: `${reason}. Website đã ghi nhận ngay; POS đang được tự động đồng bộ.`
     }) || order;
-    const orderSync = new OrderSyncService();
+    const orderSync = new OrderSyncService(new PancakeService(pancakeConnectionForOrder(current)));
 
     if (current.deliveryType === "express" && current.deliveryOrderId && current.shippingStatus !== "cancelled") {
       current = await new OrderService().cancelExpressDelivery(code, reason);
@@ -61,10 +63,10 @@ export async function POST(request: Request, { params }: Params) {
       } catch (error) {
         const normalized = ExceptionHandler.normalize(error);
         if (!normalized.retryable) {
-          await QueueHandler.enqueue("order.cancel", { orderCode: current.code });
+          await QueueHandler.enqueue("order.cancel", { orderCode: current.code, pancakeConnectionId: pancakeConnectionForOrder(current) });
         }
         pancakeCancellationPending = true;
-        try { await QueueHandler.enqueue("order.cancel", { orderCode: current.code }); } catch { /* Queue failure must not undo the website cancellation. */ }
+        try { await QueueHandler.enqueue("order.cancel", { orderCode: current.code, pancakeConnectionId: pancakeConnectionForOrder(current) }); } catch { /* Queue failure must not undo the website cancellation. */ }
       }
     }
     if (current.inventoryReservationApplied && !current.inventoryReservationReleased) {

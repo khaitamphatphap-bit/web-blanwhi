@@ -4,6 +4,7 @@ import { readIntegrationConfig } from "./integrations";
 import { readOrders } from "./orders";
 import { queryZaloPayPayment } from "./payment";
 import { mapPancakeStatus } from "./pancake/domain";
+import { pancakeConnectionForOrder } from "./pancake/connections";
 import { PancakeService } from "./pancake/pancake-service";
 import { deepPancakeText, extractPancakeSystemId, extractPancakeTracking } from "./pancake/tracking";
 import type { ShopOrder } from "./types";
@@ -141,7 +142,7 @@ async function reconcileOne(order: ShopOrder, histories: ShopOrder[], current?: 
       || view.adminPaymentStatus === "pending");
   if (shouldReadPancake) {
     try {
-      const pancake = new PancakeService();
+      const pancake = new PancakeService(pancakeConnectionForOrder(order));
       if (pancake.configured()) {
         const found = view.pancakeOrderId
           ? null

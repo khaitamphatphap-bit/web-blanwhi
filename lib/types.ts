@@ -134,6 +134,7 @@ export type ShopOrder = {
   transactionId?: string;
   providerOrderId?: string;
   paymentProviderOrderId?: string;
+  pancakeConnectionId?: "shop-1" | "shop-2";
   pancakeOrderId?: string;
   posOrderCode?: string;
   providerMessage?: string;

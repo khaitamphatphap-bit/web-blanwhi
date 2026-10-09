@@ -25,8 +25,9 @@ test("admin vẫn giữ snapshot đầy đủ và lịch sử đơn hàng không
   assert.match(siteContent, /writeSiteContentFromAdmin[\s\S]*?return writeSiteContent\(\{ \.\.\.content, products \}\);/);
 });
 
-test("đặt, hoàn và đồng bộ Pancake đều ghi sự kiện tồn kho có thể truy vết", () => {
-  assert.match(inventory, /writeSiteContent\(\{ \.\.\.content, products \}, \{[\s\S]*?source: "pancake-sync"[\s\S]*?direction: "sync"/);
+test("chỉ đặt và hoàn đơn thay đổi tồn website; Pancake không đồng bộ số lượng", () => {
+  assert.match(inventory, /mode: "independent"/);
+  assert.doesNotMatch(inventory, /source: "pancake-sync"/);
   assert.match(inventory, /inventoryMutation\(`\$\{order\.code\}:checkout`, "checkout", order\.code\)/);
   assert.match(inventory, /inventoryMutation\(`\$\{current\.code\}:release`, "order-release", current\.code\)/);
   assert.match(inventory, /inventoryMutation\(`\$\{current\.code\}:release-rollback`, "rollback", current\.code\)/);

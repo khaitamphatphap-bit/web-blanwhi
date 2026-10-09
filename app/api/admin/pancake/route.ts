@@ -10,13 +10,24 @@ import { buildProductInventory } from "@/lib/product-inventory";
 import { findOrderByCode, updateOrder } from "@/lib/orders";
 import { readSiteContent, seedPancakeProductLinks } from "@/lib/site-content";
 import { hasBlobStore, hasDatabase, hasR2Store } from "@/lib/data-store";
+import {
+  connectionConfigured,
+  connectionReadyForNewOrders,
+  pancakeConnection,
+  readPancakeRoutingState,
+  setActivePancakeConnection,
+  type PancakeConnectionId
+} from "@/lib/pancake/connections";
+import { productsForPancakeConnection } from "@/lib/pancake/connection-product-links";
 
 async function dashboard() {
   const content = await readSiteContent();
   await seedPancakeProductLinks(content);
   const logs = await PancakeLogger.list();
   const queue = await QueueHandler.list();
-  const pancake = new PancakeService();
+  const routing = await readPancakeRoutingState();
+  const activeConnection = pancakeConnection(routing.activeNewOrders);
+  const pancake = new PancakeService(routing.activeNewOrders);
   const sourceSnapshot = await Promise.all([
     pancake.orderSources(),
     pancake.configuredOrderSource()
@@ -25,30 +36,69 @@ async function dashboard() {
     configuredOrderSource: undefined,
     error: error instanceof Error ? error.message : "Không đọc được nguồn đơn Pancake."
   }));
-  const products = content.products.map((product) => {
-    const classificationNames = new Map((product.classifications || []).map((item) => [item.id, item.name]));
+  const productSets = Object.fromEntries(await Promise.all((["shop-1", "shop-2"] as PancakeConnectionId[]).map(async (id) => [
+    id,
+    await productsForPancakeConnection(content, id)
+  ]))) as Record<PancakeConnectionId, Awaited<ReturnType<typeof productsForPancakeConnection>>>;
+  const classificationNamesByProduct = new Map(content.products.map((product) => [
+    product.id,
+    new Map((product.classifications || []).map((item) => [item.id, item.name]))
+  ]));
+  const products = productSets[routing.activeNewOrders].map((product) => {
+    const classificationNames = classificationNamesByProduct.get(product.id) || new Map<string, string>();
     return {
       id: product.id,
       name: product.name,
-      rows: buildProductInventory(product).map((item) => ({
+      rows: product.rows.map((item) => ({
         ...item,
         classificationName: item.classificationId ? classificationNames.get(item.classificationId) || item.classificationId : "",
-        linked: Boolean(item.pancakeProductId || item.pancakeVariationId || item.pancakeSku),
+        linked: item.linked,
         availableQuantity: InventoryService.available(item.publishQuantity, item.pancakeQuantity)
       }))
     };
   });
+  const connectionDashboard = (["shop-1", "shop-2"] as PancakeConnectionId[]).map((id) => {
+    const connection = pancakeConnection(id);
+    const productRowCount = productSets[id].reduce((sum, product) => sum + product.rows.length, 0);
+    const productLinkedCount = productSets[id].reduce((sum, product) => sum + product.rows.filter((row) => row.linked).length, 0);
+    const sync = id === "shop-1"
+      ? { ...routing.productSync[id], linkedCount: productLinkedCount, totalCount: productRowCount }
+      : routing.productSync[id];
+    return {
+      id,
+      name: connection.name,
+      configured: connectionConfigured(connection),
+      readyForNewOrders: id === "shop-1"
+        ? connectionConfigured(connection)
+        : connectionReadyForNewOrders(id, { ...routing, productSync: { ...routing.productSync, [id]: sync } }),
+      receivesNewOrders: routing.activeNewOrders === id,
+      keepsExistingOrders: true,
+      configuration: {
+        apiKey: Boolean(connection.apiKey),
+        token: Boolean(connection.token),
+        shopId: Boolean(connection.shopId),
+        webhookSecret: Boolean(connection.webhookSecret),
+        baseUrl: connection.baseUrl
+      },
+      productSync: sync,
+      webhookUrl: id === "shop-1" ? "/api/webhooks/pancake" : "/api/webhooks/pancake/shop-2"
+    };
+  });
   return {
+    connections: {
+      activeNewOrders: routing.activeNewOrders,
+      items: connectionDashboard
+    },
     configuration: {
-      apiKey: Boolean(process.env.PANCAKE_API_KEY),
-      token: Boolean(process.env.PANCAKE_TOKEN),
-      shopId: Boolean(process.env.PANCAKE_SHOP_ID),
-      webhookSecret: Boolean(process.env.PANCAKE_WEBHOOK_SECRET),
-      baseUrl: process.env.PANCAKE_API_BASE_URL || "https://pos.pages.fm/api/v1"
+      apiKey: Boolean(activeConnection.apiKey),
+      token: Boolean(activeConnection.token),
+      shopId: Boolean(activeConnection.shopId),
+      webhookSecret: Boolean(activeConnection.webhookSecret),
+      baseUrl: activeConnection.baseUrl
     },
     orderSource: {
-      targetName: process.env.PANCAKE_ORDER_SOURCE_NAME || "facebook",
-      targetId: process.env.PANCAKE_ORDER_SOURCE_ID || "",
+      targetName: activeConnection.orderSourceName || "facebook",
+      targetId: activeConnection.orderSourceId || "",
       sources: sourceSnapshot.orderSources,
       matched: sourceSnapshot.configuredOrderSource,
       error: sourceSnapshot.error
@@ -59,7 +109,7 @@ async function dashboard() {
       blob: hasBlobStore(),
       persistent: hasDatabase() || hasR2Store() || hasBlobStore()
     },
-    webhookUrl: "/api/webhooks/pancake",
+    webhookUrl: routing.activeNewOrders === "shop-1" ? "/api/webhooks/pancake" : "/api/webhooks/pancake/shop-2",
     products,
     logs: logs.slice(0, 100),
     queueCount: queue.length
@@ -80,12 +130,19 @@ export async function POST(request: Request) {
       variationId?: string;
       providerOrderId?: string;
       variation?: { id?: string; productId?: string; sku?: string; quantity?: number };
+      connectionId?: PancakeConnectionId;
     };
+    if (body.action === "set-active-connection" && body.connectionId) {
+      await setActivePancakeConnection(body.connectionId);
+      return NextResponse.json({ ok: true, dashboard: await dashboard() });
+    }
+    const selectedConnection = body.connectionId || (await readPancakeRoutingState()).activeNewOrders;
+    const selectedPancake = new PancakeService(selectedConnection);
     if (body.action === "variations") {
-      return NextResponse.json({ ok: true, result: await new ProductLinkService().variations() });
+      return NextResponse.json({ ok: true, result: await new ProductLinkService(selectedPancake).variations() });
     }
     if (body.action === "link-product") {
-      return NextResponse.json({ ok: true, result: await new ProductLinkService().update(body) });
+      return NextResponse.json({ ok: true, result: await new ProductLinkService(selectedPancake).update(body) });
     }
     if (body.action === "cancel-linked-order" && body.orderCode && body.providerOrderId) {
       const order = await findOrderByCode(body.orderCode);
@@ -95,18 +152,22 @@ export async function POST(request: Request) {
       }
       const linked = await updateOrder(order.code, { pancakeOrderId: String(body.providerOrderId).trim() });
       if (!linked) return NextResponse.json({ error: "Không thể lưu ID đơn Pancake." }, { status: 500 });
-      const result = await new OrderSyncService().cancel(linked, false);
+      const result = await new OrderSyncService(new PancakeService(linked.pancakeConnectionId || "shop-1")).cancel(linked, false);
       return NextResponse.json({ ok: true, result });
     }
     let result: unknown;
-    if (body.action === "test") result = await new PancakeService().testConnection();
+    if (body.action === "test") result = await selectedPancake.testConnection();
     else if (body.action === "order-sources") result = {
-      sources: await new PancakeService().orderSources(),
-      matched: await new PancakeService().configuredOrderSource()
+      sources: await selectedPancake.orderSources(),
+      matched: await selectedPancake.configuredOrderSource()
     };
-    else if (body.action === "recover-links") result = await new ProductLinkService().recoverLinks();
-    else if (body.action === "sync-inventory") result = await new InventoryService().sync();
-    else if (body.action === "retry-order" && body.orderCode) result = await new OrderSyncService().retry(body.orderCode);
+    else if (body.action === "recover-links") result = await new ProductLinkService(selectedPancake).recoverLinks();
+    else if (body.action === "sync-inventory") result = await new ProductLinkService(selectedPancake).recoverLinks();
+    else if (body.action === "retry-order" && body.orderCode) {
+      const order = await findOrderByCode(body.orderCode);
+      if (!order) return NextResponse.json({ error: "Không tìm thấy đơn hàng website." }, { status: 404 });
+      result = await new OrderSyncService(new PancakeService(order.pancakeConnectionId || "shop-1")).retry(body.orderCode);
+    }
     else return NextResponse.json({ error: "Hành động Pancake không hợp lệ." }, { status: 400 });
     return NextResponse.json({ ok: true, result, dashboard: await dashboard() });
   } catch (error) {

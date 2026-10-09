@@ -4,7 +4,7 @@ import { PancakeLogger } from "@/lib/pancake/logger";
 import { PancakeService } from "@/lib/pancake/pancake-service";
 import type { PancakeAvailabilityItem } from "@/lib/pancake/types";
 import { Validator } from "@/lib/pancake/validator";
-import { availableQuantity, changePublishQuantity } from "@/lib/pancake/domain";
+import { changePublishQuantity } from "@/lib/pancake/domain";
 import { buildProductInventory } from "@/lib/product-inventory";
 import { readSiteContent, writeSiteContent } from "@/lib/site-content";
 import { createOrder, findOrderByCheckoutRequestId, findOrderByCode, updateOrder } from "@/lib/orders";
@@ -41,70 +41,22 @@ export class InventoryService {
     return this.pancake.configured();
   }
 
-  static available(publishQuantity: unknown, pancakeQuantity: unknown) {
-    return availableQuantity(publishQuantity, pancakeQuantity);
+  static available(publishQuantity: unknown, _pancakeQuantity?: unknown) {
+    const quantity = Number(publishQuantity);
+    return Math.max(0, Math.floor(Number.isFinite(quantity) ? quantity : 0));
   }
 
   async sync() {
-    const variations = await this.pancake.variations();
-    const byId = new Map(variations.map((item) => [item.id, item]));
-    const bySku = new Map(variations.filter((item) => item.sku).map((item) => [item.sku.toUpperCase(), item]));
-    const byProductId = new Map(variations.filter((item) => item.productId).map((item) => [item.productId, item]));
     const now = new Date().toISOString();
-    let linked = 0;
-    const changes: Array<Record<string, unknown>> = [];
-    const saved = await withDataStoreLock("website-inventory", async () => {
-      const content = await readSiteContent();
-      const products = content.products.map((product) => ({
-        ...product,
-        inventory: buildProductInventory(product).map((item) => {
-          const variation = (item.pancakeVariationId ? byId.get(item.pancakeVariationId) : undefined)
-            || (item.pancakeSku ? bySku.get(item.pancakeSku.toUpperCase()) : undefined)
-            || (item.pancakeProductId ? byProductId.get(item.pancakeProductId) : undefined);
-          if (!variation) return item;
-          linked += 1;
-          const next = {
-            ...item,
-            pancakeProductId: item.pancakeProductId || variation.productId,
-            pancakeVariationId: variation.id,
-            pancakeSku: item.pancakeSku || variation.sku,
-            pancakeQuantity: variation.quantity,
-            quantity: variation.quantity,
-            lastSyncedAt: now
-          };
-          if (
-            item.pancakeProductId !== next.pancakeProductId
-            || item.pancakeVariationId !== next.pancakeVariationId
-            || item.pancakeSku !== next.pancakeSku
-            || item.pancakeQuantity !== next.pancakeQuantity
-            || item.quantity !== next.quantity
-          ) {
-            changes.push({
-              productId: product.id,
-              inventoryKey: item.key,
-              sku: item.sku,
-              publishQuantityBefore: item.publishQuantity,
-              publishQuantityAfter: next.publishQuantity,
-              pancakeQuantityBefore: item.pancakeQuantity,
-              pancakeQuantityAfter: next.pancakeQuantity
-            });
-          }
-          return next;
-        })
-      }));
-      return writeSiteContent({ ...content, products }, {
-        operationId: `pancake-sync:${now}`,
-        source: "pancake-sync",
-        direction: "sync",
-        changes
-      });
-    });
-    await PancakeLogger.write("info", "inventory.sync", `Đã đọc ${variations.length} biến thể Pancake, khớp ${linked} dòng website.`);
-    return { content: saved, remoteCount: variations.length, linkedCount: linked, syncedAt: now };
+    const content = await readSiteContent();
+    const linkedCount = content.products.reduce((sum, product) => sum + buildProductInventory(product)
+      .filter((item) => item.pancakeProductId || item.pancakeVariationId || item.pancakeSku).length, 0);
+    await PancakeLogger.write("info", "inventory.independent", "Kho website và Pancake hoạt động độc lập; không sao chép số lượng.");
+    return { content, remoteCount: 0, linkedCount, syncedAt: now, mode: "independent" as const };
   }
 
-  async availability(productId?: string, refresh = false) {
-    const variations = refresh && this.configured() ? await this.pancake.variations() : [];
+  async availability(productId?: string, _refresh = false) {
+    const variations: Awaited<ReturnType<PancakeService["variations"]>> = [];
     const byId = new Map(variations.map((item) => [item.id, item]));
     const bySku = new Map(variations.filter((item) => item.sku).map((item) => [item.sku.toUpperCase(), item]));
     const byProductId = new Map(variations.filter((item) => item.productId).map((item) => [item.productId, item]));

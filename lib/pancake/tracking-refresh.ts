@@ -1,6 +1,7 @@
 import { findOrderByCode, updateOrder } from "@/lib/orders";
 import { PancakeLogger } from "@/lib/pancake/logger";
 import { PancakeService } from "@/lib/pancake/pancake-service";
+import { pancakeConnectionForOrder } from "@/lib/pancake/connections";
 import { buildTrackingOnlyPatch, extractPancakeSystemId, extractPancakeTracking } from "@/lib/pancake/tracking";
 import type { ShopOrder } from "@/lib/types";
 
@@ -32,15 +33,16 @@ function bounded(value: unknown, fallback: number, minimum: number, maximum: num
 export async function refreshPancakeTrackingOnly(
   order: ShopOrder,
   options: Pick<RefreshOptions, "timeoutMs" | "source"> = {},
-  pancake = new PancakeService()
+  pancake?: PancakeService
 ) {
   if (!activeMissingTracking(order)) return order;
+  const routedPancake = pancake || new PancakeService(pancakeConnectionForOrder(order));
   const remoteId = String(order.pancakeOrderId || "").trim();
   const timeoutMs = bounded(options.timeoutMs, 4000, 1500, 10_000);
   let payload: unknown;
   let detailError: unknown;
   try {
-    payload = await pancake.order(remoteId, { attempts: 1, timeoutMs });
+    payload = await routedPancake.order(remoteId, { attempts: 1, timeoutMs });
   } catch (error) {
     detailError = error;
     payload = {};
@@ -49,7 +51,7 @@ export async function refreshPancakeTrackingOnly(
   const systemId = extractPancakeSystemId(payload) || remoteId;
   if (!snapshot.trackingCode) {
     try {
-      const trackingPayload = await pancake.tracking(systemId, { timeoutMs });
+      const trackingPayload = await routedPancake.tracking(systemId, { timeoutMs });
       payload = { order_details: payload, tracking_lookup: trackingPayload };
       snapshot = extractPancakeTracking(payload);
     } catch (trackingError) {
@@ -79,7 +81,11 @@ export async function refreshPancakeTrackingOnly(
   return updated || current;
 }
 
-export async function refreshMissingPancakeTracking(orders: ShopOrder[], options: RefreshOptions = {}) {
+export async function refreshMissingPancakeTracking(
+  orders: ShopOrder[],
+  options: RefreshOptions = {},
+  pancake?: PancakeService
+) {
   const limit = bounded(options.limit, 3, 1, 30);
   const minIntervalMs = bounded(options.minIntervalMs, 30_000, 10_000, 300_000);
   const now = Date.now();
@@ -94,7 +100,7 @@ export async function refreshMissingPancakeTracking(orders: ShopOrder[], options
     if (existing) return existing;
     const previousAttempts = checkStates.get(order.code)?.attempts || 0;
     checkStates.set(order.code, { attempts: previousAttempts, nextAllowedAt: now + minIntervalMs });
-    const task = refreshPancakeTrackingOnly(order, options)
+    const task = refreshPancakeTrackingOnly(order, options, pancake)
       .then((result) => {
         if (result.trackingCode) {
           checkStates.delete(order.code);

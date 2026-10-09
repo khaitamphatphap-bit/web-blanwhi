@@ -7,6 +7,8 @@ import { OrderService } from "@/lib/services/order-service";
 import { OrderSyncService } from "@/lib/pancake/order-sync-service";
 import { createJsonStoreBackup } from "@/lib/data-store";
 import { refreshMissingPancakeTracking } from "@/lib/pancake/tracking-refresh";
+import { connectionConfigured, pancakeConnection, pancakeConnectionForOrder } from "@/lib/pancake/connections";
+import { PancakeService } from "@/lib/pancake/pancake-service";
 
 const finalShippingStatuses = new Set(["delivered", "returning", "returned", "cancelled"]);
 
@@ -35,12 +37,13 @@ async function syncShippingOrders(request: Request) {
       && !order.pancakeOrderId;
   }) : [];
   if (eligibleUnlinked.length) {
-    const sync = new OrderSyncService();
     let restored = 0;
     let restoreErrors = 0;
     for (let index = 0; index < eligibleUnlinked.length; index += 4) {
       const batch = eligibleUnlinked.slice(index, index + 4);
-      const settled = await Promise.allSettled(batch.map((order) => sync.create(order)));
+      const settled = await Promise.allSettled(batch.map((order) =>
+        new OrderSyncService(new PancakeService(pancakeConnectionForOrder(order))).create(order)
+      ));
       restored += settled.filter((result) => result.status === "fulfilled").length;
       restoreErrors += settled.filter((result) => result.status === "rejected").length;
     }
@@ -49,7 +52,18 @@ async function syncShippingOrders(request: Request) {
   const pancakeCandidates = candidates.filter((order) => order.deliveryType !== "express" && hasPancakeSyncSignal(order));
   if (pancakeCandidates.length || eligibleUnlinked.length) {
     try {
-      const synced = await new OrderSyncService().pollStatuses({ detailLimit: fullSync ? 200 : 20 });
+      const connectionIds = (["shop-1", "shop-2"] as const).filter((id) => connectionConfigured(pancakeConnection(id)));
+      const syncResults = await Promise.all(connectionIds.map((id) =>
+        new OrderSyncService(new PancakeService(id)).pollStatuses({ detailLimit: fullSync ? 200 : 20 })
+      ));
+      const synced = syncResults.reduce((total, result) => ({
+        received: total.received + result.received,
+        detailed: total.detailed + result.detailed,
+        detailErrors: total.detailErrors + result.detailErrors,
+        updated: total.updated + result.updated,
+        posStatusesUpdated: total.posStatusesUpdated + result.posStatusesUpdated,
+        posStatusErrors: total.posStatusErrors + result.posStatusErrors
+      }), { received: 0, detailed: 0, detailErrors: 0, updated: 0, posStatusesUpdated: 0, posStatusErrors: 0 });
       results.push({ code: "pancake-pos", ok: true, status: "synced", received: synced.received, detailed: synced.detailed, detailErrors: synced.detailErrors, updated: synced.updated, posStatusesUpdated: synced.posStatusesUpdated, posStatusErrors: synced.posStatusErrors, message: `Đã nhận ${synced.received} đơn từ POS, đọc chi tiết ${synced.detailed} đơn, cập nhật ${synced.updated} đơn và tự chuyển ${synced.posStatusesUpdated} trạng thái POS.` });
       const latestOrders = await readOrders();
       const beforeTracking = new Map(latestOrders.map((order) => [order.code, order.trackingCode || ""]));
@@ -77,7 +91,7 @@ async function syncShippingOrders(request: Request) {
         continue;
       }
       if (config.shipping.provider === "shopee_express") {
-        const updated = await new OrderSyncService().reconcileExisting(order);
+        const updated = await new OrderSyncService(new PancakeService(pancakeConnectionForOrder(order))).reconcileExisting(order);
         results.push({ code: order.code, ok: true, status: updated.shippingStatus, message: updated.shippingMessage });
         continue;
       }

@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { integrationHeaders, readIntegrationConfig } from "@/lib/integrations";
 import { findOrderByCode, updateOrder } from "@/lib/orders";
 import { ExceptionHandler } from "@/lib/pancake/exception-handler";
+import { pancakeConnectionForOrder } from "@/lib/pancake/connections";
+import { PancakeService } from "@/lib/pancake/pancake-service";
 import { OrderSyncService } from "@/lib/pancake/order-sync-service";
 
 type Params = { params: Promise<{ code: string }> };
@@ -15,7 +17,7 @@ export async function POST(request: Request, { params }: Params) {
     const target = body.target || "all";
     const result: Record<string, string> = {};
     if (target === "all" || target === "pancake") {
-      const synced = await new OrderSyncService().create(order);
+      const synced = await new OrderSyncService(new PancakeService(pancakeConnectionForOrder(order))).create(order);
       result.pancake = synced?.externalSync?.pancake || "Đã gửi Pancake";
     }
     if (target === "all" || target === "misa") {

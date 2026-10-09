@@ -2,6 +2,7 @@ import { readIntegrationConfig } from "@/lib/integrations";
 import { findOrderByCode, updateOrder } from "@/lib/orders";
 import { PancakeLogger } from "@/lib/pancake/logger";
 import { PancakeService } from "@/lib/pancake/pancake-service";
+import { pancakeConnectionForOrder } from "@/lib/pancake/connections";
 import { queryZaloPayPayment } from "@/lib/payment";
 import { markVerifiedPayment } from "@/lib/payment-confirmation";
 import type { ShopOrder } from "@/lib/types";
@@ -134,7 +135,7 @@ async function verifyWithZaloPay(order: ShopOrder) {
 }
 
 async function verifyWithPancakeReadOnly(order: ShopOrder) {
-  const pancake = new PancakeService();
+  const pancake = new PancakeService(pancakeConnectionForOrder(order));
   if (!pancake.configured()) return order;
   const found = await withTimeout("Pancake payment lookup", pancake.findOrder(order.code, order.customer.phone));
   if (!found) {

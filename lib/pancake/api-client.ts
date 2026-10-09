@@ -7,10 +7,22 @@ type RequestOptions = {
   timeoutMs?: number;
 };
 
+type ApiClientConfig = {
+  baseUrl?: string;
+  apiKey?: string;
+  token?: string;
+};
+
 export class ApiClient {
-  private readonly baseUrl = (process.env.PANCAKE_API_BASE_URL || "https://pos.pages.fm/api/v1").replace(/\/$/, "");
-  private readonly apiKey = process.env.PANCAKE_API_KEY || "";
-  private readonly token = process.env.PANCAKE_TOKEN || "";
+  private readonly baseUrl: string;
+  private readonly apiKey: string;
+  private readonly token: string;
+
+  constructor(config: ApiClientConfig = {}) {
+    this.baseUrl = (config.baseUrl || process.env.PANCAKE_API_BASE_URL || "https://pos.pages.fm/api/v1").replace(/\/$/, "");
+    this.apiKey = config.apiKey ?? process.env.PANCAKE_API_KEY ?? "";
+    this.token = config.token ?? process.env.PANCAKE_TOKEN ?? "";
+  }
 
   configured() {
     return Boolean(this.apiKey);

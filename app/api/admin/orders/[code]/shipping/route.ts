@@ -3,6 +3,8 @@ import { jsonError } from "@/lib/api-errors";
 import { readIntegrationConfig } from "@/lib/integrations";
 import { findOrderByCode, updateOrder } from "@/lib/orders";
 import { fetchShippingStatus } from "@/lib/shipping-providers";
+import { pancakeConnectionForOrder } from "@/lib/pancake/connections";
+import { PancakeService } from "@/lib/pancake/pancake-service";
 import { OrderSyncService } from "@/lib/pancake/order-sync-service";
 
 type Params = { params: Promise<{ code: string }> };
@@ -15,7 +17,7 @@ export async function POST(_request: Request, { params }: Params) {
   const config = await readIntegrationConfig();
   if (config.shipping.provider === "shopee_express" || order.pancakeOrderId || order.pancakeStatus) {
     try {
-      const updated = await new OrderSyncService().reconcileExisting(order);
+      const updated = await new OrderSyncService(new PancakeService(pancakeConnectionForOrder(order))).reconcileExisting(order);
       return NextResponse.json({ order: updated });
     } catch (error) {
       return jsonError(error);

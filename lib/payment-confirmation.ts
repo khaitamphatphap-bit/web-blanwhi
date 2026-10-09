@@ -6,6 +6,7 @@ import type { IntegrationConfig } from "@/lib/integrations";
 import type { ShopOrder } from "@/lib/types";
 import { isLegacyAutoCancelledZaloPayOrder } from "@/lib/zalopay-reservation-policy";
 import { QueueHandler } from "@/lib/pancake/queue-handler";
+import { pancakeConnectionForOrder } from "@/lib/pancake/connections";
 
 type VerifiedPayment = Partial<Pick<ShopOrder, "transactionId" | "providerOrderId" | "paymentProviderOrderId" | "providerMessage">>;
 
@@ -58,7 +59,7 @@ export async function syncVerifiedOrderToPos(order: ShopOrder) {
         lastSyncedAt: new Date().toISOString()
       }
     }) || order;
-    await QueueHandler.enqueue("order.create", { orderCode: order.code }).catch(() => undefined);
+    await QueueHandler.enqueue("order.create", { orderCode: order.code, pancakeConnectionId: pancakeConnectionForOrder(order) }).catch(() => undefined);
     return updated;
   }
 }

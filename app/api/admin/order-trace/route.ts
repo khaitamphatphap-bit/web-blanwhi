@@ -3,6 +3,12 @@ import { jsonError } from "@/lib/api-errors";
 import { readJsonStore, readJsonStoreHistory, readKeyedJsonStoreHistory } from "@/lib/data-store";
 import { readOrders } from "@/lib/orders";
 import { readPaymentOrphans } from "@/lib/payment-orphans";
+import {
+  connectionConfigured,
+  pancakeConnection,
+  pancakeConnectionForOrder,
+  type PancakeConnectionId
+} from "@/lib/pancake/connections";
 import { PancakeService } from "@/lib/pancake/pancake-service";
 import type { ShopOrder } from "@/lib/types";
 
@@ -112,8 +118,16 @@ export async function GET(request: Request) {
     const orderCode = terms.find((term) => /^blw-/i.test(term));
     if (orderCode) {
       try {
-        const pancakeOrder = await new PancakeService().findOrder(orderCode.toUpperCase());
-        if (pancakeOrder) pushHit(hits, "pancake.remote", pancakeOrder, terms, `Tìm thấy đơn trực tiếp trên Pancake · ${orderCode.toUpperCase()}`);
+        const localOrder = orders.find((order) => order.code.toUpperCase() === orderCode.toUpperCase());
+        const connectionIds: PancakeConnectionId[] = localOrder
+          ? [pancakeConnectionForOrder(localOrder)]
+          : (["shop-1", "shop-2"] as const).filter((id) => connectionConfigured(pancakeConnection(id)));
+        for (const connectionId of connectionIds) {
+          const pancakeOrder = await new PancakeService(connectionId).findOrder(orderCode.toUpperCase());
+          if (pancakeOrder) {
+            pushHit(hits, `pancake.remote.${connectionId}`, pancakeOrder, terms, `Tìm thấy đơn trực tiếp trên ${pancakeConnection(connectionId).name} · ${orderCode.toUpperCase()}`);
+          }
+        }
       } catch (error) {
         hits.push({
           source: "pancake.remote.error",

@@ -36,6 +36,20 @@ type PancakeOrderSource = {
 };
 
 type Dashboard = {
+  connections: {
+    activeNewOrders: "shop-1" | "shop-2";
+    items: Array<{
+      id: "shop-1" | "shop-2";
+      name: string;
+      configured: boolean;
+      readyForNewOrders: boolean;
+      receivesNewOrders: boolean;
+      keepsExistingOrders: boolean;
+      configuration: { apiKey: boolean; token: boolean; shopId: boolean; webhookSecret: boolean; baseUrl: string };
+      productSync: { status: string; linkedCount: number; totalCount: number; lastSyncedAt?: string; message?: string };
+      webhookUrl: string;
+    }>;
+  };
   configuration: { apiKey: boolean; token: boolean; shopId: boolean; webhookSecret: boolean; baseUrl: string };
   orderSource?: { targetName: string; targetId: string; sources: PancakeOrderSource[]; matched?: PancakeOrderSource; error?: string };
   storage: { database: boolean; blob: boolean; persistent: boolean };
@@ -46,6 +60,8 @@ type Dashboard = {
 };
 
 type ApiResult = { dashboard?: Dashboard; result?: unknown; error?: string };
+
+type Shop1Snapshot = Pick<Dashboard, "configuration" | "storage" | "webhookUrl" | "products" | "logs" | "queueCount" | "orderSource">;
 
 type LinkResult = {
   productId: string;
@@ -67,6 +83,9 @@ export function PancakeAdmin() {
   const [variationSearch, setVariationSearch] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState("");
+  const [demoActiveConnection, setDemoActiveConnection] = useState<"shop-1" | "shop-2" | "">("");
+  const [localConnectionDemo, setLocalConnectionDemo] = useState(false);
+  const [shop1Snapshot, setShop1Snapshot] = useState<Shop1Snapshot | null>(null);
 
   async function request(body: Record<string, unknown>) {
     const response = await fetch("/api/admin/pancake", {
@@ -79,23 +98,37 @@ export function PancakeAdmin() {
     return result;
   }
 
-  async function load() {
+  async function load(useLocalSnapshot = false) {
     const response = await fetch(`/api/admin/pancake?refresh=${Date.now()}`, { cache: "no-store" });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || "Không tải được Pancake Integration.");
     setDashboard(result);
+    if (useLocalSnapshot) {
+      const snapshotResponse = await fetch(`/_local-demo/pancake-shop1.json?refresh=${Date.now()}`, { cache: "no-store" });
+      if (!snapshotResponse.ok) throw new Error("Không tải được ảnh chụp dữ liệu thật của Shop 1.");
+      setShop1Snapshot(await snapshotResponse.json() as Shop1Snapshot);
+    }
     return result as Dashboard;
   }
 
   useEffect(() => {
-    void load().catch((error) => setMessage(error instanceof Error ? error.message : "Không tải được dữ liệu."));
+    const isLocalDemo = (
+      ["127.0.0.1", "localhost"].includes(window.location.hostname)
+      && new URLSearchParams(window.location.search).get("pancake2Demo") === "1"
+    );
+    setLocalConnectionDemo(isLocalDemo);
+    void load(isLocalDemo).catch((error) => setMessage(error instanceof Error ? error.message : "Không tải được dữ liệu."));
   }, []);
 
   async function action(name: "test" | "sync-inventory" | "recover-links" | "order-sources") {
+    if (localConnectionDemo) {
+      setMessage("Bản local đang hiển thị ảnh chụp chỉ đọc của Shop 1; không gửi thao tác sang Pancake thật.");
+      return;
+    }
     setBusy(name);
     setMessage("");
     try {
-      const response = await request({ action: name });
+      const response = await request({ action: name, connectionId: activeConnection });
       if (response.dashboard) setDashboard(response.dashboard);
       const result = response.result as { shopName?: string; recoveredCount?: number; scannedBackups?: number; sources?: PancakeOrderSource[]; matched?: PancakeOrderSource } | undefined;
       setMessage(name === "test"
@@ -112,7 +145,34 @@ export function PancakeAdmin() {
     }
   }
 
+  async function setActiveConnection(connectionId: "shop-1" | "shop-2") {
+    if (localConnectionDemo) {
+      if (connectionId === "shop-2") {
+        setMessage("Bản demo: Shop 2 chưa đủ API, Shop ID, webhook và liên kết sản phẩm nên chưa thể nhận đơn mới.");
+        return;
+      }
+      setDemoActiveConnection(connectionId);
+      setMessage(`Bản demo: đơn mới sẽ đi ${connectionId === "shop-1" ? "Shop 1" : "Shop 2"}; đơn cũ vẫn giữ nguyên shop ban đầu.`);
+      return;
+    }
+    setBusy(`connection:${connectionId}`);
+    setMessage("");
+    try {
+      const response = await request({ action: "set-active-connection", connectionId });
+      if (response.dashboard) setDashboard(response.dashboard);
+      setMessage(`Đã chuyển nơi nhận đơn mới sang ${connectionId === "shop-1" ? "Shop 1" : "Shop 2"}. Đơn cũ không thay đổi.`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Không chuyển được shop nhận đơn mới.");
+    } finally {
+      setBusy("");
+    }
+  }
+
   async function openLink(productId: string, row: ProductRow) {
+    if (localConnectionDemo) {
+      setMessage("Bản local chỉ đọc; liên kết sản phẩm Shop 1 thật được giữ nguyên.");
+      return;
+    }
     const key = `${productId}::${row.key}`;
     setEditingKey(key);
     setSelectedVariationId(row.pancakeVariationId || "");
@@ -121,7 +181,7 @@ export function PancakeAdmin() {
     if (variations.length) return;
     setBusy("variations");
     try {
-      const response = await request({ action: "variations" });
+      const response = await request({ action: "variations", connectionId: activeConnection });
       setVariations((response.result || []) as PancakeVariation[]);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Không đọc được danh sách sản phẩm Pancake.");
@@ -132,12 +192,16 @@ export function PancakeAdmin() {
   }
 
   async function saveLink(productId: string, rowKey: string, variationId: string) {
+    if (localConnectionDemo) {
+      setMessage("Bản local chỉ đọc; không thay đổi liên kết sản phẩm thật.");
+      return;
+    }
     const operation = variationId ? "link" : "unlink";
     setBusy(`${operation}:${productId}::${rowKey}`);
     setMessage("");
     try {
       const selectedVariation = variations.find((item) => item.id === variationId);
-      const response = await request({ action: "link-product", productId, rowKey, variationId, variation: selectedVariation });
+      const response = await request({ action: "link-product", connectionId: activeConnection, productId, rowKey, variationId, variation: selectedVariation });
       const saved = response.result as LinkResult;
       setDashboard((current) => current ? {
         ...current,
@@ -174,8 +238,41 @@ export function PancakeAdmin() {
   }, [variationSearch, variations]);
 
   if (!dashboard) return <main className="min-h-screen bg-white p-6 text-black">Đang tải Pancake Integration...</main>;
-  const linkedCount = dashboard.products.reduce((sum, product) => sum + product.rows.filter((row) => row.linked).length, 0);
-  const rowCount = dashboard.products.reduce((sum, product) => sum + product.rows.length, 0);
+  const displayedProducts = localConnectionDemo && shop1Snapshot ? shop1Snapshot.products : dashboard.products;
+  const displayedStorage = localConnectionDemo && shop1Snapshot ? shop1Snapshot.storage : dashboard.storage;
+  const displayedQueueCount = localConnectionDemo && shop1Snapshot ? shop1Snapshot.queueCount : dashboard.queueCount;
+  const displayedLogs = localConnectionDemo && shop1Snapshot ? shop1Snapshot.logs : dashboard.logs;
+  const linkedCount = displayedProducts.reduce((sum, product) => sum + product.rows.filter((row) => row.linked).length, 0);
+  const rowCount = displayedProducts.reduce((sum, product) => sum + product.rows.length, 0);
+  const activeConnection = localConnectionDemo ? (demoActiveConnection || "shop-1") : dashboard.connections.activeNewOrders;
+  const displayedConnections = dashboard.connections.items.map((connection) => {
+    if (!localConnectionDemo) return connection;
+    if (connection.id === "shop-1") {
+      const configuration = shop1Snapshot?.configuration || connection.configuration;
+      const configured = Boolean(configuration.apiKey && configuration.shopId && configuration.webhookSecret);
+      return {
+        ...connection,
+        configured,
+        readyForNewOrders: configured && linkedCount === rowCount,
+        configuration,
+        webhookUrl: shop1Snapshot?.webhookUrl || connection.webhookUrl,
+        productSync: { status: "ready" as const, linkedCount, totalCount: rowCount, message: "Dữ liệu hiện tại của Shop 1 đang vận hành." }
+      };
+    }
+    return {
+      ...connection,
+      configured: false,
+      readyForNewOrders: false,
+      configuration: { apiKey: false, token: false, shopId: false, webhookSecret: false, baseUrl: connection.configuration.baseUrl },
+      productSync: { status: "not_started" as const, linkedCount: 0, totalCount: rowCount, message: "Chưa đồng bộ sản phẩm Shop 2." }
+    };
+  });
+  const activeConnectionDetails = displayedConnections.find((connection) => connection.id === activeConnection)
+    || displayedConnections[0];
+  const activeConnectionPrefix = activeConnectionDetails?.id === "shop-2" ? "PANCAKE2" : "PANCAKE";
+  const displayedOrderSource: Dashboard["orderSource"] = localConnectionDemo && activeConnection === "shop-1"
+    ? shop1Snapshot?.orderSource
+    : dashboard.orderSource;
 
   function toggleProduct(productId: string) {
     setExpandedProductId((current) => current === productId ? "" : productId);
@@ -193,22 +290,67 @@ export function PancakeAdmin() {
 
       {message && <p className="sticky top-2 z-20 mt-4 border border-neutral-300 bg-white p-3 text-sm shadow-sm">{message}</p>}
 
+      <section className="mt-6 border border-black p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[.16em] text-neutral-500">Định tuyến đơn hàng</p>
+            <h2 className="mt-2 text-2xl font-medium">Chọn shop nhận đơn mới</h2>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-neutral-600">Ngừng nhận đơn mới không ngắt kết nối. Đơn cũ vẫn tiếp tục nhận mã vận đơn, trạng thái và yêu cầu hủy tại đúng shop ban đầu.</p>
+          </div>
+          {localConnectionDemo && <span className="border border-amber-400 bg-amber-50 px-3 py-2 text-xs font-semibold uppercase text-amber-800">Dữ liệu Shop 1 thật · bản local chỉ đọc</span>}
+        </div>
+        <div className="mt-5 grid gap-4 lg:grid-cols-2">
+          {displayedConnections.map((connection) => {
+            const receivesNewOrders = activeConnection === connection.id;
+            const missing = [
+              !connection.configuration.apiKey && "API key",
+              !connection.configuration.shopId && "Shop ID",
+              !connection.configuration.webhookSecret && "Webhook secret"
+            ].filter(Boolean);
+            return <article key={connection.id} className={`border p-5 ${receivesNewOrders ? "border-black bg-neutral-50" : "border-neutral-300"}`}>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-lg font-semibold uppercase">{connection.name}</h3>
+                  <p className={`mt-2 text-sm font-semibold ${connection.configured ? "text-emerald-700" : "text-amber-700"}`}>{connection.configured ? "Đã có cấu hình kết nối" : "Chưa đủ cấu hình"}</p>
+                </div>
+                <span className={`border px-3 py-2 text-xs font-semibold uppercase ${receivesNewOrders ? "border-black bg-black text-white" : "border-neutral-300 text-neutral-500"}`}>{receivesNewOrders ? "Đang nhận đơn mới" : "Không nhận đơn mới"}</span>
+              </div>
+              <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
+                <div className="border border-neutral-200 p-3">API key<br/><strong>{connection.configuration.apiKey ? "Đã có" : "Chưa có"}</strong></div>
+                <div className="border border-neutral-200 p-3">Shop ID<br/><strong>{connection.configuration.shopId ? "Đã có" : "Chưa có"}</strong></div>
+                <div className="border border-neutral-200 p-3">Webhook<br/><strong>{connection.configuration.webhookSecret ? "Đã có" : "Chưa có"}</strong></div>
+                <div className="border border-neutral-200 p-3">Sản phẩm<br/><strong>{connection.productSync.linkedCount}/{connection.productSync.totalCount}</strong></div>
+              </div>
+              {missing.length > 0 && <p className="mt-3 text-sm text-amber-700">Còn thiếu: {missing.join(", ")}.</p>}
+              <p className="mt-3 text-sm"><strong>Duy trì đơn cũ:</strong> Luôn bật</p>
+              <p className="mt-1 break-all text-xs text-neutral-500">Webhook: {connection.webhookUrl}</p>
+              <button type="button" onClick={() => setActiveConnection(connection.id)} disabled={receivesNewOrders || !connection.readyForNewOrders || Boolean(busy)} className="mt-4 h-11 border border-black px-5 text-xs font-semibold uppercase disabled:cursor-not-allowed disabled:border-neutral-300 disabled:text-neutral-400">
+                {receivesNewOrders ? "Đang được chọn" : connection.readyForNewOrders ? "Chuyển đơn mới sang shop này" : "Chưa đủ điều kiện nhận đơn"}
+              </button>
+            </article>;
+          })}
+        </div>
+      </section>
+
       <section className="mt-6 grid gap-4 lg:grid-cols-2">
         <div className="border border-black p-5">
-          <h2 className="text-lg font-semibold uppercase">API Key / Token</h2>
+          <h2 className="text-lg font-semibold uppercase">API Key / Token · {activeConnectionDetails?.name}</h2>
           <p className="mt-2 text-sm text-neutral-600">Khóa được đọc từ Vercel và không hiển thị hoặc lưu trong trang admin.</p>
           <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
-            {([['PANCAKE_API_KEY', dashboard.configuration.apiKey], ['PANCAKE_TOKEN', dashboard.configuration.token], ['PANCAKE_SHOP_ID', dashboard.configuration.shopId], ['PANCAKE_WEBHOOK_SECRET', dashboard.configuration.webhookSecret]] as Array<[string, boolean]>).map(([name, ready]) => <div key={name} className="border p-3"><strong className="block text-xs">{name}</strong><span className={ready ? "text-green-700" : "text-red-600"}>{ready ? "Đã cấu hình" : name === "PANCAKE_TOKEN" ? "Không bắt buộc" : "Chưa có"}</span></div>)}
+            {([['API_KEY', activeConnectionDetails?.configuration.apiKey], ['TOKEN', activeConnectionDetails?.configuration.token], ['SHOP_ID', activeConnectionDetails?.configuration.shopId], ['WEBHOOK_SECRET', activeConnectionDetails?.configuration.webhookSecret]] as Array<[string, boolean | undefined]>).map(([suffix, ready]) => {
+              const name = `${activeConnectionPrefix}_${suffix}`;
+              return <div key={name} className="border p-3"><strong className="block text-xs">{name}</strong><span className={ready ? "text-green-700" : "text-red-600"}>{ready ? "Đã cấu hình" : suffix === "TOKEN" ? "Không bắt buộc" : "Chưa có"}</span></div>;
+            })}
           </div>
-          <p className="mt-3 break-all text-xs text-neutral-500">API: {dashboard.configuration.baseUrl}</p>
-          <p className={`mt-3 text-sm font-semibold ${dashboard.storage.persistent ? "text-green-700" : "text-red-600"}`}>Lưu đơn lâu dài: {dashboard.storage.persistent ? dashboard.storage.database ? "Cơ sở dữ liệu" : "Vercel Blob mã hóa" : "Chưa cấu hình"}</p>
+          <p className="mt-3 break-all text-xs text-neutral-500">API: {activeConnectionDetails?.configuration.baseUrl}</p>
+          <p className={`mt-3 text-sm font-semibold ${displayedStorage.persistent ? "text-green-700" : "text-red-600"}`}>Lưu đơn lâu dài: {displayedStorage.persistent ? displayedStorage.database ? "Cơ sở dữ liệu" : "Vercel Blob mã hóa" : "Chưa cấu hình"}</p>
           <button onClick={() => action("test")} disabled={Boolean(busy)} className="mt-4 h-11 bg-black px-5 text-xs uppercase text-white disabled:opacity-50">{busy === "test" ? "Đang kiểm tra..." : "Kiểm tra kết nối"}</button>
         </div>
         <div className="border border-black p-5">
           <h2 className="text-lg font-semibold uppercase">Webhook / Đồng bộ định kỳ</h2>
           <p className="mt-2 text-sm text-neutral-600">Webhook cập nhật trạng thái đơn; đồng bộ định kỳ dùng khi Pancake không gửi webhook.</p>
-          <code className="mt-4 block break-all bg-neutral-100 p-3 text-xs">{dashboard.webhookUrl}</code>
-          <p className="mt-3 text-sm">Hàng đợi đang chờ: <strong>{dashboard.queueCount}</strong></p>
+          <code className="mt-4 block break-all bg-neutral-100 p-3 text-xs">{activeConnectionDetails?.webhookUrl}</code>
+          <p className="mt-3 text-sm">Hàng đợi đang chờ: <strong>{displayedQueueCount}</strong></p>
         </div>
       </section>
 
@@ -216,24 +358,24 @@ export function PancakeAdmin() {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold uppercase">Nguồn đơn đẩy sang Pancake</h2>
-            <p className="mt-2 text-sm text-neutral-600">Website sẽ tự tìm nguồn tên <strong>{dashboard.orderSource?.targetName || "facebook"}</strong> trong Pancake và gắn vào đơn khi tạo POS.</p>
+            <p className="mt-2 text-sm text-neutral-600">Website sẽ tự tìm nguồn tên <strong>{displayedOrderSource?.targetName || "facebook"}</strong> trong Pancake và gắn vào đơn khi tạo POS.</p>
           </div>
           <button onClick={() => action("order-sources")} disabled={Boolean(busy)} className="h-11 border border-black px-5 text-xs uppercase disabled:opacity-50">{busy === "order-sources" ? "Đang đọc..." : "Đọc lại nguồn đơn"}</button>
         </div>
-        {dashboard.orderSource?.error && <p className="mt-3 border border-red-200 bg-red-50 p-3 text-sm text-red-700">{dashboard.orderSource.error}</p>}
+        {displayedOrderSource?.error && <p className="mt-3 border border-red-200 bg-red-50 p-3 text-sm text-red-700">{displayedOrderSource.error}</p>}
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           <div className="border border-neutral-300 p-3">
             <p className="text-xs uppercase text-neutral-500">Nguồn đang khớp</p>
-            {dashboard.orderSource?.matched ? <p className="mt-2 text-sm"><strong>{dashboard.orderSource.matched.name}</strong> · ID <span className="font-mono">{dashboard.orderSource.matched.id}</span>{dashboard.orderSource.matched.pageId ? <> · Page <span className="font-mono">{dashboard.orderSource.matched.pageId}</span></> : null}</p> : <p className="mt-2 text-sm text-red-600">Chưa tìm thấy nguồn cấu hình trong dữ liệu API trả về.</p>}
+            {displayedOrderSource?.matched ? <p className="mt-2 text-sm"><strong>{displayedOrderSource.matched.name}</strong> · ID <span className="font-mono">{displayedOrderSource.matched.id}</span>{displayedOrderSource.matched.pageId ? <> · Page <span className="font-mono">{displayedOrderSource.matched.pageId}</span></> : null}</p> : <p className="mt-2 text-sm text-red-600">Chưa tìm thấy nguồn cấu hình trong dữ liệu API trả về.</p>}
           </div>
           <div className="border border-neutral-300 p-3">
             <p className="text-xs uppercase text-neutral-500">Cấu hình dự phòng</p>
-            <p className="mt-2 text-sm">Tên: <strong>{dashboard.orderSource?.targetName || "facebook"}</strong></p>
-            <p className="mt-1 text-sm">ID cố định: <strong>{dashboard.orderSource?.targetId || "Chưa set"}</strong></p>
+            <p className="mt-2 text-sm">Tên: <strong>{displayedOrderSource?.targetName || "facebook"}</strong></p>
+            <p className="mt-1 text-sm">ID cố định: <strong>{displayedOrderSource?.targetId || "Chưa set"}</strong></p>
           </div>
         </div>
         <div className="mt-4 max-h-56 overflow-auto border border-neutral-200">
-          {(dashboard.orderSource?.sources || []).length ? (dashboard.orderSource?.sources || []).map((source) => <div key={`${source.id}-${source.name}`} className="grid gap-1 border-b border-neutral-100 p-3 text-sm md:grid-cols-[1fr_1fr_1fr]">
+          {(displayedOrderSource?.sources || []).length ? (displayedOrderSource?.sources || []).map((source) => <div key={`${source.id}-${source.name}`} className="grid gap-1 border-b border-neutral-100 p-3 text-sm md:grid-cols-[1fr_1fr_1fr]">
             <span><strong>{source.name}</strong></span>
             <span>ID <span className="font-mono">{source.id}</span></span>
             <span>{source.pageId ? <>Page <span className="font-mono">{source.pageId}</span></> : "Không có page_id"}</span>
@@ -246,12 +388,12 @@ export function PancakeAdmin() {
           <div><h2 className="text-lg font-semibold uppercase">Liên kết từng sản phẩm</h2><p className="mt-1 text-sm text-neutral-600">Đã liên kết {linkedCount}/{rowCount} dòng. Bấm Liên kết ở đúng phân loại, màu và size rồi chọn sản phẩm có sẵn trong Pancake POS.</p></div>
           <div className="flex flex-wrap gap-2">
             <button onClick={() => action("recover-links")} disabled={Boolean(busy)} className="h-11 border border-black px-5 text-xs uppercase disabled:opacity-50">{busy === "recover-links" ? "Đang khôi phục..." : "Khôi phục liên kết"}</button>
-            <button onClick={() => action("sync-inventory")} disabled={Boolean(busy)} className="h-11 bg-black px-5 text-xs uppercase text-white disabled:opacity-50">{busy === "sync-inventory" ? "Đang đồng bộ..." : "Đồng bộ tồn kho"}</button>
+            <button onClick={() => action("sync-inventory")} disabled={Boolean(busy)} className="h-11 bg-black px-5 text-xs uppercase text-white disabled:opacity-50">{busy === "sync-inventory" ? "Đang kiểm tra..." : "Kiểm tra liên kết SKU"}</button>
           </div>
         </div>
 
         <div className="mt-5 grid gap-3">
-          {dashboard.products.map((product) => {
+          {displayedProducts.map((product) => {
             const isExpanded = expandedProductId === product.id;
             const productLinkedCount = product.rows.filter((row) => row.linked).length;
             return <article key={product.id} className="border border-neutral-300">
@@ -302,7 +444,7 @@ export function PancakeAdmin() {
         </div>
       </section>
 
-      <section className="mt-6 border border-black p-5"><h2 className="text-lg font-semibold uppercase">Nhật ký lỗi và đồng bộ</h2><div className="mt-4 grid gap-2">{dashboard.logs.length ? dashboard.logs.map((log) => <div key={log.id} className="border border-neutral-200 p-3 text-sm"><span className={log.level === "error" ? "text-red-600" : log.level === "warning" ? "text-amber-700" : "text-green-700"}>{log.level.toUpperCase()}</span> · <strong>{log.action}</strong>{log.orderCode ? ` · ${log.orderCode}` : ""}<p className="mt-1">{log.message}</p><time className="mt-1 block text-xs text-neutral-500">{new Date(log.createdAt).toLocaleString("vi-VN")}</time></div>) : <p className="text-sm text-neutral-500">Chưa có nhật ký.</p>}</div></section>
+      <section className="mt-6 border border-black p-5"><h2 className="text-lg font-semibold uppercase">Nhật ký lỗi và đồng bộ</h2><div className="mt-4 grid gap-2">{displayedLogs.length ? displayedLogs.map((log) => <div key={log.id} className="border border-neutral-200 p-3 text-sm"><span className={log.level === "error" ? "text-red-600" : log.level === "warning" ? "text-amber-700" : "text-green-700"}>{log.level.toUpperCase()}</span> · <strong>{log.action}</strong>{log.orderCode ? ` · ${log.orderCode}` : ""}<p className="mt-1">{log.message}</p><time className="mt-1 block text-xs text-neutral-500">{new Date(log.createdAt).toLocaleString("vi-VN")}</time></div>) : <p className="text-sm text-neutral-500">Chưa có nhật ký.</p>}</div></section>
     </main>
   );
 }
