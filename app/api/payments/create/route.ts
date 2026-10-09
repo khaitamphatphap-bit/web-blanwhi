@@ -285,6 +285,9 @@ export async function POST(request: Request) {
     if (!enabledCheckoutMethods.has(paymentMethod)) {
       return respond({ error: "Phương thức thanh toán này không còn được hỗ trợ. Vui lòng chọn COD hoặc Zalopay." }, { status: 400 });
     }
+    if (paymentMethod === "zalopay" && integrations?.payment.zalopay.enabled !== true) {
+      return respond({ error: "ZaloPay đang tạm tắt. Vui lòng chọn thanh toán COD." }, { status: 400 });
+    }
 
     if (!customer.name || !customer.phone || !customer.address) {
       return respond({ error: "Vui lòng nhập đủ họ tên, số điện thoại và địa chỉ." }, { status: 400 });

@@ -1075,8 +1075,8 @@
                 <input type="radio" name="pay" value="cod" checked />
                 <span class="pay-option-copy"><strong>COD</strong><small>Thanh toán khi nhận hàng</small></span>
               </label>
-              <label data-payment-option="zalopay">
-                <input type="radio" name="pay" value="zalopay" />
+              <label data-payment-option="zalopay" hidden>
+                <input type="radio" name="pay" value="zalopay" disabled />
                 <span class="pay-option-copy"><strong>Thanh toán trước</strong><small>Thanh toán trực tuyến</small></span>
               </label>
             </div>
@@ -3040,8 +3040,19 @@
           const mapping = { zalopay: "zalopay" };
           Object.entries(mapping).forEach(([option, method]) => {
             const label = document.querySelector(`[data-payment-option="${option}"]`);
-            if (label) label.hidden = false;
+            const input = label?.querySelector(`input[name="pay"][value="${option}"]`);
+            const enabled = methods?.[method] === true;
+            if (label) label.hidden = !enabled;
+            if (input) input.disabled = !enabled;
           });
+          const selected = document.querySelector("input[name='pay']:checked");
+          if (!selected || selected.disabled) {
+            const cod = document.querySelector("input[name='pay'][value='cod']");
+            if (cod) {
+              cod.checked = true;
+              cod.dispatchEvent(new Event("change", { bubbles: true }));
+            }
+          }
         } catch {
           // COD remains available when external gateways cannot be verified.
         }
@@ -4360,6 +4371,7 @@
       }
 
       async function openCheckout() {
+        await loadAvailablePaymentMethods();
         if (!await ensureShippingConfigReady(true)) {
           renderCartTotals();
           alert("Chưa tải được phí vận chuyển mới nhất. Vui lòng kiểm tra mạng rồi thử lại.");
