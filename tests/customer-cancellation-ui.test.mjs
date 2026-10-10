@@ -28,6 +28,8 @@ const statusSource = extractFunction(customerPage, "customerOrderStatus");
 const cancelSource = extractFunction(customerPage, "cancelCustomerOrder");
 const syncSource = extractFunction(customerPage, "syncCustomerOrderStatuses");
 const context = {
+  URL,
+  decodeURIComponent,
   customerOrderStep: () => 0,
   customerShippingLabels: {
     not_created: "Đơn mới đặt",
@@ -92,6 +94,80 @@ test("mô phỏng 1000 đơn: mọi đơn đã bàn giao đều không thể b�
       assert.equal(context.canCancel(order), scenario.cancellable, `đơn ${index + 1} phải còn được hủy`);
     }
   }
+});
+
+test("tham chiếu pke.gg của Shop 2 không khóa hủy nhưng mã SPX thật thì khóa", () => {
+  const provisional = {
+    rawStatus: "pending",
+    status: "Chờ vận chuyển",
+    shippingStatus: "shipping",
+    pancakeStatus: "packing",
+    trackingCode: "9UNVB6R3W3",
+    deliveryTrackingUrl: "https://pke.gg/9unvb6r3w3"
+  };
+  assert.equal(carrierHasAcceptedCustomerOrder(provisional), false);
+  assert.equal(context.locked(provisional), false);
+  assert.equal(context.canCancel(provisional), true);
+
+  const handedToSpx = {
+    ...provisional,
+    shippingStatus: "ready_to_ship",
+    trackingCode: "SPXVN123456789012",
+    deliveryTrackingUrl: "https://spx.vn/track?tracking_code=SPXVN123456789012"
+  };
+  assert.equal(carrierHasAcceptedCustomerOrder(handedToSpx), true);
+  assert.equal(context.locked(handedToSpx), true);
+  assert.equal(context.canCancel(handedToSpx), false);
+});
+
+test("mô phỏng 5000 đơn Shop 2: hủy được trước mã SPX và khóa đúng sau khi nhận mã", () => {
+  const database = new Map();
+  const trackingCodes = new Set();
+  for (let index = 1; index <= 5000; index += 1) {
+    const code = `BLW-SHOP2-${String(index).padStart(5, "0")}`;
+    const provisionalCode = index.toString(36).toUpperCase().padStart(10, "0");
+    const created = {
+      code,
+      rawStatus: "pending",
+      status: "Chờ vận chuyển",
+      paymentMethod: "cod",
+      shippingStatus: index % 2 ? "ready_to_ship" : "shipping",
+      pancakeStatus: "packing",
+      trackingCode: provisionalCode,
+      deliveryTrackingUrl: `https://pke.gg/${provisionalCode.toLowerCase()}`
+    };
+    database.set(code, created);
+    assert.equal(context.canCancel(created), true, `${code} phải hủy được khi chỉ có tham chiếu Pancake`);
+    assert.equal(carrierHasAcceptedCustomerOrder(created), false, `${code} chưa được coi là đã bàn giao`);
+
+    const snapshot = extractPancakeTracking({
+      status: 12,
+      tracking_url: `https://pke.gg/${provisionalCode.toLowerCase()}`,
+      partner_order_code: provisionalCode
+    });
+    assert.equal(snapshot.trackingCode, "", `${code} không nhận nhầm mã pke.gg`);
+    assert.equal(buildTrackingOnlyPatch(created, snapshot), null, `${code} không ghi mã vận đơn giả`);
+
+    const spxCode = `SPXVN${String(index).padStart(12, "0")}`;
+    const trackingPatch = buildTrackingOnlyPatch(created, extractPancakeTracking({
+      data: {
+        shipping_status: "ready_to_ship",
+        partner_name: "SPX Express",
+        tracking_code: spxCode,
+        tracking_url: `https://spx.vn/track?tracking_code=${spxCode}`
+      }
+    }));
+    assert.ok(trackingPatch, `${code} phải nhận mã SPX thật`);
+    const updated = { ...created, ...trackingPatch };
+    database.set(code, updated);
+    trackingCodes.add(updated.trackingCode);
+    assert.equal(updated.trackingCode, spxCode, `${code} hiển thị đúng mã SPX`);
+    assert.equal(context.locked(updated), true, `${code} phải khóa nút hủy sau khi có mã SPX`);
+    assert.equal(context.canCancel(updated), false, `${code} không được gọi API hủy sau khi có mã SPX`);
+    assert.equal(carrierHasAcceptedCustomerOrder(updated), true, `${code} phải bị server chặn hủy`);
+  }
+  assert.equal(database.size, 5000, "database giả lập giữ đủ 5000 đơn, không ghi đè");
+  assert.equal(trackingCodes.size, 5000, "5000 đơn có 5000 mã SPX riêng, không gắn nhầm hoặc trùng");
 });
 
 test("mô phỏng 1000 phản hồi lỗi: trạng thái server thay thế hoàn toàn trạng thái hủy giả cũ", () => {

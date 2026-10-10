@@ -1,4 +1,5 @@
 import type { OrderItem, ShopOrder } from "./types";
+import { isProvisionalPancakeTrackingReference } from "./pancake/tracking.ts";
 
 function sameOrderItem(left: OrderItem, right: OrderItem) {
   if (left.inventoryKey && right.inventoryKey) return left.inventoryKey === right.inventoryKey;
@@ -57,8 +58,12 @@ export function mergeOrderPatch(current: ShopOrder, patch: Partial<ShopOrder>, u
   return updated;
 }
 
-export function carrierHasAcceptedCustomerOrder(order: Pick<ShopOrder, "shippingStatus" | "trackingCode">) {
+export function carrierHasAcceptedCustomerOrder(order: Pick<ShopOrder, "shippingStatus" | "trackingCode" | "deliveryTrackingUrl" | "pancakeStatus">) {
   const shippingStatus = String(order.shippingStatus || "");
+  const provisionalReference = isProvisionalPancakeTrackingReference(order.trackingCode, order.deliveryTrackingUrl);
+  if (provisionalReference && ["pending_confirmation", "confirmed", "packing"].includes(order.pancakeStatus || "")) return false;
   if (["shipping", "delivered", "returning", "returned"].includes(shippingStatus)) return true;
-  return shippingStatus === "ready_to_ship" && Boolean(String(order.trackingCode || "").trim());
+  return shippingStatus === "ready_to_ship"
+    && Boolean(String(order.trackingCode || "").trim())
+    && !provisionalReference;
 }

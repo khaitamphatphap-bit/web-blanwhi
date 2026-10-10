@@ -26,6 +26,16 @@ test("không nhận mã website hoặc UUID làm mã vận đơn", () => {
   assert.equal(extractPancakeTracking({ tracking_code: "123e4567-e89b-12d3-a456-426614174000" }).trackingCode, "");
 });
 
+test("không coi link tham chiếu pke.gg hoặc partner_order_code là mã vận đơn", () => {
+  const reference = extractPancakeTracking({
+    status: 12,
+    partner_order_code: "9unvb6r3w3",
+    tracking_url: "https://pke.gg/9unvb6r3w3"
+  });
+  assert.equal(reference.trackingCode, "");
+  assert.equal(reference.trackingUrl, "https://pke.gg/9unvb6r3w3");
+});
+
 test("bản vá tracking không xóa mã cũ và không làm lùi trạng thái", () => {
   assert.equal(buildTrackingOnlyPatch({ trackingCode: "SPXVNOLD123456", shippingStatus: "shipping" }, extractPancakeTracking({})), null);
   const patch = buildTrackingOnlyPatch(

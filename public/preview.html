@@ -3887,7 +3887,19 @@
       function customerCancellationLocked(order) {
         if (["Đơn hủy", "Thanh toán thất bại"].includes(order.status)) return false;
         if (order.rawStatus === "cancelled" || order.shippingStatus === "cancelled") return false;
-        if (String(order.trackingCode || "").trim()) return true;
+        const trackingCode = String(order.trackingCode || "").trim().toUpperCase();
+        const trackingUrl = String(order.deliveryTrackingUrl || "").trim();
+        let provisionalPancakeReference = false;
+        if (trackingCode && /^https?:\/\//i.test(trackingUrl)) {
+          try {
+            const url = new URL(trackingUrl);
+            const pathCode = url.pathname.split("/").filter(Boolean).pop();
+            provisionalPancakeReference = url.hostname.toLowerCase() === "pke.gg"
+              && Boolean(pathCode && decodeURIComponent(pathCode).trim().toUpperCase() === trackingCode);
+          } catch (_) {}
+        }
+        if (provisionalPancakeReference && ["pending_confirmation", "confirmed", "packing"].includes(order.pancakeStatus || "")) return false;
+        if (trackingCode && !provisionalPancakeReference) return true;
         if (["shipping", "delivered", "returning", "returned"].includes(order.shippingStatus || "")) return true;
         return ["shipping", "completed", "returned"].includes(order.pancakeStatus || "");
       }

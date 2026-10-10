@@ -17,7 +17,7 @@ type CurrentTrackingState = {
 const trackingKeys = [
   "tracking_number", "tracking_no", "tracking_code", "trackingCode", "waybill_no", "waybill_code",
   "shipment_code", "shipping_code", "bill_code", "label_id", "extend_code", "tracking_id",
-  "ORDER_NUMBER", "order_number", "order_number_vtp", "partner_order_code", "shipping_order_code",
+  "ORDER_NUMBER", "order_number", "order_number_vtp", "shipping_order_code",
   "logistics_code", "waybill"
 ];
 
@@ -91,18 +91,21 @@ function trackingCodeFromUrl(value: string) {
   if (!/^https?:\/\//i.test(value)) return "";
   try {
     const url = new URL(value);
-    for (const key of [...trackingKeys, "code", "order_code"]) {
+    for (const key of trackingKeys) {
       const code = validTrackingCode(url.searchParams.get(key));
       if (code) return code;
     }
     const hashQuery = url.hash.includes("?") ? url.hash.slice(url.hash.indexOf("?") + 1) : "";
     if (hashQuery) {
       const params = new URLSearchParams(hashQuery);
-      for (const key of [...trackingKeys, "code", "order_code"]) {
+      for (const key of trackingKeys) {
         const code = validTrackingCode(params.get(key));
         if (code) return code;
       }
     }
+    // pke.gg is Pancake's order/reference link. Its path token is not a
+    // carrier waybill and must never lock customer cancellation.
+    if (url.hostname.toLowerCase() === "pke.gg") return "";
     const segments = url.pathname.split("/").filter(Boolean).reverse();
     for (const segment of segments) {
       const code = validTrackingCode(decodeURIComponent(segment));
@@ -112,6 +115,20 @@ function trackingCodeFromUrl(value: string) {
     return "";
   }
   return "";
+}
+
+export function isProvisionalPancakeTrackingReference(trackingCode: unknown, trackingUrl: unknown) {
+  const code = String(trackingCode || "").trim().toUpperCase();
+  const value = String(trackingUrl || "").trim();
+  if (!code || !/^https?:\/\//i.test(value)) return false;
+  try {
+    const url = new URL(value);
+    if (url.hostname.toLowerCase() !== "pke.gg") return false;
+    const pathCode = url.pathname.split("/").filter(Boolean).at(-1);
+    return Boolean(pathCode && decodeURIComponent(pathCode).trim().toUpperCase() === code);
+  } catch {
+    return false;
+  }
 }
 
 function normalizeCarrier(value: string, trackingCode: string) {

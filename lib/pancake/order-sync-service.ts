@@ -11,6 +11,7 @@ import type { ShippingStatus, ShopOrder } from "@/lib/types";
 import { mapPancakeStatus, pancakeOrderDiscount } from "@/lib/pancake/domain";
 import { shortOrderCode } from "@/lib/order-code";
 import { pancakeConnectionForOrder } from "@/lib/pancake/connections";
+import { extractPancakeTracking } from "@/lib/pancake/tracking";
 
 function validPancakeOrderId(value: unknown) {
   const candidate = typeof value === "string" || typeof value === "number" ? String(value).trim() : "";
@@ -161,38 +162,10 @@ function logisticsShippingStatus(payload: unknown) {
 }
 
 function shippingUpdate(payload: unknown, includeReadyStatus = true) {
-  let trackingCode = findSpxTrackingCode(payload) || deepValue(payload, [
-    "tracking_number",
-    "tracking_no",
-    "tracking_code",
-    "waybill_no",
-    "waybill_code",
-    "shipment_code",
-    "shipping_code",
-    "bill_code",
-    "label_id",
-    "extend_code",
-    "tracking_id",
-    "ORDER_NUMBER",
-    "order_number",
-    "order_number_vtp",
-    "partner_order_number",
-    "shipping_order_code",
-    "logistics_code",
-    "waybill"
-  ]);
-  if (/^(\[object Object\]|BLW-|BLANWHI:)/i.test(trackingCode) || /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(trackingCode)) trackingCode = "";
-  const payloadRecord = payload && typeof payload === "object" ? payload as Record<string, unknown> : {};
-  const trackingUrl = deepValue(payload, ["tracking_url", "trackingUrl", "tracking_link", "trackingLink"])
-    || deepValue(payloadRecord.tracking_lookup, ["url"]);
-  const carrier = deepValue(payload, ["partner_name", "shipping_partner", "carrier", "carrier_name"]);
-  if (!trackingCode) {
-    const partnerTrackingCode = deepValue(payload, ["partner_order_code", "shipping_order_id", "logistics_order_id", "partner_order_id"]);
-    const normalizedPartnerCode = partnerTrackingCode.trim();
-    const looksLikeWebsiteCode = /^(BLW-|BLANWHI:)/i.test(normalizedPartnerCode);
-    const looksLikeInternalUuid = /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(normalizedPartnerCode);
-    if (normalizedPartnerCode && !looksLikeWebsiteCode && !looksLikeInternalUuid) trackingCode = normalizedPartnerCode;
-  }
+  const tracking = extractPancakeTracking(payload);
+  const trackingCode = tracking.trackingCode;
+  const trackingUrl = tracking.trackingUrl;
+  const carrier = tracking.carrier || deepValue(payload, ["partner_name", "shipping_partner", "carrier", "carrier_name"]);
   const carrierLabel = /vtp|viettel/i.test(carrier)
     ? "ViettelPost"
     : /spx|shopee\s*x?press/i.test(carrier)
@@ -256,12 +229,7 @@ function hasShippingDetails(payload: unknown) {
 }
 
 function hasTrackingCode(payload: unknown) {
-  return Boolean(deepValue(payload, [
-    "tracking_number", "tracking_no", "tracking_code", "waybill_no", "waybill_code",
-    "shipment_code", "shipping_code", "bill_code", "label_id", "extend_code",
-    "tracking_id", "ORDER_NUMBER", "order_number", "order_number_vtp",
-    "partner_order_number", "shipping_order_code", "logistics_code", "waybill"
-  ]));
+  return Boolean(extractPancakeTracking(payload).trackingCode);
 }
 
 export class OrderSyncService {
