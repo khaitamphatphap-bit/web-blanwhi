@@ -89,6 +89,7 @@ export type CmsPolicyDocument = {
   blocks: CmsPolicyBlock[];
 };
 export type SiteContent = {
+  catalogRevision?: number;
   brand: {
     name: string;
     logoUrl: string;
@@ -464,6 +465,14 @@ export async function seedPancakeProductLinks(content: SiteContent) {
 export async function writeSiteContentFromAdmin(content: SiteContent) {
   return withDataStoreLock("website-inventory", async () => {
     const latest = await readSiteContent();
+    const incomingRevision = Math.max(0, Math.floor(Number(content.catalogRevision) || 0));
+    const latestRevision = Math.max(0, Math.floor(Number(latest.catalogRevision) || 0));
+    if (incomingRevision !== latestRevision) {
+      const conflict = new Error("Dữ liệu website đã được cập nhật ở nơi khác. Vui lòng tải lại trang admin trước khi lưu để tránh mất sản phẩm hoặc khôi phục ảnh cũ.");
+      Object.assign(conflict, { status: 409, code: "SITE_CONTENT_REVISION_CONFLICT" });
+      throw conflict;
+    }
+    const nextRevision = latestRevision + 1;
     const latestProducts = new Map(latest.products.map((product) => [product.id, product]));
     const products = content.products.map((product) => {
       const latestProduct = latestProducts.get(product.id);
@@ -485,7 +494,12 @@ export async function writeSiteContentFromAdmin(content: SiteContent) {
         })
       };
     });
-    return writeSiteContent({ ...content, products });
+    const saved = await writeSiteContent({ ...content, catalogRevision: nextRevision, products });
+    const verified = await readAuthoritativeJsonStore<SiteContent>("site-content.json");
+    if (Number(verified.catalogRevision) !== nextRevision) {
+      throw new Error("Dữ liệu website chưa được xác nhận trong database. Vui lòng tải lại trang admin và kiểm tra trước khi lưu tiếp.");
+    }
+    return saved;
   });
 }
 

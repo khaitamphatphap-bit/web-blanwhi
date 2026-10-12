@@ -887,18 +887,8 @@ async function readJsonStoreUncached<T>(filename: string, fallback: T): Promise<
         const result = await pool.query("select store_value from blanwhi_store where store_key = $1", [key]);
         if (result.rows[0]?.store_value !== undefined) return result.rows[0].store_value as T;
 
-        // Preserve every existing admin edit when site content first moves
-        // from R2 to Postgres. The insert happens before this value is used by
-        // checkout, so later inventory updates all share one authoritative row.
-        if (filename === "site-content.json" && hasR2Store()) {
-          const r2Value = await readR2JsonStore<T>();
-          if (r2Value !== null) {
-            await writeJsonStore(filename, r2Value);
-            return r2Value;
-          }
-          throw new Error("SITE_CONTENT_R2_SEED_MISSING");
-        }
-
+        // A configured database is the sole live source. If its catalog row is
+        // missing, fail visibly instead of silently restoring an older R2 copy.
         if (filename === "site-content.json") {
           throw new Error("SITE_CONTENT_DATABASE_SEED_REQUIRED");
         }
@@ -919,7 +909,11 @@ async function readJsonStoreUncached<T>(filename: string, fallback: T): Promise<
     }
   }
 
-  if (hasR2Store() && filename === "site-content.json") {
+  // R2 is only the bootstrap source when Postgres is not configured. Once the
+  // catalog lives in Postgres, serving an older R2 copy during a transient
+  // database error can make published products disappear or restore old image
+  // URLs on the storefront.
+  if (!hasDatabase() && hasR2Store() && filename === "site-content.json") {
     try {
       const saved = await readR2JsonStore<T>();
       if (saved !== null) return saved;

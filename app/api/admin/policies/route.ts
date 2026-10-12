@@ -53,7 +53,11 @@ export async function PUT(request: Request) {
       throw new Error("Nội dung chính sách chưa được ghi cố định. Vui lòng bấm lưu lại.");
     }
     return NextResponse.json(
-      { policies: persistedPolicies, savedAt: new Date().toISOString() },
+      {
+        policies: persistedPolicies,
+        catalogRevision: persisted.catalogRevision,
+        savedAt: new Date().toISOString()
+      },
       { headers: { "Cache-Control": "no-store, max-age=0, must-revalidate" } }
     );
   } catch (error) {

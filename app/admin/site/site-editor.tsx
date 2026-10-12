@@ -141,7 +141,11 @@ export function SiteEditor() {
       if (!response.ok) throw new Error(result.error || "Không thể lưu nội dung chính sách.");
       const savedPolicies = result.policies || policies;
       setPolicies(savedPolicies);
-      setContent((current) => current ? { ...current, policies: savedPolicies } : current);
+      setContent((current) => current ? {
+        ...current,
+        policies: savedPolicies,
+        catalogRevision: Number(result.catalogRevision) || current.catalogRevision
+      } : current);
       setPolicyMessage("Đã lưu và kiểm tra lại nội dung chính sách. Trang khách đã cập nhật.");
     } catch (error) {
       setPolicyMessage(error instanceof Error ? error.message : "Không thể lưu nội dung chính sách.");
@@ -253,10 +257,13 @@ export function SiteEditor() {
         body: JSON.stringify(contentWithPolicies)
       });
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || "Không thể lưu nội dung.");
+        const result = await response.json().catch(() => null) as { error?: string } | null;
+        throw new Error(result?.error || "Không thể lưu nội dung.");
       }
       const saved = await response.json();
+      if (Number(saved.catalogRevision) <= Number(contentWithPolicies.catalogRevision || 0)) {
+        throw new Error("Database chưa xác nhận phiên bản nội dung mới. Vui lòng tải lại trang trước khi sửa tiếp.");
+      }
       updateContent(saved);
       if (Array.isArray(saved.policies)) setPolicies(saved.policies);
       setMessage("Đã lưu. Trang khách sẽ tự cập nhật sau vài giây.");

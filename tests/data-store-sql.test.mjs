@@ -21,11 +21,11 @@ test("ghi nhiều record theo lô nhỏ để không làm nghẽn pool Neon", as
   assert.match(source, /export async function writeKeyedJsonRecords[\s\S]*?const concurrency = 3;[\s\S]*?entries\.slice\(index, index \+ concurrency\)/);
 });
 
-test("nội dung website và tồn kho dùng database, tự giữ dữ liệu R2 khi chuyển lần đầu", async () => {
+test("nội dung website và tồn kho chỉ dùng database khi đã cấu hình", async () => {
   const source = await readFile(new URL("../lib/data-store.ts", import.meta.url), "utf8");
   assert.match(source, /return hasDatabase\(\) && !\["integrations\.json", "orders\.json"\]\.includes\(filename\)/);
-  assert.match(source, /filename === "site-content\.json" && hasR2Store\(\)[\s\S]*?readR2JsonStore<T>\(\)[\s\S]*?writeJsonStore\(filename, r2Value\)/);
-  assert.match(source, /SITE_CONTENT_R2_SEED_MISSING/);
+  assert.doesNotMatch(source, /SITE_CONTENT_R2_SEED_MISSING/);
+  assert.match(source, /if \(!hasDatabase\(\) && hasR2Store\(\) && filename === "site-content\.json"\)/);
   assert.match(source, /filename === "site-content\.json" && hasDatabase\(\)[\s\S]*?SITE_CONTENT_DATABASE_UNAVAILABLE/);
 });
 

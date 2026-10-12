@@ -22,7 +22,7 @@ test("admin vẫn giữ snapshot đầy đủ và lịch sử đơn hàng không
   assert.match(dataStore, /insert into blanwhi_store_history[\s\S]*?'before-write'/);
   assert.match(dataStore, /insert into blanwhi_keyed_store_history[\s\S]*?'after-write'/);
   assert.match(dataStore, /insert into blanwhi_backup_outbox/);
-  assert.match(siteContent, /writeSiteContentFromAdmin[\s\S]*?return writeSiteContent\(\{ \.\.\.content, products \}\);/);
+  assert.match(siteContent, /writeSiteContentFromAdmin[\s\S]*?writeSiteContent\(\{ \.\.\.content, catalogRevision: nextRevision, products \}\)/);
 });
 
 test("chỉ đặt và hoàn đơn thay đổi tồn website; Pancake không đồng bộ số lượng", () => {
