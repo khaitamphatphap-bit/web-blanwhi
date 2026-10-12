@@ -22,6 +22,9 @@ function extractFunction(source, name) {
 }
 
 const lockedSource = extractFunction(customerPage, "customerCancellationLocked");
+const provisionalTrackingSource = extractFunction(customerPage, "customerHasProvisionalPancakeReference");
+const realTrackingSource = extractFunction(customerPage, "customerHasRealTrackingCode");
+const orderStepSource = extractFunction(customerPage, "customerOrderStep");
 const canCancelSource = extractFunction(customerPage, "canCustomerCancel");
 const mergeSource = extractFunction(customerPage, "mergeCustomerOrderFromServer");
 const statusSource = extractFunction(customerPage, "customerOrderStatus");
@@ -30,7 +33,6 @@ const syncSource = extractFunction(customerPage, "syncCustomerOrderStatuses");
 const context = {
   URL,
   decodeURIComponent,
-  customerOrderStep: () => 0,
   customerShippingLabels: {
     not_created: "Đơn mới đặt",
     ready_to_ship: "Đã giao cho đơn vị vận chuyển",
@@ -42,7 +44,7 @@ const context = {
   customerPancakeLabels: { packing: "Đóng gói", shipping: "Đang giao" }
 };
 vm.createContext(context);
-vm.runInContext(`${lockedSource}; ${canCancelSource}; ${mergeSource}; ${statusSource}; this.locked = customerCancellationLocked; this.canCancel = canCustomerCancel; this.merge = mergeCustomerOrderFromServer; this.customerStatus = customerOrderStatus;`, context);
+vm.runInContext(`${provisionalTrackingSource}; ${realTrackingSource}; ${orderStepSource}; ${lockedSource}; ${canCancelSource}; ${mergeSource}; ${statusSource}; this.locked = customerCancellationLocked; this.canCancel = canCustomerCancel; this.merge = mergeCustomerOrderFromServer; this.customerStatus = customerOrderStatus; this.customerStep = customerOrderStep;`, context);
 
 test("đơn có mã vận đơn hiện nút hủy bị khóa và lời hướng dẫn", () => {
   assert.match(customerPage, /order-cancel order-cancel-locked[^>]*disabled aria-disabled="true">Hủy đơn<\/button>/);
@@ -120,11 +122,12 @@ test("tham chiếu pke.gg của Shop 2 không khóa hủy nhưng mã SPX thật 
   assert.equal(context.canCancel(handedToSpx), false);
 });
 
-test("mô phỏng 5000 đơn Shop 2: hủy được trước mã SPX và khóa đúng sau khi nhận mã", () => {
+test("mô phỏng 10000 đơn hai shop: hủy được trước mã SPX và khóa đúng sau khi nhận mã", () => {
   const database = new Map();
   const trackingCodes = new Set();
-  for (let index = 1; index <= 5000; index += 1) {
-    const code = `BLW-SHOP2-${String(index).padStart(5, "0")}`;
+  for (let index = 1; index <= 10000; index += 1) {
+    const shop = index % 2 ? "SHOP1" : "SHOP2";
+    const code = `BLW-${shop}-${String(index).padStart(5, "0")}`;
     const provisionalCode = index.toString(36).toUpperCase().padStart(10, "0");
     const created = {
       code,
@@ -139,6 +142,8 @@ test("mô phỏng 5000 đơn Shop 2: hủy được trước mã SPX và khóa �
     database.set(code, created);
     assert.equal(context.canCancel(created), true, `${code} phải hủy được khi chỉ có tham chiếu Pancake`);
     assert.equal(carrierHasAcceptedCustomerOrder(created), false, `${code} chưa được coi là đã bàn giao`);
+    assert.equal(context.customerStatus(created), "Đóng gói", `${code} phải hiển thị đang đóng gói trước mã SPX`);
+    assert.equal(context.customerStep(created), 0, `${code} chưa được sáng bước đơn vị vận chuyển`);
 
     const snapshot = extractPancakeTracking({
       status: 12,
@@ -162,12 +167,14 @@ test("mô phỏng 5000 đơn Shop 2: hủy được trước mã SPX và khóa �
     database.set(code, updated);
     trackingCodes.add(updated.trackingCode);
     assert.equal(updated.trackingCode, spxCode, `${code} hiển thị đúng mã SPX`);
+    assert.equal(context.customerStatus(updated), "Đã giao cho đơn vị vận chuyển", `${code} hiển thị đúng trạng thái sau mã SPX`);
+    assert.equal(context.customerStep(updated), 1, `${code} sáng bước đơn vị vận chuyển sau mã SPX`);
     assert.equal(context.locked(updated), true, `${code} phải khóa nút hủy sau khi có mã SPX`);
     assert.equal(context.canCancel(updated), false, `${code} không được gọi API hủy sau khi có mã SPX`);
     assert.equal(carrierHasAcceptedCustomerOrder(updated), true, `${code} phải bị server chặn hủy`);
   }
-  assert.equal(database.size, 5000, "database giả lập giữ đủ 5000 đơn, không ghi đè");
-  assert.equal(trackingCodes.size, 5000, "5000 đơn có 5000 mã SPX riêng, không gắn nhầm hoặc trùng");
+  assert.equal(database.size, 10000, "database giả lập giữ đủ 10000 đơn, không ghi đè");
+  assert.equal(trackingCodes.size, 10000, "10000 đơn có 10000 mã SPX riêng, không gắn nhầm hoặc trùng");
 });
 
 test("mô phỏng 1000 phản hồi lỗi: trạng thái server thay thế hoàn toàn trạng thái hủy giả cũ", () => {
@@ -228,7 +235,7 @@ test("mô phỏng 1000 lần hủy thành công: chỉ phản hồi server cance
 });
 
 test("flow 1000 đơn: Pancake cấp mã, trang khách thấy đúng mã và khóa hủy trước khi gửi API", () => {
-  assert.match(customerPage, /<strong>\$\{order\.trackingCode \|\| "Đang cập nhật"\}<\/strong>/);
+  assert.match(customerPage, /<strong>\$\{customerHasRealTrackingCode\(order\) \? order\.trackingCode : "Đang cập nhật"\}<\/strong>/);
   const seenTrackingCodes = new Set();
 
   for (let index = 1; index <= 1000; index += 1) {

@@ -34,11 +34,59 @@ test("mã vận đơn được ưu tiên hơn nhãn đóng gói Pancake", () => 
   assert.ok(pancakeFallback > trackingPriority);
 });
 
+test("trang khách chỉ coi mã vận đơn thật là đã giao cho đơn vị vận chuyển", () => {
+  const provisionalFunction = customerPage.match(/function customerHasProvisionalPancakeReference\(order\) \{[\s\S]*?\n      \}\n\n      function customerHasRealTrackingCode/)?.[0]
+    .replace(/\n\n      function customerHasRealTrackingCode[\s\S]*$/, "");
+  const trackingFunction = customerPage.match(/function customerHasRealTrackingCode\(order\) \{[\s\S]*?\n      \}\n\n      function customerOrderStep/)?.[0]
+    .replace(/\n\n      function customerOrderStep[\s\S]*$/, "");
+  const statusFunction = customerPage.match(/function customerOrderStatus\(order\) \{[\s\S]*?\n      \}\n\n      function customerCancellationLocked/)?.[0]
+    .replace(/\n\n      function customerCancellationLocked[\s\S]*$/, "");
+  assert.ok(provisionalFunction);
+  assert.ok(trackingFunction);
+  assert.ok(statusFunction);
+  const context = {
+    URL,
+    decodeURIComponent,
+    customerShippingLabels: {
+      not_created: "Đơn mới đặt",
+      ready_to_ship: "Đã giao cho đơn vị vận chuyển",
+      shipping: "Đang giao hàng",
+      delivered: "Đã giao hàng cho khách",
+      cancelled: "Đơn hủy",
+      unknown: "Đang cập nhật"
+    },
+    customerPancakeLabels: { packing: "Đóng gói", shipping: "Đang giao" }
+  };
+  vm.createContext(context);
+  vm.runInContext(`${provisionalFunction}; ${trackingFunction}; ${statusFunction}; this.customerOrderStatus = customerOrderStatus;`, context);
+
+  assert.equal(context.customerOrderStatus({
+    rawStatus: "pending",
+    status: "Chờ vận chuyển",
+    paymentMethod: "cod",
+    shippingStatus: "ready_to_ship",
+    pancakeStatus: "packing",
+    trackingCode: "9UNVB6R3W3",
+    deliveryTrackingUrl: "https://pke.gg/9unvb6r3w3"
+  }), "Đóng gói");
+  assert.equal(context.customerOrderStatus({
+    rawStatus: "pending",
+    status: "Chờ vận chuyển",
+    paymentMethod: "cod",
+    shippingStatus: "ready_to_ship",
+    pancakeStatus: "packing",
+    trackingCode: "SPXVN123456789012",
+    deliveryTrackingUrl: "https://spx.vn/track?tracking_code=SPXVN123456789012"
+  }), "Đã giao cho đơn vị vận chuyển");
+});
+
 test("hiển thị đúng nhiều trạng thái đơn khác nhau ở trang khách", () => {
   const functionSource = customerPage.match(/function customerOrderStatus\(order\) \{[\s\S]*?\n      \}\n\n      function customerCancellationLocked/)?.[0]
     .replace(/\n\n      function customerCancellationLocked[\s\S]*$/, "");
   assert.ok(functionSource);
   const context = {
+    customerHasProvisionalPancakeReference: () => false,
+    customerHasRealTrackingCode: (order) => Boolean(String(order.trackingCode || "").trim()),
     customerShippingLabels: {
       not_created: "Đơn mới đặt",
       ready_to_ship: "Đã giao cho đơn vị vận chuyển",

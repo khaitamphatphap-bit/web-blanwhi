@@ -172,6 +172,7 @@ function shippingUpdate(payload: unknown, includeReadyStatus = true) {
     ? "SPX Express"
     : (carrier || "SPX Express");
   const liveStatus = logisticsShippingStatus(payload);
+  const synchronizedStatus = liveStatus || (trackingCode && includeReadyStatus ? "ready_to_ship" as const : undefined);
   const liveMessage: Partial<Record<ShippingStatus, string>> = {
     finding_driver: "Đang tìm tài xế nhận đơn.",
     driver_assigned: "Đơn vị vận chuyển đã phân công tài xế.",
@@ -187,10 +188,10 @@ function shippingUpdate(payload: unknown, includeReadyStatus = true) {
     ...(trackingCode ? { trackingCode } : {}),
     ...(trackingUrl ? { deliveryTrackingUrl: trackingUrl } : {}),
     shippingCarrier: carrierLabel,
-    ...(includeReadyStatus ? { shippingStatus: "ready_to_ship" as const } : {}),
+    ...(synchronizedStatus ? { shippingStatus: synchronizedStatus } : {}),
     shippingMessage: (liveStatus && liveMessage[liveStatus]) || (trackingCode
       ? `Đã tạo vận đơn ${carrierLabel}, chờ đơn vị vận chuyển nhận hàng.`
-      : `Đã chuyển sang ${carrierLabel}, đang nhận mã vận đơn.`)
+      : "Đơn hàng đang được đóng gói.")
   };
 }
 
@@ -401,7 +402,9 @@ export class OrderSyncService {
         pancakeOrderId: createdPancakeOrderId || pancakeOrderId(current),
         posOrderCode: shortOrderCode(current.code),
         pancakeStatus: "packing",
-        ...(current.deliveryType === "express" ? { shippingStatus: "awaiting_creation" as const, shippingCarrier: "", trackingCode: "", shippingMessage: "Chờ tạo vận đơn hỏa tốc" } : shippingUpdate(response)),
+        ...(current.deliveryType === "express"
+          ? { shippingStatus: "awaiting_creation" as const, shippingCarrier: "", trackingCode: "", shippingMessage: "Chờ tạo vận đơn hỏa tốc" }
+          : { shippingStatus: "not_created" as const, ...shippingUpdate(response) }),
         externalSync: {
           ...current.externalSync,
           pancake: `Đã tạo${createdPancakeOrderId ? ` #${createdPancakeOrderId}` : ""}`,

@@ -195,10 +195,11 @@ const shippingProgress: Record<string, number> = {
 export function buildTrackingOnlyPatch(current: CurrentTrackingState, snapshot: PancakeTrackingSnapshot) {
   if (!snapshot.trackingCode || current.shippingStatus === "cancelled") return null;
   const currentStatus = current.shippingStatus || "not_created";
+  const currentWasProvisional = isProvisionalPancakeTrackingReference(current.trackingCode, current.deliveryTrackingUrl);
   // Luồng này chỉ bổ sung mã vận đơn. Trạng thái chi tiết vẫn do luồng
   // đồng bộ trạng thái hiện có quản lý để một payload tracking không thể hủy
   // hay hoàn tất nhầm đơn.
-  const shippingStatus = (shippingProgress[currentStatus] || 0) >= shippingProgress.ready_to_ship
+  const shippingStatus = !currentWasProvisional && (shippingProgress[currentStatus] || 0) >= shippingProgress.ready_to_ship
     ? currentStatus
     : "ready_to_ship";
   const carrier = snapshot.carrier || current.shippingCarrier || (/^SPX/i.test(snapshot.trackingCode) ? "SPX Express" : "");

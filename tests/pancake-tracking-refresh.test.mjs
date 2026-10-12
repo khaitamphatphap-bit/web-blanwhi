@@ -50,6 +50,13 @@ test("bản vá tracking không xóa mã cũ và không làm lùi trạng thái"
     extractPancakeTracking({ tracking_code: "SPXVNSTABLE1234", shipping_status: "cancelled" })
   );
   assert.equal(cancelledPayload?.shippingStatus, "ready_to_ship");
+
+  const shop2Provisional = buildTrackingOnlyPatch(
+    { trackingCode: "9UNVB6R3W3", deliveryTrackingUrl: "https://pke.gg/9unvb6r3w3", shippingStatus: "shipping" },
+    extractPancakeTracking({ tracking_code: "SPXVNREAL123456", shipping_status: "ready_to_ship" })
+  );
+  assert.equal(shop2Provisional?.trackingCode, "SPXVNREAL123456");
+  assert.equal(shop2Provisional?.shippingStatus, "ready_to_ship");
 });
 
 test("20 lần mã xuất hiện chậm đều được đọc đúng và chỉ tạo bản vá vận chuyển", () => {
@@ -67,7 +74,7 @@ test("20 lần mã xuất hiện chậm đều được đọc đúng và chỉ 
 
 test("mô phỏng 100 đơn từ lúc đặt đến khi trang khách nhận đủ mã vận đơn Pancake", async () => {
   const customerPage = await readFile(new URL("../public/preview.html", import.meta.url), "utf8");
-  assert.match(customerPage, /<strong>\$\{order\.trackingCode \|\| "Đang cập nhật"\}<\/strong>/);
+  assert.match(customerPage, /<strong>\$\{customerHasRealTrackingCode\(order\) \? order\.trackingCode : "Đang cập nhật"\}<\/strong>/);
 
   const database = new Map();
   const expectedTrackingByOrder = new Map();

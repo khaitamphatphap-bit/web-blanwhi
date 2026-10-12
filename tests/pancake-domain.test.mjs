@@ -109,6 +109,9 @@ test("đơn cũ chưa có snapshot phí ship vẫn giữ nguyên dữ liệu Pan
 });
 
 test("đồng bộ trạng thái hoàn tất, hủy và hoàn hàng", () => {
+  assert.deepEqual(mapPancakeStatus("12"), { pancakeStatus: "packing", status: "pending", shippingStatus: "not_created" });
+  assert.deepEqual(mapPancakeStatus("packing"), { pancakeStatus: "packing", status: "pending", shippingStatus: "not_created" });
+  assert.deepEqual(mapPancakeStatus("1"), { pancakeStatus: "confirmed", status: "pending", shippingStatus: "not_created" });
   assert.deepEqual(mapPancakeStatus("completed"), { pancakeStatus: "completed", status: "paid", shippingStatus: "delivered" });
   assert.deepEqual(mapPancakeStatus("cancelled"), { pancakeStatus: "cancelled", status: "cancelled", shippingStatus: "cancelled", release: true });
   assert.deepEqual(mapPancakeStatus("returned"), { pancakeStatus: "returned", shippingStatus: "returned", release: true });

@@ -3858,13 +3858,34 @@
         `;
       }
 
+      function customerHasProvisionalPancakeReference(order) {
+        const trackingCode = String(order.trackingCode || "").trim().toUpperCase();
+        if (!trackingCode) return false;
+        const trackingUrl = String(order.deliveryTrackingUrl || "").trim();
+        if (!/^https?:\/\//i.test(trackingUrl)) return false;
+        try {
+          const url = new URL(trackingUrl);
+          const pathCode = url.pathname.split("/").filter(Boolean).pop();
+          return Boolean(url.hostname.toLowerCase() === "pke.gg"
+            && pathCode
+            && decodeURIComponent(pathCode).trim().toUpperCase() === trackingCode);
+        } catch (_) {
+          return false;
+        }
+      }
+
+      function customerHasRealTrackingCode(order) {
+        return Boolean(String(order.trackingCode || "").trim()) && !customerHasProvisionalPancakeReference(order);
+      }
+
       function customerOrderStep(order) {
         const status = order.shippingStatus || "";
-        const hasTrackingCode = Boolean(String(order.trackingCode || "").trim());
+        const hasTrackingCode = customerHasRealTrackingCode(order);
+        if (customerHasProvisionalPancakeReference(order) && ["pending_confirmation", "confirmed", "packing"].includes(order.pancakeStatus || "")) return 0;
         if (status === "delivered") return 3;
         if (["shipping", "delivery_failed", "returning", "returned"].includes(status)) return 2;
         if (status === "driver_assigned" || hasTrackingCode) return 1;
-        return Math.max(order.step || 0, order.status === "Đã thanh toán" ? 1 : 0);
+        return 0;
       }
 
       function displayOrderCode(code) {
@@ -3873,8 +3894,9 @@
         return legacy ? `BLW-${legacy[1]}-${legacy[2]}` : normalized;
       }
       function customerOrderStatus(order) {
-        const hasTrackingCode = Boolean(String(order.trackingCode || "").trim());
+        const hasTrackingCode = customerHasRealTrackingCode(order);
         if (order.status === "Đơn hủy" || order.shippingStatus === "cancelled") return order.paymentExpiredAt || order.cancellationReason === "Hết hạn thanh toán" ? "Đã hủy" : "Đơn hủy";
+        if (customerHasProvisionalPancakeReference(order) && ["pending_confirmation", "confirmed", "packing"].includes(order.pancakeStatus || "")) return customerPancakeLabels[order.pancakeStatus] || "Đóng gói";
         if (order.shippingStatus && !["not_created", "unknown", "ready_to_ship"].includes(order.shippingStatus) && customerShippingLabels[order.shippingStatus]) return customerShippingLabels[order.shippingStatus];
         if (hasTrackingCode) return customerShippingLabels.ready_to_ship;
         if (order.pancakeStatus && customerPancakeLabels[order.pancakeStatus]) return customerPancakeLabels[order.pancakeStatus];
@@ -3887,19 +3909,10 @@
       function customerCancellationLocked(order) {
         if (["Đơn hủy", "Thanh toán thất bại"].includes(order.status)) return false;
         if (order.rawStatus === "cancelled" || order.shippingStatus === "cancelled") return false;
-        const trackingCode = String(order.trackingCode || "").trim().toUpperCase();
-        const trackingUrl = String(order.deliveryTrackingUrl || "").trim();
-        let provisionalPancakeReference = false;
-        if (trackingCode && /^https?:\/\//i.test(trackingUrl)) {
-          try {
-            const url = new URL(trackingUrl);
-            const pathCode = url.pathname.split("/").filter(Boolean).pop();
-            provisionalPancakeReference = url.hostname.toLowerCase() === "pke.gg"
-              && Boolean(pathCode && decodeURIComponent(pathCode).trim().toUpperCase() === trackingCode);
-          } catch (_) {}
-        }
+        const hasRealTrackingCode = customerHasRealTrackingCode(order);
+        const provisionalPancakeReference = customerHasProvisionalPancakeReference(order);
         if (provisionalPancakeReference && ["pending_confirmation", "confirmed", "packing"].includes(order.pancakeStatus || "")) return false;
-        if (trackingCode && !provisionalPancakeReference) return true;
+        if (hasRealTrackingCode && !provisionalPancakeReference) return true;
         if (["shipping", "delivered", "returning", "returned"].includes(order.shippingStatus || "")) return true;
         return ["shipping", "completed", "returned"].includes(order.pancakeStatus || "");
       }
@@ -4284,7 +4297,7 @@
               ${(order.items || []).map((item) => `<div class="order-product-row"><div><strong class="order-product-name">${escapeMarkup(item.name)}</strong><p class="order-item-meta">${[item.classificationName, item.color, item.size ? `Size ${item.size}` : ""].filter(Boolean).map(escapeMarkup).join(" · ")}${item.message ? ` · Lời nhắn: ${escapeMarkup(item.message)}` : ""}${item.customText ? ` · Chữ: ${escapeMarkup(item.customText)}` : ""}</p></div><span class="order-item-quantity">Số lượng: ${Math.max(1, Number(item.qty ?? item.quantity) || 1)}</span></div>`).join("")}
               <div class="order-total-quantity"><span>Tổng số lượng</span><strong>${(order.items || []).reduce((sum, item) => sum + Math.max(1, Number(item.qty ?? item.quantity) || 1), 0)} sản phẩm</strong></div>
             </section>
-            <div class="line"><span>Mã vận đơn</span><strong>${order.trackingCode || "Đang cập nhật"}</strong></div>
+            <div class="line"><span>Mã vận đơn</span><strong>${customerHasRealTrackingCode(order) ? order.trackingCode : "Đang cập nhật"}</strong></div>
             <p class="muted">Đơn vị vận chuyển: ${escapeMarkup(customerShippingCarrier(order))}</p>
             ${customerShippingMessage(order) ? `<p class="muted">Trạng thái vận chuyển: ${escapeMarkup(customerShippingMessage(order))}</p>` : ""}
             ${order.deliveryDriver ? `<p class="muted">Tài xế: ${escapeMarkup(order.deliveryDriver.name || order.deliveryDriver.id || "Đã nhận chuyến")}${order.deliveryDriver.phone ? " · " + escapeMarkup(order.deliveryDriver.phone) : ""}</p>` : ""}

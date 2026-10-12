@@ -22,6 +22,8 @@ const customerStatusSource = customerPage.match(/function customerOrderStatus\(o
   .replace(/\n\n      function customerCancellationLocked[\s\S]*$/, "");
 assert.ok(customerStatusSource);
 const customerStatusContext = {
+  customerHasProvisionalPancakeReference: () => false,
+  customerHasRealTrackingCode: () => false,
   customerShippingLabels: {
     not_created: "Đơn mới đặt",
     ready_to_ship: "Đã giao cho đơn vị vận chuyển",
