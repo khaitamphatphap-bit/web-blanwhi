@@ -13,13 +13,17 @@ type CustomerTokenPayload = {
   expiresAt: number;
 };
 
-function signingSecret() {
-  const secret = process.env.CUSTOMER_SESSION_SECRET
-    || process.env.DATA_ENCRYPTION_KEY
-    || process.env.PANCAKE_WEBHOOK_SECRET
-    || process.env.ADMIN_PASSWORD;
-  if (secret) return secret;
-  if (process.env.NODE_ENV !== "production") return "blanwhi-local-customer-session-secret";
+function signingSecrets() {
+  const secrets = [
+    process.env.CUSTOMER_SESSION_SECRET,
+    process.env.DATA_ENCRYPTION_KEY,
+    // Keep accepting tokens issued before CUSTOMER_SESSION_SECRET was added.
+    // New tokens always use the first configured secret above.
+    process.env.PANCAKE_WEBHOOK_SECRET
+  ].map((secret) => String(secret || "").trim()).filter(Boolean);
+  const uniqueSecrets = [...new Set(secrets)];
+  if (uniqueSecrets.length) return uniqueSecrets;
+  if (process.env.NODE_ENV !== "production") return ["blanwhi-local-customer-session-secret"];
   throw new Error("CUSTOMER_SESSION_SECRET_NOT_CONFIGURED");
 }
 
@@ -28,8 +32,8 @@ export function sanitizeCustomerDeviceId(value: unknown) {
   return /^[A-Za-z0-9._:-]{8,100}$/.test(deviceId) ? deviceId : "";
 }
 
-function signature(encodedPayload: string) {
-  return createHmac("sha256", signingSecret()).update(encodedPayload).digest("base64url");
+function signature(encodedPayload: string, secret = signingSecrets()[0]) {
+  return createHmac("sha256", secret).update(encodedPayload).digest("base64url");
 }
 
 export function createCustomerToken(deviceId: string, purpose: CustomerTokenPurpose, now = Date.now()) {
@@ -49,10 +53,12 @@ export function createCustomerToken(deviceId: string, purpose: CustomerTokenPurp
 export function verifyCustomerToken(token: unknown, purpose: CustomerTokenPurpose, now = Date.now()) {
   const [encodedPayload, receivedSignature, ...extra] = String(token || "").split(".");
   if (!encodedPayload || !receivedSignature || extra.length) return "";
-  const expectedSignature = signature(encodedPayload);
   const received = Buffer.from(receivedSignature);
-  const expected = Buffer.from(expectedSignature);
-  if (received.length !== expected.length || !timingSafeEqual(received, expected)) return "";
+  const validSignature = signingSecrets().some((secret) => {
+    const expected = Buffer.from(signature(encodedPayload, secret));
+    return received.length === expected.length && timingSafeEqual(received, expected);
+  });
+  if (!validSignature) return "";
   try {
     const payload = JSON.parse(Buffer.from(encodedPayload, "base64url").toString("utf8")) as CustomerTokenPayload;
     if (payload.version !== 1 || payload.purpose !== purpose || payload.expiresAt <= Math.floor(now / 1000)) return "";

@@ -9,10 +9,21 @@ function unauthorized() {
   });
 }
 
-const fallbackAdmin = {
-  username: "admin",
-  password: "BlanwhiAdmin@2026!"
-};
+function adminUnavailable() {
+  return new NextResponse("Admin authentication is not configured", {
+    status: 503,
+    headers: { "Cache-Control": "no-store" }
+  });
+}
+
+function safeEqual(left: string, right: string) {
+  const length = Math.max(left.length, right.length);
+  let mismatch = left.length ^ right.length;
+  for (let index = 0; index < length; index += 1) {
+    mismatch |= (left.charCodeAt(index) || 0) ^ (right.charCodeAt(index) || 0);
+  }
+  return mismatch === 0;
+}
 
 export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
@@ -69,18 +80,26 @@ export function middleware(request: NextRequest) {
   const username = process.env.ADMIN_USERNAME;
   const password = process.env.ADMIN_PASSWORD;
 
+  if (!username || !password) {
+    if (process.env.NODE_ENV !== "production") return NextResponse.next();
+    return adminUnavailable();
+  }
+
   const header = request.headers.get("authorization");
   if (!header?.startsWith("Basic ")) return unauthorized();
 
-  const decoded = atob(header.slice(6));
+  let decoded = "";
+  try {
+    decoded = atob(header.slice(6));
+  } catch {
+    return unauthorized();
+  }
   const separator = decoded.indexOf(":");
+  if (separator < 0) return unauthorized();
   const inputUsername = decoded.slice(0, separator);
   const inputPassword = decoded.slice(separator + 1);
 
-  const envLoginOk = Boolean(username && password && inputUsername === username && inputPassword === password);
-  const fallbackLoginOk = inputUsername === fallbackAdmin.username && inputPassword === fallbackAdmin.password;
-
-  if (!envLoginOk && !fallbackLoginOk) return unauthorized();
+  if (!safeEqual(inputUsername, username) || !safeEqual(inputPassword, password)) return unauthorized();
   return NextResponse.next();
 }
 

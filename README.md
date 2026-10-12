@@ -25,6 +25,7 @@ Tạo các biến này trên Vercel hoặc hosting production:
 NEXT_PUBLIC_SITE_URL=https://www.blanwhi.com
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD=change-this-strong-password
+CUSTOMER_SESSION_SECRET=change-this-to-a-long-random-secret
 ENABLE_DEMO_PAYMENTS=false
 DATABASE_URL=postgresql://...
 

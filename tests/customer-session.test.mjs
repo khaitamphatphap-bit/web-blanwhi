@@ -9,6 +9,10 @@ test("phiên khách được ký, hết hạn và chống sửa token", async ()
   assert.match(source, /payload\.expiresAt <= Math\.floor\(now \/ 1000\)/);
   assert.match(source, /httpOnly: true/);
   assert.match(source, /sameSite: "lax"/);
+  assert.match(source, /process\.env\.CUSTOMER_SESSION_SECRET/);
+  assert.match(source, /process\.env\.PANCAKE_WEBHOOK_SECRET/);
+  assert.doesNotMatch(source, /process\.env\.ADMIN_PASSWORD/);
+  assert.match(source, /signingSecrets\(\)\.some/);
 });
 
 test("trang khách giữ luồng cũ và đồng bộ phiên trước khi xem hoặc đặt đơn", async () => {
