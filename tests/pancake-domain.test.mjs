@@ -44,6 +44,21 @@ test("payload tạo đơn gửi đủ khách hàng, SKU, số lượng, giá và
   assert.equal(payload.shop_partner_id, 10932);
 });
 
+test("payload có thể dùng mã POS riêng mà không sửa mã đơn website", () => {
+  const order = {
+    code: "BLW-261009061611-IXBO",
+    customer: { name: "Khách", phone: "0900000000", address: "12 Đường A" },
+    items: [{ name: "Áo", quantity: 1, unitPrice: 300000 }],
+    discount: 0,
+    shipping: 13000,
+    total: 313000,
+    paymentMethod: "cod"
+  };
+  const payload = buildPancakeOrderPayload(order, "1022116055", undefined, undefined, "B61009061611IXBO");
+  assert.equal(payload.custom_id, "B61009061611IXBO");
+  assert.equal(order.code, "BLW-261009061611-IXBO");
+});
+
 test("payload đơn đã thanh toán online gửi Pancake không thu COD", () => {
   const payload = buildPancakeOrderPayload({
     code: "BLW-PAID-123",

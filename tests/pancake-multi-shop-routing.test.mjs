@@ -26,6 +26,7 @@ const adminOrders = await readFile(new URL("../lib/admin-orders.ts", import.meta
 const shippingSync = await readFile(new URL("../app/api/admin/orders/shipping-sync/route.ts", import.meta.url), "utf8");
 const adminOrderSync = await readFile(new URL("../app/api/admin/orders/[code]/sync/route.ts", import.meta.url), "utf8");
 const adminOrderShipping = await readFile(new URL("../app/api/admin/orders/[code]/shipping/route.ts", import.meta.url), "utf8");
+const pancakeService = await readFile(new URL("../lib/pancake/pancake-service.ts", import.meta.url), "utf8");
 
 function order(code, pancakeConnectionId) {
   return {
@@ -121,6 +122,16 @@ test("mọi đường xem và đối soát phụ đều dùng shop đã đóng d
   assert.match(shippingSync, /\["shop-1", "shop-2"\][\s\S]*?pollStatuses/);
   assert.match(adminOrderSync, /new PancakeService\(pancakeConnectionForOrder\(order\)\)/);
   assert.match(adminOrderShipping, /new PancakeService\(pancakeConnectionForOrder\(order\)\)/);
+});
+
+test("Shop 2 lưu mã SPX ngắn trước khi gắn đơn vị vận chuyển", () => {
+  const updateCodeIndex = orderSync.indexOf("await this.pancake.updateOrderCode(existingId, targetPosOrderCode)");
+  const assignPartnerIndex = orderSync.indexOf("await this.pancake.assignSpxPartner(existingId)");
+  assert.ok(updateCodeIndex >= 0);
+  assert.ok(assignPartnerIndex > updateCodeIndex);
+  assert.match(orderSync, /if \(this\.pancake\.requiresSpxSafeOrderCode\(\)\) throw error/);
+  assert.match(pancakeService, /pancakePosOrderCode\(orderCode, this\.connection\.id\)/);
+  assert.match(pancakeService, /customOrderCode/);
 });
 
 test("mô phỏng 5000 đơn chuyển Shop 1 và Shop 2 vẫn lưu đủ, không gửi nhầm hoặc ghi đè", () => {

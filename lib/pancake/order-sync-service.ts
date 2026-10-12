@@ -322,20 +322,7 @@ export class OrderSyncService {
         await PancakeLogger.write("error", "order.tracking", `Chưa đọc được mã vận đơn Pancake/SPX: ${ExceptionHandler.message(error)}`, order.code);
       }
     }
-    const existingCarrier = deepValue(remotePayload, ["partner_name", "shipping_partner", "carrier", "carrier_name"]);
-    let spxAssigned = /spx|shopee\s*x?press/i.test(existingCarrier);
-    const mayChangeCarrier = !["shipping", "delivered", "delivery_failed", "returning", "returned", "cancelled"].includes(order.shippingStatus || "");
-    if (order.deliveryType !== "express" && existingId && mayChangeCarrier && !spxAssigned) {
-      try {
-        await this.pancake.assignSpxPartner(existingId);
-        spxAssigned = true;
-        await PancakeLogger.write("info", "order.shipping", "Đã chuyển đơn Pancake sang SPX Express.", order.code);
-      } catch (error) {
-        await PancakeLogger.write("error", "order.shipping", `Chưa chuyển được đơn Pancake sang SPX Express: ${ExceptionHandler.message(error)}`, order.code);
-        throw error;
-      }
-    }
-    const targetPosOrderCode = shortOrderCode(order.code);
+    const targetPosOrderCode = this.pancake.posOrderCode(order.code);
     const remoteOrderCode = value(existing, ["custom_id", "partner_order_id", "order_code", "code"])
       .replace(/^BLANWHI:/i, "")
       .trim()
@@ -348,6 +335,20 @@ export class OrderSyncService {
         await PancakeLogger.write("info", "order.code", `Đã đổi mã đơn Pancake thành ${targetPosOrderCode}.`, order.code);
       } catch (error) {
         await PancakeLogger.write("error", "order.code", `Chưa đổi được mã đơn Pancake: ${ExceptionHandler.message(error)}`, order.code);
+        if (this.pancake.requiresSpxSafeOrderCode()) throw error;
+      }
+    }
+    const existingCarrier = deepValue(remotePayload, ["partner_name", "shipping_partner", "carrier", "carrier_name"]);
+    let spxAssigned = /spx|shopee\s*x?press/i.test(existingCarrier);
+    const mayChangeCarrier = !["shipping", "delivered", "delivery_failed", "returning", "returned", "cancelled"].includes(order.shippingStatus || "");
+    if (order.deliveryType !== "express" && existingId && mayChangeCarrier && !spxAssigned) {
+      try {
+        await this.pancake.assignSpxPartner(existingId);
+        spxAssigned = true;
+        await PancakeLogger.write("info", "order.shipping", "Đã chuyển đơn Pancake sang SPX Express.", order.code);
+      } catch (error) {
+        await PancakeLogger.write("error", "order.shipping", `Chưa chuyển được đơn Pancake sang SPX Express: ${ExceptionHandler.message(error)}`, order.code);
+        throw error;
       }
     }
     const remoteStatus = value(remotePayload, ["status", "order_status", "state"]) || value(existing, ["status", "order_status", "state"]);
@@ -400,7 +401,7 @@ export class OrderSyncService {
       const createdPancakeOrderId = externalId(response);
       const updated = await updateOrder(order.code, {
         pancakeOrderId: createdPancakeOrderId || pancakeOrderId(current),
-        posOrderCode: shortOrderCode(current.code),
+        posOrderCode: this.pancake.posOrderCode(current.code),
         pancakeStatus: "packing",
         ...(current.deliveryType === "express"
           ? { shippingStatus: "awaiting_creation" as const, shippingCarrier: "", trackingCode: "", shippingMessage: "Chờ tạo vận đơn hỏa tốc" }

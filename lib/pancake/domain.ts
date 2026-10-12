@@ -78,7 +78,7 @@ export function buildPancakeOrderPayload(order: {
   shippingDiscount?: number;
   total: number;
   paymentMethod: string;
-}, shopId?: string, shippingPartner?: { id: number; name: string; shopPartnerId?: number }, orderSource?: PancakeOrderSource) {
+}, shopId?: string, shippingPartner?: { id: number; name: string; shopPartnerId?: number }, orderSource?: PancakeOrderSource, customOrderCode?: string) {
   const cashOnDelivery = isCashOnDeliveryOrder(order);
   const cod = cashOnDelivery ? order.total : 0;
   const prepaidAmount = cashOnDelivery ? 0 : order.total;
@@ -97,7 +97,7 @@ export function buildPancakeOrderPayload(order: {
   const pageId = orderSource?.pageId || String(sourceId || "");
   return {
     ...(shopId ? { shop_id: Number(shopId) || shopId } : {}),
-    custom_id: shortOrderCode(order.code),
+    custom_id: customOrderCode || shortOrderCode(order.code),
     ...(orderSource ? {
       order_source_id: sourceId,
       source_id: sourceId,

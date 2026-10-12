@@ -5,7 +5,7 @@ import { PancakeLogger } from "@/lib/pancake/logger";
 import type { PancakeVariation } from "@/lib/pancake/types";
 import { Validator } from "@/lib/pancake/validator";
 import { buildPancakeOrderPayload, type PancakeOrderSource } from "@/lib/pancake/domain";
-import { shortOrderCode } from "@/lib/order-code";
+import { pancakePosOrderCode, shortOrderCode } from "@/lib/order-code";
 import { pancakeConnection, type PancakeConnectionId, type PancakeConnectionRuntime } from "@/lib/pancake/connections";
 
 function records(payload: unknown): Record<string, unknown>[] {
@@ -108,6 +108,14 @@ export class PancakeService {
 
   connectionId() {
     return this.connection.id;
+  }
+
+  posOrderCode(orderCode: string) {
+    return pancakePosOrderCode(orderCode, this.connection.id);
+  }
+
+  requiresSpxSafeOrderCode() {
+    return this.connection.id === "shop-2";
   }
 
   shopId() {
@@ -225,12 +233,13 @@ export class PancakeService {
     } else {
       await PancakeLogger.write("warning", "order.source", `Không tìm thấy nguồn đơn tên ${this.connection.orderSourceName || "facebook"} trên ${this.connection.name}, tạo đơn không có nguồn cố định.`, order.code);
     }
-    const payload = buildPancakeOrderPayload(order, this.shopId(), shippingPartner || undefined, orderSource);
+    const customOrderCode = this.posOrderCode(order.code);
+    const payload = buildPancakeOrderPayload(order, this.shopId(), shippingPartner || undefined, orderSource, customOrderCode);
     try {
       return await this.client.request<Record<string, unknown>>(path, { method: "POST", body: payload });
     } catch (error) {
       if (!orderSource || !(error instanceof PancakeIntegrationError) || !/source|nguồn|order_source/i.test(error.message)) throw error;
-      const fallbackPayload = buildPancakeOrderPayload(order, this.shopId(), shippingPartner || undefined);
+      const fallbackPayload = buildPancakeOrderPayload(order, this.shopId(), shippingPartner || undefined, undefined, customOrderCode);
       return this.client.request<Record<string, unknown>>(path, { method: "POST", body: fallbackPayload });
     }
   }
@@ -334,7 +343,7 @@ export class PancakeService {
     const id = Validator.required(providerOrderId, "Pancake Order ID");
     return this.client.request<Record<string, unknown>>(`/shops/${encodeURIComponent(this.shopId())}/orders/${encodeURIComponent(id)}`, {
       method: "PUT",
-      body: { custom_id: shortOrderCode(orderCode) }
+      body: { custom_id: this.posOrderCode(orderCode) }
     });
   }
 
@@ -402,8 +411,9 @@ export class PancakeService {
   }
 
   async findOrder(orderCode: string, customerPhone = "") {
-    const expectedCodes = new Set([orderCode.trim().toUpperCase(), shortOrderCode(orderCode)]);
-    const searches = [...new Set([orderCode.trim(), shortOrderCode(orderCode), customerPhone.trim(), ""].filter((value, index) => value || index === 3))];
+    const posOrderCode = this.posOrderCode(orderCode);
+    const expectedCodes = new Set([orderCode.trim().toUpperCase(), shortOrderCode(orderCode), posOrderCode]);
+    const searches = [...new Set([orderCode.trim(), shortOrderCode(orderCode), posOrderCode, customerPhone.trim(), ""].filter((value, index) => value || index === 4))];
     for (const search of searches) {
       const match = records(await this.orders(search)).find((item) => {
         const partnerCode = deepText(item, ["custom_id", "partner_order_id", "order_code", "code"]).toUpperCase();
