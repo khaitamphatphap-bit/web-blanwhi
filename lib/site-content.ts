@@ -38,6 +38,12 @@ let pancakeLinkWriteQueue = Promise.resolve();
 export type CmsProduct = {
   id: string;
   name: string;
+  displayMode?: "direct" | "linked";
+  linkedUrl?: string;
+  linkedRibbonText?: string;
+  linkedButtonText?: string;
+  linkedButtonImage?: string;
+  linkedOpenInNewTab?: boolean;
   price: string;
   originalPrice?: string;
   salePrice?: string;
@@ -302,9 +308,15 @@ async function loadSiteContent(): Promise<SiteContent> {
     const originalAmount = parseMoneyValue(originalPrice);
     const saleAmount = parseMoneyValue(salePrice);
     const hasDiscount = Boolean(salePrice) && originalAmount > 0 && saleAmount > 0 && saleAmount < originalAmount;
-    const normalizedProduct = {
+    const normalizedProduct: CmsProduct = {
       ...fallback,
       ...product,
+      displayMode: product.displayMode === "linked" ? "linked" : "direct",
+      linkedUrl: typeof product.linkedUrl === "string" ? product.linkedUrl : "",
+      linkedRibbonText: typeof product.linkedRibbonText === "string" ? product.linkedRibbonText : "MUA TẠI WWW.BLANWHIVIETNAM.COM",
+      linkedButtonText: typeof product.linkedButtonText === "string" ? product.linkedButtonText : "MUA TẠI ĐÂY",
+      linkedButtonImage: typeof product.linkedButtonImage === "string" ? product.linkedButtonImage : "",
+      linkedOpenInNewTab: product.linkedOpenInNewTab !== false,
       originalPrice,
       salePrice,
       price: hasDiscount ? salePrice : originalPrice,
@@ -464,6 +476,18 @@ export async function seedPancakeProductLinks(content: SiteContent) {
 
 export async function writeSiteContentFromAdmin(content: SiteContent) {
   return withDataStoreLock("website-inventory", async () => {
+    for (const product of content.products) {
+      if (product.displayMode !== "linked") continue;
+      let destination: URL;
+      try {
+        destination = new URL(String(product.linkedUrl || "").trim());
+      } catch {
+        throw new Error(`${product.name || "Sản phẩm liên kết"} chưa có link chuyển đến hợp lệ.`);
+      }
+      if (!["http:", "https:"].includes(destination.protocol)) {
+        throw new Error(`${product.name || "Sản phẩm liên kết"} chỉ được dùng link http hoặc https.`);
+      }
+    }
     const latest = await readSiteContent();
     const incomingRevision = Math.max(0, Math.floor(Number(content.catalogRevision) || 0));
     const latestRevision = Math.max(0, Math.floor(Number(latest.catalogRevision) || 0));

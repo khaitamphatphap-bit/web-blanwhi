@@ -251,6 +251,15 @@
       .card-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: auto; padding-top: 12px; }
       .card-actions .quick { margin-top: 0; }
       .card-actions [data-add] { background: #000; color: #fff; }
+      .linked-product-visual { position: relative; width: 100%; aspect-ratio: 1 / 1; overflow: hidden; display: block; background: linear-gradient(135deg, #fafafa, #ededed); color: inherit; text-decoration: none; }
+      .linked-product-visual .product-photo { width: 100%; height: 100%; display: block; object-fit: cover; transition: transform .55s ease, opacity .55s ease; }
+      .card:hover .linked-product-visual .product-photo { transform: scale(1.018); opacity: .94; }
+      .linked-product-ribbon { position: absolute; right: 0; bottom: 0; left: 0; min-height: 36px; display: grid; place-items: center; padding: 7px 9px; background: rgba(0,0,0,.78); color: #fff; font-size: 10px; font-weight: 800; line-height: 1.35; text-align: center; text-transform: uppercase; }
+      .linked-product-meta { padding-top: 12px; }
+      .linked-product-name { margin: 0 0 9px; font-size: 13px; font-weight: 700; line-height: 1.4; text-transform: uppercase; }
+      .linked-product-cta { width: 100%; min-height: 43px; display: flex; align-items: center; justify-content: center; gap: 9px; padding: 9px 12px; border: 1px solid #111; background: #111; color: #fff; text-decoration: none; font-size: 12px; font-weight: 800; text-transform: uppercase; }
+      .linked-product-cta:hover { background: #fff; color: #111; }
+      .linked-product-cta img { width: 22px; height: 22px; display: block; object-fit: cover; }
       .quick:disabled, .primary:disabled { cursor: not-allowed; opacity: .42; }
       .cart-overlay { position: fixed; inset: 0; z-index: 20; background: rgba(0,0,0,.24); opacity: 0; pointer-events: none; transition: opacity .25s ease; }
       .cart-overlay.open { opacity: 1; pointer-events: auto; }
@@ -1702,6 +1711,23 @@
         }).join("")}
       `;
       const productCardMarkup = (product) => {
+        if (product.displayMode === "linked") {
+          const target = product.linkedOpenInNewTab ? ` target="_blank" rel="noopener noreferrer"` : "";
+          const buttonImage = product.linkedButtonImage
+            ? `<img src="${escapeMarkup(product.linkedButtonImage)}" alt="" loading="lazy" decoding="async" />`
+            : "";
+          return `
+          <article class="card linked-product-card">
+            <a class="linked-product-visual" href="${escapeMarkup(product.linkedUrl)}"${target} aria-label="${escapeMarkup(product.linkedButtonText)} - ${escapeMarkup(product.name)}">
+              ${product.image ? `<img class="product-photo" src="${escapeMarkup(product.image)}" alt="${escapeMarkup(product.name)}" loading="eager" decoding="async" fetchpriority="high" />` : ""}
+              <span class="linked-product-ribbon">${escapeMarkup(product.linkedRibbonText)}</span>
+            </a>
+            <div class="linked-product-meta">
+              <h3 class="linked-product-name">${escapeMarkup(product.name)}</h3>
+              <a class="linked-product-cta" href="${escapeMarkup(product.linkedUrl)}"${target}>${buttonImage}<span>${escapeMarkup(product.linkedButtonText)}</span></a>
+            </div>
+          </article>`;
+        }
         ensureValidProductSelection(product);
         const swatches = variantSwatches(product);
         const linkedRows = (product.inventory || []).filter((row) => row.pancakeProductId || row.pancakeVariationId || row.pancakeSku);
@@ -1875,6 +1901,12 @@
         return {
           id,
           name: product.name || "Sản phẩm",
+          displayMode: product.displayMode === "linked" ? "linked" : "direct",
+          linkedUrl: product.linkedUrl || "",
+          linkedRibbonText: product.linkedRibbonText || "MUA TẠI WWW.BLANWHIVIETNAM.COM",
+          linkedButtonText: product.linkedButtonText || "MUA TẠI ĐÂY",
+          linkedButtonImage: product.linkedButtonImage || "",
+          linkedOpenInNewTab: product.linkedOpenInNewTab !== false,
           price: displayPrice || "0đ",
           originalPrice,
           salePrice,

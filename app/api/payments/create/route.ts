@@ -224,6 +224,9 @@ async function hydratePancakeLinks(items: ReturnType<typeof normalizeItems>, con
     if (!product || product.active === false) {
       throw new Error(`${item.name || "Sản phẩm"} không còn bán trên website. Vui lòng tải lại trang và đặt lại.`);
     }
+    if (product.displayMode === "linked") {
+      throw new Error(`${product.name} là sản phẩm liên kết và không thể thanh toán trên website này.`);
+    }
     const rows = buildProductInventory(product);
     const colorNameFor = (row: (typeof rows)[number]) => {
       const classification = product.classifications?.find((entry) => entry.id === row.classificationId);

@@ -8,6 +8,12 @@ import type { CmsPolicyDocument, CmsProduct, CmsProductClassification, CmsProduc
 const emptyProduct: CmsProduct = {
   id: "",
   name: "Sản phẩm mới",
+  displayMode: "direct",
+  linkedUrl: "",
+  linkedRibbonText: "MUA TẠI WWW.BLANWHIVIETNAM.COM",
+  linkedButtonText: "MUA TẠI ĐÂY",
+  linkedButtonImage: "",
+  linkedOpenInNewTab: true,
   price: "390.000đ",
   originalPrice: "390.000đ",
   salePrice: "",
@@ -727,10 +733,14 @@ export function SiteEditor() {
                         <span className="min-w-0">
                           <strong className="block truncate">{product.name}</strong>
                           <span className="mt-1 block text-xs text-neutral-500">
-                            {product.salePrice || product.originalPrice || product.price}
-                            {" · tồn POS "}{buildProductInventory(product).reduce((sum, item) => sum + Math.max(0, Number(item.pancakeQuantity ?? item.quantity) || 0), 0)}
-                            {" · mở bán web "}{buildProductInventory(product).reduce((sum, item) => sum + Math.max(0, Number(item.publishQuantity) || 0), 0)}
-                            {" · "}{product.active ? "đang bán" : "ẩn"}
+                            {product.displayMode === "linked" ? (
+                              <>Sản phẩm liên kết · {product.active ? "đang hiển thị" : "ẩn"}</>
+                            ) : (
+                              <>{product.salePrice || product.originalPrice || product.price}
+                                {" · tồn POS "}{buildProductInventory(product).reduce((sum, item) => sum + Math.max(0, Number(item.pancakeQuantity ?? item.quantity) || 0), 0)}
+                                {" · mở bán web "}{buildProductInventory(product).reduce((sum, item) => sum + Math.max(0, Number(item.publishQuantity) || 0), 0)}
+                                {" · "}{product.active ? "đang bán" : "ẩn"}</>
+                            )}
                           </span>
                         </span>
                       </span>
@@ -956,6 +966,80 @@ function ProductForm({
       salePercent: hasDiscount ? Math.max(1, Math.round((originalAmount - saleAmount) / originalAmount * 100)) : 0
     });
   };
+  const displayMode = product.displayMode === "linked" ? "linked" : "direct";
+  const displayModeSelector = (
+    <section className="mt-4 border border-neutral-300 p-4">
+      <h4 className="text-sm font-semibold uppercase">Hình thức hiển thị sản phẩm</h4>
+      <p className="mt-1 text-xs text-neutral-500">Sản phẩm cũ mặc định là bán trực tiếp. Đổi hình thức không xóa giá, phân loại hoặc tồn kho đã lưu.</p>
+      <div className="mt-3 grid gap-3 md:grid-cols-2">
+        <label className={`cursor-pointer border p-4 ${displayMode === "direct" ? "border-black bg-neutral-50" : "border-neutral-200"}`}>
+          <span className="flex items-start gap-3">
+            <input type="radio" name={`display-mode-${product.id}`} checked={displayMode === "direct"} onChange={() => set("displayMode", "direct")} className="mt-1" />
+            <span><strong className="block text-sm">Sản phẩm bán trực tiếp</strong><small className="mt-1 block text-xs leading-5 text-neutral-500">Giữ nguyên giá, phân loại, tồn kho, giỏ hàng và thanh toán trên website.</small></span>
+          </span>
+        </label>
+        <label className={`cursor-pointer border p-4 ${displayMode === "linked" ? "border-black bg-neutral-50" : "border-neutral-200"}`}>
+          <span className="flex items-start gap-3">
+            <input type="radio" name={`display-mode-${product.id}`} checked={displayMode === "linked"} onChange={() => set("displayMode", "linked")} className="mt-1" />
+            <span><strong className="block text-sm">Sản phẩm liên kết</strong><small className="mt-1 block text-xs leading-5 text-neutral-500">Chỉ hiển thị hình ảnh và đưa khách đến đường dẫn được nhập.</small></span>
+          </span>
+        </label>
+      </div>
+    </section>
+  );
+
+  if (displayMode === "linked") {
+    return (
+      <div className="min-w-0 overflow-hidden border border-neutral-200 p-4">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-xs uppercase text-neutral-500">Đang sửa sản phẩm</p>
+            <h3 className="mt-1 text-2xl font-medium">{product.name}</h3>
+          </div>
+          <button onClick={onDelete} className="h-9 border border-red-500 px-3 text-xs uppercase text-red-600">Xóa</button>
+        </div>
+
+        {displayModeSelector}
+
+        <section className="mt-4 border border-neutral-200 p-4">
+          <div>
+            <h4 className="text-sm font-semibold uppercase">Nội dung sản phẩm liên kết</h4>
+            <p className="mt-1 text-xs text-neutral-500">Sản phẩm này không vào giỏ hàng, không trừ tồn và không gửi sang Pancake.</p>
+          </div>
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <Text label="Tên sản phẩm" value={product.name} onChange={(value) => set("name", value)} />
+            <Text label="Link chuyển đến" value={product.linkedUrl || ""} onChange={(value) => set("linkedUrl", value)} />
+            <Text label="Chữ ngang dưới hình" value={product.linkedRibbonText || "MUA TẠI WWW.BLANWHIVIETNAM.COM"} onChange={(value) => set("linkedRibbonText", value)} />
+            <Text label="Chữ trên nút" value={product.linkedButtonText || "MUA TẠI ĐÂY"} onChange={(value) => set("linkedButtonText", value)} />
+          </div>
+
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <div className="border border-neutral-200 p-3">
+              <label className="text-xs uppercase text-neutral-500">Ảnh sản phẩm</label>
+              <input value={product.image || ""} onChange={(event) => set("image", event.target.value)} placeholder="https://..." className="mt-2 h-10 w-full border px-3 text-sm" />
+              <input type="file" accept="image/*" onChange={(event) => onUpload(event, (url) => set("image", url))} className="mt-3 block text-xs" />
+              {product.image && <img src={product.image} alt={product.name} className="mt-3 aspect-[4/5] max-h-80 w-full object-cover" />}
+            </div>
+            <div className="border border-neutral-200 p-3">
+              <label className="text-xs uppercase text-neutral-500">Ảnh nhỏ trong nút (không bắt buộc)</label>
+              <input value={product.linkedButtonImage || ""} onChange={(event) => set("linkedButtonImage", event.target.value)} placeholder="https://..." className="mt-2 h-10 w-full border px-3 text-sm" />
+              <input type="file" accept="image/*" onChange={(event) => onUpload(event, (url) => set("linkedButtonImage", url))} className="mt-3 block text-xs" />
+              {product.linkedButtonImage && <img src={product.linkedButtonImage} alt="Ảnh trong nút" className="mt-3 h-20 w-20 border border-neutral-200 object-cover" />}
+            </div>
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-4 border-t pt-4 text-sm">
+            <label><input type="checkbox" checked={product.active} onChange={(event) => set("active", event.target.checked)} className="mr-2" />Hiển thị trên website</label>
+            <label><input type="checkbox" checked={product.linkedOpenInNewTab !== false} onChange={(event) => set("linkedOpenInNewTab", event.target.checked)} className="mr-2" />Mở ở tab mới</label>
+            <label><input type="checkbox" checked={genders.includes("men")} onChange={(event) => toggleGender("men", event.target.checked)} className="mr-2" />Hiện trong Nam</label>
+            <label><input type="checkbox" checked={genders.includes("women")} onChange={(event) => toggleGender("women", event.target.checked)} className="mr-2" />Hiện trong Nữ</label>
+            <label><input type="checkbox" checked={Boolean(product.isBestSeller)} onChange={(event) => set("isBestSeller", event.target.checked)} className="mr-2" />Best seller</label>
+            <label><input type="checkbox" checked={product.isNew} onChange={(event) => set("isNew", event.target.checked)} className="mr-2" />New</label>
+          </div>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className="min-w-0 overflow-hidden border border-neutral-200 p-4">
@@ -966,6 +1050,8 @@ function ProductForm({
         </div>
         <button onClick={onDelete} className="h-9 border border-red-500 px-3 text-xs uppercase text-red-600">Xóa</button>
       </div>
+
+      {displayModeSelector}
 
       <div className="mt-4 grid min-w-0 gap-4 md:grid-cols-2">
         <Text label="Tên sản phẩm" value={product.name} onChange={(value) => set("name", value)} />
