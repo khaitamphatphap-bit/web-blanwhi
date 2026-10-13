@@ -15,6 +15,9 @@ type R2Config = {
   objectPrefix: string;
 };
 
+let r2Client: S3Client | null = null;
+let r2ClientKey = "";
+
 function cleanPrefix(value: string) {
   return value.replace(/^\/+|\/+$/g, "");
 }
@@ -46,7 +49,10 @@ function getR2Config(): R2Config | null {
 }
 
 function createR2Client(config: R2Config) {
-  return new S3Client({
+  const key = `${config.accountId}:${config.accessKeyId}`;
+  if (r2Client && r2ClientKey === key) return r2Client;
+
+  r2Client = new S3Client({
     region: "auto",
     endpoint: "https://" + config.accountId + ".r2.cloudflarestorage.com",
     credentials: {
@@ -54,6 +60,8 @@ function createR2Client(config: R2Config) {
       secretAccessKey: config.secretAccessKey
     }
   });
+  r2ClientKey = key;
+  return r2Client;
 }
 
 function makeImageKey(prefix: string, filename: string) {
