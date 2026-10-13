@@ -384,6 +384,29 @@ async function retryDatabaseWrite<T>(action: () => Promise<T>, attempts = 4) {
   throw lastError;
 }
 
+function isRetryableDatabaseReadError(error: unknown) {
+  const code = String((error as { code?: unknown } | null)?.code || "").toUpperCase();
+  const message = error instanceof Error ? error.message.toLowerCase() : String(error || "").toLowerCase();
+  return ["08000", "08003", "08006", "57P01", "53300", "ECONNRESET", "ETIMEDOUT", "EAI_AGAIN", "EBUSY"].includes(code)
+    || message.includes("timeout exceeded when trying to connect")
+    || message.includes("connection terminated unexpectedly")
+    || message.includes("connection reset");
+}
+
+async function retryDatabaseRead<T>(action: () => Promise<T>, attempts = 3) {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      return await action();
+    } catch (error) {
+      lastError = error;
+      if (!isRetryableDatabaseReadError(error) || attempt === attempts - 1) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 75 * (attempt + 1)));
+    }
+  }
+  throw lastError;
+}
+
 async function readEncryptedBlobJsonStore<T>(filename: string) {
   const { get } = await import("@vercel/blob");
   const result = await get(encryptedBlobPath(filename), { access: "public", useCache: false });
@@ -884,7 +907,7 @@ async function readJsonStoreUncached<T>(filename: string, fallback: T): Promise<
       const pool = await getPool();
       if (pool) {
         const key = toStoreKey(filename);
-        const result = await pool.query("select store_value from blanwhi_store where store_key = $1", [key]);
+        const result = await retryDatabaseRead(() => pool.query("select store_value from blanwhi_store where store_key = $1", [key]));
         if (result.rows[0]?.store_value !== undefined) return result.rows[0].store_value as T;
 
         // A configured database is the sole live source. If its catalog row is
@@ -1055,10 +1078,10 @@ export async function readKeyedJsonStoreDatabaseStatus<T>(namespace: string): Pr
     await ensureDatabaseSchema();
     const pool = await getPool();
     if (!pool) return { ok: false, records: {} };
-    const result = await pool.query(
+    const result = await retryDatabaseRead(() => pool.query(
       "select item_key, item_value from blanwhi_keyed_store where namespace = $1",
       [namespace]
-    );
+    ));
     return {
       ok: true,
       records: Object.fromEntries(result.rows.map((row) => [String(row.item_key), row.item_value as T])) as Record<string, T>

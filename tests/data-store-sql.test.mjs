@@ -48,6 +48,10 @@ test("database khỏe không đọc song song R2 hoặc file fallback", async ()
   const source = await readFile(new URL("../lib/data-store.ts", import.meta.url), "utf8");
   assert.match(source, /max: 3/);
   assert.match(source, /connectionTimeoutMillis: 5_000/);
+  assert.match(source, /async function retryDatabaseRead<T>[\s\S]*?attempts = 3/);
+  assert.match(source, /timeout exceeded when trying to connect/);
+  assert.match(source, /retryDatabaseRead\(\(\) => pool\.query\("select store_value from blanwhi_store/);
+  assert.match(source, /retryDatabaseRead\(\(\) => pool\.query\([\s\S]*?select item_key, item_value from blanwhi_keyed_store/);
   assert.match(source, /const result = await readKeyedJsonStoreDatabaseStatus<T>\(namespace\);[\s\S]*?if \(result\.ok\) return result\.records;[\s\S]*?return readKeyedJsonStoreFallbackStores<T>/);
   assert.doesNotMatch(source, /const \[result, legacy\] = await Promise\.all/);
 });
