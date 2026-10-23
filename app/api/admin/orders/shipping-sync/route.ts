@@ -35,13 +35,13 @@ async function syncShippingOrders(request: Request) {
   if (eligibleUnlinked.length) {
     let restored = 0;
     let restoreErrors = 0;
-    for (let index = 0; index < eligibleUnlinked.length; index += 4) {
-      const batch = eligibleUnlinked.slice(index, index + 4);
-      const settled = await Promise.allSettled(batch.map((order) =>
-        new OrderSyncService(new PancakeService(pancakeConnectionForOrder(order))).create(order)
-      ));
-      restored += settled.filter((result) => result.status === "fulfilled").length;
-      restoreErrors += settled.filter((result) => result.status === "rejected").length;
+    for (const order of eligibleUnlinked) {
+      try {
+        await new OrderSyncService(new PancakeService(pancakeConnectionForOrder(order))).create(order);
+        restored += 1;
+      } catch {
+        restoreErrors += 1;
+      }
     }
     results.push({ code: "pancake-missing-orders", ok: restoreErrors === 0, restored, restoreErrors, message: `Đã gửi lại ${restored} đơn hợp lệ còn thiếu sang Pancake, ${restoreErrors} lỗi.` });
   }
@@ -49,9 +49,10 @@ async function syncShippingOrders(request: Request) {
   if (pancakeCandidates.length || eligibleUnlinked.length) {
     try {
       const connectionIds = (["shop-1", "shop-2"] as const).filter((id) => connectionConfigured(pancakeConnection(id)));
-      const syncResults = await Promise.all(connectionIds.map((id) =>
-        new OrderSyncService(new PancakeService(id)).pollStatuses({ detailLimit: fullSync ? 200 : 20 })
-      ));
+      const syncResults = [];
+      for (const id of connectionIds) {
+        syncResults.push(await new OrderSyncService(new PancakeService(id)).pollStatuses({ detailLimit: fullSync ? 200 : 20 }));
+      }
       const synced = syncResults.reduce((total, result) => ({
         received: total.received + result.received,
         detailed: total.detailed + result.detailed,

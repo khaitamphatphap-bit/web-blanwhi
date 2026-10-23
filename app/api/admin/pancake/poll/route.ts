@@ -25,15 +25,17 @@ export async function GET(request: Request) {
     const pendingPayments = await reconcilePendingZaloPayPayments(Date.now(), { limit: 10, queryTimeoutMs: 2500, syncPos: false });
     const cancelOnly = new URL(request.url).searchParams.get("cancelOnly") === "1";
     const connectionIds = (["shop-1", "shop-2"] as const).filter((id) => connectionConfigured(pancakeConnection(id)));
-    const cancellations = await Promise.all(connectionIds.map((id) =>
-      new OrderSyncService(new PancakeService(id)).reconcileCancellations({ limit: 10 })
-    ));
+    const cancellations = [];
+    for (const id of connectionIds) {
+      cancellations.push(await new OrderSyncService(new PancakeService(id)).reconcileCancellations({ limit: 10 }));
+    }
     const backups = await flushDatabaseBackupOutbox(20).catch(() => -1);
     if (cancelOnly) return NextResponse.json({ ok: true, paymentReservations, paymentReceipts, pendingPayments, cancellations, queue, backups });
     const inventory = { mode: "independent", skipped: true, message: "Kho website và Pancake được nhập riêng." };
-    const orders = await Promise.all(connectionIds.map((id) =>
-      new OrderSyncService(new PancakeService(id)).pollStatuses()
-    ));
+    const orders = [];
+    for (const id of connectionIds) {
+      orders.push(await new OrderSyncService(new PancakeService(id)).pollStatuses());
+    }
     return NextResponse.json({ ok: true, paymentReservations, paymentReceipts, pendingPayments, cancellations, backups, inventory, orders, queue });
   } catch (error) {
     const normalized = ExceptionHandler.normalize(error);

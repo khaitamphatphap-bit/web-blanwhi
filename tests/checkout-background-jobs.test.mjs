@@ -8,6 +8,8 @@ const cancelRoute = await readFile(new URL("../app/api/orders/[code]/cancel/rout
 const middleware = await readFile(new URL("../middleware.ts", import.meta.url), "utf8");
 const pollCron = await readFile(new URL("../app/api/admin/pancake/poll/route.ts", import.meta.url), "utf8");
 const shippingCron = await readFile(new URL("../app/api/admin/orders/shipping-sync/route.ts", import.meta.url), "utf8");
+const orderSync = await readFile(new URL("../lib/pancake/order-sync-service.ts", import.meta.url), "utf8");
+const trackingRefresh = await readFile(new URL("../lib/pancake/tracking-refresh.ts", import.meta.url), "utf8");
 const queue = await readFile(new URL("../lib/pancake/queue-handler.ts", import.meta.url), "utf8");
 const backgroundJobs = await readFile(new URL("../lib/order-background-jobs.ts", import.meta.url), "utf8");
 const orders = await readFile(new URL("../lib/orders.ts", import.meta.url), "utf8");
@@ -76,6 +78,15 @@ test("hai cron nặng vẫn chạy mỗi 5 phút nhưng không tranh database c�
   const schedules = Object.fromEntries(vercelConfig.crons.map((cron) => [cron.path, cron.schedule]));
   assert.equal(schedules["/api/admin/orders/shipping-sync"], "1-59/5 * * * *");
   assert.equal(schedules["/api/admin/pancake/poll"], "3-59/5 * * * *");
+});
+
+test("cron chỉ tuần tự hóa các thao tác có thể ghi database", () => {
+  assert.doesNotMatch(shippingCron, /Promise\.allSettled\(batch\.map/);
+  assert.doesNotMatch(shippingCron, /Promise\.all\(connectionIds\.map/);
+  assert.doesNotMatch(pollCron, /Promise\.all\(connectionIds\.map/);
+  assert.match(orderSync, /const batchSize = 1/);
+  assert.doesNotMatch(orderSync, /Promise\.all\(Array\.from\(patches\.entries\(\)\)/);
+  assert.match(trackingRefresh, /for \(const order of targets\)/);
 });
 
 test("checkout và hủy trả số đo Server-Timing theo từng bước", async () => {

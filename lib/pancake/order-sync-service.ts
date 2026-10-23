@@ -565,14 +565,14 @@ export class OrderSyncService {
     let alreadyCancelled = 0;
     let queued = 0;
     const errors: string[] = [];
-    const batchSize = 8;
+    const batchSize = 1;
 
     for (let index = 0; index < candidates.length; index += batchSize) {
       const batch = candidates.slice(index, index + batchSize);
-      await Promise.all(batch.map(async (order) => {
+      for (const order of batch) {
         try {
           const remote = await this.pancake.findOrder(order.code, order.customer.phone);
-          if (!remote) return;
+          if (!remote) continue;
           found += 1;
           const remoteOrderId = externalId(remote);
           if (!remoteOrderId) {
@@ -618,7 +618,7 @@ export class OrderSyncService {
             }
           });
         }
-      }));
+      }
     }
 
     return { checked: candidates.length, found, cancelled, alreadyCancelled, queued, errors: errors.slice(0, 20) };
@@ -817,7 +817,7 @@ export class OrderSyncService {
       await applyPayload(payload, target.order, target.remoteId);
     }
     if (patches.size) {
-      await Promise.all(Array.from(patches.entries()).map(([code, patch]) => updateOrder(code, patch)));
+      for (const [code, patch] of patches.entries()) await updateOrder(code, patch);
       await PancakeLogger.write("info", "order.poll", `Đã cập nhật nhanh ${patches.size} đơn và tự chuyển ${posStatusesUpdated} trạng thái POS.`);
     }
     if (detailFailures.length || posStatusFailures.length) {

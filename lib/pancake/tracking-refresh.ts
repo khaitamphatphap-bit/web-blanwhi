@@ -95,9 +95,13 @@ export async function refreshMissingPancakeTracking(
     eligible = [...eligible.slice(start), ...eligible.slice(0, start)];
   }
   const targets = eligible.filter((order) => options.force || (checkStates.get(order.code)?.nextAllowedAt || 0) <= now).slice(0, limit);
-  const refreshed = await Promise.all(targets.map(async (order) => {
+  const refreshed: ShopOrder[] = [];
+  for (const order of targets) {
     const existing = inFlightChecks.get(order.code);
-    if (existing) return existing;
+    if (existing) {
+      refreshed.push(await existing);
+      continue;
+    }
     const previousAttempts = checkStates.get(order.code)?.attempts || 0;
     checkStates.set(order.code, { attempts: previousAttempts, nextAllowedAt: now + minIntervalMs });
     const task = refreshPancakeTrackingOnly(order, options, pancake)
@@ -120,8 +124,8 @@ export async function refreshMissingPancakeTracking(
         inFlightChecks.delete(order.code);
       });
     inFlightChecks.set(order.code, task);
-    return task;
-  }));
+    refreshed.push(await task);
+  }
   if (checkStates.size > 2000) {
     for (const [code, state] of checkStates) if (state.nextAllowedAt <= now) checkStates.delete(code);
   }
