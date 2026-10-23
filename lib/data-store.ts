@@ -1,13 +1,16 @@
 import { mkdir, readFile, readdir, stat, writeFile } from "fs/promises";
 import path from "path";
+import { AsyncLocalStorage } from "node:async_hooks";
 import { hasR2ImageStorage, listR2Keys, readR2Text, writeR2Text } from "@/lib/image-storage";
+
+type PgClient = {
+  query: (text: string, params?: unknown[]) => Promise<{ rows: Array<Record<string, unknown>> }>;
+  release: () => void;
+};
 
 type PgPool = {
   query: (text: string, params?: unknown[]) => Promise<{ rows: Array<Record<string, unknown>> }>;
-  connect: () => Promise<{
-    query: (text: string, params?: unknown[]) => Promise<{ rows: Array<Record<string, unknown>> }>;
-    release: () => void;
-  }>;
+  connect: () => Promise<PgClient>;
 };
 
 export type StoreHealthReport = {
@@ -75,6 +78,7 @@ type JsonStoreWriteOptions = {
 let poolPromise: Promise<PgPool> | null = null;
 let schemaReadyPromise: Promise<void> | null = null;
 const localStoreLocks = new Map<string, Promise<void>>();
+const databaseClientContext = new AsyncLocalStorage<PgClient>();
 
 const databaseEnvNames = [
   "DATABASE_URL",
@@ -498,7 +502,7 @@ async function getPool() {
   if (!poolPromise) {
     poolPromise = import("pg").then(({ Pool }) => {
       const isLocal = /localhost|127\.0\.0\.1/.test(url);
-      return new Pool({
+      const pool = new Pool({
         connectionString: url,
         ssl: process.env.PGSSLMODE === "disable" || isLocal ? false : { rejectUnauthorized: false },
         // Fluid compute can serve a public request while a cron invocation is
@@ -510,6 +514,13 @@ async function getPool() {
         idleTimeoutMillis: 10_000,
         allowExitOnIdle: true
       }) as PgPool;
+      return {
+        // Reuse the transaction connection while a lock action is running.
+        // This prevents the lock itself and its nested reads/writes from
+        // competing for separate slots in the small serverless pool.
+        query: (text: string, params?: unknown[]) => (databaseClientContext.getStore() || pool).query(text, params),
+        connect: () => pool.connect()
+      } satisfies PgPool;
     });
   }
   return poolPromise;
@@ -523,13 +534,18 @@ export async function withDataStoreLock<T>(name: string, action: () => Promise<T
     await ensureDatabaseSchema();
     const pool = await getPool();
     if (pool) {
+      const inheritedClient = databaseClientContext.getStore();
+      if (inheritedClient) {
+        await inheritedClient.query("select pg_advisory_xact_lock(hashtext($1))", [lockName]);
+        return action();
+      }
       const client = await pool.connect();
       try {
         await client.query("begin");
         await client.query("set local lock_timeout = '12s'");
         await client.query("select pg_advisory_xact_lock(hashtext($1))", [lockName]);
         try {
-          const result = await action();
+          const result = await databaseClientContext.run(client, action);
           await client.query("commit");
           return result;
         } catch (error) {
