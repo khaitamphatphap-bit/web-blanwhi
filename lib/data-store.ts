@@ -501,9 +501,11 @@ async function getPool() {
       return new Pool({
         connectionString: url,
         ssl: process.env.PGSSLMODE === "disable" || isLocal ? false : { rejectUnauthorized: false },
-        // Fluid compute keeps the module alive between requests. A small pool
-        // prevents a burst of functions from exhausting sockets/file handles.
-        max: 3,
+        // Fluid compute can serve a public request while a cron invocation is
+        // holding an advisory-lock connection. Six leaves room for those
+        // short reads without bringing back the broad background concurrency
+        // that previously exhausted the database.
+        max: 6,
         connectionTimeoutMillis: 5_000,
         idleTimeoutMillis: 10_000,
         allowExitOnIdle: true

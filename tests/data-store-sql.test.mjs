@@ -46,7 +46,7 @@ test("database lock tự giải phóng khi function bị ngắt", async () => {
 
 test("database khỏe không đọc song song R2 hoặc file fallback", async () => {
   const source = await readFile(new URL("../lib/data-store.ts", import.meta.url), "utf8");
-  assert.match(source, /max: 3/);
+  assert.match(source, /max: 6/);
   assert.match(source, /connectionTimeoutMillis: 5_000/);
   assert.match(source, /async function retryDatabaseRead<T>[\s\S]*?attempts = 3/);
   assert.match(source, /timeout exceeded when trying to connect/);

@@ -10,11 +10,11 @@ const pollCron = await readFile(new URL("../app/api/admin/pancake/poll/route.ts"
 const shippingCron = await readFile(new URL("../app/api/admin/orders/shipping-sync/route.ts", import.meta.url), "utf8");
 const orderSync = await readFile(new URL("../lib/pancake/order-sync-service.ts", import.meta.url), "utf8");
 const trackingRefresh = await readFile(new URL("../lib/pancake/tracking-refresh.ts", import.meta.url), "utf8");
+const dataStore = await readFile(new URL("../lib/data-store.ts", import.meta.url), "utf8");
 const queue = await readFile(new URL("../lib/pancake/queue-handler.ts", import.meta.url), "utf8");
 const backgroundJobs = await readFile(new URL("../lib/order-background-jobs.ts", import.meta.url), "utf8");
 const orders = await readFile(new URL("../lib/orders.ts", import.meta.url), "utf8");
 const refundWorker = await readFile(new URL("../lib/zalopay-cancel-refund.ts", import.meta.url), "utf8");
-const dataStore = await readFile(new URL("../lib/data-store.ts", import.meta.url), "utf8");
 const vercelConfig = JSON.parse(await readFile(new URL("../vercel.json", import.meta.url), "utf8"));
 
 test("cron Vercel dùng Bearer CRON_SECRET ở middleware và hai route nền", () => {
@@ -87,6 +87,7 @@ test("cron chỉ tuần tự hóa các thao tác có thể ghi database", () => 
   assert.match(orderSync, /const batchSize = 1/);
   assert.doesNotMatch(orderSync, /Promise\.all\(Array\.from\(patches\.entries\(\)\)/);
   assert.match(trackingRefresh, /for \(const order of targets\)/);
+  assert.match(dataStore, /max: 6/);
 });
 
 test("checkout và hủy trả số đo Server-Timing theo từng bước", async () => {
