@@ -577,9 +577,15 @@ async function ensureDatabaseSchema() {
   if (!pool) return;
   if (!schemaReadyPromise) {
     const schemaRequest = (async () => {
-      // One round trip keeps cold starts from delaying the first checkout with
-      // a sequence of independent CREATE IF NOT EXISTS statements.
-      await pool.query(`
+      // Every Fluid instance has its own cold-start promise. Serialize schema
+      // DDL across instances so CREATE INDEX cannot deadlock with a live
+      // customer write on another instance.
+      const client = await pool.connect();
+      try {
+        await client.query("begin");
+        await client.query("set local lock_timeout = '30s'");
+        await client.query("select pg_advisory_xact_lock(hashtext('blanwhi-schema-v4'))");
+        await client.query(`
         create table if not exists blanwhi_store (
           store_key text primary key,
           store_value jsonb not null,
@@ -662,7 +668,14 @@ async function ensureDatabaseSchema() {
 
         create index if not exists blanwhi_inventory_events_created_idx
         on blanwhi_inventory_events (created_at desc);
-      `);
+        `);
+        await client.query("commit");
+      } catch (error) {
+        await client.query("rollback").catch(() => undefined);
+        throw error;
+      } finally {
+        client.release();
+      }
     })();
     schemaReadyPromise = schemaRequest.catch((error) => {
       schemaReadyPromise = null;

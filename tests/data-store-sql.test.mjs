@@ -42,6 +42,8 @@ test("database lock tự giải phóng khi function bị ngắt", async () => {
   assert.match(source, /set local lock_timeout = '12s'/);
   assert.doesNotMatch(source, /pg_advisory_lock\(/);
   assert.doesNotMatch(source, /pg_advisory_unlock\(/);
+  assert.match(source, /blanwhi-schema-v4/);
+  assert.match(source, /set local lock_timeout = '30s'/);
 });
 
 test("database khỏe không đọc song song R2 hoặc file fallback", async () => {
