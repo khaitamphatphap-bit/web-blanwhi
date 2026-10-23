@@ -1,4 +1,4 @@
-import { findOrderByCode } from "@/lib/orders";
+import { findOrderByCodeForBackground } from "@/lib/orders";
 import { InventoryService } from "@/lib/pancake/inventory-service";
 import { OrderSyncService } from "@/lib/pancake/order-sync-service";
 import type { PancakeQueueJob } from "@/lib/pancake/types";
@@ -25,8 +25,11 @@ export async function processOrderBackgroundJob(job: PancakeQueueJob) {
     return;
   }
 
-  const order = await findOrderByCode(orderCode);
-  if (!order) throw new Error(`Chưa đọc được đơn ${orderCode}; giữ tác vụ để thử lại.`);
+  const order = await findOrderByCodeForBackground(orderCode);
+  // The primary database is authoritative in production. If it confirms that
+  // the order no longer exists, retaining this job can only create an endless
+  // retry loop and consume connections needed by live checkout requests.
+  if (!order) return;
   const connectionId = pancakeConnectionForQueue(job, order);
   if (connectionId !== pancakeConnectionForOrder(order)) {
     throw new Error(`Tác vụ ${job.id} không khớp shop đã chốt của đơn ${orderCode}.`);

@@ -12,6 +12,7 @@ const queue = await readFile(new URL("../lib/pancake/queue-handler.ts", import.m
 const backgroundJobs = await readFile(new URL("../lib/order-background-jobs.ts", import.meta.url), "utf8");
 const refundWorker = await readFile(new URL("../lib/zalopay-cancel-refund.ts", import.meta.url), "utf8");
 const dataStore = await readFile(new URL("../lib/data-store.ts", import.meta.url), "utf8");
+const vercelConfig = JSON.parse(await readFile(new URL("../vercel.json", import.meta.url), "utf8"));
 
 test("cron Vercel dùng Bearer CRON_SECRET ở middleware và hai route nền", () => {
   assert.match(middleware, /cronAuthorization === `Bearer \$\{cronSecret\}`/);
@@ -56,10 +57,23 @@ test("cron ưu tiên hàng đợi khách và xử lý theo lô hữu hạn", () 
   const queueIndex = pollCron.indexOf("QueueHandler.process");
   const reconciliationIndex = pollCron.indexOf("const paymentReservations =");
   assert.ok(queueIndex >= 0 && reconciliationIndex > queueIndex);
-  assert.match(pollCron, /\{ limit: 20, concurrency: 4 \}/);
+  assert.match(pollCron, /\{ limit: 20, concurrency: 2 \}/);
   assert.match(queue, /slice\(0, limit\)/);
   assert.match(queue, /index \+= concurrency/);
   assert.match(queue, /failedJobs\.set\(job\.id/);
+});
+
+test("worker loại bỏ tác vụ mồ côi chỉ sau khi database chính xác nhận không còn đơn", () => {
+  assert.match(backgroundJobs, /findOrderByCodeForBackground/);
+  assert.match(backgroundJobs, /if \(!order\) return/);
+  assert.doesNotMatch(backgroundJobs, /Chưa đọc được đơn .*giữ tác vụ để thử lại/);
+  assert.match(dataStore, /readKeyedJsonRecordDatabaseStatus/);
+});
+
+test("hai cron nặng vẫn chạy mỗi 5 phút nhưng không tranh database cùng phút", () => {
+  const schedules = Object.fromEntries(vercelConfig.crons.map((cron) => [cron.path, cron.schedule]));
+  assert.equal(schedules["/api/admin/orders/shipping-sync"], "1-59/5 * * * *");
+  assert.equal(schedules["/api/admin/pancake/poll"], "3-59/5 * * * *");
 });
 
 test("checkout và hủy trả số đo Server-Timing theo từng bước", async () => {

@@ -249,6 +249,17 @@ export async function findOrderByCode(code: string) {
   return orders.find((order) => order.code.toUpperCase() === normalized || shortOrderCode(order.code) === normalized) ?? null;
 }
 
+export async function findOrderByCodeForBackground(code: string) {
+  const normalized = String(code || "").trim().toUpperCase();
+  if (!normalized) return null;
+  if (hasDatabase()) {
+    const state = await readKeyedJsonRecordDatabaseStatus<ShopOrder>(orderRecordsStore, normalized);
+    if (!state.ok) throw new Error("Không đọc được database đơn hàng cho tác vụ nền.");
+    return state.record ? normalizeOrder(state.record) : null;
+  }
+  return findOrderByCode(normalized);
+}
+
 export async function updateOrderStatus(
   code: string,
   status: OrderStatus,

@@ -3,11 +3,11 @@
   "crons": [
     {
       "path": "/api/admin/orders/shipping-sync",
-      "schedule": "*/5 * * * *"
+      "schedule": "1-59/5 * * * *"
     },
     {
       "path": "/api/admin/pancake/poll",
-      "schedule": "*/5 * * * *"
+      "schedule": "3-59/5 * * * *"
     }
   ]
 }
