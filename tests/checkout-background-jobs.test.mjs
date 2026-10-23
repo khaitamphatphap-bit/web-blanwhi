@@ -88,6 +88,9 @@ test("cron chỉ tuần tự hóa các thao tác có thể ghi database", () => 
   assert.doesNotMatch(orderSync, /Promise\.all\(Array\.from\(patches\.entries\(\)\)/);
   assert.match(trackingRefresh, /for \(const order of targets\)/);
   assert.match(dataStore, /max: 6/);
+  assert.match(pollCron, /const runStep = async/);
+  assert.match(pollCron, /retryScheduled: errors\.length > 0/);
+  assert.match(pollCron, /pancake-orders:\$\{id\}/);
 });
 
 test("checkout và hủy trả số đo Server-Timing theo từng bước", async () => {
