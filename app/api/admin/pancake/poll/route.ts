@@ -16,7 +16,10 @@ export async function GET(request: Request) {
   try {
     // Drain durable customer-facing work first. The bounded batch prevents a
     // historical backlog from consuming the whole cron invocation.
-    const queue = await QueueHandler.process(processOrderBackgroundJob, { limit: 20, concurrency: 2 });
+    // Each order update holds an advisory-lock connection while it reads and
+    // writes the authoritative record. Keep the durable queue sequential so a
+    // small serverless Postgres pool always has capacity for those operations.
+    const queue = await QueueHandler.process(processOrderBackgroundJob, { limit: 20, concurrency: 1 });
     const paymentReservations = await expireStaleZaloPayReservations(Date.now(), { limit: 10, queryTimeoutMs: 2500, syncPos: false });
     const paymentReceipts = await reconcileUnappliedZaloPayReceipts();
     const pendingPayments = await reconcilePendingZaloPayPayments(Date.now(), { limit: 10, queryTimeoutMs: 2500, syncPos: false });

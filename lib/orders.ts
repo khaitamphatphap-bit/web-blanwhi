@@ -289,10 +289,14 @@ export async function updateOrder(code: string, patch: Partial<ShopOrder>): Prom
   return withDataStoreLock(`order-update:${orderRecordKey(code)}`, async () => {
     if (hasDatabase()) {
       const recordKey = orderRecordKey(code);
-      const [orderState, deletedState] = await Promise.all([
-        readKeyedJsonRecordDatabaseStatus<ShopOrder>(orderRecordsStore, recordKey),
-        readKeyedJsonRecordDatabaseStatus<DeletedOrderRecord>(deletedOrderRecordsStore, recordKey)
-      ]);
+      // withDataStoreLock already reserves one pool connection. Read these
+      // records sequentially so an update never requires three connections at
+      // once and cannot deadlock with another background update in a small
+      // serverless pool.
+      const orderState = await readKeyedJsonRecordDatabaseStatus<ShopOrder>(orderRecordsStore, recordKey);
+      const deletedState = orderState.ok
+        ? await readKeyedJsonRecordDatabaseStatus<DeletedOrderRecord>(deletedOrderRecordsStore, recordKey)
+        : { ok: false, record: null };
       if (!orderState.ok || !deletedState.ok) {
         throw new Error("Không đọc được database đơn hàng nên chưa cập nhật để tránh ghi đè dữ liệu.");
       }

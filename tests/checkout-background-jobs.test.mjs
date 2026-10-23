@@ -10,6 +10,7 @@ const pollCron = await readFile(new URL("../app/api/admin/pancake/poll/route.ts"
 const shippingCron = await readFile(new URL("../app/api/admin/orders/shipping-sync/route.ts", import.meta.url), "utf8");
 const queue = await readFile(new URL("../lib/pancake/queue-handler.ts", import.meta.url), "utf8");
 const backgroundJobs = await readFile(new URL("../lib/order-background-jobs.ts", import.meta.url), "utf8");
+const orders = await readFile(new URL("../lib/orders.ts", import.meta.url), "utf8");
 const refundWorker = await readFile(new URL("../lib/zalopay-cancel-refund.ts", import.meta.url), "utf8");
 const dataStore = await readFile(new URL("../lib/data-store.ts", import.meta.url), "utf8");
 const vercelConfig = JSON.parse(await readFile(new URL("../vercel.json", import.meta.url), "utf8"));
@@ -57,7 +58,7 @@ test("cron ưu tiên hàng đợi khách và xử lý theo lô hữu hạn", () 
   const queueIndex = pollCron.indexOf("QueueHandler.process");
   const reconciliationIndex = pollCron.indexOf("const paymentReservations =");
   assert.ok(queueIndex >= 0 && reconciliationIndex > queueIndex);
-  assert.match(pollCron, /\{ limit: 20, concurrency: 2 \}/);
+  assert.match(pollCron, /\{ limit: 20, concurrency: 1 \}/);
   assert.match(queue, /slice\(0, limit\)/);
   assert.match(queue, /index \+= concurrency/);
   assert.match(queue, /failedJobs\.set\(job\.id/);
@@ -68,6 +69,7 @@ test("worker loại bỏ tác vụ mồ côi chỉ sau khi database chính xác 
   assert.match(backgroundJobs, /if \(!order\) return/);
   assert.doesNotMatch(backgroundJobs, /Chưa đọc được đơn .*giữ tác vụ để thử lại/);
   assert.match(dataStore, /readKeyedJsonRecordDatabaseStatus/);
+  assert.doesNotMatch(orders, /const \[orderState, deletedState\] = await Promise\.all/);
 });
 
 test("hai cron nặng vẫn chạy mỗi 5 phút nhưng không tranh database cùng phút", () => {
